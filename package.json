@@ -1,0 +1,28 @@
+{
+  "name": "yge-app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Young General Engineering estimating and bookkeeping platform",
+  "packageManager": "pnpm@9.0.0",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "db:migrate": "pnpm --filter @yge/db prisma migrate dev",
+    "db:seed": "pnpm --filter @yge/db seed",
+    "db:studio": "pnpm --filter @yge/db prisma studio",
+    "db:reset": "pnpm --filter @yge/db prisma migrate reset",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json}\" --ignore-path .gitignore"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "prettier": "^3.2.5",
+    "turbo": "^1.13.0",
+    "typescript": "^5.4.0"
+  }
+}

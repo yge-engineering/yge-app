@@ -1,0 +1,564 @@
+// YGE App — Prisma schema
+//
+// First-pass data model for Phase 1 MVP. Covers estimating, master rate tables,
+// employees, jobs, and the master business profile. Other modules (daily reports,
+// AP/AR, bookkeeping, portals, email intelligence) get added in later phases.
+//
+// Design rules (see CLAUDE.md):
+//   - Money stored as Int cents. Convert at the edge.
+//   - Multi-tenant: every business record scoped by companyId.
+//   - Soft deletes via deletedAt; never hard-delete contractual data.
+//   - Audit trail on every mutation (see AuditEvent).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ──────────────────────────────────────────────────────────────
+// Tenancy + access
+// ──────────────────────────────────────────────────────────────
+
+model Company {
+  id          String   @id @default(cuid())
+  name        String
+  addressLine String?
+  city        String?
+  state       String?
+  zip         String?
+  phone       String?
+  cslb        String?  // CA Contractor State License Board number
+  dir         String?  // CA Department of Industrial Relations number
+  dot         String?
+  naics       String[]
+  psc         String[]
+  domain      String?  // e.g. youngge.com
+  logoUrl     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  users              User[]
+  employees          Employee[]
+  customers          Customer[]
+  jobs               Job[]
+  estimates          Estimate[]
+  laborRates         LaborRate[]
+  equipmentRates     EquipmentRate[]
+  equipmentRentals   EquipmentRental[]
+  materials          Material[]
+  subcontractors     Subcontractor[]
+  costCodes          CostCode[]
+  bondingProfiles    BondingProfile[]
+  insurancePolicies  InsurancePolicy[]
+  officers           Officer[]
+  auditEvents        AuditEvent[]
+
+  @@map("companies")
+}
+
+enum UserRole {
+  OWNER
+  OFFICE
+  FOREMAN
+  CREW
+  EMPLOYEE_SELF_SERVICE
+  EXTERNAL_OWNER
+  EXTERNAL_SUB
+  EXTERNAL_BOND
+}
+
+model User {
+  id          String   @id @default(cuid())
+  companyId   String
+  email       String   @unique
+  firstName   String
+  lastName    String
+  phone       String?
+  role        UserRole
+  supabaseUid String?  @unique
+  lastLoginAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  company   Company   @relation(fields: [companyId], references: [id])
+  employee  Employee?
+
+  @@index([companyId])
+  @@map("users")
+}
+
+// ──────────────────────────────────────────────────────────────
+// People & employees
+// ──────────────────────────────────────────────────────────────
+
+enum EmployeeStatus {
+  ACTIVE
+  ON_LEAVE
+  TERMINATED
+}
+
+model Employee {
+  id              String         @id @default(cuid())
+  companyId       String
+  userId          String?        @unique
+  firstName       String
+  lastName        String
+  hireDate        DateTime
+  terminationDate DateTime?
+  status          EmployeeStatus @default(ACTIVE)
+  classification  String         // "Operator Grp 4", "Laborer Grp 2", etc.
+  homeCounty      String?        // used for prevailing wage area lookup
+  gustoEmployeeId String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  deletedAt       DateTime?
+
+  company         Company               @relation(fields: [companyId], references: [id])
+  user            User?                 @relation(fields: [userId], references: [id])
+  certifications  EmployeeCertification[]
+
+  @@index([companyId])
+  @@map("employees")
+}
+
+model EmployeeCertification {
+  id          String   @id @default(cuid())
+  employeeId  String
+  name        String   // "OSHA 10", "Flagger", "Class A CDL", etc.
+  issuer      String?
+  number      String?
+  issuedAt    DateTime?
+  expiresAt   DateTime?
+  fileUrl     String?  // uploaded cert card
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+
+  @@index([employeeId])
+  @@index([expiresAt])
+  @@map("employee_certifications")
+}
+
+// ──────────────────────────────────────────────────────────────
+// Customers & jobs
+// ──────────────────────────────────────────────────────────────
+
+enum CustomerType {
+  PUBLIC_AGENCY
+  PRIVATE
+  UTILITY
+  OTHER
+}
+
+model Customer {
+  id          String       @id @default(cuid())
+  companyId   String
+  name        String
+  type        CustomerType
+  contactName String?
+  contactEmail String?
+  contactPhone String?
+  addressLine String?
+  city        String?
+  state       String?
+  zip         String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  deletedAt   DateTime?
+
+  company Company @relation(fields: [companyId], references: [id])
+  jobs    Job[]
+
+  @@index([companyId])
+  @@map("customers")
+}
+
+enum JobStatus {
+  BIDDING
+  AWARDED
+  ACTIVE
+  ON_HOLD
+  CLOSED
+  LOST
+}
+
+enum RateType {
+  PW         // CA Prevailing Wage
+  DB         // Davis-Bacon (federal)
+  IBEW       // Union electrical
+  PRIVATE
+}
+
+model Job {
+  id           String    @id @default(cuid())
+  companyId    String
+  customerId   String
+  jobNumber    String    // "26-001"
+  name         String    // "Sulphur Springs Road Improvement"
+  contractNum  String?   // "1CA07840"
+  county       String?
+  status       JobStatus @default(BIDDING)
+  rateType     RateType  @default(PW)
+  estStart     DateTime?
+  estEnd       DateTime?
+  actualStart  DateTime?
+  actualEnd    DateTime?
+  bondRequired Boolean   @default(false)
+  retentionPct Decimal   @default(0.05) @db.Decimal(5, 4) // CA PCC §7107 caps at 5%
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  company   Company    @relation(fields: [companyId], references: [id])
+  customer  Customer   @relation(fields: [customerId], references: [id])
+  estimates Estimate[]
+
+  @@unique([companyId, jobNumber])
+  @@index([companyId])
+  @@index([customerId])
+  @@index([status])
+  @@map("jobs")
+}
+
+// ──────────────────────────────────────────────────────────────
+// Estimates
+// ──────────────────────────────────────────────────────────────
+
+enum EstimateStatus {
+  DRAFT
+  SUBMITTED
+  AWARDED
+  LOST
+  WITHDRAWN
+}
+
+model Estimate {
+  id             String         @id @default(cuid())
+  companyId      String
+  jobId          String
+  revision       Int            @default(1)
+  status         EstimateStatus @default(DRAFT)
+  oppAmountCents BigInt         @default(0)  // O&P markup cents
+  oppPercent     Decimal        @default(0.20) @db.Decimal(5, 4)
+  submittedAt    DateTime?
+  awardedAt      DateTime?
+  aiGenerated    Boolean        @default(false)  // true if Plans-to-Estimate drafted
+  aiPromptVer    String?
+  notes          String?        @db.Text
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  deletedAt      DateTime?
+
+  company  Company   @relation(fields: [companyId], references: [id])
+  job      Job       @relation(fields: [jobId], references: [id])
+  bidItems BidItem[]
+
+  @@index([companyId])
+  @@index([jobId])
+  @@map("estimates")
+}
+
+model BidItem {
+  id          String  @id @default(cuid())
+  estimateId  String
+  itemNumber  Int     // 1, 2, 3, ...
+  name        String  // "Mobilization", "Site DRC #1: 18" Ditch Relief Culvert"
+  description String? @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  estimate  Estimate   @relation(fields: [estimateId], references: [id], onDelete: Cascade)
+  costLines CostLine[]
+
+  @@index([estimateId])
+  @@map("bid_items")
+}
+
+enum CostLineCategory {
+  LABOR
+  EQUIPMENT_OWNED
+  EQUIPMENT_RENTAL
+  MATERIAL
+  SUBCONTRACT
+  OTHER
+}
+
+model CostLine {
+  id           String           @id @default(cuid())
+  bidItemId    String
+  category     CostLineCategory
+  costCodeId   String?
+  // One of these rate references is set based on category:
+  laborRateId       String?
+  equipmentRateId   String?
+  equipmentRentalId String?
+  materialId        String?
+  subcontractorId   String?
+  // Literal override (sub/other where no rate ref exists)
+  literalDescription String?
+  literalUnitCost    Int?     // cents
+  // Line data
+  quantity    Decimal @db.Decimal(14, 4)
+  unit        String
+  otMultiplier Decimal @default(1) @db.Decimal(4, 2)
+  notes       String? @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  bidItem          BidItem           @relation(fields: [bidItemId], references: [id], onDelete: Cascade)
+  costCode         CostCode?         @relation(fields: [costCodeId], references: [id])
+  laborRate        LaborRate?        @relation(fields: [laborRateId], references: [id])
+  equipmentRate    EquipmentRate?    @relation(fields: [equipmentRateId], references: [id])
+  equipmentRental  EquipmentRental?  @relation(fields: [equipmentRentalId], references: [id])
+  material         Material?         @relation(fields: [materialId], references: [id])
+  subcontractor    Subcontractor?    @relation(fields: [subcontractorId], references: [id])
+
+  @@index([bidItemId])
+  @@index([costCodeId])
+  @@map("cost_lines")
+}
+
+// ──────────────────────────────────────────────────────────────
+// Rate tables
+// ──────────────────────────────────────────────────────────────
+
+model CostCode {
+  id        String   @id @default(cuid())
+  companyId String
+  code      String   // e.g. "01-00" Mobilization
+  name      String
+  category  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  company   Company    @relation(fields: [companyId], references: [id])
+  costLines CostLine[]
+
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@map("cost_codes")
+}
+
+model LaborRate {
+  id             String   @id @default(cuid())
+  companyId      String
+  code           String   // e.g. "LAB-OE-EXC4"
+  classification String   // e.g. "Operator Group 4 — Excavator/Dozer"
+  area           Int?     // CA DIR area (1, 2, ...)
+  burdenPct      Decimal  @db.Decimal(5, 4)
+  // Base rates stored as cents per hour. One per rate type.
+  baseCentsPrivate Int
+  baseCentsPW      Int
+  baseCentsDB      Int
+  baseCentsIBEW    Int?
+  effectiveFrom    DateTime
+  effectiveTo      DateTime?
+  source           String?  // "CA DIR 2026-01 General Determination"
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  deletedAt        DateTime?
+
+  company   Company    @relation(fields: [companyId], references: [id])
+  costLines CostLine[]
+
+  @@unique([companyId, code, effectiveFrom])
+  @@index([companyId])
+  @@map("labor_rates")
+}
+
+enum EquipmentOwnership {
+  OWNED
+  RENTED
+}
+
+model EquipmentRate {
+  id          String   @id @default(cuid())
+  companyId   String
+  code        String   // "EQP-EX-20T"
+  name        String   // "Excavator 24-ton (Cat 324 or equivalent)"
+  hourlyCents Int      // internal cost rate per hour
+  ownerModel  String?  // "Cat 324"
+  serialNum   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  company   Company    @relation(fields: [companyId], references: [id])
+  costLines CostLine[]
+
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@map("equipment_rates")
+}
+
+model EquipmentRental {
+  id          String   @id @default(cuid())
+  companyId   String
+  code        String   // "EQP-R-DZ-D4K2"
+  name        String   // "Dozer Cat D4K2"
+  hourlyCents Int?
+  dailyCents  Int?
+  weeklyCents Int?
+  monthlyCents Int?
+  vendor      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  company   Company    @relation(fields: [companyId], references: [id])
+  costLines CostLine[]
+
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@map("equipment_rentals")
+}
+
+model Material {
+  id          String   @id @default(cuid())
+  companyId   String
+  code        String   // "MAT-CMP-18"
+  name        String   // "CMP 18\" diameter, galvanized"
+  unit        String   // "LF", "TON", "EA", "LS"
+  unitCostCents Int
+  vendor      String?
+  lastQuotedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  company   Company    @relation(fields: [companyId], references: [id])
+  costLines CostLine[]
+
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@map("materials")
+}
+
+model Subcontractor {
+  id          String   @id @default(cuid())
+  companyId   String
+  name        String
+  trade       String?
+  contactName String?
+  phone       String?
+  email       String?
+  cslb        String?
+  dir         String?
+  insuranceExpiresAt DateTime?
+  w9OnFile    Boolean  @default(false)
+  preQualified Boolean @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  company   Company    @relation(fields: [companyId], references: [id])
+  costLines CostLine[]
+
+  @@index([companyId])
+  @@map("subcontractors")
+}
+
+// ──────────────────────────────────────────────────────────────
+// Master business profile (for PDF + web form auto-fill)
+// ──────────────────────────────────────────────────────────────
+
+model BondingProfile {
+  id             String  @id @default(cuid())
+  companyId      String
+  agentName      String
+  agencyName     String
+  agentPhone     String?
+  agentEmail     String?
+  singleJobCapCents BigInt
+  aggregateCapCents BigInt
+  rate           Decimal @db.Decimal(6, 4) // e.g. 0.0100 = 1%
+  effectiveFrom  DateTime
+  effectiveTo    DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@map("bonding_profiles")
+}
+
+enum InsuranceKind {
+  GENERAL_LIABILITY
+  AUTO
+  WORKERS_COMP
+  POLLUTION
+  UMBRELLA
+  PROFESSIONAL
+}
+
+model InsurancePolicy {
+  id             String        @id @default(cuid())
+  companyId      String
+  kind           InsuranceKind
+  carrier        String
+  policyNumber   String
+  limitCents     BigInt
+  deductibleCents Int          @default(0)
+  effectiveFrom  DateTime
+  effectiveTo    DateTime
+  certFileUrl    String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@index([effectiveTo])
+  @@map("insurance_policies")
+}
+
+model Officer {
+  id        String   @id @default(cuid())
+  companyId String
+  firstName String
+  lastName  String
+  title     String   // "President", "Vice President"
+  phone     String?
+  email     String?
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@map("officers")
+}
+
+// ──────────────────────────────────────────────────────────────
+// Audit log
+// ──────────────────────────────────────────────────────────────
+
+model AuditEvent {
+  id          String   @id @default(cuid())
+  companyId   String
+  actorUserId String?
+  action      String   // "estimate.update", "employee.terminate", etc.
+  entityType  String   // "Estimate"
+  entityId    String
+  before      Json?
+  after       Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@index([companyId, createdAt])
+  @@index([entityType, entityId])
+  @@map("audit_events")
+}
