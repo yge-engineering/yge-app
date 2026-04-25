@@ -66,8 +66,9 @@ export default function PlansToEstimatePage() {
         setJobs(res.jobs);
         // If nothing pre-selected, default to the first job in the list (the
         // newest one) so the dropdown isn't empty.
-        if (!preselectedJobId && res.jobs.length > 0) {
-          setSelectedJobId(res.jobs[0].id);
+        const firstJob = res.jobs[0];
+        if (!preselectedJobId && firstJob) {
+          setSelectedJobId(firstJob.id);
         }
       } catch (err) {
         if (cancelled) return;

@@ -1,12 +1,20 @@
 // Zod schemas shared between web, API, and mobile.
 // Every API input must pass through one of these before touching Prisma.
+//
+// NOTE: this file pre-dates Phase 1's file-backed Job module (`./job.ts`).
+// The schemas here describe the *future* Postgres-backed Job lifecycle
+// (BIDDING → AWARDED → ACTIVE → ...) and aren't imported anywhere yet.
+// To avoid a name collision with the active pursuit-pipeline statuses in
+// `./job.ts` (PROSPECT / PURSUING / BID_SUBMITTED / ...), the legacy
+// status enum is exported as `LegacyJobStatusSchema`. When the Postgres
+// Job model lands we'll consolidate the two and drop this prefix.
 
 import { z } from 'zod';
 
 export const RateTypeSchema = z.enum(['PRIVATE', 'PW', 'DB', 'IBEW']);
 export type RateTypeValue = z.infer<typeof RateTypeSchema>;
 
-export const JobStatusSchema = z.enum([
+export const LegacyJobStatusSchema = z.enum([
   'BIDDING',
   'AWARDED',
   'ACTIVE',
@@ -21,7 +29,7 @@ export const CreateJobInputSchema = z.object({
   name: z.string().min(1).max(200),
   contractNum: z.string().max(80).optional(),
   county: z.string().max(60).optional(),
-  status: JobStatusSchema.default('BIDDING'),
+  status: LegacyJobStatusSchema.default('BIDDING'),
   rateType: RateTypeSchema.default('PW'),
   estStart: z.coerce.date().optional(),
   estEnd: z.coerce.date().optional(),
