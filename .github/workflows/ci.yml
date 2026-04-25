@@ -44,5 +44,8 @@ jobs:
         env:
           DATABASE_URL: postgresql://yge:yge_dev_password@localhost:5432/yge_dev?schema=public
       - run: pnpm typecheck
-      - run: pnpm lint
+      # Lint disabled for now — repo doesn't have an ESLint config yet, so
+      # `eslint .` fails with "No files matching the pattern '.' were found"
+      # in packages that have no js. Re-enable after adding eslint.config.js.
+      # - run: pnpm lint
       - run: pnpm test
