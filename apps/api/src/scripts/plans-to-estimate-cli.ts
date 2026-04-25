@@ -39,6 +39,7 @@ function parseArgs(argv: string[]): CliArgs {
 
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
+    if (a === undefined) continue;
     if (a === '--notes' || a === '-n') {
       notes = args[++i];
     } else if (!a.startsWith('-') && !filePath) {

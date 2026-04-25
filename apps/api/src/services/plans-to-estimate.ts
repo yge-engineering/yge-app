@@ -2,7 +2,9 @@
 // The endpoint is responsible for fetching files / extracting text; this layer
 // only knows how to ask Claude for a draft and parse the result.
 
-import type Anthropic from '@anthropic-ai/sdk';
+// SDK 0.20.9's exported types are too thin for tool use. Drop the
+// type-only namespace import and just structurally type SUBMIT_TOOL —
+// the runtime call still goes through the typed `anthropic` client.
 import { anthropic, DEFAULT_MODEL } from '../lib/anthropic';
 import { SYSTEM_PROMPT, buildUserMessage, PROMPT_VERSION } from '../lib/prompts/plans-to-estimate-v1';
 import { PtoEOutputSchema, type PtoEOutput } from '@yge/shared';
@@ -25,7 +27,13 @@ export interface RunPlansToEstimateResult {
   promptVersion: string;
 }
 
-const SUBMIT_TOOL: Anthropic.Tool = {
+interface SubmitTool {
+  name: string;
+  description: string;
+  input_schema: Record<string, unknown>;
+}
+
+const SUBMIT_TOOL: SubmitTool = {
   name: 'submit_draft_estimate',
   description:
     'Submit the draft estimate after reading the project document. Call this exactly once.',
@@ -73,9 +81,14 @@ const SUBMIT_TOOL: Anthropic.Tool = {
 };
 
 export class PlansToEstimateError extends Error {
-  constructor(message: string, public readonly cause?: unknown) {
+  // `cause` exists on the modern Error type; declare with `override` and keep
+  // it as a regular field rather than a parameter property so we satisfy
+  // tsconfig's noImplicitOverride.
+  public override readonly cause?: unknown;
+  constructor(message: string, cause?: unknown) {
     super(message);
     this.name = 'PlansToEstimateError';
+    this.cause = cause;
   }
 }
 
@@ -90,18 +103,20 @@ export async function runPlansToEstimate(
   const model = input.model ?? DEFAULT_MODEL;
 
   // NOTE: @anthropic-ai/sdk@0.20.9 (pinned via lockfile) ships incomplete
-  // tool-use types — `tools`/`tool_choice` aren't on MessageCreateParamsBase
-  // and ToolUseBlock isn't properly discriminated from TextBlock. Both work
-  // at runtime; we cast through `any` in two narrow places so typecheck
+  // tool-use types — `tools`/`tool_choice` aren't on MessageCreateParamsBase,
+  // ToolUseBlock isn't discriminated from TextBlock, and the response union
+  // includes Stream<MessageStreamEvent> with no `usage`/`content`/`stop_reason`.
+  // Everything works at runtime; we cast both sides through any so typecheck
   // passes. When we bump the SDK these casts can come out.
-  const response = await client.messages.create({
+  const createParams: any = {
     model,
     max_tokens: 4096,
     system: SYSTEM_PROMPT,
     tools: [SUBMIT_TOOL],
     tool_choice: { type: 'tool', name: SUBMIT_TOOL.name },
     messages: [{ role: 'user', content: buildUserMessage(input.documentText, input.sessionNotes) }],
-  } as Anthropic.MessageCreateParams);
+  };
+  const response: any = await client.messages.create(createParams);
 
   const toolUse = response.content.find(
     (b: { type: string }) => b.type === 'tool_use',
