@@ -199,6 +199,12 @@ export default async function EstimatesPage() {
                     >
                       Cover
                     </Link>
+                    <Link
+                      href={`/estimates/${e.id}/envelope`}
+                      className="mr-3 text-yge-blue-500 hover:underline"
+                    >
+                      Envelope
+                    </Link>
                     <a
                       href={`${publicApiBaseUrl()}/api/priced-estimates/${e.id}/export.csv`}
                       className="text-yge-blue-500 hover:underline"

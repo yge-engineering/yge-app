@@ -159,6 +159,15 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
             >
               Cover letter
             </a>
+            <a
+              href={`/estimates/${estimate.id}/envelope`}
+              className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50"
+              title="Open the printable bid envelope checklist (sealed bid form, license, DIR, security, addenda...)"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Envelope checklist
+            </a>
           </div>
         </div>
         <TotalsCard totals={totals} oppPercent={estimate.oppPercent} />

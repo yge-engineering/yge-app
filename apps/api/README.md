@@ -241,6 +241,18 @@ Web pages:
   default. The structured letter is built by `buildTransmittal()` in
   `@yge/shared/transmittal.ts` so the AP/PDF generators landing later
   can reuse the same content shape.
+- `/estimates/:id/envelope` — print-ready bid envelope checklist. The
+  last-mile manifest the estimator ticks off as they physically stuff
+  the envelope: sealed bid form, signed cover letter, sub list (when
+  there are subs), bid security with surety + bond number, individual
+  addendum acknowledgments, CSLB + DIR certificate copies, envelope
+  marked with the bid due date, and a duplicate copy for the file. Any
+  required row that's missing or unresolved (no security configured,
+  un-acked addenda) prints in red so the estimator catches it before
+  sealing. The structured checklist is built by
+  `buildEnvelopeChecklist()` in `@yge/shared/bid-envelope-checklist.ts`
+  and consumes the same `PricedEstimate` + totals shape as the print
+  and transmittal pages.
 
 The estimate editor (`/estimates/:id`) also exposes a **Subcontractor
 list** section. Each row is a sub the prime intends to use; the UI tags

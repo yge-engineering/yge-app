@@ -12,3 +12,4 @@ export * from './addendum';
 export * from './bid-checklist';
 export * from './job';
 export * from './transmittal';
+export * from './bid-envelope-checklist';

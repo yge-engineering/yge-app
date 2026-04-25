@@ -78,6 +78,12 @@ export default async function TransmittalPage({
             >
               Bid summary
             </Link>
+            <Link
+              href={`/estimates/${estimate.id}/envelope`}
+              className="text-yge-blue-500 hover:underline"
+            >
+              Envelope checklist
+            </Link>
           </div>
           <PrintButton />
         </div>

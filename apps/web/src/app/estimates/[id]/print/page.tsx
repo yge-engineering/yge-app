@@ -113,6 +113,12 @@ export default async function PrintBidPage({
             >
               Cover letter
             </Link>
+            <Link
+              href={`/estimates/${estimate.id}/envelope`}
+              className="text-yge-blue-500 hover:underline"
+            >
+              Envelope checklist
+            </Link>
           </div>
           <div className="flex items-center gap-3">
             <span className="text-xs text-gray-500">
