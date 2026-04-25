@@ -20,6 +20,23 @@ Export of YGE's current Excel job cost system master tables. Populates labor rat
 
 Not committed to git (contains real rate data). Ryan and Brook place a fresh export here when rates change.
 
+## `sample-rfp/`
+
+Synthetic RFP text for smoke-testing the Plans-to-Estimate AI without a real
+bid. These are fake jobs that resemble the kinds of work YGE bids — close
+enough to test the AI's understanding, but not pulled from any real RFP.
+
+- `cottonwood-creek-drainage.txt` — small drainage / culvert replacement job
+  in Tehama County. About 13 bid items, mix of LS / LF / CY / TON / EA / ACRE.
+
+To dry-run the AI against one:
+
+```bash
+pnpm --filter @yge/api dry-run:ptoe -- seeds/sample-rfp/cottonwood-creek-drainage.txt
+```
+
+See `apps/api/README.md` for full setup.
+
 ## Loading
 
 ```bash
