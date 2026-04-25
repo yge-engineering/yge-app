@@ -9,3 +9,6 @@ export * from './company';
 export * from './sub-bid';
 export * from './bid-security';
 export * from './addendum';
+export * from './bid-checklist';
+export * from './job';
+export * from './transmittal';

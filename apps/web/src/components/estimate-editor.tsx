@@ -22,6 +22,7 @@ import {
 import { SubBidEditor } from './sub-bid-editor';
 import { BidSecurityEditor } from './bid-security-editor';
 import { AddendumEditor } from './addendum-editor';
+import { BidChecklistBanner } from './bid-checklist-banner';
 
 interface Props {
   initialEstimate: PricedEstimate;
@@ -149,6 +150,15 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
             >
               Print bid summary
             </a>
+            <a
+              href={`/estimates/${estimate.id}/transmittal`}
+              className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50"
+              title="Open the printable cover letter for the bid envelope"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Cover letter
+            </a>
           </div>
         </div>
         <TotalsCard totals={totals} oppPercent={estimate.oppPercent} />
@@ -159,6 +169,8 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
           Couldn&rsquo;t save: {error}
         </div>
       )}
+
+      <BidChecklistBanner estimate={estimate} totals={totals} />
 
       <section>
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-500">

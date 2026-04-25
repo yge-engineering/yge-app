@@ -16,18 +16,21 @@ export class ApiError extends Error {
   }
 }
 
-export async function postJson<TResponse>(
+async function jsonRequest<TResponse>(
+  method: 'POST' | 'PATCH' | 'PUT' | 'GET',
   path: string,
-  body: unknown,
+  body?: unknown,
   signal?: AbortSignal,
 ): Promise<TResponse> {
   const url = path.startsWith('http') ? path : `${API_BASE_URL}${path}`;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+  const init: RequestInit = {
+    method,
+    headers:
+      body !== undefined ? { 'Content-Type': 'application/json' } : undefined,
+    body: body !== undefined ? JSON.stringify(body) : undefined,
     signal,
-  });
+  };
+  const res = await fetch(url, init);
 
   const text = await res.text();
   let parsed: unknown = null;
@@ -48,4 +51,27 @@ export async function postJson<TResponse>(
   }
 
   return parsed as TResponse;
+}
+
+export function postJson<TResponse>(
+  path: string,
+  body: unknown,
+  signal?: AbortSignal,
+): Promise<TResponse> {
+  return jsonRequest<TResponse>('POST', path, body, signal);
+}
+
+export function patchJson<TResponse>(
+  path: string,
+  body: unknown,
+  signal?: AbortSignal,
+): Promise<TResponse> {
+  return jsonRequest<TResponse>('PATCH', path, body, signal);
+}
+
+export function getJson<TResponse>(
+  path: string,
+  signal?: AbortSignal,
+): Promise<TResponse> {
+  return jsonRequest<TResponse>('GET', path, undefined, signal);
 }

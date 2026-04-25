@@ -11,10 +11,11 @@
 // estimators can re-open prior runs from /drafts without paying Anthropic
 // again to redraft the same RFP.
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import type { PtoEOutput } from '@yge/shared';
-import { ApiError, postJson } from '@/lib/api';
+import { useSearchParams } from 'next/navigation';
+import type { Job, PtoEOutput } from '@yge/shared';
+import { ApiError, getJson, postJson } from '@/lib/api';
 import { DraftView } from '@/components/draft-view';
 
 interface ApiResult {
@@ -39,17 +40,10 @@ Example sources:
 The AI will read it and draft a bid item list with quantities, units, and
 flagged uncertainties. You review and refine before submitting.`;
 
-// Generate a temporary cuid-like id for the jobId field. The real job-creation
-// flow comes later; the API still requires a cuid-shaped string today.
-function makeTempJobId(): string {
-  // Real cuid format starts with "c" and is ~25 chars. Random alpha is fine.
-  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-  let id = 'c';
-  for (let i = 0; i < 24; i++) id += chars[Math.floor(Math.random() * chars.length)];
-  return id;
-}
-
 export default function PlansToEstimatePage() {
+  const searchParams = useSearchParams();
+  const preselectedJobId = searchParams.get('jobId') ?? '';
+
   const [documentText, setDocumentText] = useState('');
   const [sessionNotes, setSessionNotes] = useState('');
   const [loading, setLoading] = useState(false);
@@ -57,10 +51,45 @@ export default function PlansToEstimatePage() {
   const [result, setResult] = useState<ApiResult | null>(null);
   const [elapsedMs, setElapsedMs] = useState<number | null>(null);
 
+  // Job picker — populates from /api/jobs on mount. If the URL has ?jobId=, we
+  // pre-select that one. Otherwise the estimator picks from the dropdown.
+  const [jobs, setJobs] = useState<Job[] | null>(null);
+  const [jobsError, setJobsError] = useState<string | null>(null);
+  const [selectedJobId, setSelectedJobId] = useState<string>(preselectedJobId);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await getJson<{ jobs: Job[] }>('/api/jobs');
+        if (cancelled) return;
+        setJobs(res.jobs);
+        // If nothing pre-selected, default to the first job in the list (the
+        // newest one) so the dropdown isn't empty.
+        if (!preselectedJobId && res.jobs.length > 0) {
+          setSelectedJobId(res.jobs[0].id);
+        }
+      } catch (err) {
+        if (cancelled) return;
+        setJobsError(err instanceof Error ? err.message : 'Unknown error');
+        setJobs([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [preselectedJobId]);
+
   async function handleGenerate() {
     setError(null);
     setResult(null);
     setElapsedMs(null);
+    if (!selectedJobId) {
+      setError(
+        'Pick a job first. Create one on the Jobs page if you don\u2019t have one yet.',
+      );
+      return;
+    }
     if (documentText.trim().length < 20) {
       setError('Document text is too short — paste at least a couple of paragraphs.');
       return;
@@ -70,7 +99,7 @@ export default function PlansToEstimatePage() {
     const start = Date.now();
     try {
       const res = await postJson<ApiResult>('/api/plans-to-estimate', {
-        jobId: makeTempJobId(),
+        jobId: selectedJobId,
         documentText,
         sessionNotes: sessionNotes.trim() || undefined,
       });
@@ -110,6 +139,56 @@ export default function PlansToEstimatePage() {
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="space-y-4">
           <div>
+            <label htmlFor="job" className="block text-sm font-semibold text-gray-700">
+              Job
+            </label>
+            {jobs === null ? (
+              <p className="mt-1 text-xs text-gray-500">Loading jobs&hellip;</p>
+            ) : jobs.length === 0 ? (
+              <p className="mt-1 text-sm text-gray-700">
+                No jobs yet.{' '}
+                <Link
+                  href="/jobs/new"
+                  className="text-yge-blue-500 hover:underline"
+                >
+                  Create one first &rarr;
+                </Link>
+              </p>
+            ) : (
+              <>
+                <select
+                  id="job"
+                  value={selectedJobId}
+                  onChange={(e) => setSelectedJobId(e.target.value)}
+                  className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
+                  disabled={loading}
+                >
+                  {jobs.map((j) => (
+                    <option key={j.id} value={j.id}>
+                      {j.projectName}
+                      {j.ownerAgency ? ` — ${j.ownerAgency}` : ''}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-gray-500">
+                  Drafts are saved against the selected job.{' '}
+                  <Link
+                    href="/jobs/new"
+                    className="text-yge-blue-500 hover:underline"
+                  >
+                    + new job
+                  </Link>
+                </p>
+              </>
+            )}
+            {jobsError && (
+              <p className="mt-1 text-xs text-red-700">
+                Couldn&rsquo;t load jobs: {jobsError}
+              </p>
+            )}
+          </div>
+
+          <div>
             <label htmlFor="doc" className="block text-sm font-semibold text-gray-700">
               Document text
             </label>
@@ -142,7 +221,9 @@ export default function PlansToEstimatePage() {
 
           <button
             onClick={handleGenerate}
-            disabled={loading || documentText.trim().length === 0}
+            disabled={
+              loading || documentText.trim().length === 0 || !selectedJobId
+            }
             className="rounded bg-yge-blue-500 px-6 py-3 text-white hover:bg-yge-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading ? 'Generating draft… (30-90s)' : 'Generate Draft Estimate'}

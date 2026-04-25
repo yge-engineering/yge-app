@@ -100,12 +100,20 @@ export default async function PrintBidPage({
 
       <div className="no-print bg-gray-100 px-8 py-3 text-sm text-gray-700">
         <div className="mx-auto flex max-w-4xl items-center justify-between">
-          <Link
-            href={`/estimates/${estimate.id}`}
-            className="text-yge-blue-500 hover:underline"
-          >
-            &larr; Back to editor
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link
+              href={`/estimates/${estimate.id}`}
+              className="text-yge-blue-500 hover:underline"
+            >
+              &larr; Back to editor
+            </Link>
+            <Link
+              href={`/estimates/${estimate.id}/transmittal`}
+              className="text-yge-blue-500 hover:underline"
+            >
+              Cover letter
+            </Link>
+          </div>
           <div className="flex items-center gap-3">
             <span className="text-xs text-gray-500">
               {totals.unpricedLineCount > 0

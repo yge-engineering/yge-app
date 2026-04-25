@@ -1,51 +1,63 @@
+// Jobs routes — Phase 1 file-backed stand-in for the future Postgres
+// `Job` table. Same pattern as drafts and priced-estimates: a small
+// JSON-on-disk store behind a function surface that maps 1:1 to a Prisma
+// repository so the route + UI don't change when Postgres lands.
+
 import { Router } from 'express';
-import { prisma } from '@yge/db';
-import { CreateJobInputSchema } from '@yge/shared';
+import { JobCreateSchema, JobPatchSchema } from '@yge/shared';
+import { createJob, getJob, listJobs, updateJob } from '../lib/jobs-store';
 
 export const jobsRouter = Router();
 
-// Temporary: hardcoded YGE tenant scope until auth lands.
-const DEFAULT_COMPANY_ID = 'yge-root';
-
+// GET /api/jobs — newest-first list of every job.
 jobsRouter.get('/', async (_req, res, next) => {
   try {
-    const jobs = await prisma.job.findMany({
-      where: { companyId: DEFAULT_COMPANY_ID, deletedAt: null },
-      include: { customer: true },
-      orderBy: { createdAt: 'desc' },
-    });
-    res.json({ jobs });
+    const jobs = await listJobs();
+    return res.json({ jobs });
   } catch (err) {
     next(err);
   }
 });
 
-jobsRouter.post('/', async (req, res, next) => {
-  try {
-    const parsed = CreateJobInputSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({ error: 'Validation failed', issues: parsed.error.issues });
-    }
-    const job = await prisma.job.create({
-      data: {
-        ...parsed.data,
-        companyId: DEFAULT_COMPANY_ID,
-      },
-    });
-    res.status(201).json({ job });
-  } catch (err) {
-    next(err);
-  }
-});
-
+// GET /api/jobs/:id — full job record.
 jobsRouter.get('/:id', async (req, res, next) => {
   try {
-    const job = await prisma.job.findFirst({
-      where: { id: req.params.id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
-      include: { customer: true, estimates: true },
-    });
-    if (!job) return res.status(404).json({ error: 'Not Found' });
-    res.json({ job });
+    const job = await getJob(req.params.id);
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+    return res.json({ job });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/jobs — create a new job.
+jobsRouter.post('/', async (req, res, next) => {
+  try {
+    const parsed = JobCreateSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res
+        .status(400)
+        .json({ error: 'Validation failed', issues: parsed.error.issues });
+    }
+    const job = await createJob(parsed.data);
+    return res.status(201).json({ job });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /api/jobs/:id — partial update.
+jobsRouter.patch('/:id', async (req, res, next) => {
+  try {
+    const parsed = JobPatchSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res
+        .status(400)
+        .json({ error: 'Validation failed', issues: parsed.error.issues });
+    }
+    const updated = await updateJob(req.params.id, parsed.data);
+    if (!updated) return res.status(404).json({ error: 'Job not found' });
+    return res.json({ job: updated });
   } catch (err) {
     next(err);
   }

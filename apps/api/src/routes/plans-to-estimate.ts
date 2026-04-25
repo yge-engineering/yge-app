@@ -14,8 +14,11 @@ import { saveDraft, listDrafts, getDraft } from '../lib/drafts-store';
 
 export const plansToEstimateRouter = Router();
 
+// jobId format matches the file-backed jobs store id format
+// (`job-YYYY-MM-DD-slug-<8hex>`). When Postgres lands and ids become CUIDs we
+// loosen this back to z.string().cuid().
 const InlineInputSchema = z.object({
-  jobId: z.string().cuid(),
+  jobId: z.string().regex(/^job-[a-z0-9-]{10,80}$/),
   documentText: z.string().min(20).max(500_000),
   sessionNotes: z.string().max(5_000).optional(),
 });

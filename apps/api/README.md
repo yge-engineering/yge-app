@@ -116,6 +116,49 @@ pnpm --filter @yge/api dry-run:ptoe -- doc.txt --notes "Mandatory site walk Tue 
 
 Notes get tagged as priority context in the prompt.
 
+## Jobs
+
+A **job** is the unit of work YGE bids on. One job spawns 0..N drafts
+(Plans-to-Estimate runs) and 0..N priced estimates. The job carries the
+project *constants* — owner agency, location, contract type, status,
+who's pursuing it, the agency's engineer's estimate — while each priced
+estimate carries the bid math.
+
+Jobs are file-backed in Phase 1 (same pattern as drafts and priced
+estimates): each job is a JSON file under `apps/api/data/jobs/` with a
+small `index.json` for the list view. The surface area maps 1:1 to a
+future Prisma `Job` table so the route + UI don't change when Postgres
+lands.
+
+API endpoints (mounted at `/api/jobs`):
+
+- `GET /api/jobs` — newest-first list of every job.
+- `GET /api/jobs/:id` — full job record.
+- `POST /api/jobs` — create a new job. Body matches `JobCreateSchema`
+  in `@yge/shared`: required `projectName`, `projectType`, `contractType`;
+  optional `status` (defaults to `PURSUING`), `ownerAgency`, `location`,
+  `bidDueDate`, `engineersEstimateCents`, `pursuitOwner`, `notes`.
+- `PATCH /api/jobs/:id` — partial update; every field optional.
+
+Job ids are URL-safe and human-scannable: `job-YYYY-MM-DD-slug-<8hex>`.
+The id format is enforced on read so a malformed `:id` (or path-traversal
+attempt) returns 404 cleanly.
+
+Web pages:
+
+- `/jobs` — every job in the pursuit pipeline with a colored status pill
+  (Prospect / Pursuing / Bid submitted / Awarded / Lost / No bid /
+  Archived), contract type, due date, and engineer's estimate.
+- `/jobs/new` — create form. Save jumps straight to the detail page.
+- `/jobs/:id` — detail view. Inline status editor, every metadata field,
+  and the list of drafts + priced estimates that belong to this job
+  with quick links into them.
+
+The Plans-to-Estimate page (`/plans-to-estimate`) now requires picking a
+real job from a dropdown before generating a draft (deep-link via
+`?jobId=...` from the job detail page). That ties the saved draft to the
+right job so the detail page can find it.
+
 ## Saved drafts (history)
 
 Every successful Plans-to-Estimate run is auto-saved to `apps/api/data/drafts/`
@@ -190,6 +233,14 @@ Web pages:
   subcontractor list (PCC §4104), and signature line. Hit *Print / Save
   as PDF* in the page header to drop straight into a PDF for the bid
   package. Logo block is a placeholder until the brand kit lands.
+- `/estimates/:id/transmittal` — print-ready cover letter that goes on
+  the OUTSIDE of the bid envelope. Names the project, lists the bid
+  total, calls out CSLB + DIR registration, and itemizes what's
+  enclosed (sealed bid form, sub list, bid security, addenda
+  acknowledgments, license + DIR proofs). Signed by the company VP by
+  default. The structured letter is built by `buildTransmittal()` in
+  `@yge/shared/transmittal.ts` so the AP/PDF generators landing later
+  can reuse the same content shape.
 
 The estimate editor (`/estimates/:id`) also exposes a **Subcontractor
 list** section. Each row is a sub the prime intends to use; the UI tags
