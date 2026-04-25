@@ -35,6 +35,7 @@ plansToEstimateRouter.post('/', async (req, res, next) => {
     return res.json({
       jobId: parsed.data.jobId,
       modelUsed: result.modelUsed,
+      promptVersion: result.promptVersion,
       usage: result.usage,
       draft: result.output,
     });

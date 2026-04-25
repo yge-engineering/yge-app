@@ -18,6 +18,7 @@ import { ApiError, postJson } from '@/lib/api';
 interface ApiResult {
   jobId: string;
   modelUsed: string;
+  promptVersion: string;
   usage: { inputTokens: number; outputTokens: number };
   draft: PtoEOutput;
 }
@@ -160,6 +161,7 @@ export default function PlansToEstimatePage() {
             <DraftView
               draft={result.draft}
               modelUsed={result.modelUsed}
+              promptVersion={result.promptVersion}
               usage={result.usage}
               elapsedMs={elapsedMs}
             />
@@ -173,11 +175,13 @@ export default function PlansToEstimatePage() {
 function DraftView({
   draft,
   modelUsed,
+  promptVersion,
   usage,
   elapsedMs,
 }: {
   draft: PtoEOutput;
   modelUsed: string;
+  promptVersion: string;
   usage: { inputTokens: number; outputTokens: number };
   elapsedMs: number | null;
 }) {
@@ -246,8 +250,8 @@ function DraftView({
       )}
 
       <footer className="border-t border-gray-100 pt-3 text-xs text-gray-400">
-        Model: {modelUsed} · {usage.inputTokens.toLocaleString()} in /{' '}
-        {usage.outputTokens.toLocaleString()} out tokens
+        Model: {modelUsed} · Prompt: {promptVersion} ·{' '}
+        {usage.inputTokens.toLocaleString()} in / {usage.outputTokens.toLocaleString()} out tokens
         {elapsedMs != null && <> · {(elapsedMs / 1000).toFixed(1)}s</>}
       </footer>
     </div>

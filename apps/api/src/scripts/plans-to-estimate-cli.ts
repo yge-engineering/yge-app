@@ -100,7 +100,10 @@ async function main() {
   });
 
   const seconds = ((Date.now() - start) / 1000).toFixed(1);
-  process.stderr.write(`Done in ${seconds}s. Tokens: in=${result.usage.inputTokens}, out=${result.usage.outputTokens}\n\n`);
+  process.stderr.write(
+    `Done in ${seconds}s. Model: ${result.modelUsed}. Prompt: ${result.promptVersion}. ` +
+      `Tokens: in=${result.usage.inputTokens}, out=${result.usage.outputTokens}\n\n`,
+  );
 
   // Pretty summary to stdout
   process.stdout.write(summarize(result.output) + '\n\n');

@@ -4,7 +4,7 @@
 
 import type Anthropic from '@anthropic-ai/sdk';
 import { anthropic, DEFAULT_MODEL } from '../lib/anthropic';
-import { SYSTEM_PROMPT, buildUserMessage } from '../lib/plans-to-estimate-prompt';
+import { SYSTEM_PROMPT, buildUserMessage, PROMPT_VERSION } from '../lib/prompts/plans-to-estimate-v1';
 import { PtoEOutputSchema, type PtoEOutput } from '@yge/shared';
 
 export interface RunPlansToEstimateInput {
@@ -20,6 +20,9 @@ export interface RunPlansToEstimateResult {
   output: PtoEOutput;
   usage: { inputTokens: number; outputTokens: number };
   modelUsed: string;
+  /** Version tag of the prompt that produced this draft. Persist alongside
+   *  the Estimate row so we can correlate AI accuracy with prompt iterations. */
+  promptVersion: string;
 }
 
 const SUBMIT_TOOL: Anthropic.Tool = {
@@ -117,5 +120,6 @@ export async function runPlansToEstimate(
       outputTokens: response.usage.output_tokens,
     },
     modelUsed: model,
+    promptVersion: PROMPT_VERSION,
   };
 }
