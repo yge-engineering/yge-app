@@ -12,6 +12,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
   YGE_COMPANY_INFO,
+  bidSecurityAmountCents,
+  bidSecurityTypeLabel,
   centsToDollars,
   classifySubBids,
   computeEstimateTotals,
@@ -243,6 +245,63 @@ export default async function PrintBidPage({
             </tbody>
           </table>
         </section>
+
+        {/* ------- Bid security ------- */}
+        {estimate.bidSecurity && (
+          <section className="totals-block mt-6 rounded border border-gray-300 bg-gray-50 p-3">
+            <h3 className="mb-1 text-xs font-bold uppercase tracking-wide text-gray-700">
+              Bid security
+            </h3>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
+              <div>
+                <span className="text-gray-700">Type:</span>{' '}
+                <span className="font-semibold">
+                  {bidSecurityTypeLabel(estimate.bidSecurity.type)}
+                </span>
+              </div>
+              <div>
+                <span className="text-gray-700">Amount:</span>{' '}
+                <span className="font-mono font-semibold">
+                  {formatUSD(
+                    bidSecurityAmountCents(
+                      totals.bidTotalCents,
+                      estimate.bidSecurity,
+                    ),
+                  )}
+                </span>{' '}
+                <span className="text-xs text-gray-500">
+                  ({(estimate.bidSecurity.percent * 100).toFixed(1)}% of bid)
+                </span>
+              </div>
+              {estimate.bidSecurity.suretyName && (
+                <div className="col-span-2">
+                  <span className="text-gray-700">Surety:</span>{' '}
+                  {estimate.bidSecurity.suretyName}
+                  {estimate.bidSecurity.suretyAddress && (
+                    <span className="text-gray-600">
+                      {' '}
+                      &middot; {estimate.bidSecurity.suretyAddress}
+                    </span>
+                  )}
+                </div>
+              )}
+              {estimate.bidSecurity.bondNumber && (
+                <div>
+                  <span className="text-gray-700">Bond #:</span>{' '}
+                  <span className="font-mono">
+                    {estimate.bidSecurity.bondNumber}
+                  </span>
+                </div>
+              )}
+              {estimate.bidSecurity.attorneyInFact && (
+                <div>
+                  <span className="text-gray-700">Attorney-in-fact:</span>{' '}
+                  {estimate.bidSecurity.attorneyInFact}
+                </div>
+              )}
+            </div>
+          </section>
+        )}
 
         {/* ------- Subcontractor list (PCC §4104) ------- */}
         {estimate.subBids.length > 0 && (

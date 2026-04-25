@@ -7,6 +7,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import {
+  BidSecuritySchema,
   PricedBidItemSchema,
   SubBidSchema,
   computeEstimateTotals,
@@ -84,6 +85,8 @@ const UpdateBody = z.object({
   notes: z.string().max(5_000).optional(),
   bidItems: z.array(PricedBidItemSchema).min(1).optional(),
   subBids: z.array(SubBidSchema).optional(),
+  /** Pass null to clear bid security (e.g. switching to private work). */
+  bidSecurity: BidSecuritySchema.nullable().optional(),
 });
 
 // PATCH /api/priced-estimates/:id — update O&P / notes / full bid item list.

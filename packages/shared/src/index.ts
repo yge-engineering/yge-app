@@ -7,3 +7,4 @@ export * from './csv';
 export * from './priced-estimate';
 export * from './company';
 export * from './sub-bid';
+export * from './bid-security';

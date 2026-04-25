@@ -17,6 +17,7 @@ import { markupAmount } from './money';
 import { PtoEBidItemSchema, PtoEProjectTypeSchema } from './plans-to-estimate-output';
 import type { PtoEBidItem } from './plans-to-estimate-output';
 import { SubBidSchema } from './sub-bid';
+import { BidSecuritySchema } from './bid-security';
 
 /** A bid item with the estimator's unit price layered on. */
 export const PricedBidItemSchema = PtoEBidItemSchema.extend({
@@ -51,6 +52,12 @@ export const PricedEstimateSchema = z.object({
    *  estimate JSON files on disk still parse. The classification helper in
    *  `sub-bid.ts` flags which of these MUST be listed at bid open. */
   subBids: z.array(SubBidSchema).default([]),
+
+  /** Bid security that goes in the envelope on bid day. Optional because
+   *  not every job requires it (private work, small task orders) and
+   *  pre-feature files don't have it. The editor seeds a default 10% bid
+   *  bond when the user opens the section for the first time. */
+  bidSecurity: BidSecuritySchema.optional(),
 });
 export type PricedEstimate = z.infer<typeof PricedEstimateSchema>;
 

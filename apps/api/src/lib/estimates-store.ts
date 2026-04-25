@@ -11,6 +11,7 @@ import { randomBytes } from 'node:crypto';
 import {
   PricedEstimateSchema,
   blankPricedItemsFromDraft,
+  type BidSecurity,
   type PricedEstimate,
   type PricedBidItem,
   type PtoEOutput,
@@ -191,6 +192,9 @@ export interface EstimatePatch {
    *  array because individual sub edits are rare and bundling avoids the
    *  edit-in-the-middle race that per-id PATCHes would invite. */
   subBids?: SubBid[];
+  /** Replace the bid security record. Pass `null` to clear it (not every
+   *  bid needs security; some private/task-order work skips it). */
+  bidSecurity?: BidSecurity | null;
 }
 
 export async function updateEstimate(
@@ -206,6 +210,9 @@ export async function updateEstimate(
     ...(patch.notes !== undefined ? { notes: patch.notes } : {}),
     ...(patch.bidItems ? { bidItems: patch.bidItems } : {}),
     ...(patch.subBids ? { subBids: patch.subBids } : {}),
+    ...(patch.bidSecurity !== undefined
+      ? { bidSecurity: patch.bidSecurity ?? undefined }
+      : {}),
     updatedAt: new Date().toISOString(),
   };
   PricedEstimateSchema.parse(updated);

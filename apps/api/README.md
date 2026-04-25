@@ -199,6 +199,14 @@ on the bid form, or the bid is non-responsive). Threshold is `max(0.5%
 of bid total, $10,000)` for streets/highways/bridges and `0.5%` for
 other public works.
 
+The editor also exposes a **Bid security** section. Most CA public works
+require a 10% bid bond (or cashier's / certified check) in the envelope
+on bid day; without it the bid is non-responsive. The section auto-
+calculates the dollar amount from the running bid total, captures the
+surety company / bond number / attorney-in-fact for bonds, and prints
+on the bid summary. PATCH `/api/priced-estimates/:id` with
+`{ bidSecurity: ... }` (or `null` to clear).
+
 The math (`computeEstimateTotals`, `lineExtendedCents`) lives in
 `@yge/shared/priced-estimate.ts` so the API and the UI never disagree on
 what the running total is. Money stays in cents end-to-end.

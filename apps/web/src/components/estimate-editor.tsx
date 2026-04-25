@@ -20,6 +20,7 @@ import {
   type SubBid,
 } from '@yge/shared';
 import { SubBidEditor } from './sub-bid-editor';
+import { BidSecurityEditor } from './bid-security-editor';
 
 interface Props {
   initialEstimate: PricedEstimate;
@@ -221,6 +222,16 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
           }}
         />
       </section>
+
+      <BidSecurityEditor
+        estimate={estimate}
+        bidTotalCents={totals.bidTotalCents}
+        apiBaseUrl={apiBaseUrl}
+        onUpdated={(nextEstimate, nextTotals) => {
+          setEstimate(nextEstimate);
+          setTotals(nextTotals);
+        }}
+      />
 
       <SubBidEditor
         estimate={estimate}

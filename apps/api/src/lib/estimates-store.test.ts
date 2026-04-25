@@ -222,6 +222,40 @@ describe('subBids', () => {
     expect(fetched?.subBids[0].bidAmountCents).toBe(25_000_00);
   });
 
+  it('round-trips bidSecurity through updateEstimate', async () => {
+    const est = await createFromDraft({
+      fromDraftId: 'd1',
+      jobId: 'cltest000000000000000000',
+      draft: sampleDraft,
+    });
+    const updated = await updateEstimate(est.id, {
+      bidSecurity: {
+        type: 'BID_BOND',
+        percent: 0.1,
+        suretyName: 'Travelers Casualty and Surety Co.',
+        bondNumber: '107XYZ12345',
+      },
+    });
+    expect(updated?.bidSecurity?.type).toBe('BID_BOND');
+    expect(updated?.bidSecurity?.percent).toBe(0.1);
+
+    const fetched = await getEstimate(est.id);
+    expect(fetched?.bidSecurity?.bondNumber).toBe('107XYZ12345');
+  });
+
+  it('clears bidSecurity when patched with null', async () => {
+    const est = await createFromDraft({
+      fromDraftId: 'd1',
+      jobId: 'cltest000000000000000000',
+      draft: sampleDraft,
+    });
+    await updateEstimate(est.id, {
+      bidSecurity: { type: 'BID_BOND', percent: 0.1 },
+    });
+    const cleared = await updateEstimate(est.id, { bidSecurity: null });
+    expect(cleared?.bidSecurity).toBeUndefined();
+  });
+
   it('replaces the whole sub list when patched', async () => {
     const est = await createFromDraft({
       fromDraftId: 'd1',
