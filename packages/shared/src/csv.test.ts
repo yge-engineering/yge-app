@@ -132,6 +132,8 @@ describe('pricedEstimateToCsv', () => {
       },
     ],
     oppPercent: 0.2,
+    subBids: [],
+    addenda: [],
   };
 
   it('produces a header row matching PRICED_ESTIMATE_CSV_HEADERS', () => {

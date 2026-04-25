@@ -141,9 +141,9 @@ describe('blankPricedItemsFromDraft', () => {
     ];
     const out = blankPricedItemsFromDraft(draftItems);
     expect(out).toHaveLength(1);
-    expect(out[0].itemNumber).toBe('A1');
-    expect(out[0].quantity).toBe(50);
-    expect(out[0].unitPriceCents).toBeNull();
+    expect(out[0]!.itemNumber).toBe('A1');
+    expect(out[0]!.quantity).toBe(50);
+    expect(out[0]!.unitPriceCents).toBeNull();
   });
 
   it('preserves optional fields when present', () => {
@@ -159,7 +159,7 @@ describe('blankPricedItemsFromDraft', () => {
       },
     ];
     const out = blankPricedItemsFromDraft(draftItems);
-    expect(out[0].notes).toBe('Priced per CalTrans 2024 average');
-    expect(out[0].pageReference).toBe('p. 12');
+    expect(out[0]!.notes).toBe('Priced per CalTrans 2024 average');
+    expect(out[0]!.pageReference).toBe('p. 12');
   });
 });
