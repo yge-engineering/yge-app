@@ -121,7 +121,7 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
             {estimate.location && <> &middot; {estimate.location}</>}
             {estimate.bidDueDate && <> &middot; bid due {estimate.bidDueDate}</>}
           </p>
-          <div className="mt-3 flex items-center gap-2">
+          <div className="mt-3 flex flex-wrap items-center gap-2">
             <button
               onClick={handleDownloadCsv}
               className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-700 hover:bg-yge-blue-100"
@@ -135,6 +135,15 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
               title="Same CSV via direct API link — useful for emailing or scripted pulls"
             >
               CSV direct link
+            </a>
+            <a
+              href={`/estimates/${estimate.id}/print`}
+              className="rounded border border-yge-blue-500 bg-yge-blue-500 px-3 py-1 text-xs font-medium text-white hover:bg-yge-blue-700"
+              title="Open the print-ready bid summary in a new tab"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Print bid summary
             </a>
           </div>
         </div>

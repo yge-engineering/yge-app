@@ -180,6 +180,11 @@ Web pages:
 - `/estimates` — list view with running bid totals + unpriced-line counts.
 - `/estimates/:id` — full inline editor: dollar input per line, O&P
   percent input at the bottom, totals card live-updates from the server.
+- `/estimates/:id/print` — print-ready bid summary on YGE letterhead
+  with company info, bid item schedule, totals block, and signature
+  line. Hit *Print / Save as PDF* in the page header to drop straight
+  into a PDF for the bid package. Logo block is a placeholder until
+  the brand kit lands.
 
 The math (`computeEstimateTotals`, `lineExtendedCents`) lives in
 `@yge/shared/priced-estimate.ts` so the API and the UI never disagree on
