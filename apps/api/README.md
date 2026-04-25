@@ -147,6 +147,48 @@ Web pages:
 - `/drafts/:id` — full draft view with CSV export, plus the original
   document text in a collapsed section so you can re-run later.
 
+## Priced estimates
+
+A draft is what the AI thinks the bid items are. A priced estimate is what
+that draft becomes once a human starts attaching unit prices. Click
+**Convert to priced estimate** on any saved draft to clone it into an
+editable estimate; then walk down the bid items typing dollar prices.
+
+Storage mirrors drafts: each estimate is a JSON file under
+`apps/api/data/estimates/` with a small `index.json` for the list view.
+Same Phase 1 stand-in pattern, same gitignore rule.
+
+API endpoints (mounted at `/api/priced-estimates`):
+
+- `POST /api/priced-estimates/from-draft` — body `{ fromDraftId, oppPercent? }`.
+  Clones the draft's bid items into a new estimate with all unit prices
+  null. Returns the new estimate (use `estimate.id` to redirect).
+- `GET /api/priced-estimates` — newest-first summary list.
+- `GET /api/priced-estimates/:id` — full estimate plus computed totals
+  (`directCents`, `oppCents`, `bidTotalCents`, `unpricedLineCount`).
+- `PATCH /api/priced-estimates/:id` — update `oppPercent`, `notes`, or
+  the full `bidItems` array. Returns the updated estimate + fresh totals.
+- `PATCH /api/priced-estimates/:id/items/:itemIndex` — body
+  `{ unitPriceCents }`. Used by the inline editor so each keystroke flush
+  doesn't re-send the whole bid list.
+- `GET /api/priced-estimates/:id/export.csv` — full priced estimate as a
+  direct CSV download. Includes a totals block at the bottom (direct cost,
+  O&P, bid total) so the recipient doesn't need to add a SUM formula.
+
+Web pages:
+
+- `/estimates` — list view with running bid totals + unpriced-line counts.
+- `/estimates/:id` — full inline editor: dollar input per line, O&P
+  percent input at the bottom, totals card live-updates from the server.
+
+The math (`computeEstimateTotals`, `lineExtendedCents`) lives in
+`@yge/shared/priced-estimate.ts` so the API and the UI never disagree on
+what the running total is. Money stays in cents end-to-end.
+
+When the Estimate / BidItem schema lands in Postgres later in Phase 1, the
+file-backed store goes away and `/api/estimates` (the existing Prisma
+router) absorbs this surface; the routes + UI don't change.
+
 ## Project conventions
 
 - Validation with Zod on every input. See `routes/plans-to-estimate.ts`.

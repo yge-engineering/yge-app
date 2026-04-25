@@ -129,7 +129,7 @@ export async function saveDraft(input: NewDraftInput): Promise<SavedDraft> {
     ...input,
   };
   await fs.writeFile(
-    path.join(DATA_DIR, `${id}.json`),
+    path.join(dataDir(), `${id}.json`),
     JSON.stringify(saved, null, 2),
     'utf8',
   );
@@ -147,7 +147,7 @@ export async function getDraft(id: string): Promise<SavedDraft | null> {
   // Defensive: only allow ids that match our format. Stops path traversal cold.
   if (!/^[a-z0-9-]{10,80}$/.test(id)) return null;
   try {
-    const raw = await fs.readFile(path.join(DATA_DIR, `${id}.json`), 'utf8');
+    const raw = await fs.readFile(path.join(dataDir(), `${id}.json`), 'utf8');
     return JSON.parse(raw) as SavedDraft;
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;

@@ -32,6 +32,12 @@ export default function HomePage() {
             Saved Drafts
           </Link>
           <Link
+            href="/estimates"
+            className="rounded border border-yge-blue-500 px-6 py-3 text-yge-blue-500 hover:bg-yge-blue-50"
+          >
+            Priced Estimates
+          </Link>
+          <Link
             href="/jobs"
             className="rounded border border-yge-blue-500 px-6 py-3 text-yge-blue-500 hover:bg-yge-blue-50"
           >

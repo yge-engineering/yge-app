@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { PtoEOutput } from '@yge/shared';
 import { DraftView } from '@/components/draft-view';
+import { ConvertDraftButton } from '@/components/convert-draft-button';
 
 interface SavedDraft {
   id: string;
@@ -25,6 +26,12 @@ function apiBaseUrl(): string {
   return (
     process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
   );
+}
+
+// Browser-facing URL — the convert button POSTs from the user's browser, not
+// from the Next.js server.
+function publicApiBaseUrl(): string {
+  return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 }
 
 async function fetchDraft(id: string): Promise<SavedDraft | null> {
@@ -68,7 +75,12 @@ export default async function DraftDetailPage({ params }: { params: { id: string
       </div>
 
       <div className="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-        <p className="text-xs uppercase tracking-wide text-gray-500">Saved {formatWhen(saved.createdAt)}</p>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <p className="text-xs uppercase tracking-wide text-gray-500">
+            Saved {formatWhen(saved.createdAt)}
+          </p>
+          <ConvertDraftButton draftId={saved.id} apiBaseUrl={publicApiBaseUrl()} />
+        </div>
         <DraftView
           draft={saved.draft}
           modelUsed={saved.modelUsed}

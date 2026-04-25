@@ -20,6 +20,12 @@ export default function DashboardPage() {
           href="/drafts"
           cta="Browse"
         />
+        <LinkCard
+          title="Priced Estimates"
+          body="Convert a draft to an editable estimate, fill in unit prices, see the running bid total."
+          href="/estimates"
+          cta="Open"
+        />
         <Card title="Open Bids" body="Nothing yet — dashboard wired up in Phase 1 weeks 3-4." />
         <Card title="Active Jobs" body="Job list here." />
         <Card title="Morning Briefing" body="AI-generated daily summary lands here." />

@@ -9,6 +9,7 @@ import { healthRouter } from './routes/health';
 import { jobsRouter } from './routes/jobs';
 import { estimatesRouter } from './routes/estimates';
 import { plansToEstimateRouter } from './routes/plans-to-estimate';
+import { pricedEstimatesRouter } from './routes/priced-estimates';
 
 const app = express();
 
@@ -21,6 +22,7 @@ app.use('/health', healthRouter);
 app.use('/api/jobs', jobsRouter);
 app.use('/api/estimates', estimatesRouter);
 app.use('/api/plans-to-estimate', plansToEstimateRouter);
+app.use('/api/priced-estimates', pricedEstimatesRouter);
 
 // 404
 app.use((_req, res) => {

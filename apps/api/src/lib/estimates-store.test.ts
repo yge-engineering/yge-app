@@ -1,0 +1,186 @@
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import * as fs from 'node:fs/promises';
+import * as os from 'node:os';
+import * as path from 'node:path';
+import {
+  createFromDraft,
+  getEstimate,
+  listEstimates,
+  setLineUnitPrice,
+  updateEstimate,
+} from './estimates-store';
+import type { PtoEOutput } from '@yge/shared';
+
+let tmpDir: string;
+const ORIGINAL_ENV = process.env.ESTIMATES_DATA_DIR;
+
+const sampleDraft: PtoEOutput = {
+  projectName: 'Sample Drainage Job',
+  projectType: 'DRAINAGE',
+  bidItems: [
+    {
+      itemNumber: '1',
+      description: 'Class 2 aggregate base',
+      unit: 'TON',
+      quantity: 100,
+      confidence: 'HIGH',
+    },
+    {
+      itemNumber: '2',
+      description: 'Hot mix asphalt',
+      unit: 'TON',
+      quantity: 50,
+      confidence: 'MEDIUM',
+    },
+  ],
+  assumptions: [],
+  questionsForEstimator: [],
+  overallConfidence: 'HIGH',
+};
+
+beforeEach(async () => {
+  tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'yge-estimates-'));
+  process.env.ESTIMATES_DATA_DIR = tmpDir;
+});
+
+afterEach(async () => {
+  if (ORIGINAL_ENV === undefined) {
+    delete process.env.ESTIMATES_DATA_DIR;
+  } else {
+    process.env.ESTIMATES_DATA_DIR = ORIGINAL_ENV;
+  }
+  await fs.rm(tmpDir, { recursive: true, force: true });
+});
+
+describe('createFromDraft', () => {
+  it('creates an estimate with all bid items unpriced', async () => {
+    const est = await createFromDraft({
+      fromDraftId: 'd1',
+      jobId: 'cltest000000000000000000',
+      draft: sampleDraft,
+    });
+
+    expect(est.id).toMatch(/^est-\d{4}-\d{2}-\d{2}-sample-drainage-job-[a-f0-9]{8}$/);
+    expect(est.bidItems).toHaveLength(2);
+    expect(est.bidItems.every((i) => i.unitPriceCents === null)).toBe(true);
+    expect(est.oppPercent).toBe(0.2); // default
+  });
+
+  it('honors caller-provided oppPercent', async () => {
+    const est = await createFromDraft({
+      fromDraftId: 'd1',
+      jobId: 'cltest000000000000000000',
+      draft: sampleDraft,
+      oppPercent: 0.35,
+    });
+    expect(est.oppPercent).toBe(0.35);
+  });
+
+  it('writes a file we can re-read by id', async () => {
+    const est = await createFromDraft({
+      fromDraftId: 'd1',
+      jobId: 'cltest000000000000000000',
+      draft: sampleDraft,
+    });
+    const fetched = await getEstimate(est.id);
+    expect(fetched?.id).toBe(est.id);
+    expect(fetched?.bidItems).toHaveLength(2);
+  });
+
+  it('appends a summary to the index, newest first', async () => {
+    await createFromDraft({
+      fromDraftId: 'd1',
+      jobId: 'cltest000000000000000000',
+      draft: { ...sampleDraft, projectName: 'First' },
+    });
+    await new Promise((r) => setTimeout(r, 5));
+    await createFromDraft({
+      fromDraftId: 'd2',
+      jobId: 'cltest000000000000000000',
+      draft: { ...sampleDraft, projectName: 'Second' },
+    });
+    const list = await listEstimates();
+    expect(list).toHaveLength(2);
+    expect(list[0].projectName).toBe('Second');
+    expect(list[1].projectName).toBe('First');
+  });
+});
+
+describe('getEstimate', () => {
+  it('returns null on unknown id', async () => {
+    const e = await getEstimate('est-2026-01-01-nope-deadbeef');
+    expect(e).toBeNull();
+  });
+
+  it('rejects path-traversal attempts', async () => {
+    expect(await getEstimate('../etc/passwd')).toBeNull();
+    expect(await getEstimate('est-../foo')).toBeNull();
+  });
+});
+
+describe('updateEstimate', () => {
+  it('updates oppPercent and bumps updatedAt', async () => {
+    const est = await createFromDraft({
+      fromDraftId: 'd1',
+      jobId: 'cltest000000000000000000',
+      draft: sampleDraft,
+    });
+    const originalUpdated = est.updatedAt;
+    await new Promise((r) => setTimeout(r, 5));
+    const updated = await updateEstimate(est.id, { oppPercent: 0.25 });
+    expect(updated?.oppPercent).toBe(0.25);
+    expect(updated?.updatedAt).not.toBe(originalUpdated);
+  });
+
+  it('updates totals in the index', async () => {
+    const est = await createFromDraft({
+      fromDraftId: 'd1',
+      jobId: 'cltest000000000000000000',
+      draft: sampleDraft,
+    });
+    // Price both lines: 100 * $50 + 50 * $80 = $5000 + $4000 = $9000.
+    // 20% O&P → $10800 total = 1_080_000 cents.
+    const items = est.bidItems.map((it, i) =>
+      i === 0 ? { ...it, unitPriceCents: 50_00 } : { ...it, unitPriceCents: 80_00 },
+    );
+    await updateEstimate(est.id, { bidItems: items });
+    const list = await listEstimates();
+    expect(list[0].bidTotalCents).toBe(10_800_00);
+    expect(list[0].pricedLineCount).toBe(2);
+    expect(list[0].unpricedLineCount).toBe(0);
+  });
+
+  it('returns null on unknown id', async () => {
+    const out = await updateEstimate('est-2026-01-01-nope-deadbeef', { oppPercent: 0.3 });
+    expect(out).toBeNull();
+  });
+});
+
+describe('setLineUnitPrice', () => {
+  it('updates a single line', async () => {
+    const est = await createFromDraft({
+      fromDraftId: 'd1',
+      jobId: 'cltest000000000000000000',
+      draft: sampleDraft,
+    });
+    const updated = await setLineUnitPrice(est.id, 1, 99_99);
+    expect(updated?.bidItems[0].unitPriceCents).toBeNull();
+    expect(updated?.bidItems[1].unitPriceCents).toBe(99_99);
+  });
+
+  it('rejects out-of-range index', async () => {
+    const est = await createFromDraft({
+      fromDraftId: 'd1',
+      jobId: 'cltest000000000000000000',
+      draft: sampleDraft,
+    });
+    expect(await setLineUnitPrice(est.id, 99, 100)).toBeNull();
+    expect(await setLineUnitPrice(est.id, -1, 100)).toBeNull();
+  });
+
+  it('returns null on unknown id', async () => {
+    expect(
+      await setLineUnitPrice('est-2026-01-01-nope-deadbeef', 0, 100),
+    ).toBeNull();
+  });
+});
