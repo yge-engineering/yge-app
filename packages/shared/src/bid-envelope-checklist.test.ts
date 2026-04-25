@@ -71,7 +71,8 @@ describe('buildEnvelopeChecklist', () => {
     expect(sec).toBeDefined();
     expect(sec?.detail).toContain('Old Republic Surety');
     expect(sec?.detail).toContain('OR-1234');
-    expect(sec?.detail).toContain('$600,000.00');
+    // TOTALS.bidTotalCents = 6_000_000 = $60,000.00 ; 10% bid bond = $6,000.00
+    expect(sec?.detail).toContain('$6,000.00');
     expect(sec?.warn).toBeFalsy();
   });
 

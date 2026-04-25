@@ -19,7 +19,7 @@
 
 import type { PricedEstimate, PricedEstimateTotals } from './priced-estimate';
 import { unacknowledgedAddenda } from './addendum';
-import { classifySubBids } from './sub-bid';
+import { classifySubBids, isHighwayClassProjectType } from './sub-bid';
 
 export type BidChecklistStatus = 'pass' | 'warn' | 'fail';
 export type BidChecklistSeverity = 'blocker' | 'recommended';
@@ -166,23 +166,32 @@ export function computeBidChecklist(
             } exceed the §4104 listing threshold.`
           : undefined,
     });
-  } else if (totals.bidTotalCents >= sub.thresholdCents) {
-    items.push({
-      id: 'sub-list',
-      label: 'Subcontractor list captured',
-      status: 'warn',
-      severity: 'recommended',
-      detail:
-        'No subcontractors captured. If any sub will perform >0.5% of the work (or more than $10K on highway/streets/bridges), they must be listed on the bid form.',
-    });
   } else {
-    items.push({
-      id: 'sub-list',
-      label: 'Subcontractor list captured',
-      status: 'pass',
-      severity: 'recommended',
-      detail: 'No subs captured — bid total is small enough that none are likely required.',
-    });
+    // No subs captured. The §4104 listing rule only triggers when a sub
+    // *exists*, so absence of subs is never automatically non-responsive.
+    // But on highway / streets / bridges work where the §10K floor is
+    // material, a million-dollar bid with zero subs is a process smell
+    // (virtually every large highway job has paving, striping, traffic
+    // control, etc.). Warn only in that combined case; pass otherwise.
+    const isHighwayLike = isHighwayClassProjectType(estimate.projectType);
+    if (isHighwayLike && totals.bidTotalCents >= sub.thresholdCents) {
+      items.push({
+        id: 'sub-list',
+        label: 'Subcontractor list captured',
+        status: 'warn',
+        severity: 'recommended',
+        detail:
+          'No subs on a highway/bridge bid this size is unusual. If any sub is performing >$10K of work, they must be on the §4104 list.',
+      });
+    } else {
+      items.push({
+        id: 'sub-list',
+        label: 'Subcontractor list captured',
+        status: 'pass',
+        severity: 'recommended',
+        detail: 'No subcontractors captured — assuming self-performed.',
+      });
+    }
   }
 
   // Owner / agency name on file. Bid forms always have a "to whom it

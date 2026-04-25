@@ -57,7 +57,8 @@ describe('lineExtendedCents', () => {
 describe('computeEstimateTotals', () => {
   it('sums extended lines, applies O&P, computes total', () => {
     const e = estimate(
-      [priced(10, 100), priced(5, 200)], // $1.00 + $1.00 = $2.00 direct
+      // 10 × 10 cents = 100 cents = $1.00 ; 5 × 20 cents = 100 cents = $1.00
+      [priced(10, 10), priced(5, 20)],   // $1.00 + $1.00 = $2.00 direct
       0.2,                                // 20% O&P → $0.40
     );
     const t = computeEstimateTotals(e);
