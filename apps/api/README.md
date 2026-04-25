@@ -33,6 +33,17 @@ That starts Express on http://localhost:4000 with file watching. The web app
 on `:3000` calls it via the `NEXT_PUBLIC_API_URL` env var (defaults to the
 local URL).
 
+### Health checks
+
+```bash
+curl http://localhost:4000/health             # DB ping
+curl http://localhost:4000/health/anthropic   # 1-token Anthropic ping
+```
+
+`/health/anthropic` confirms the API key is set and reachable without
+spending real tokens — use it to debug AI failures before assuming the
+prompt is broken.
+
 ## Run the tests
 
 ```bash
@@ -105,6 +116,37 @@ pnpm --filter @yge/api dry-run:ptoe -- doc.txt --notes "Mandatory site walk Tue 
 
 Notes get tagged as priority context in the prompt.
 
+## Saved drafts (history)
+
+Every successful Plans-to-Estimate run is auto-saved to `apps/api/data/drafts/`
+as a JSON file named by date + project slug + random suffix
+(e.g. `2026-04-24-cottonwood-creek-drainage-a1b2c3d4.json`). A small
+`index.json` in the same folder tracks the summary list for the `/drafts`
+page.
+
+The data folder is gitignored — saved drafts can include the full RFP text
+the user pasted, which may be pre-public bid material. Postgres replaces this
+file store later in Phase 1 once the Estimate / BidItem schema lands; the
+public surface (`saveDraft`, `listDrafts`, `getDraft`) maps 1:1 to a Prisma
+repository so the route + UI don't change.
+
+API endpoints:
+
+- `POST /api/plans-to-estimate` — generate + save a draft. Returns
+  `savedId` you can use to deep-link to `/drafts/<savedId>`.
+- `GET /api/plans-to-estimate/drafts` — newest-first summary list.
+- `GET /api/plans-to-estimate/drafts/:id` — full saved draft including the
+  original document text.
+- `GET /api/plans-to-estimate/drafts/:id/export.csv` — bid items as a
+  direct CSV download (same bytes as the in-page Download CSV button).
+
+Web pages:
+
+- `/drafts` — list every saved run with project name, type, item count,
+  confidence, and timestamp.
+- `/drafts/:id` — full draft view with CSV export, plus the original
+  document text in a collapsed section so you can re-run later.
+
 ## Project conventions
 
 - Validation with Zod on every input. See `routes/plans-to-estimate.ts`.
@@ -114,3 +156,5 @@ Notes get tagged as priority context in the prompt.
 - Prompts live in `lib/prompts/<feature>-vN.ts`. Bump `N` and the
   `PROMPT_VERSION` constant when the prompt changes meaningfully.
 - All AI services accept an injectable client for testability.
+- File-backed stores (e.g. `lib/drafts-store.ts`) live behind a function
+  surface that maps cleanly to Prisma so the swap is mechanical.

@@ -14,6 +14,12 @@ export default function DashboardPage() {
           href="/plans-to-estimate"
           cta="Open"
         />
+        <LinkCard
+          title="Saved Drafts"
+          body="Re-open any prior AI run without paying Anthropic to redraft."
+          href="/drafts"
+          cta="Browse"
+        />
         <Card title="Open Bids" body="Nothing yet — dashboard wired up in Phase 1 weeks 3-4." />
         <Card title="Active Jobs" body="Job list here." />
         <Card title="Morning Briefing" body="AI-generated daily summary lands here." />

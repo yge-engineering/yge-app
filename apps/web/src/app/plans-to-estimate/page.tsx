@@ -7,19 +7,24 @@
 //   - Tie to a real Job (and persist the draft as an Estimate row)
 //   - Stream the response token-by-token instead of waiting for the full call
 //
-// For now: client component, calls the Express API directly (CORS already
-// allowed for localhost:3000). State is local-only; refresh wipes it.
+// Each successful run is auto-saved by the API to the drafts history, so
+// estimators can re-open prior runs from /drafts without paying Anthropic
+// again to redraft the same RFP.
 
 import { useState } from 'react';
 import Link from 'next/link';
-import type { PtoEOutput, PtoEBidItem, PtoEItemConfidence } from '@yge/shared';
+import type { PtoEOutput } from '@yge/shared';
 import { ApiError, postJson } from '@/lib/api';
+import { DraftView } from '@/components/draft-view';
 
 interface ApiResult {
   jobId: string;
+  /** Set when the API successfully persisted the draft to history. */
+  savedId?: string;
   modelUsed: string;
   promptVersion: string;
   usage: { inputTokens: number; outputTokens: number };
+  durationMs?: number;
   draft: PtoEOutput;
 }
 
@@ -42,59 +47,6 @@ function makeTempJobId(): string {
   let id = 'c';
   for (let i = 0; i < 24; i++) id += chars[Math.floor(Math.random() * chars.length)];
   return id;
-}
-
-// CSV helpers — let Ryan paste the AI's draft straight into the Excel job-cost
-// sheet he's already using. RFC 4180: wrap any field containing comma, quote,
-// CR, or LF in double quotes, and double up internal quotes.
-
-const CSV_HEADERS = [
-  'Item #',
-  'Description',
-  'Unit',
-  'Quantity',
-  'Confidence',
-  'Page Reference',
-  'Notes',
-];
-
-function csvEscape(value: string | number | undefined | null): string {
-  if (value === undefined || value === null) return '';
-  const s = String(value);
-  if (/[",\r\n]/.test(s)) {
-    return `"${s.replace(/"/g, '""')}"`;
-  }
-  return s;
-}
-
-function bidItemsToCsv(items: PtoEBidItem[]): string {
-  const rows: string[] = [CSV_HEADERS.map(csvEscape).join(',')];
-  for (const item of items) {
-    rows.push(
-      [
-        item.itemNumber,
-        item.description,
-        item.unit,
-        item.quantity,
-        item.confidence,
-        item.pageReference ?? '',
-        item.notes ?? '',
-      ]
-        .map(csvEscape)
-        .join(','),
-    );
-  }
-  // Excel handles \r\n cleanly. Trailing newline is conventional.
-  return rows.join('\r\n') + '\r\n';
-}
-
-function safeFilename(projectName: string): string {
-  const slug = projectName
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 60);
-  return (slug || 'draft-estimate') + '-bid-items.csv';
 }
 
 export default function PlansToEstimatePage() {
@@ -140,9 +92,14 @@ export default function PlansToEstimatePage() {
   return (
     <main className="mx-auto max-w-6xl p-8">
       <div className="mb-6">
-        <Link href="/" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Home
-        </Link>
+        <div className="flex items-center justify-between">
+          <Link href="/" className="text-sm text-yge-blue-500 hover:underline">
+            &larr; Home
+          </Link>
+          <Link href="/drafts" className="text-sm text-yge-blue-500 hover:underline">
+            View saved drafts &rarr;
+          </Link>
+        </div>
         <h1 className="mt-2 text-3xl font-bold text-yge-blue-500">Plans-to-Estimate</h1>
         <p className="mt-2 text-gray-700">
           Paste an RFP, spec, or plan-set excerpt below. The AI drafts a bid item list — you
@@ -211,187 +168,29 @@ export default function PlansToEstimatePage() {
             </p>
           )}
           {result && (
-            <DraftView
-              draft={result.draft}
-              modelUsed={result.modelUsed}
-              promptVersion={result.promptVersion}
-              usage={result.usage}
-              elapsedMs={elapsedMs}
-            />
+            <>
+              {result.savedId && (
+                <p className="mb-3 text-xs text-gray-500">
+                  Saved to history.{' '}
+                  <Link
+                    href={`/drafts/${result.savedId}`}
+                    className="text-yge-blue-500 hover:underline"
+                  >
+                    Open this draft directly &rarr;
+                  </Link>
+                </p>
+              )}
+              <DraftView
+                draft={result.draft}
+                modelUsed={result.modelUsed}
+                promptVersion={result.promptVersion}
+                usage={result.usage}
+                elapsedMs={elapsedMs}
+              />
+            </>
           )}
         </section>
       </div>
     </main>
-  );
-}
-
-function DraftView({
-  draft,
-  modelUsed,
-  promptVersion,
-  usage,
-  elapsedMs,
-}: {
-  draft: PtoEOutput;
-  modelUsed: string;
-  promptVersion: string;
-  usage: { inputTokens: number; outputTokens: number };
-  elapsedMs: number | null;
-}) {
-  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'error'>('idle');
-
-  function handleDownloadCsv() {
-    const csv = bidItemsToCsv(draft.bidItems);
-    // BOM helps Excel detect UTF-8 cleanly when the file has any non-ASCII chars.
-    const blob = new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = safeFilename(draft.projectName);
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }
-
-  async function handleCopyCsv() {
-    const csv = bidItemsToCsv(draft.bidItems);
-    try {
-      await navigator.clipboard.writeText(csv);
-      setCopyState('copied');
-      setTimeout(() => setCopyState('idle'), 2000);
-    } catch {
-      setCopyState('error');
-      setTimeout(() => setCopyState('idle'), 3000);
-    }
-  }
-
-  return (
-    <div className="space-y-5">
-      <header>
-        <h2 className="text-xl font-semibold text-gray-900">{draft.projectName}</h2>
-        <p className="text-sm text-gray-600">
-          {draft.projectType.replace(/_/g, ' ')}
-          {draft.location && <> · {draft.location}</>}
-          {draft.ownerAgency && <> · {draft.ownerAgency}</>}
-        </p>
-        <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-600">
-          {draft.bidDueDate && (
-            <>
-              <dt className="font-medium">Bid due</dt>
-              <dd>{draft.bidDueDate}</dd>
-            </>
-          )}
-          {draft.prebidMeeting && (
-            <>
-              <dt className="font-medium">Pre-bid</dt>
-              <dd>{draft.prebidMeeting}</dd>
-            </>
-          )}
-          <dt className="font-medium">Overall confidence</dt>
-          <dd>
-            <ConfidencePill value={draft.overallConfidence} />
-          </dd>
-        </dl>
-      </header>
-
-      <div>
-        <div className="flex items-center justify-between gap-3">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">Bid items</h3>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleDownloadCsv}
-              className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-700 hover:bg-yge-blue-100"
-              title="Download all bid items as a CSV file you can open in Excel"
-            >
-              Download CSV
-            </button>
-            <button
-              onClick={handleCopyCsv}
-              className="rounded border border-gray-300 px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
-              title="Copy CSV text to clipboard — paste straight into Excel"
-            >
-              {copyState === 'copied'
-                ? 'Copied!'
-                : copyState === 'error'
-                  ? 'Copy failed'
-                  : 'Copy CSV'}
-            </button>
-          </div>
-        </div>
-        <ul className="mt-2 divide-y divide-gray-100">
-          {draft.bidItems.map((item, i) => (
-            <BidItemRow key={i} item={item} />
-          ))}
-        </ul>
-      </div>
-
-      {draft.assumptions.length > 0 && (
-        <div>
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
-            Assumptions
-          </h3>
-          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-gray-700">
-            {draft.assumptions.map((a, i) => (
-              <li key={i}>{a}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {draft.questionsForEstimator.length > 0 && (
-        <div>
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
-            Open questions
-          </h3>
-          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-gray-700">
-            {draft.questionsForEstimator.map((q, i) => (
-              <li key={i}>{q}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      <footer className="border-t border-gray-100 pt-3 text-xs text-gray-400">
-        Model: {modelUsed} · Prompt: {promptVersion} ·{' '}
-        {usage.inputTokens.toLocaleString()} in / {usage.outputTokens.toLocaleString()} out tokens
-        {elapsedMs != null && <> · {(elapsedMs / 1000).toFixed(1)}s</>}
-      </footer>
-    </div>
-  );
-}
-
-function BidItemRow({ item }: { item: PtoEBidItem }) {
-  return (
-    <li className="py-3">
-      <div className="flex items-baseline justify-between gap-3">
-        <div className="flex-1">
-          <p className="text-sm font-medium text-gray-900">
-            <span className="text-gray-500">#{item.itemNumber}</span> {item.description}
-          </p>
-          <p className="mt-0.5 text-xs text-gray-600">
-            {item.quantity.toLocaleString()} {item.unit}
-            {item.pageReference && <> · {item.pageReference}</>}
-          </p>
-          {item.notes && <p className="mt-1 text-xs italic text-gray-500">{item.notes}</p>}
-        </div>
-        <ConfidencePill value={item.confidence} />
-      </div>
-    </li>
-  );
-}
-
-function ConfidencePill({ value }: { value: PtoEItemConfidence }) {
-  const styles: Record<PtoEItemConfidence, string> = {
-    HIGH: 'bg-green-100 text-green-800',
-    MEDIUM: 'bg-yellow-100 text-yellow-800',
-    LOW: 'bg-red-100 text-red-800',
-  };
-  return (
-    <span
-      className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${styles[value]}`}
-    >
-      {value}
-    </span>
   );
 }

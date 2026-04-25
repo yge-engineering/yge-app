@@ -26,6 +26,12 @@ export default function HomePage() {
             Plans-to-Estimate (AI)
           </Link>
           <Link
+            href="/drafts"
+            className="rounded border border-yge-blue-500 px-6 py-3 text-yge-blue-500 hover:bg-yge-blue-50"
+          >
+            Saved Drafts
+          </Link>
+          <Link
             href="/jobs"
             className="rounded border border-yge-blue-500 px-6 py-3 text-yge-blue-500 hover:bg-yge-blue-50"
           >

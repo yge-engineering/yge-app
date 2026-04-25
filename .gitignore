@@ -63,3 +63,8 @@ seeds/dir/*.pdf
 
 # Uploaded plan sets / bid docs — never commit
 uploads/
+
+# Local AI draft history (file-backed store before Postgres lands).
+# Each draft can include the full RFP text the user pasted, which may be
+# pre-public bid material.
+apps/api/data/
