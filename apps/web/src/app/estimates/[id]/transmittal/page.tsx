@@ -11,12 +11,25 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
+  YGE_COMPANY_INFO,
   buildTransmittal,
   computeEstimateTotals,
   type PricedEstimate,
   type PricedEstimateTotals,
 } from '@yge/shared';
 import { PrintButton } from '@/components/print-button';
+
+// Whom to print as the signer at the bottom of the cover letter.
+// `vp` (Ryan) is the default — matches the existing buildTransmittal default
+// and is the officer who runs estimating day-to-day. `president` (Brook)
+// is offered for bids that for political/relationship reasons should go
+// out under the President's name.
+type SignerKey = 'vp' | 'president';
+function pickSigner(key: SignerKey | string | undefined) {
+  return key === 'president'
+    ? YGE_COMPANY_INFO.president
+    : YGE_COMPANY_INFO.vicePresident;
+}
 
 function apiBaseUrl(): string {
   return (
@@ -40,17 +53,23 @@ async function fetchEstimate(id: string): Promise<FullResponse | null> {
 
 export default async function TransmittalPage({
   params,
+  searchParams,
 }: {
   params: { id: string };
+  searchParams: { signer?: string };
 }) {
   const data = await fetchEstimate(params.id);
   if (!data) notFound();
   const { estimate } = data;
   const totals = computeEstimateTotals(estimate);
 
+  const signerKey: SignerKey =
+    searchParams.signer === 'president' ? 'president' : 'vp';
+  const signer = pickSigner(signerKey);
+
   // Build the structured letter once, on the server. The presentation below
   // is just spread + render — no logic.
-  const letter = buildTransmittal(estimate, totals);
+  const letter = buildTransmittal(estimate, totals, { signer });
 
   return (
     <>
@@ -64,7 +83,7 @@ export default async function TransmittalPage({
       `}</style>
 
       <div className="no-print bg-gray-100 px-8 py-3 text-sm text-gray-700">
-        <div className="mx-auto flex max-w-4xl items-center justify-between">
+        <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-4">
             <Link
               href={`/estimates/${estimate.id}`}
@@ -85,7 +104,32 @@ export default async function TransmittalPage({
               Envelope checklist
             </Link>
           </div>
-          <PrintButton />
+          <div className="flex items-center gap-3">
+            <span className="text-xs uppercase tracking-wide text-gray-500">
+              Signer:
+            </span>
+            <Link
+              href={`/estimates/${estimate.id}/transmittal?signer=vp`}
+              className={`rounded px-2 py-1 text-xs font-medium ${
+                signerKey === 'vp'
+                  ? 'bg-yge-blue-500 text-white'
+                  : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              {YGE_COMPANY_INFO.vicePresident.name.split(' ')[0]} &mdash; VP
+            </Link>
+            <Link
+              href={`/estimates/${estimate.id}/transmittal?signer=president`}
+              className={`rounded px-2 py-1 text-xs font-medium ${
+                signerKey === 'president'
+                  ? 'bg-yge-blue-500 text-white'
+                  : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              {YGE_COMPANY_INFO.president.name.split(' ')[0]} &mdash; President
+            </Link>
+            <PrintButton />
+          </div>
         </div>
       </div>
 
