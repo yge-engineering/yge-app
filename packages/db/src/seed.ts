@@ -2,7 +2,7 @@
 // Rate tables, cost codes, employees, etc. come from the Excel master extract.
 // Run with: pnpm db:seed
 
-import { PrismaClient, UserRole, InsuranceKind } from '@prisma/client';
+import { PrismaClient, UserRole } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
