@@ -44,6 +44,59 @@ function makeTempJobId(): string {
   return id;
 }
 
+// CSV helpers — let Ryan paste the AI's draft straight into the Excel job-cost
+// sheet he's already using. RFC 4180: wrap any field containing comma, quote,
+// CR, or LF in double quotes, and double up internal quotes.
+
+const CSV_HEADERS = [
+  'Item #',
+  'Description',
+  'Unit',
+  'Quantity',
+  'Confidence',
+  'Page Reference',
+  'Notes',
+];
+
+function csvEscape(value: string | number | undefined | null): string {
+  if (value === undefined || value === null) return '';
+  const s = String(value);
+  if (/[",\r\n]/.test(s)) {
+    return `"${s.replace(/"/g, '""')}"`;
+  }
+  return s;
+}
+
+function bidItemsToCsv(items: PtoEBidItem[]): string {
+  const rows: string[] = [CSV_HEADERS.map(csvEscape).join(',')];
+  for (const item of items) {
+    rows.push(
+      [
+        item.itemNumber,
+        item.description,
+        item.unit,
+        item.quantity,
+        item.confidence,
+        item.pageReference ?? '',
+        item.notes ?? '',
+      ]
+        .map(csvEscape)
+        .join(','),
+    );
+  }
+  // Excel handles \r\n cleanly. Trailing newline is conventional.
+  return rows.join('\r\n') + '\r\n';
+}
+
+function safeFilename(projectName: string): string {
+  const slug = projectName
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60);
+  return (slug || 'draft-estimate') + '-bid-items.csv';
+}
+
 export default function PlansToEstimatePage() {
   const [documentText, setDocumentText] = useState('');
   const [sessionNotes, setSessionNotes] = useState('');
@@ -185,6 +238,34 @@ function DraftView({
   usage: { inputTokens: number; outputTokens: number };
   elapsedMs: number | null;
 }) {
+  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'error'>('idle');
+
+  function handleDownloadCsv() {
+    const csv = bidItemsToCsv(draft.bidItems);
+    // BOM helps Excel detect UTF-8 cleanly when the file has any non-ASCII chars.
+    const blob = new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = safeFilename(draft.projectName);
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  async function handleCopyCsv() {
+    const csv = bidItemsToCsv(draft.bidItems);
+    try {
+      await navigator.clipboard.writeText(csv);
+      setCopyState('copied');
+      setTimeout(() => setCopyState('idle'), 2000);
+    } catch {
+      setCopyState('error');
+      setTimeout(() => setCopyState('idle'), 3000);
+    }
+  }
+
   return (
     <div className="space-y-5">
       <header>
@@ -215,7 +296,29 @@ function DraftView({
       </header>
 
       <div>
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">Bid items</h3>
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">Bid items</h3>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleDownloadCsv}
+              className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-700 hover:bg-yge-blue-100"
+              title="Download all bid items as a CSV file you can open in Excel"
+            >
+              Download CSV
+            </button>
+            <button
+              onClick={handleCopyCsv}
+              className="rounded border border-gray-300 px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+              title="Copy CSV text to clipboard — paste straight into Excel"
+            >
+              {copyState === 'copied'
+                ? 'Copied!'
+                : copyState === 'error'
+                  ? 'Copy failed'
+                  : 'Copy CSV'}
+            </button>
+          </div>
+        </div>
         <ul className="mt-2 divide-y divide-gray-100">
           {draft.bidItems.map((item, i) => (
             <BidItemRow key={i} item={item} />
