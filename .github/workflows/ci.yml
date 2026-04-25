@@ -33,8 +33,14 @@ jobs:
           node-version: 20
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @yge/db prisma generate
-      - run: pnpm --filter @yge/db prisma migrate deploy
+      # NOTE: must use `exec` so pnpm runs the prisma CLI binary instead of
+      # looking for a package script named "prisma". Bare
+      # `pnpm --filter @yge/db prisma generate` silently exits 0 with
+      # "None of the selected packages has a 'prisma' script", which means
+      # the Prisma client never gets generated and every downstream typecheck
+      # fails with "Module '@prisma/client' has no exported member …".
+      - run: pnpm --filter @yge/db exec prisma generate
+      - run: pnpm --filter @yge/db exec prisma migrate deploy
         env:
           DATABASE_URL: postgresql://yge:yge_dev_password@localhost:5432/yge_dev?schema=public
       - run: pnpm typecheck
