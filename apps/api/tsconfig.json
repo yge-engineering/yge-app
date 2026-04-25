@@ -5,7 +5,10 @@
     "rootDir": "src",
     "module": "CommonJS",
     "moduleResolution": "Node",
-    "types": ["node"]
+    "types": ["node"],
+    "//declaration": "Apps don't ship .d.ts files, and pnpm's nested .pnpm/ layout breaks the 'portable name' check for inferred Express Router types. Override the base tsconfig and skip declaration emit.",
+    "declaration": false,
+    "declarationMap": false
   },
   "include": ["src/**/*.ts"],
   "//comment": "Test files are checked + run by vitest, not by tsc. tsc with noUncheckedIndexedAccess is too strict for arrange-act-assert tests where we know an array has N elements.",
