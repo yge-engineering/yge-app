@@ -21,6 +21,7 @@ import {
 } from '@yge/shared';
 import { SubBidEditor } from './sub-bid-editor';
 import { BidSecurityEditor } from './bid-security-editor';
+import { AddendumEditor } from './addendum-editor';
 
 interface Props {
   initialEstimate: PricedEstimate;
@@ -226,6 +227,15 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
       <BidSecurityEditor
         estimate={estimate}
         bidTotalCents={totals.bidTotalCents}
+        apiBaseUrl={apiBaseUrl}
+        onUpdated={(nextEstimate, nextTotals) => {
+          setEstimate(nextEstimate);
+          setTotals(nextTotals);
+        }}
+      />
+
+      <AddendumEditor
+        estimate={estimate}
         apiBaseUrl={apiBaseUrl}
         onUpdated={(nextEstimate, nextTotals) => {
           setEstimate(nextEstimate);

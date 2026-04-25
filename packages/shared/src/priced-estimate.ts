@@ -18,6 +18,7 @@ import { PtoEBidItemSchema, PtoEProjectTypeSchema } from './plans-to-estimate-ou
 import type { PtoEBidItem } from './plans-to-estimate-output';
 import { SubBidSchema } from './sub-bid';
 import { BidSecuritySchema } from './bid-security';
+import { AddendumSchema } from './addendum';
 
 /** A bid item with the estimator's unit price layered on. */
 export const PricedBidItemSchema = PtoEBidItemSchema.extend({
@@ -58,6 +59,12 @@ export const PricedEstimateSchema = z.object({
    *  pre-feature files don't have it. The editor seeds a default 10% bid
    *  bond when the user opens the section for the first time. */
   bidSecurity: BidSecuritySchema.optional(),
+
+  /** Addenda issued by the agency before bid open. Each one must be
+   *  individually acknowledged on the bid form — un-acked addenda are
+   *  the #1 cause of bids getting tossed at bid open. Defaults to []
+   *  so older estimate JSON files on disk still parse. */
+  addenda: z.array(AddendumSchema).default([]),
 });
 export type PricedEstimate = z.infer<typeof PricedEstimateSchema>;
 

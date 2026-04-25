@@ -31,6 +31,7 @@ function estimate(items: PricedBidItem[], oppPercent = 0.2): PricedEstimate {
     bidItems: items,
     oppPercent,
     subBids: [],
+    addenda: [],
   };
 }
 
@@ -122,6 +123,8 @@ describe('PricedEstimateSchema', () => {
     };
     const parsed = PricedEstimateSchema.parse(onDisk);
     expect(parsed.subBids).toEqual([]);
+    // Same backfill should rescue the addenda field too.
+    expect(parsed.addenda).toEqual([]);
   });
 });
 

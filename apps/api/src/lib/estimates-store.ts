@@ -11,6 +11,7 @@ import { randomBytes } from 'node:crypto';
 import {
   PricedEstimateSchema,
   blankPricedItemsFromDraft,
+  type Addendum,
   type BidSecurity,
   type PricedEstimate,
   type PricedBidItem,
@@ -50,6 +51,12 @@ export interface EstimateSummary {
   /** Number of subcontractors captured for this estimate. The list view
    *  uses this to show "0 subs" / "5 subs" without loading the full file. */
   subBidCount: number;
+  /** Number of addenda logged. */
+  addendumCount: number;
+  /** How many addenda are logged but un-acknowledged. The list view shows
+   *  this in red so an estimate that's about to fail at bid open is
+   *  visible without opening it. */
+  unacknowledgedAddendumCount: number;
 }
 
 export interface CreateFromDraftInput {
@@ -108,6 +115,9 @@ function summarize(est: PricedEstimate): EstimateSummary {
     oppPercent: est.oppPercent,
     bidTotalCents: directCents + oppCents,
     subBidCount: est.subBids?.length ?? 0,
+    addendumCount: est.addenda?.length ?? 0,
+    unacknowledgedAddendumCount:
+      est.addenda?.filter((a) => !a.acknowledged).length ?? 0,
   };
 }
 
@@ -155,6 +165,7 @@ export async function createFromDraft(
     bidItems: blankPricedItemsFromDraft(input.draft.bidItems),
     oppPercent: input.oppPercent ?? 0.2,
     subBids: [],
+    addenda: [],
   };
   // Validate before writing so a buggy caller can't poison the store.
   PricedEstimateSchema.parse(est);
@@ -195,6 +206,10 @@ export interface EstimatePatch {
   /** Replace the bid security record. Pass `null` to clear it (not every
    *  bid needs security; some private/task-order work skips it). */
   bidSecurity?: BidSecurity | null;
+  /** Replace the full addendum list. Same atomic-replace logic as the
+   *  sub list — addenda are typically small (0-10) and the editor saves
+   *  every commit through this single field. */
+  addenda?: Addendum[];
 }
 
 export async function updateEstimate(
@@ -213,6 +228,7 @@ export async function updateEstimate(
     ...(patch.bidSecurity !== undefined
       ? { bidSecurity: patch.bidSecurity ?? undefined }
       : {}),
+    ...(patch.addenda ? { addenda: patch.addenda } : {}),
     updatedAt: new Date().toISOString(),
   };
   PricedEstimateSchema.parse(updated);

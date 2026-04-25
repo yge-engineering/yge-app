@@ -7,6 +7,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import {
+  AddendumSchema,
   BidSecuritySchema,
   PricedBidItemSchema,
   SubBidSchema,
@@ -87,6 +88,9 @@ const UpdateBody = z.object({
   subBids: z.array(SubBidSchema).optional(),
   /** Pass null to clear bid security (e.g. switching to private work). */
   bidSecurity: BidSecuritySchema.nullable().optional(),
+  /** Replace the full addendum list. The addendum editor PATCHes through
+   *  the estimate-level endpoint on every commit. */
+  addenda: z.array(AddendumSchema).optional(),
 });
 
 // PATCH /api/priced-estimates/:id — update O&P / notes / full bid item list.

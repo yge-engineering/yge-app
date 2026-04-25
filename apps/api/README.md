@@ -207,6 +207,19 @@ surety company / bond number / attorney-in-fact for bonds, and prints
 on the bid summary. PATCH `/api/priced-estimates/:id` with
 `{ bidSecurity: ... }` (or `null` to clear).
 
+The editor also exposes an **Addenda acknowledged** section. Every
+addendum the agency issues before bid open must be individually
+acknowledged on the bid form — missing one is grounds for rejection at
+bid open. The section captures the agency's number, date issued, and a
+one-line subject; the estimator ticks each row as they read and
+incorporate each addendum. The list view (`/estimates`) shows a red
+"N un-acked" badge on any estimate with un-acknowledged addenda. The
+print page (`/estimates/:id/print`) renders the acknowledgment block
+between totals and bid security; if any are still un-acked, it prints
+a "MISSING ACKNOWLEDGMENT" warning in red so the bid reviewer catches
+it before the envelope goes in. PATCH `/api/priced-estimates/:id` with
+`{ addenda: [...] }` to replace the full list.
+
 The math (`computeEstimateTotals`, `lineExtendedCents`) lives in
 `@yge/shared/priced-estimate.ts` so the API and the UI never disagree on
 what the running total is. Money stays in cents end-to-end.

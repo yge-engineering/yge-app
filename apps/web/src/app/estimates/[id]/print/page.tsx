@@ -19,6 +19,9 @@ import {
   computeEstimateTotals,
   formatUSD,
   lineExtendedCents,
+  sortedAddenda,
+  unacknowledgedAddenda,
+  type Addendum,
   type PricedEstimate,
   type PricedEstimateTotals,
   type SubBid,
@@ -74,6 +77,12 @@ export default async function PrintBidPage({
     totals.bidTotalCents,
     estimate.projectType,
   );
+
+  // Addenda block. Print every logged addendum, sorted numerically. The
+  // block calls out un-acknowledged ones in red so the bid reviewer
+  // catches them before the envelope goes in.
+  const addendaForPrint = sortedAddenda(estimate.addenda ?? []);
+  const unackedForPrint = unacknowledgedAddenda(estimate.addenda ?? []);
 
   return (
     <>
@@ -246,6 +255,47 @@ export default async function PrintBidPage({
           </table>
         </section>
 
+        {/* ------- Addenda acknowledged ------- */}
+        {addendaForPrint.length > 0 && (
+          <section className="totals-block mt-6">
+            <h3 className="mb-1 text-xs font-bold uppercase tracking-wide text-gray-700">
+              Addenda acknowledged
+            </h3>
+            {unackedForPrint.length > 0 ? (
+              <p className="mb-2 rounded border border-red-300 bg-red-50 p-2 text-[11px] font-semibold text-red-800">
+                MISSING ACKNOWLEDGMENT &mdash; {unackedForPrint.length}{' '}
+                addend{unackedForPrint.length === 1 ? 'um is' : 'a are'} logged
+                but not yet acknowledged. The bid will be ruled non-responsive
+                if submitted in this state.
+              </p>
+            ) : (
+              <p className="mb-2 text-[11px] text-gray-700">
+                The undersigned acknowledges receipt of the following addenda
+                and has incorporated all changes into this bid:
+              </p>
+            )}
+            <table className="w-full border-collapse text-xs">
+              <thead>
+                <tr className="border-y border-gray-700 bg-gray-50">
+                  <th className="px-2 py-1 text-left font-semibold">No.</th>
+                  <th className="px-2 py-1 text-left font-semibold">
+                    Date issued
+                  </th>
+                  <th className="px-2 py-1 text-left font-semibold">Subject</th>
+                  <th className="px-2 py-1 text-center font-semibold">
+                    Acknowledged
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {addendaForPrint.map((a) => (
+                  <AddendumPrintRow key={a.id} addendum={a} />
+                ))}
+              </tbody>
+            </table>
+          </section>
+        )}
+
         {/* ------- Bid security ------- */}
         {estimate.bidSecurity && (
           <section className="totals-block mt-6 rounded border border-gray-300 bg-gray-50 p-3">
@@ -387,6 +437,33 @@ export default async function PrintBidPage({
 }
 
 // ---- Subcomponents -------------------------------------------------------
+
+function AddendumPrintRow({ addendum }: { addendum: Addendum }) {
+  return (
+    <tr
+      className={`bid-item-row border-b border-gray-200 align-top ${
+        addendum.acknowledged ? '' : 'bg-red-50'
+      }`}
+    >
+      <td className="px-2 py-1.5 font-mono text-[11px] font-semibold">
+        {addendum.number}
+      </td>
+      <td className="px-2 py-1.5 text-[11px] text-gray-700">
+        {addendum.dateIssued || '—'}
+      </td>
+      <td className="px-2 py-1.5 text-[11px] text-gray-800">
+        {addendum.subject || '—'}
+      </td>
+      <td className="px-2 py-1.5 text-center text-[11px] font-semibold">
+        {addendum.acknowledged ? (
+          <span className="text-green-700">Yes</span>
+        ) : (
+          <span className="text-red-700">No</span>
+        )}
+      </td>
+    </tr>
+  );
+}
 
 function SubBidPrintRow({ sub }: { sub: SubBid }) {
   return (

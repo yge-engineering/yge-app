@@ -293,3 +293,83 @@ describe('subBids', () => {
     expect(after?.subBids[0].id).toBe('sub-3');
   });
 });
+
+describe('addenda', () => {
+  it('starts empty on a fresh estimate', async () => {
+    const est = await createFromDraft({
+      fromDraftId: 'd1',
+      jobId: 'cltest000000000000000000',
+      draft: sampleDraft,
+    });
+    expect(est.addenda).toEqual([]);
+  });
+
+  it('round-trips an addendum list through updateEstimate', async () => {
+    const est = await createFromDraft({
+      fromDraftId: 'd1',
+      jobId: 'cltest000000000000000000',
+      draft: sampleDraft,
+    });
+    const updated = await updateEstimate(est.id, {
+      addenda: [
+        {
+          id: 'add-1',
+          number: '1',
+          dateIssued: '2026-04-15',
+          subject: 'Schedule extension to 4/30',
+          acknowledged: true,
+        },
+        {
+          id: 'add-2',
+          number: '2',
+          dateIssued: '2026-04-20',
+          subject: 'Drawing C-3 revision',
+          acknowledged: false,
+        },
+      ],
+    });
+    expect(updated?.addenda).toHaveLength(2);
+
+    const fetched = await getEstimate(est.id);
+    expect(fetched?.addenda).toHaveLength(2);
+    expect(fetched?.addenda[1].acknowledged).toBe(false);
+  });
+
+  it('summary tracks addendum + un-acked counts', async () => {
+    const est = await createFromDraft({
+      fromDraftId: 'd1',
+      jobId: 'cltest000000000000000000',
+      draft: sampleDraft,
+    });
+    await updateEstimate(est.id, {
+      addenda: [
+        { id: 'add-1', number: '1', acknowledged: true },
+        { id: 'add-2', number: '2', acknowledged: false },
+        { id: 'add-3', number: '3', acknowledged: false },
+      ],
+    });
+    const list = await listEstimates();
+    expect(list[0].addendumCount).toBe(3);
+    expect(list[0].unacknowledgedAddendumCount).toBe(2);
+  });
+
+  it('replaces the whole addendum list when patched', async () => {
+    const est = await createFromDraft({
+      fromDraftId: 'd1',
+      jobId: 'cltest000000000000000000',
+      draft: sampleDraft,
+    });
+    await updateEstimate(est.id, {
+      addenda: [
+        { id: 'add-1', number: '1', acknowledged: true },
+        { id: 'add-2', number: '2', acknowledged: false },
+      ],
+    });
+    // Replace with a single new entry — old two should be gone.
+    const after = await updateEstimate(est.id, {
+      addenda: [{ id: 'add-3', number: '3', acknowledged: true }],
+    });
+    expect(after?.addenda).toHaveLength(1);
+    expect(after?.addenda[0].number).toBe('3');
+  });
+});

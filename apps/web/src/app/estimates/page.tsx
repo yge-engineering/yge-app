@@ -24,6 +24,11 @@ interface EstimateSummary {
   /** May be missing on summary entries written before the §4104 sub list
    *  feature shipped — treat undefined as 0 so the UI doesn't break. */
   subBidCount?: number;
+  /** May be missing on summary entries written before the addendum tracking
+   *  feature shipped — treat undefined as 0. */
+  addendumCount?: number;
+  /** Logged but un-acknowledged addenda. > 0 = bid is non-responsive. */
+  unacknowledgedAddendumCount?: number;
 }
 
 function apiBaseUrl(): string {
@@ -111,6 +116,7 @@ export default async function EstimatesPage() {
                 <th className="px-4 py-2">Type</th>
                 <th className="px-4 py-2">Lines</th>
                 <th className="px-4 py-2">Subs</th>
+                <th className="px-4 py-2">Addenda</th>
                 <th className="px-4 py-2">Bid total</th>
                 <th className="px-4 py-2">Updated</th>
                 <th className="px-4 py-2"></th>
@@ -140,6 +146,22 @@ export default async function EstimatesPage() {
                     {e.subBidCount && e.subBidCount > 0 ? (
                       <span>
                         {e.subBidCount} sub{e.subBidCount === 1 ? '' : 's'}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">none</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-xs text-gray-700">
+                    {e.addendumCount && e.addendumCount > 0 ? (
+                      <span>
+                        {e.addendumCount} addend
+                        {e.addendumCount === 1 ? 'um' : 'a'}
+                        {e.unacknowledgedAddendumCount &&
+                        e.unacknowledgedAddendumCount > 0 ? (
+                          <span className="ml-2 inline-block rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-800">
+                            {e.unacknowledgedAddendumCount} un-acked
+                          </span>
+                        ) : null}
                       </span>
                     ) : (
                       <span className="text-gray-400">none</span>
