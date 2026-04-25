@@ -259,6 +259,9 @@ export async function setLineUnitPrice(
   if (!existing) return null;
   if (itemIndex < 0 || itemIndex >= existing.bidItems.length) return null;
   const items = existing.bidItems.slice();
-  items[itemIndex] = { ...items[itemIndex], unitPriceCents };
+  // We've already bounds-checked itemIndex above, so items[itemIndex]
+  // is provably defined — but TS can't prove it through .slice(), so
+  // narrow with a non-null assertion.
+  items[itemIndex] = { ...items[itemIndex]!, unitPriceCents };
   return updateEstimate(id, { bidItems: items });
 }

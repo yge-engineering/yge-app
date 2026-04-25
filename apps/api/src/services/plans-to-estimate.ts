@@ -89,6 +89,11 @@ export async function runPlansToEstimate(
   const client = input.client ?? anthropic;
   const model = input.model ?? DEFAULT_MODEL;
 
+  // NOTE: @anthropic-ai/sdk@0.20.9 (pinned via lockfile) ships incomplete
+  // tool-use types — `tools`/`tool_choice` aren't on MessageCreateParamsBase
+  // and ToolUseBlock isn't properly discriminated from TextBlock. Both work
+  // at runtime; we cast through `any` in two narrow places so typecheck
+  // passes. When we bump the SDK these casts can come out.
   const response = await client.messages.create({
     model,
     max_tokens: 4096,
@@ -96,10 +101,12 @@ export async function runPlansToEstimate(
     tools: [SUBMIT_TOOL],
     tool_choice: { type: 'tool', name: SUBMIT_TOOL.name },
     messages: [{ role: 'user', content: buildUserMessage(input.documentText, input.sessionNotes) }],
-  });
+  } as Anthropic.MessageCreateParams);
 
-  const toolUse = response.content.find((b) => b.type === 'tool_use');
-  if (!toolUse || toolUse.type !== 'tool_use') {
+  const toolUse = response.content.find(
+    (b: { type: string }) => b.type === 'tool_use',
+  ) as { type: 'tool_use'; input: unknown } | undefined;
+  if (!toolUse) {
     throw new PlansToEstimateError(
       'Model did not call submit_draft_estimate. Stop reason: ' + response.stop_reason,
     );

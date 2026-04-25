@@ -7,5 +7,7 @@
     "moduleResolution": "Node",
     "types": ["node"]
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts"],
+  "//comment": "Test files are checked + run by vitest, not by tsc. tsc with noUncheckedIndexedAccess is too strict for arrange-act-assert tests where we know an array has N elements.",
+  "exclude": ["**/*.test.ts"]
 }
