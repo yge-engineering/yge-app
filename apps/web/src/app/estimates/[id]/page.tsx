@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { PricedEstimate, PricedEstimateTotals } from '@yge/shared';
 import { EstimateEditor } from '@/components/estimate-editor';
+import { BidDueBanner } from '@/components/bid-due-banner';
 
 function apiBaseUrl(): string {
   return (
@@ -52,6 +53,10 @@ export default async function EstimateDetailPage({
         >
           View source draft &rarr;
         </Link>
+      </div>
+
+      <div className="mb-4">
+        <BidDueBanner bidDueDate={data.estimate.bidDueDate} />
       </div>
 
       <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
