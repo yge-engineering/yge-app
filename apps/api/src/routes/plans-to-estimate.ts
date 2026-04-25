@@ -1,39 +1,47 @@
-// Plans-to-Estimate — AI endpoint. Takes uploaded plan set or spec files,
-// runs them through Claude, and returns a draft estimate for the user to
-// review and adjust.
+// Plans-to-Estimate — AI endpoint. Takes a project document (plan set, spec,
+// or RFP) as text and returns a draft estimate the user reviews and adjusts.
 //
-// NOTE: Skeleton only. Fills in during Phase 1 weeks 4-8.
+// Phase 1 weeks 4-8 will add: pulling files from Supabase Storage, OCR for
+// scanned PDFs, page-chunking large plan sets, persisting the draft to the
+// Estimate / BidItem tables. For now the endpoint accepts already-extracted
+// document text so the AI flow is end-to-end testable.
 
 import { Router } from 'express';
-import { PlansToEstimateInputSchema } from '@yge/shared';
-import { anthropic, DEFAULT_MODEL } from '../lib/anthropic';
+import { z } from 'zod';
+import { runPlansToEstimate, PlansToEstimateError } from '../services/plans-to-estimate';
 
 export const plansToEstimateRouter = Router();
 
+const InlineInputSchema = z.object({
+  jobId: z.string().cuid(),
+  documentText: z.string().min(20).max(500_000),
+  sessionNotes: z.string().max(5_000).optional(),
+});
+
 plansToEstimateRouter.post('/', async (req, res, next) => {
   try {
-    const parsed = PlansToEstimateInputSchema.safeParse(req.body);
+    const parsed = InlineInputSchema.safeParse(req.body);
     if (!parsed.success) {
-      return res.status(400).json({ error: 'Validation failed', issues: parsed.error.issues });
+      return res
+        .status(400)
+        .json({ error: 'Validation failed', issues: parsed.error.issues });
     }
 
-    // TODO (Phase 1 weeks 4-8):
-    //  1. Pull file keys from Supabase Storage, OCR if needed.
-    //  2. Chunk PDF pages into sections (cover, specs, plan sheets by discipline).
-    //  3. Run each section through Claude with the plans-to-estimate prompt.
-    //  4. Aggregate quantities per bid item type.
-    //  5. Look up matching rate records in the company's master tables.
-    //  6. Produce a draft Estimate + BidItems + CostLines with confidence scores.
-    //  7. Return the draft ID; UI opens it in "review draft" mode.
+    const result = await runPlansToEstimate({
+      documentText: parsed.data.documentText,
+      sessionNotes: parsed.data.sessionNotes,
+    });
 
-    // Echo the request so the endpoint is callable during build-out:
-    res.status(501).json({
-      message: 'Plans-to-Estimate endpoint scaffolded — implementation pending.',
-      input: parsed.data,
-      model: DEFAULT_MODEL,
-      clientReady: Boolean(anthropic),
+    return res.json({
+      jobId: parsed.data.jobId,
+      modelUsed: result.modelUsed,
+      usage: result.usage,
+      draft: result.output,
     });
   } catch (err) {
+    if (err instanceof PlansToEstimateError) {
+      return res.status(502).json({ error: err.message });
+    }
     next(err);
   }
 });

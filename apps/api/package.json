@@ -9,7 +9,8 @@
     "start": "node dist/index.js",
     "lint": "eslint .",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "dry-run:ptoe": "tsx src/scripts/plans-to-estimate-cli.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.20.0",
