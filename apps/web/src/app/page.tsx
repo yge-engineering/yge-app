@@ -12,12 +12,18 @@ export default function HomePage() {
           Estimating, job management, and bookkeeping for heavy civil work. Replaces Excel + QuickBooks
           Online with a single connected system.
         </p>
-        <div className="mt-8 flex justify-center gap-4">
+        <div className="mt-8 flex flex-wrap justify-center gap-4">
           <Link
             href="/dashboard"
             className="rounded bg-yge-blue-500 px-6 py-3 text-white hover:bg-yge-blue-700"
           >
             Open Dashboard
+          </Link>
+          <Link
+            href="/plans-to-estimate"
+            className="rounded bg-yge-blue-500 px-6 py-3 text-white hover:bg-yge-blue-700"
+          >
+            Plans-to-Estimate (AI)
           </Link>
           <Link
             href="/jobs"

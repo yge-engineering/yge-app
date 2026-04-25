@@ -13,6 +13,8 @@ const config: Config = {
       colors: {
         'yge-blue': {
           50: '#eff6ff',
+          100: '#dbeafe',
+          200: '#bfdbfe',
           500: '#1f4e78',
           700: '#163a5a',
         },
