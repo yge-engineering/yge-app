@@ -9,10 +9,12 @@ import { notFound } from 'next/navigation';
 import {
   contractTypeLabel,
   formatUSD,
+  nextBidAction,
   statusLabel,
   type Job,
 } from '@yge/shared';
 import { JobStatusEditor } from '@/components/job-status-editor';
+import { BidDueBanner } from '@/components/bid-due-banner';
 
 interface DraftSummary {
   id: string;
@@ -118,8 +120,25 @@ export default async function JobDetailPage({
     fetchEstimates(),
   ]);
 
-  const drafts = allDrafts.filter((d) => d.jobId === job.id);
-  const estimates = allEstimates.filter((e) => e.jobId === job.id);
+  // Sort newest-first so nextBidAction picks the most recent draft / estimate.
+  const drafts = allDrafts
+    .filter((d) => d.jobId === job.id)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const estimates = allEstimates
+    .filter((e) => e.jobId === job.id)
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+
+  const action = nextBidAction(job.id, {
+    drafts: drafts.map((d) => ({ id: d.id, createdAt: d.createdAt })),
+    estimates: estimates.map((e) => ({
+      id: e.id,
+      bidItemCount: e.bidItemCount,
+      pricedLineCount: e.pricedLineCount,
+      unpricedLineCount: e.unpricedLineCount,
+      unacknowledgedAddendumCount: e.unacknowledgedAddendumCount,
+      bidTotalCents: e.bidTotalCents,
+    })),
+  });
 
   return (
     <main className="mx-auto max-w-6xl p-8">
@@ -141,6 +160,49 @@ export default async function JobDetailPage({
         </div>
         <JobStatusEditor jobId={job.id} initialStatus={job.status} />
       </div>
+
+      {job.bidDueDate && (
+        <div className="mt-6">
+          <BidDueBanner bidDueDate={job.bidDueDate} />
+        </div>
+      )}
+
+      {/* Next step card — one click to whatever the estimator should do next */}
+      {action.id !== 'no-action' && (
+        <div
+          className={`mt-6 flex flex-wrap items-center justify-between gap-4 rounded-lg border p-5 ${
+            action.done
+              ? 'border-green-300 bg-green-50'
+              : 'border-yge-blue-200 bg-yge-blue-50'
+          }`}
+        >
+          <div>
+            <div
+              className={`text-xs font-semibold uppercase tracking-wide ${
+                action.done ? 'text-green-700' : 'text-yge-blue-700'
+              }`}
+            >
+              Next step
+            </div>
+            <div className="mt-1 text-lg font-semibold text-gray-900">
+              {action.label}
+            </div>
+            <div className="mt-1 text-sm text-gray-700">{action.detail}</div>
+          </div>
+          {action.href && (
+            <Link
+              href={action.href}
+              className={`rounded px-4 py-2 text-sm font-semibold text-white ${
+                action.done
+                  ? 'bg-green-600 hover:bg-green-700'
+                  : 'bg-yge-blue-500 hover:bg-yge-blue-700'
+              }`}
+            >
+              Do it &rarr;
+            </Link>
+          )}
+        </div>
+      )}
 
       <dl className="mt-8 grid gap-4 rounded-lg border border-gray-200 bg-white p-6 text-sm shadow-sm sm:grid-cols-2">
         {job.ownerAgency && (
@@ -282,6 +344,18 @@ export default async function JobDetailPage({
                     className="text-yge-blue-500 hover:underline"
                   >
                     Print
+                  </Link>
+                  <Link
+                    href={`/estimates/${e.id}/transmittal`}
+                    className="text-yge-blue-500 hover:underline"
+                  >
+                    Cover
+                  </Link>
+                  <Link
+                    href={`/estimates/${e.id}/envelope`}
+                    className="text-yge-blue-500 hover:underline"
+                  >
+                    Envelope
                   </Link>
                 </div>
               </li>

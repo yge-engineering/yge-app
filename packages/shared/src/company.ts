@@ -15,6 +15,8 @@ export interface CompanyContact {
   title: string;
   phone: string;
   email: string;
+  /** Optional internal key for routing (e.g. 'president', 'vp', 'safety'). */
+  roleKey?: string;
 }
 
 export interface CompanyInfo {
