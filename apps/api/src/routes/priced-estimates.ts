@@ -8,6 +8,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import {
   PricedBidItemSchema,
+  SubBidSchema,
   computeEstimateTotals,
   pricedEstimateToCsv,
 } from '@yge/shared';
@@ -82,6 +83,7 @@ const UpdateBody = z.object({
   oppPercent: z.number().min(0).max(2).optional(),
   notes: z.string().max(5_000).optional(),
   bidItems: z.array(PricedBidItemSchema).min(1).optional(),
+  subBids: z.array(SubBidSchema).optional(),
 });
 
 // PATCH /api/priced-estimates/:id — update O&P / notes / full bid item list.
@@ -128,6 +130,34 @@ pricedEstimatesRouter.get('/:id/export.csv', async (req, res, next) => {
       `attachment; filename="${slug}-priced-estimate.csv"`,
     );
     return res.send('\uFEFF' + csv);
+  } catch (err) {
+    next(err);
+  }
+});
+
+const SubBidsBody = z.object({
+  subBids: z.array(SubBidSchema),
+});
+
+// PUT /api/priced-estimates/:id/sub-bids — replace the whole subcontractor
+// list. PUT (not PATCH) because we replace the array wholesale; bidding the
+// whole list keeps the on-disk shape consistent and avoids reorder races.
+pricedEstimatesRouter.put('/:id/sub-bids', async (req, res, next) => {
+  try {
+    const parsed = SubBidsBody.safeParse(req.body);
+    if (!parsed.success) {
+      return res
+        .status(400)
+        .json({ error: 'Validation failed', issues: parsed.error.issues });
+    }
+    const updated = await updateEstimate(req.params.id, {
+      subBids: parsed.data.subBids,
+    });
+    if (!updated) return res.status(404).json({ error: 'Estimate not found' });
+    return res.json({
+      estimate: updated,
+      totals: computeEstimateTotals(updated),
+    });
   } catch (err) {
     next(err);
   }

@@ -171,6 +171,11 @@ API endpoints (mounted at `/api/priced-estimates`):
 - `PATCH /api/priced-estimates/:id/items/:itemIndex` — body
   `{ unitPriceCents }`. Used by the inline editor so each keystroke flush
   doesn't re-send the whole bid list.
+- `PUT /api/priced-estimates/:id/sub-bids` — body `{ subBids: SubBid[] }`.
+  Replaces the full subcontractor list. PUT (not PATCH) because we replace
+  the whole array atomically. The §4104 classification (must-list vs.
+  borderline vs. optional) is computed on read by the UI from
+  `classifySubBids` in `@yge/shared`.
 - `GET /api/priced-estimates/:id/export.csv` — full priced estimate as a
   direct CSV download. Includes a totals block at the bottom (direct cost,
   O&P, bid total) so the recipient doesn't need to add a SUM formula.
@@ -181,10 +186,18 @@ Web pages:
 - `/estimates/:id` — full inline editor: dollar input per line, O&P
   percent input at the bottom, totals card live-updates from the server.
 - `/estimates/:id/print` — print-ready bid summary on YGE letterhead
-  with company info, bid item schedule, totals block, and signature
-  line. Hit *Print / Save as PDF* in the page header to drop straight
-  into a PDF for the bid package. Logo block is a placeholder until
-  the brand kit lands.
+  with company info, bid item schedule, totals block, designated
+  subcontractor list (PCC §4104), and signature line. Hit *Print / Save
+  as PDF* in the page header to drop straight into a PDF for the bid
+  package. Logo block is a placeholder until the brand kit lands.
+
+The estimate editor (`/estimates/:id`) also exposes a **Subcontractor
+list** section. Each row is a sub the prime intends to use; the UI tags
+each row as **Must list / Borderline / Optional** based on CA Public
+Contract Code §4104 (subs over the threshold dollar amount must appear
+on the bid form, or the bid is non-responsive). Threshold is `max(0.5%
+of bid total, $10,000)` for streets/highways/bridges and `0.5%` for
+other public works.
 
 The math (`computeEstimateTotals`, `lineExtendedCents`) lives in
 `@yge/shared/priced-estimate.ts` so the API and the UI never disagree on

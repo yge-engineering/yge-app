@@ -14,6 +14,7 @@ import {
   type PricedEstimate,
   type PricedBidItem,
   type PtoEOutput,
+  type SubBid,
 } from '@yge/shared';
 
 // Resolve the data dir lazily on every call so tests can override it via
@@ -45,6 +46,9 @@ export interface EstimateSummary {
   /** Pre-computed once on save so the index page doesn't have to load every
    *  full estimate. Refreshed on every `updateEstimate` call. */
   bidTotalCents: number;
+  /** Number of subcontractors captured for this estimate. The list view
+   *  uses this to show "0 subs" / "5 subs" without loading the full file. */
+  subBidCount: number;
 }
 
 export interface CreateFromDraftInput {
@@ -102,6 +106,7 @@ function summarize(est: PricedEstimate): EstimateSummary {
     unpricedLineCount: unpriced,
     oppPercent: est.oppPercent,
     bidTotalCents: directCents + oppCents,
+    subBidCount: est.subBids?.length ?? 0,
   };
 }
 
@@ -148,6 +153,7 @@ export async function createFromDraft(
     bidDueDate: input.draft.bidDueDate,
     bidItems: blankPricedItemsFromDraft(input.draft.bidItems),
     oppPercent: input.oppPercent ?? 0.2,
+    subBids: [],
   };
   // Validate before writing so a buggy caller can't poison the store.
   PricedEstimateSchema.parse(est);
@@ -167,7 +173,9 @@ export async function getEstimate(id: string): Promise<PricedEstimate | null> {
   if (!/^est-[a-z0-9-]{10,80}$/.test(id)) return null;
   try {
     const raw = await fs.readFile(estimatePath(id), 'utf8');
-    return JSON.parse(raw) as PricedEstimate;
+    // Run through the schema so newly added optional fields with defaults
+    // (e.g. subBids: []) backfill cleanly when reading older files.
+    return PricedEstimateSchema.parse(JSON.parse(raw));
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
     throw err;
@@ -179,6 +187,10 @@ export interface EstimatePatch {
   oppPercent?: number;
   notes?: string;
   bidItems?: PricedBidItem[];
+  /** Replace the full subcontractor list. The editor PATCHes the whole
+   *  array because individual sub edits are rare and bundling avoids the
+   *  edit-in-the-middle race that per-id PATCHes would invite. */
+  subBids?: SubBid[];
 }
 
 export async function updateEstimate(
@@ -193,6 +205,7 @@ export async function updateEstimate(
     ...(patch.oppPercent != null ? { oppPercent: patch.oppPercent } : {}),
     ...(patch.notes !== undefined ? { notes: patch.notes } : {}),
     ...(patch.bidItems ? { bidItems: patch.bidItems } : {}),
+    ...(patch.subBids ? { subBids: patch.subBids } : {}),
     updatedAt: new Date().toISOString(),
   };
   PricedEstimateSchema.parse(updated);

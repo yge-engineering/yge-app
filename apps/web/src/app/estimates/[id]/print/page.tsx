@@ -13,11 +13,13 @@ import { notFound } from 'next/navigation';
 import {
   YGE_COMPANY_INFO,
   centsToDollars,
+  classifySubBids,
   computeEstimateTotals,
   formatUSD,
   lineExtendedCents,
   type PricedEstimate,
   type PricedEstimateTotals,
+  type SubBid,
 } from '@yge/shared';
 import { PrintButton } from '@/components/print-button';
 
@@ -60,6 +62,16 @@ export default async function PrintBidPage({
   if (!data) notFound();
   const { estimate } = data;
   const totals = computeEstimateTotals(estimate);
+
+  // PCC §4104 sub list. We print every sub the user has captured, regardless
+  // of bucket — leaving a sub off the printed bid form is what makes the
+  // bid non-responsive. Optional/borderline rows still go on the form;
+  // the bucket only changes whether they're legally required.
+  const subClassification = classifySubBids(
+    estimate.subBids,
+    totals.bidTotalCents,
+    estimate.projectType,
+  );
 
   return (
     <>
@@ -232,6 +244,57 @@ export default async function PrintBidPage({
           </table>
         </section>
 
+        {/* ------- Subcontractor list (PCC §4104) ------- */}
+        {estimate.subBids.length > 0 && (
+          <section className="totals-block mt-8">
+            <h3 className="mb-1 text-sm font-bold uppercase tracking-wide text-gray-700">
+              Designated subcontractors
+            </h3>
+            <p className="mb-2 text-[10px] text-gray-600">
+              Per California Public Contract Code §4104, the subcontractors
+              below will perform a portion of the work. Threshold for
+              required listing on this bid:{' '}
+              <span className="font-mono">
+                {formatUSD(subClassification.thresholdCents)}
+              </span>
+              {subClassification.highwayFloor && (
+                <> (highway/streets/bridges $10,000 floor)</>
+              )}
+              .
+            </p>
+            <table className="w-full border-collapse text-xs">
+              <thead>
+                <tr className="border-y-2 border-gray-700 bg-gray-50">
+                  <th className="px-2 py-1 text-left font-semibold">
+                    Subcontractor / address
+                  </th>
+                  <th className="px-2 py-1 text-left font-semibold">CSLB #</th>
+                  <th className="px-2 py-1 text-left font-semibold">DIR #</th>
+                  <th className="px-2 py-1 text-left font-semibold">
+                    Portion of work
+                  </th>
+                  <th className="px-2 py-1 text-right font-semibold">
+                    Bid amount
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {estimate.subBids.map((sub) => (
+                  <SubBidPrintRow key={sub.id} sub={sub} />
+                ))}
+              </tbody>
+            </table>
+            {subClassification.mustList.length > 0 && (
+              <p className="mt-2 text-[10px] text-gray-700">
+                {subClassification.mustList.length} of the listed
+                subcontractor{subClassification.mustList.length === 1 ? '' : 's'}{' '}
+                exceed{subClassification.mustList.length === 1 ? 's' : ''} the
+                §4104 listing threshold.
+              </p>
+            )}
+          </section>
+        )}
+
         {/* ------- Signature ------- */}
         <section className="totals-block mt-12 grid grid-cols-2 gap-8 text-sm">
           <div>
@@ -261,5 +324,30 @@ export default async function PrintBidPage({
         )}
       </main>
     </>
+  );
+}
+
+// ---- Subcomponents -------------------------------------------------------
+
+function SubBidPrintRow({ sub }: { sub: SubBid }) {
+  return (
+    <tr className="bid-item-row border-b border-gray-200 align-top">
+      <td className="px-2 py-1.5">
+        <div className="font-semibold text-gray-900">{sub.contractorName}</div>
+        {sub.address && (
+          <div className="text-[10px] text-gray-600">{sub.address}</div>
+        )}
+      </td>
+      <td className="px-2 py-1.5 font-mono text-[11px] text-gray-700">
+        {sub.cslbLicense || '—'}
+      </td>
+      <td className="px-2 py-1.5 font-mono text-[11px] text-gray-700">
+        {sub.dirRegistration || '—'}
+      </td>
+      <td className="px-2 py-1.5 text-gray-800">{sub.portionOfWork}</td>
+      <td className="px-2 py-1.5 text-right font-mono text-gray-900">
+        ${centsToDollars(sub.bidAmountCents).toFixed(2)}
+      </td>
+    </tr>
   );
 }

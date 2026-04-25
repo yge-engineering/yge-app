@@ -6,3 +6,4 @@ export * from './plans-to-estimate-output';
 export * from './csv';
 export * from './priced-estimate';
 export * from './company';
+export * from './sub-bid';

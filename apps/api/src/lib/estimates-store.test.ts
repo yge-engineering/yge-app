@@ -184,3 +184,78 @@ describe('setLineUnitPrice', () => {
     ).toBeNull();
   });
 });
+
+describe('subBids', () => {
+  it('starts empty on a fresh estimate', async () => {
+    const est = await createFromDraft({
+      fromDraftId: 'd1',
+      jobId: 'cltest000000000000000000',
+      draft: sampleDraft,
+    });
+    expect(est.subBids).toEqual([]);
+  });
+
+  it('round-trips a sub list through updateEstimate', async () => {
+    const est = await createFromDraft({
+      fromDraftId: 'd1',
+      jobId: 'cltest000000000000000000',
+      draft: sampleDraft,
+    });
+    const updated = await updateEstimate(est.id, {
+      subBids: [
+        {
+          id: 'sub-aaaaaaaa',
+          contractorName: 'Acme Trucking, Inc.',
+          address: '123 Anywhere St, Anytown CA',
+          cslbLicense: '999999',
+          dirRegistration: '1000111222',
+          portionOfWork: 'Off-haul of unsuitable material',
+          bidAmountCents: 25_000_00,
+        },
+      ],
+    });
+    expect(updated?.subBids).toHaveLength(1);
+    expect(updated?.subBids[0].contractorName).toBe('Acme Trucking, Inc.');
+
+    const fetched = await getEstimate(est.id);
+    expect(fetched?.subBids).toHaveLength(1);
+    expect(fetched?.subBids[0].bidAmountCents).toBe(25_000_00);
+  });
+
+  it('replaces the whole sub list when patched', async () => {
+    const est = await createFromDraft({
+      fromDraftId: 'd1',
+      jobId: 'cltest000000000000000000',
+      draft: sampleDraft,
+    });
+    await updateEstimate(est.id, {
+      subBids: [
+        {
+          id: 'sub-1',
+          contractorName: 'First',
+          portionOfWork: 'A',
+          bidAmountCents: 1_000_00,
+        },
+        {
+          id: 'sub-2',
+          contractorName: 'Second',
+          portionOfWork: 'B',
+          bidAmountCents: 2_000_00,
+        },
+      ],
+    });
+    // Replace with a single new entry — old two should be gone.
+    const after = await updateEstimate(est.id, {
+      subBids: [
+        {
+          id: 'sub-3',
+          contractorName: 'Third',
+          portionOfWork: 'C',
+          bidAmountCents: 3_000_00,
+        },
+      ],
+    });
+    expect(after?.subBids).toHaveLength(1);
+    expect(after?.subBids[0].id).toBe('sub-3');
+  });
+});

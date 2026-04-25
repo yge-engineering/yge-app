@@ -21,6 +21,9 @@ interface EstimateSummary {
   unpricedLineCount: number;
   oppPercent: number;
   bidTotalCents: number;
+  /** May be missing on summary entries written before the §4104 sub list
+   *  feature shipped — treat undefined as 0 so the UI doesn't break. */
+  subBidCount?: number;
 }
 
 function apiBaseUrl(): string {
@@ -107,6 +110,7 @@ export default async function EstimatesPage() {
                 <th className="px-4 py-2">Project</th>
                 <th className="px-4 py-2">Type</th>
                 <th className="px-4 py-2">Lines</th>
+                <th className="px-4 py-2">Subs</th>
                 <th className="px-4 py-2">Bid total</th>
                 <th className="px-4 py-2">Updated</th>
                 <th className="px-4 py-2"></th>
@@ -130,6 +134,15 @@ export default async function EstimatesPage() {
                       <span className="ml-2 inline-block rounded-full bg-yellow-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-yellow-800">
                         {e.unpricedLineCount} to price
                       </span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-xs text-gray-700">
+                    {e.subBidCount && e.subBidCount > 0 ? (
+                      <span>
+                        {e.subBidCount} sub{e.subBidCount === 1 ? '' : 's'}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">none</span>
                     )}
                   </td>
                   <td className="px-4 py-3 font-medium text-gray-900">

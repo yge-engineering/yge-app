@@ -16,6 +16,7 @@ import type { Cents } from './money';
 import { markupAmount } from './money';
 import { PtoEBidItemSchema, PtoEProjectTypeSchema } from './plans-to-estimate-output';
 import type { PtoEBidItem } from './plans-to-estimate-output';
+import { SubBidSchema } from './sub-bid';
 
 /** A bid item with the estimator's unit price layered on. */
 export const PricedBidItemSchema = PtoEBidItemSchema.extend({
@@ -45,6 +46,11 @@ export const PricedEstimateSchema = z.object({
   oppPercent: z.number().min(0).max(2),
   /** Free-form estimator notes — not the same as draft assumptions. */
   notes: z.string().max(5_000).optional(),
+
+  /** Subcontractors per CA PCC §4104. Optional + defaults to [] so older
+   *  estimate JSON files on disk still parse. The classification helper in
+   *  `sub-bid.ts` flags which of these MUST be listed at bid open. */
+  subBids: z.array(SubBidSchema).default([]),
 });
 export type PricedEstimate = z.infer<typeof PricedEstimateSchema>;
 

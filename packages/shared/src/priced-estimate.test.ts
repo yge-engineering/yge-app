@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  PricedEstimateSchema,
   computeEstimateTotals,
   lineExtendedCents,
   blankPricedItemsFromDraft,
@@ -29,6 +30,7 @@ function estimate(items: PricedBidItem[], oppPercent = 0.2): PricedEstimate {
     projectType: 'OTHER',
     bidItems: items,
     oppPercent,
+    subBids: [],
   };
 }
 
@@ -91,6 +93,35 @@ describe('computeEstimateTotals', () => {
     expect(t.oppCents).toBe(0);
     expect(t.bidTotalCents).toBe(0);
     expect(t.unpricedLineCount).toBe(2);
+  });
+});
+
+describe('PricedEstimateSchema', () => {
+  it('backfills empty subBids on parse — pre-feature files still load', () => {
+    // An on-disk file written before the §4104 sub list shipped won't have
+    // a subBids field. The schema's default([]) must rescue it.
+    const onDisk = {
+      id: 'est-2026-04-24-old-deadbeef',
+      fromDraftId: 'd1',
+      jobId: 'cltest000000000000000000',
+      createdAt: '2026-04-20T00:00:00Z',
+      updatedAt: '2026-04-20T00:00:00Z',
+      projectName: 'Pre-feature estimate',
+      projectType: 'OTHER',
+      bidItems: [
+        {
+          itemNumber: '1',
+          description: 'Mob',
+          unit: 'LS',
+          quantity: 1,
+          confidence: 'HIGH',
+          unitPriceCents: null,
+        },
+      ],
+      oppPercent: 0.2,
+    };
+    const parsed = PricedEstimateSchema.parse(onDisk);
+    expect(parsed.subBids).toEqual([]);
   });
 });
 
