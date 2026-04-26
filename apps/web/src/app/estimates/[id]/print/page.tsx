@@ -10,6 +10,7 @@
 
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { Letterhead } from '@/components/letterhead';
 import {
   YGE_COMPANY_INFO,
   bidSecurityAmountCents,
@@ -133,19 +134,9 @@ export default async function PrintBidPage({
 
       <main className="mx-auto max-w-4xl bg-white px-10 py-8 text-gray-900">
         {/* ------- Letterhead ------- */}
-        <header className="border-b-2 border-yge-blue-500 pb-4">
-          <div className="flex items-start justify-between gap-6">
-            <div>
-              {/* Logo placeholder — drops in when brand kit lands. */}
-              <div className="mb-2 inline-block rounded border border-dashed border-gray-300 px-3 py-1 text-[10px] uppercase tracking-wide text-gray-400">
-                YGE logo
-              </div>
-              <h1 className="text-2xl font-bold text-yge-blue-700">
-                {YGE_COMPANY_INFO.legalName}
-              </h1>
-              <p className="text-sm text-gray-600">{YGE_COMPANY_INFO.tagline}</p>
-            </div>
-            <address className="text-right text-xs not-italic text-gray-700">
+        <Letterhead
+          rightBlock={
+            <>
               {YGE_COMPANY_INFO.address.street}
               <br />
               {YGE_COMPANY_INFO.address.city}, {YGE_COMPANY_INFO.address.state}{' '}
@@ -157,9 +148,9 @@ export default async function PrintBidPage({
               DIR #{YGE_COMPANY_INFO.dirNumber}
               <br />
               DOT #{YGE_COMPANY_INFO.dotNumber}
-            </address>
-          </div>
-        </header>
+            </>
+          }
+        />
 
         {/* ------- Bid title ------- */}
         <section className="mt-6">

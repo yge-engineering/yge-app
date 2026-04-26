@@ -8,13 +8,13 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
-  YGE_COMPANY_INFO,
   buildEnvelopeChecklist,
   computeEstimateTotals,
   type PricedEstimate,
   type PricedEstimateTotals,
 } from '@yge/shared';
 import { PrintButton } from '@/components/print-button';
+import { Letterhead } from '@/components/letterhead';
 
 function apiBaseUrl(): string {
   return (
@@ -86,23 +86,24 @@ export default async function EnvelopeChecklistPage({
 
       <main className="mx-auto max-w-3xl bg-white px-10 py-8 text-gray-900">
         {/* ------- Header ------- */}
-        <header className="border-b-2 border-yge-blue-500 pb-4">
-          <p className="text-xs uppercase tracking-widest text-gray-500">
-            {YGE_COMPANY_INFO.legalName}
-          </p>
-          <h1 className="mt-1 text-2xl font-bold">
-            Bid envelope checklist
-          </h1>
-          <p className="mt-1 text-sm text-gray-700">
-            {estimate.projectName}
-            {estimate.ownerAgency ? ` \u2014 ${estimate.ownerAgency}` : ''}
-          </p>
-          {estimate.bidDueDate && (
-            <p className="text-sm text-gray-700">
-              Bid due: <span className="font-semibold">{estimate.bidDueDate}</span>
-            </p>
-          )}
-        </header>
+        <Letterhead
+          variant="compact"
+          rightBlock={
+            <>
+              <div className="font-semibold uppercase tracking-wide">
+                Bid envelope checklist
+              </div>
+              <div>{estimate.projectName}</div>
+              {estimate.ownerAgency && <div>{estimate.ownerAgency}</div>}
+              {estimate.bidDueDate && (
+                <div className="mt-1">
+                  Due:{' '}
+                  <span className="font-semibold">{estimate.bidDueDate}</span>
+                </div>
+              )}
+            </>
+          }
+        />
 
         {/* ------- Status banner ------- */}
         {checklist.allRequiredAccountedFor ? (

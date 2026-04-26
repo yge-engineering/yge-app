@@ -18,6 +18,7 @@ import {
   type PricedEstimateTotals,
 } from '@yge/shared';
 import { PrintButton } from '@/components/print-button';
+import { Letterhead } from '@/components/letterhead';
 
 // Whom to print as the signer at the bottom of the cover letter.
 // `vp` (Ryan) is the default — matches the existing buildTransmittal default
@@ -135,17 +136,9 @@ export default async function TransmittalPage({
 
       <main className="mx-auto max-w-4xl bg-white px-12 py-10 text-gray-900">
         {/* ------- Letterhead ------- */}
-        <header className="border-b-2 border-yge-blue-500 pb-4">
-          <div className="flex items-start justify-between gap-6">
-            <div>
-              <div className="mb-2 inline-block rounded border border-dashed border-gray-300 px-3 py-1 text-[10px] uppercase tracking-wide text-gray-400">
-                YGE logo
-              </div>
-              <h1 className="text-2xl font-bold text-yge-blue-700">
-                {letter.companyHeader.legalName}
-              </h1>
-            </div>
-            <address className="text-right text-xs not-italic text-gray-700">
+        <Letterhead
+          rightBlock={
+            <>
               {letter.companyHeader.addressLine}
               <br />
               <br />
@@ -156,9 +149,9 @@ export default async function TransmittalPage({
               {letter.companyHeader.phone}
               <br />
               {letter.companyHeader.email}
-            </address>
-          </div>
-        </header>
+            </>
+          }
+        />
 
         {/* ------- Date ------- */}
         <p className="mt-8 text-sm text-gray-700">{letter.date}</p>

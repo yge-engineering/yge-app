@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  YGE horizontal lockup — square mark on the left, full company name on
+  the right. Sized for letterhead headers where vertical space is limited.
+  Drop-in replaceable when the real designer-supplied lockup arrives.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 140" role="img" aria-label="Young General Engineering">
+  <!-- Square mark on the left -->
+  <rect x="6" y="6" width="128" height="128" rx="10" fill="#1f4e78"/>
+  <rect x="12" y="12" width="116" height="116" rx="7" fill="none" stroke="#2e75b6" stroke-width="2" opacity="0.6"/>
+  <text x="70" y="84" text-anchor="middle" font-size="52" font-weight="800" font-family="'Inter','Helvetica Neue',Arial,sans-serif" fill="#ffffff" letter-spacing="-1">YGE</text>
+  <line x1="22" y1="100" x2="118" y2="100" stroke="#bfdbfe" stroke-width="1.5"/>
+  <text x="70" y="118" text-anchor="middle" font-size="9" font-weight="600" font-family="'Inter','Helvetica Neue',Arial,sans-serif" fill="#bfdbfe" letter-spacing="2">EST. 1996</text>
+
+  <!-- Wordmark on the right -->
+  <text x="156" y="68" font-size="34" font-weight="800" font-family="'Inter','Helvetica Neue',Arial,sans-serif" fill="#1f4e78" letter-spacing="-0.5">Young General Engineering</text>
+  <line x1="156" y1="80" x2="552" y2="80" stroke="#bfdbfe" stroke-width="1.5"/>
+  <text x="156" y="106" font-size="14" font-weight="600" font-family="'Inter','Helvetica Neue',Arial,sans-serif" fill="#2e75b6" letter-spacing="2">HEAVY CIVIL CONTRACTORS</text>
+  <text x="156" y="124" font-size="11" font-weight="500" font-family="'Inter','Helvetica Neue',Arial,sans-serif" fill="#666" letter-spacing="0.5">Cottonwood, California &middot; CSLB #1145219 &middot; DIR #2000018967</text>
+</svg>

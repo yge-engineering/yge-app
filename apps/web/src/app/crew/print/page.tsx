@@ -23,6 +23,7 @@ import {
   type Tool,
 } from '@yge/shared';
 import { PrintButton } from '@/components/print-button';
+import { Letterhead } from '@/components/letterhead';
 
 function apiBaseUrl(): string {
   return (
@@ -135,16 +136,10 @@ export default async function CrewPrintPage({
       </div>
 
       <main className="mx-auto max-w-5xl bg-white px-10 py-8 text-gray-900">
-        {/* Letterhead */}
-        <header className="border-b-2 border-yge-blue-500 pb-3">
-          <div className="flex items-start justify-between gap-6">
-            <div>
-              <h1 className="text-2xl font-bold text-yge-blue-700">{company.legalName}</h1>
-              <p className="text-xs text-gray-600">
-                CSLB #{company.cslbLicense} &middot; DIR #{company.dirNumber}
-              </p>
-            </div>
-            <div className="text-right text-xs text-gray-700">
+        <Letterhead
+          variant="compact"
+          rightBlock={
+            <>
               <div className="font-semibold uppercase tracking-wide">
                 Crew Roster
               </div>
@@ -152,9 +147,9 @@ export default async function CrewPrintPage({
               <div>
                 {totalActive} active &middot; {fullRoster.totalInactive} inactive
               </div>
-            </div>
-          </div>
-        </header>
+            </>
+          }
+        />
 
         {fullRoster.expiredCertCount > 0 && !foremanFilter && (
           <div className="mt-4 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-800">

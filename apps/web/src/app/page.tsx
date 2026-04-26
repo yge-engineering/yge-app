@@ -61,6 +61,12 @@ export default function HomePage() {
           >
             Daily Reports
           </Link>
+          <Link
+            href="/brand"
+            className="rounded border border-yge-blue-500 px-6 py-3 text-yge-blue-500 hover:bg-yge-blue-50"
+          >
+            Brand kit
+          </Link>
         </div>
         <p className="mt-12 text-xs text-gray-400">
           Phase 1 MVP — under active development. See README.md and CLAUDE.md.

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  YGE placeholder logo — clean monogram in YGE brand blue.
+  When the real designer-supplied logo file lands, save it as this same
+  filename and every print page picks it up automatically.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Young General Engineering">
+  <!-- Background tile -->
+  <rect x="0" y="0" width="200" height="200" rx="14" fill="#1f4e78"/>
+  <!-- Inner stroke for depth -->
+  <rect x="6" y="6" width="188" height="188" rx="10" fill="none" stroke="#2e75b6" stroke-width="2" opacity="0.6"/>
+  <!-- Monogram: stacked "Y G E" letters in industrial sans -->
+  <g fill="#ffffff" font-family="'Inter','Helvetica Neue',Arial,sans-serif" font-weight="800">
+    <text x="100" y="92" text-anchor="middle" font-size="78" letter-spacing="-2">YGE</text>
+  </g>
+  <!-- Company name underline -->
+  <line x1="32" y1="118" x2="168" y2="118" stroke="#bfdbfe" stroke-width="2"/>
+  <!-- Tagline strip -->
+  <g fill="#bfdbfe" font-family="'Inter','Helvetica Neue',Arial,sans-serif" font-weight="600">
+    <text x="100" y="142" text-anchor="middle" font-size="14" letter-spacing="3">YOUNG GENERAL</text>
+    <text x="100" y="162" text-anchor="middle" font-size="14" letter-spacing="3">ENGINEERING</text>
+  </g>
+</svg>
