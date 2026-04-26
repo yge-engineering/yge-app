@@ -93,7 +93,10 @@ describe('computeCertificateRollup', () => {
     expect(r.total).toBe(5);
     expect(r.expired).toBe(2); // hard-expired + superseded
     expect(r.expiringSoon).toBe(1);
-    expect(r.active).toBe(2); // GL + CSLB lifetime
+    // Active = ACTIVE status + not hard-expired. Includes expiringSoon
+    // because the cert is still in force (just due for renewal). So:
+    // GL (current) + AUTO (expiringSoon) + CSLB (lifetime) = 3.
+    expect(r.active).toBe(3);
   });
 
   it('groups by kind sorted by count descending', () => {
