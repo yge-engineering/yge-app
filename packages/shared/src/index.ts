@@ -22,3 +22,4 @@ export * from './daily-report';
 export * from './equipment';
 export * from './bid-result';
 export * from './certificate';
+export * from './document';

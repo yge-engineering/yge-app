@@ -16,6 +16,7 @@ import { dailyReportsRouter } from './routes/daily-reports';
 import { equipmentRouter } from './routes/equipment';
 import { bidResultsRouter } from './routes/bid-results';
 import { certificatesRouter } from './routes/certificates';
+import { documentsRouter } from './routes/documents';
 
 const app = express();
 
@@ -35,6 +36,7 @@ app.use('/api/daily-reports', dailyReportsRouter);
 app.use('/api/equipment', equipmentRouter);
 app.use('/api/bid-results', bidResultsRouter);
 app.use('/api/certificates', certificatesRouter);
+app.use('/api/documents', documentsRouter);
 
 // 404
 app.use((_req, res) => {
