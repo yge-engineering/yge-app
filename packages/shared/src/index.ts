@@ -23,3 +23,5 @@ export * from './equipment';
 export * from './bid-result';
 export * from './certificate';
 export * from './document';
+export * from './ap-invoice';
+export * from './rfi';

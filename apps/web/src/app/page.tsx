@@ -91,6 +91,18 @@ export default function HomePage() {
           >
             Documents
           </Link>
+          <Link
+            href="/ap-invoices"
+            className="rounded border border-yge-blue-500 px-6 py-3 text-yge-blue-500 hover:bg-yge-blue-50"
+          >
+            AP Invoices
+          </Link>
+          <Link
+            href="/rfis"
+            className="rounded border border-yge-blue-500 px-6 py-3 text-yge-blue-500 hover:bg-yge-blue-50"
+          >
+            RFIs
+          </Link>
         </div>
         <p className="mt-12 text-xs text-gray-400">
           Phase 1 MVP — under active development. See README.md and CLAUDE.md.
