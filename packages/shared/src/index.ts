@@ -18,3 +18,4 @@ export * from './next-bid-action';
 export * from './employee';
 export * from './tool';
 export * from './crew-roster';
+export * from './daily-report';
