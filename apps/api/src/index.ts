@@ -19,6 +19,12 @@ import { certificatesRouter } from './routes/certificates';
 import { documentsRouter } from './routes/documents';
 import { apInvoicesRouter } from './routes/ap-invoices';
 import { rfisRouter } from './routes/rfis';
+import { materialsRouter } from './routes/materials';
+import { arInvoicesRouter } from './routes/ar-invoices';
+import { submittalsRouter } from './routes/submittals';
+import { changeOrdersRouter } from './routes/change-orders';
+import { timeCardsRouter } from './routes/time-cards';
+import { certifiedPayrollsRouter } from './routes/certified-payrolls';
 
 const app = express();
 
@@ -41,6 +47,12 @@ app.use('/api/certificates', certificatesRouter);
 app.use('/api/documents', documentsRouter);
 app.use('/api/ap-invoices', apInvoicesRouter);
 app.use('/api/rfis', rfisRouter);
+app.use('/api/materials', materialsRouter);
+app.use('/api/ar-invoices', arInvoicesRouter);
+app.use('/api/submittals', submittalsRouter);
+app.use('/api/change-orders', changeOrdersRouter);
+app.use('/api/time-cards', timeCardsRouter);
+app.use('/api/certified-payrolls', certifiedPayrollsRouter);
 
 // 404
 app.use((_req, res) => {

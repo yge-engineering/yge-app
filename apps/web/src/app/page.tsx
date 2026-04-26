@@ -103,6 +103,42 @@ export default function HomePage() {
           >
             RFIs
           </Link>
+          <Link
+            href="/materials"
+            className="rounded border border-yge-blue-500 px-6 py-3 text-yge-blue-500 hover:bg-yge-blue-50"
+          >
+            Materials
+          </Link>
+          <Link
+            href="/ar-invoices"
+            className="rounded border border-yge-blue-500 px-6 py-3 text-yge-blue-500 hover:bg-yge-blue-50"
+          >
+            Customer Invoices
+          </Link>
+          <Link
+            href="/submittals"
+            className="rounded border border-yge-blue-500 px-6 py-3 text-yge-blue-500 hover:bg-yge-blue-50"
+          >
+            Submittals
+          </Link>
+          <Link
+            href="/change-orders"
+            className="rounded border border-yge-blue-500 px-6 py-3 text-yge-blue-500 hover:bg-yge-blue-50"
+          >
+            Change Orders
+          </Link>
+          <Link
+            href="/time-cards"
+            className="rounded border border-yge-blue-500 px-6 py-3 text-yge-blue-500 hover:bg-yge-blue-50"
+          >
+            Time Cards
+          </Link>
+          <Link
+            href="/certified-payrolls"
+            className="rounded border border-yge-blue-500 px-6 py-3 text-yge-blue-500 hover:bg-yge-blue-50"
+          >
+            Certified Payroll
+          </Link>
         </div>
         <p className="mt-12 text-xs text-gray-400">
           Phase 1 MVP — under active development. See README.md and CLAUDE.md.
