@@ -21,3 +21,4 @@ export * from './crew-roster';
 export * from './daily-report';
 export * from './equipment';
 export * from './bid-result';
+export * from './certificate';
