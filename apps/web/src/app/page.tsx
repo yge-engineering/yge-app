@@ -43,6 +43,18 @@ export default function HomePage() {
           >
             View Jobs
           </Link>
+          <Link
+            href="/crew"
+            className="rounded border border-yge-blue-500 px-6 py-3 text-yge-blue-500 hover:bg-yge-blue-50"
+          >
+            Crew Roster
+          </Link>
+          <Link
+            href="/tools"
+            className="rounded border border-yge-blue-500 px-6 py-3 text-yge-blue-500 hover:bg-yge-blue-50"
+          >
+            Power Tools
+          </Link>
         </div>
         <p className="mt-12 text-xs text-gray-400">
           Phase 1 MVP — under active development. See README.md and CLAUDE.md.
