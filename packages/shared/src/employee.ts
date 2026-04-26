@@ -195,7 +195,7 @@ export function classificationLabel(c: DirClassification): string {
   }
 }
 
-export function statusLabel(s: EmploymentStatus): string {
+export function employmentStatusLabel(s: EmploymentStatus): string {
   switch (s) {
     case 'ACTIVE': return 'Active';
     case 'ON_LEAVE': return 'On leave';

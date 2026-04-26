@@ -8,9 +8,9 @@ import { useState } from 'react';
 import {
   certKindLabel,
   classificationLabel,
+  employmentStatusLabel,
   fullName,
   roleLabel,
-  statusLabel,
   type CertificationKind,
   type DirClassification,
   type Employee,
@@ -155,7 +155,7 @@ export function EmployeeEditor({ initial, foremen, apiBaseUrl }: Props) {
           >
             {STATUSES.map((s) => (
               <option key={s} value={s}>
-                {statusLabel(s)}
+                {employmentStatusLabel(s)}
               </option>
             ))}
           </select>
