@@ -13,6 +13,7 @@ import { pricedEstimatesRouter } from './routes/priced-estimates';
 import { employeesRouter } from './routes/employees';
 import { toolsRouter } from './routes/tools';
 import { dailyReportsRouter } from './routes/daily-reports';
+import { equipmentRouter } from './routes/equipment';
 
 const app = express();
 
@@ -29,6 +30,7 @@ app.use('/api/priced-estimates', pricedEstimatesRouter);
 app.use('/api/employees', employeesRouter);
 app.use('/api/tools', toolsRouter);
 app.use('/api/daily-reports', dailyReportsRouter);
+app.use('/api/equipment', equipmentRouter);
 
 // 404
 app.use((_req, res) => {

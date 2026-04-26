@@ -56,6 +56,12 @@ export default function HomePage() {
             Power Tools
           </Link>
           <Link
+            href="/equipment"
+            className="rounded border border-yge-blue-500 px-6 py-3 text-yge-blue-500 hover:bg-yge-blue-50"
+          >
+            Equipment
+          </Link>
+          <Link
             href="/daily-reports"
             className="rounded border border-yge-blue-500 px-6 py-3 text-yge-blue-500 hover:bg-yge-blue-50"
           >

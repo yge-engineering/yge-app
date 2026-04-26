@@ -19,3 +19,4 @@ export * from './employee';
 export * from './tool';
 export * from './crew-roster';
 export * from './daily-report';
+export * from './equipment';
