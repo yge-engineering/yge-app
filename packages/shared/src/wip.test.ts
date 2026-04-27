@@ -48,7 +48,7 @@ function arp(over: Partial<ArPayment>): ArPayment {
     kind: 'PROGRESS',
     method: 'CHECK',
     receivedOn: '2026-04-15',
-    totalCostImpactCents:0,
+    amountCents: 0,
     ...over,
   };
 }
