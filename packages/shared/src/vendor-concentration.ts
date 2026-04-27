@@ -12,7 +12,7 @@
 
 import type { ApInvoice } from './ap-invoice';
 
-export interface VendorSpendRow {
+export interface VendorConcentrationRow {
   vendorName: string;
   /** Sum of totalCents across DRAFT/REJECTED-excluded invoices. */
   spendCents: number;
@@ -30,7 +30,7 @@ export interface VendorConcentrationReport {
   end: string;
   totalSpendCents: number;
   totalPaidCents: number;
-  rows: VendorSpendRow[];
+  rows: VendorConcentrationRow[];
 
   /** Share of period spend represented by the top vendor. */
   top1SharePct: number;
@@ -97,7 +97,7 @@ export function buildVendorConcentration(
     0,
   );
 
-  const rows: VendorSpendRow[] = Array.from(buckets.values())
+  const rows: VendorConcentrationRow[] = Array.from(buckets.values())
     .map((b) => ({
       vendorName: b.vendorName,
       spendCents: b.spendCents,
