@@ -126,3 +126,4 @@ export * from './vendor-concentration';
 export * from './dispatch-vs-dr';
 export * from './equipment-fleet-age';
 export * from './customer-payment-velocity';
+export * from './incident-frequency';
