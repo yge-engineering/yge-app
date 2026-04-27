@@ -55,6 +55,33 @@ export default async function EstimateDetailPage({
         </Link>
       </div>
 
+      <div className="mb-4 flex flex-wrap gap-2 text-xs">
+        <Link
+          href={`/estimates/${data.estimate.id}/print`}
+          className="rounded border border-yge-blue-500 px-3 py-1 font-medium text-yge-blue-500 hover:bg-yge-blue-50"
+        >
+          Print
+        </Link>
+        <Link
+          href={`/estimates/${data.estimate.id}/transmittal`}
+          className="rounded border border-yge-blue-500 px-3 py-1 font-medium text-yge-blue-500 hover:bg-yge-blue-50"
+        >
+          Cover letter
+        </Link>
+        <Link
+          href={`/estimates/${data.estimate.id}/envelope`}
+          className="rounded border border-yge-blue-500 px-3 py-1 font-medium text-yge-blue-500 hover:bg-yge-blue-50"
+        >
+          Envelope checklist
+        </Link>
+        <Link
+          href={`/estimates/${data.estimate.id}/sub-list`}
+          className="rounded border border-yge-blue-500 px-3 py-1 font-medium text-yge-blue-500 hover:bg-yge-blue-50"
+        >
+          §4104 Sub list
+        </Link>
+      </div>
+
       <div className="mb-4">
         <BidDueBanner bidDueDate={data.estimate.bidDueDate} />
       </div>

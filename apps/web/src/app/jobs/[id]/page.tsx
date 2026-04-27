@@ -363,6 +363,12 @@ export default async function JobDetailPage({
                   >
                     Envelope
                   </Link>
+                  <Link
+                    href={`/estimates/${e.id}/sub-list`}
+                    className="text-yge-blue-500 hover:underline"
+                  >
+                    §4104 Subs
+                  </Link>
                 </div>
               </li>
             ))}
