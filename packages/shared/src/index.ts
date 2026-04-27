@@ -156,3 +156,4 @@ export * from './cert-renewal-calendar';
 export * from './ar-writeoff-candidates';
 export * from './employee-tenure';
 export * from './pco-origin-breakdown';
+export * from './job-rfi-age';
