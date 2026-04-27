@@ -146,12 +146,20 @@ export default async function JobDetailPage({
         <Link href="/jobs" className="text-sm text-yge-blue-500 hover:underline">
           &larr; Jobs
         </Link>
-        <Link
-          href={`/jobs/${job.id}/binder`}
-          className="rounded border border-yge-blue-500 px-3 py-1 text-sm font-medium text-yge-blue-500 hover:bg-yge-blue-50"
-        >
-          Open binder
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/jobs/${job.id}/cost-breakdown`}
+            className="rounded border border-yge-blue-500 px-3 py-1 text-sm font-medium text-yge-blue-500 hover:bg-yge-blue-50"
+          >
+            Cost breakdown
+          </Link>
+          <Link
+            href={`/jobs/${job.id}/binder`}
+            className="rounded border border-yge-blue-500 px-3 py-1 text-sm font-medium text-yge-blue-500 hover:bg-yge-blue-50"
+          >
+            Open binder
+          </Link>
+        </div>
       </div>
 
       <div className="flex flex-wrap items-start justify-between gap-4">
