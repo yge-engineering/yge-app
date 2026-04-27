@@ -56,3 +56,4 @@ export * from './ap-payment';
 export * from './close-checklist';
 export * from './bank-rec';
 export * from './customer';
+export * from './mileage';
