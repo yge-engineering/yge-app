@@ -100,11 +100,14 @@ describe('buildSubListAudit', () => {
   });
 
   it('issues sorted BLOCKER first, then by bid amount desc', () => {
+    // Threshold for ROAD_RECONSTRUCTION at $5M bid = max(0.5%, $10K floor) = $25K.
+    // small-bad sits inside the $1K BORDERLINE band → WARNING severity.
+    // big-bad sits well above → MUST_LIST → BLOCKER. BLOCKER sorts first.
     const r = buildSubListAudit({
       estimate: estimate({
         projectType: 'ROAD_RECONSTRUCTION',
         subBids: [
-          sub({ id: 'small-bad', bidAmountCents: 10_000_00, cslbLicense: undefined }),
+          sub({ id: 'small-bad', bidAmountCents: 24_500_00, cslbLicense: undefined }),
           sub({ id: 'big-bad', bidAmountCents: 100_000_00, cslbLicense: undefined }),
         ],
       }),
