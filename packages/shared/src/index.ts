@@ -63,3 +63,4 @@ export * from './job-profit';
 export * from './vendor-1099';
 export * from './payroll-summary';
 export * from './job-cost-breakdown';
+export * from './aging';

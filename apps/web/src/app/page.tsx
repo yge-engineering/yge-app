@@ -107,6 +107,7 @@ const GROUPS: NavGroup[] = [
       { href: '/income-statement', label: 'P&L' },
       { href: '/balance-sheet', label: 'Balance Sheet' },
       { href: '/cash-forecast', label: 'Cash Forecast' },
+      { href: '/aging', label: 'AR + AP Aging' },
       { href: '/bank-recs', label: 'Bank Reconciliation' },
       { href: '/close-checklist', label: 'Close Checklist' },
     ],
