@@ -41,3 +41,4 @@ export * from './weather-log';
 export * from './retention';
 export * from './pco';
 export * from './swppp-inspection';
+export * from './dispatch';

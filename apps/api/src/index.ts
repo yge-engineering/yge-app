@@ -34,6 +34,7 @@ import { incidentsRouter } from './routes/incidents';
 import { weatherLogsRouter } from './routes/weather-logs';
 import { pcosRouter } from './routes/pcos';
 import { swpppInspectionsRouter } from './routes/swppp-inspections';
+import { dispatchesRouter } from './routes/dispatches';
 
 const app = express();
 
@@ -71,6 +72,7 @@ app.use('/api/incidents', incidentsRouter);
 app.use('/api/weather-logs', weatherLogsRouter);
 app.use('/api/pcos', pcosRouter);
 app.use('/api/swppp-inspections', swpppInspectionsRouter);
+app.use('/api/dispatches', dispatchesRouter);
 
 // 404
 app.use((_req, res) => {
