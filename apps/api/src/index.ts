@@ -38,6 +38,7 @@ import { dispatchesRouter } from './routes/dispatches';
 import { dirRatesRouter } from './routes/dir-rates';
 import { photosRouter } from './routes/photos';
 import { coaRouter } from './routes/coa';
+import { journalEntriesRouter } from './routes/journal-entries';
 
 const app = express();
 
@@ -79,6 +80,7 @@ app.use('/api/dispatches', dispatchesRouter);
 app.use('/api/dir-rates', dirRatesRouter);
 app.use('/api/photos', photosRouter);
 app.use('/api/coa', coaRouter);
+app.use('/api/journal-entries', journalEntriesRouter);
 
 // 404
 app.use((_req, res) => {

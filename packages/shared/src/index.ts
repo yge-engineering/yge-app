@@ -49,3 +49,4 @@ export * from './cert-watchlist';
 export * from './photo';
 export * from './cash-forecast';
 export * from './coa';
+export * from './journal-entry';
