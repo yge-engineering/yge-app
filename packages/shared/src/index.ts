@@ -140,3 +140,4 @@ export * from './job-dispatch-coverage';
 export * from './ap-check-run';
 export * from './toolbox-attendance-gap';
 export * from './bid-item-catalog';
+export * from './competitor-frequency';
