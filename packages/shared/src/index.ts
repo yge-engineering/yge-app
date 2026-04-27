@@ -44,3 +44,4 @@ export * from './swppp-inspection';
 export * from './dispatch';
 export * from './wip';
 export * from './dir-rate';
+export * from './vendor-prequal';

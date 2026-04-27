@@ -28,10 +28,18 @@ export default async function VendorDetailPage({
 
   return (
     <main className="mx-auto max-w-3xl p-8">
-      <div className="mb-6">
+      <div className="mb-6 flex items-center justify-between">
         <Link href="/vendors" className="text-sm text-yge-blue-500 hover:underline">
           &larr; Vendors
         </Link>
+        {vendor.kind === 'SUBCONTRACTOR' && (
+          <Link
+            href={`/vendors/${vendor.id}/prequal`}
+            className="rounded border border-yge-blue-500 px-3 py-1 text-sm font-medium text-yge-blue-500 hover:bg-yge-blue-50"
+          >
+            Prequal packet
+          </Link>
+        )}
       </div>
       <h1 className="text-3xl font-bold text-yge-blue-500">
         {vendor.dbaName ?? vendor.legalName}
