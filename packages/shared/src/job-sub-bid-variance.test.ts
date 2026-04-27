@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { ApInvoice } from './ap-invoice';
 import type { Job } from './job';
-import type { SubBid } from './priced-estimate';
+import type { SubBid } from './sub-bid';
 import type { Vendor } from './vendor';
 
 import { buildJobSubBidVariance } from './job-sub-bid-variance';

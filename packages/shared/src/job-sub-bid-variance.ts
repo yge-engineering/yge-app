@@ -20,7 +20,7 @@
 
 import type { ApInvoice } from './ap-invoice';
 import type { Job } from './job';
-import type { PricedEstimate, SubBid } from './priced-estimate';
+import type { SubBid } from './sub-bid';
 import type { Vendor } from './vendor';
 
 export type SubVarianceRowKind = 'MATCHED' | 'LISTED_NO_SPEND' | 'UNLISTED_WITH_SPEND';
