@@ -81,8 +81,9 @@ describe('buildSubListAudit', () => {
   it('skips OPTIONAL (under-threshold) subs from auditing', () => {
     const r = buildSubListAudit({
       estimate: estimate({
-        projectType: 'BUILDING',
-        // BUILDING uses 0.5% of bid; bid total $10,000,000 → threshold $50k.
+        projectType: 'OTHER',
+        // OTHER uses 0.5% of bid (no highway floor); bid total
+        // $10M → threshold $50k.
         subBids: [
           sub({
             bidAmountCents: 100_00, // way under threshold → OPTIONAL
