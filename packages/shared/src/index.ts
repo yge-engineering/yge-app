@@ -142,3 +142,4 @@ export * from './toolbox-attendance-gap';
 export * from './bid-item-catalog';
 export * from './competitor-frequency';
 export * from './job-revenue-mix';
+export * from './job-sub-spend';
