@@ -17,7 +17,7 @@
 
 import type { Submittal, SubmittalStatus } from './submittal';
 
-export type SubmittalUrgency =
+export type SubmittalBoardUrgency =
   | 'CRITICAL'   // overdue + blocksOrdering, OR overdue >14 days
   | 'OVERDUE'    // past responseDueAt
   | 'DUE_SOON'   // within 5 days of responseDueAt
@@ -47,7 +47,7 @@ export interface SubmittalBoardRow {
   blocksOrdering: boolean;
   leadTimeNote?: string;
 
-  urgency: SubmittalUrgency;
+  urgency: SubmittalBoardUrgency;
 }
 
 export interface SubmittalBoardRollup {
@@ -118,7 +118,7 @@ export function buildSubmittalBoard(inputs: SubmittalBoardInputs): {
 
   // Most urgent first. Within urgency tier: blocksOrdering first,
   // then most-overdue (smallest daysToDue) first.
-  const tierRank: Record<SubmittalUrgency, number> = {
+  const tierRank: Record<SubmittalBoardUrgency, number> = {
     CRITICAL: 0,
     OVERDUE: 1,
     DUE_SOON: 2,
@@ -168,7 +168,7 @@ function computeUrgency(
   status: SubmittalStatus,
   daysToDue: number | null,
   blocksOrdering: boolean,
-): SubmittalUrgency {
+): SubmittalBoardUrgency {
   if (
     status === 'APPROVED' ||
     status === 'APPROVED_AS_NOTED' ||
