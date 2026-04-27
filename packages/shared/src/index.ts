@@ -58,3 +58,4 @@ export * from './bank-rec';
 export * from './customer';
 export * from './mileage';
 export * from './expense';
+export * from './reimbursement-summary';
