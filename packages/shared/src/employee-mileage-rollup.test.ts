@@ -18,6 +18,7 @@ function mi(over: Partial<MileageEntry>): MileageEntry {
     purpose: 'JOBSITE_TRAVEL',
     irsRateCentsPerMile: 67,
     reimbursed: false,
+    ...over,
   } as MileageEntry;
 }
 
