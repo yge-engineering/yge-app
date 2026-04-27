@@ -32,6 +32,8 @@ import { punchItemsRouter } from './routes/punch-items';
 import { toolboxTalksRouter } from './routes/toolbox-talks';
 import { incidentsRouter } from './routes/incidents';
 import { weatherLogsRouter } from './routes/weather-logs';
+import { pcosRouter } from './routes/pcos';
+import { swpppInspectionsRouter } from './routes/swppp-inspections';
 
 const app = express();
 
@@ -67,6 +69,8 @@ app.use('/api/punch-items', punchItemsRouter);
 app.use('/api/toolbox-talks', toolboxTalksRouter);
 app.use('/api/incidents', incidentsRouter);
 app.use('/api/weather-logs', weatherLogsRouter);
+app.use('/api/pcos', pcosRouter);
+app.use('/api/swppp-inspections', swpppInspectionsRouter);
 
 // 404
 app.use((_req, res) => {

@@ -181,6 +181,24 @@ export default function HomePage() {
           >
             Weather Log
           </Link>
+          <Link
+            href="/retention"
+            className="rounded border border-yge-blue-500 px-6 py-3 text-yge-blue-500 hover:bg-yge-blue-50"
+          >
+            Retention
+          </Link>
+          <Link
+            href="/pcos"
+            className="rounded border border-yge-blue-500 px-6 py-3 text-yge-blue-500 hover:bg-yge-blue-50"
+          >
+            PCOs
+          </Link>
+          <Link
+            href="/swppp"
+            className="rounded border border-yge-blue-500 px-6 py-3 text-yge-blue-500 hover:bg-yge-blue-50"
+          >
+            SWPPP Inspections
+          </Link>
         </div>
         <p className="mt-12 text-xs text-gray-400">
           Phase 1 MVP — under active development. See README.md and CLAUDE.md.
