@@ -12,6 +12,7 @@ function sub(over: Partial<SubBid>): SubBid {
     dirRegistration: '1000000123',
     portionOfWork: 'Site grading',
     bidAmountCents: 50_000_00,
+    ...over,
   } as SubBid;
 }
 

@@ -18,6 +18,7 @@ function ar(over: Partial<ArInvoice>): ArInvoice {
     totalCents: 100_000_00,
     paidCents: 100_000_00,
     status: 'PAID',
+    ...over,
   } as ArInvoice;
 }
 
