@@ -165,3 +165,4 @@ export * from './vendor-1099-readiness';
 export * from './job-photo-coverage';
 export * from './bid-to-award-variance';
 export * from './equipment-daily-dispatch';
+export * from './punch-closeout-velocity';
