@@ -133,3 +133,4 @@ export * from './contract-value-waterfall';
 export * from './punch-list-aging';
 export * from './sub-coi-watch';
 export * from './sub-pw-compliance';
+export * from './equipment-dispatch-days';
