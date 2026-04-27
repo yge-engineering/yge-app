@@ -129,3 +129,4 @@ export * from './customer-payment-velocity';
 export * from './incident-frequency';
 export * from './job-material-spend';
 export * from './job-schedule-slip';
+export * from './contract-value-waterfall';
