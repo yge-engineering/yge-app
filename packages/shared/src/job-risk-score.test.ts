@@ -213,12 +213,21 @@ describe('buildJobRiskScores', () => {
     expect(r.rows[0]?.flag).toBe('RED');
   });
 
-  it('caps total score at 100', () => {
+  it('caps total score at 100 when every component fires at max', () => {
+    // Component max-out sums to 100 exactly:
+    //   safety punches  25  (3+ open SAFETY, capped)
+    //   stale open COs  20  (3+ COs >30d, capped)
+    //   unanswered RFIs 20  (4+ RFIs >7d, capped)
+    //   dispatch dark   15  (last dispatch >14d ago)
+    //   schedule slip   15  (>30d past revised)
+    //   stale punches    5  (3+ punches >30d, capped — same punches above)
+    // = 100. No further capping needed; score should be exactly 100.
     const r = buildJobRiskScores({
       asOf: '2026-04-27',
       jobs: [job({})],
+      // identifiedOn well before asOf so they also count as stale punches.
       punchItems: Array.from({ length: 20 }, (_, i) =>
-        pi({ id: `pi-${i}`, severity: 'SAFETY' }),
+        pi({ id: `pi-${i}`, severity: 'SAFETY', identifiedOn: '2026-01-01' }),
       ),
       rfis: Array.from({ length: 20 }, (_, i) =>
         rfi({ id: `rfi-${i}`, updatedAt: '2026-03-01T00:00:00.000Z' }),
@@ -226,7 +235,8 @@ describe('buildJobRiskScores', () => {
       changeOrders: Array.from({ length: 20 }, (_, i) =>
         co({ id: `co-${i}`, proposedAt: '2026-01-01' }),
       ),
-      dispatches: [],
+      // Dispatch dark (>14d) instead of "no dispatch in window".
+      dispatches: [disp({ scheduledFor: '2026-04-01' })],
       dailyReports: [],
       originalCompletionByJobId: new Map([['job-1', '2026-02-01']]),
     });
