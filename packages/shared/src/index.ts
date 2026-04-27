@@ -91,3 +91,4 @@ export * from './dr-photo-coverage';
 export * from './weather-lost-hours';
 export * from './customer-concentration';
 export * from './sub-list-audit';
+export * from './retention-projection';
