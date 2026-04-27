@@ -59,3 +59,4 @@ export * from './customer';
 export * from './mileage';
 export * from './expense';
 export * from './reimbursement-summary';
+export * from './job-profit';
