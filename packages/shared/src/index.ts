@@ -84,3 +84,4 @@ export * from './meal-break-summary';
 export * from './photo-evidence';
 export * from './material-reorder';
 export * from './cpr-gap-detector';
+export * from './lien-waiver-chase';
