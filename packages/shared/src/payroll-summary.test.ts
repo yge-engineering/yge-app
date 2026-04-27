@@ -73,7 +73,8 @@ describe('buildPayrollSummary', () => {
   });
 
   it('counts daily OT >8h at 1.5× base', () => {
-    // Mon = 12 hr (4 OT), Tue-Fri = 8 hr each (32 reg) = 36 reg + 4 OT = 40 total
+    // Mon = 12 hr (8 reg + 4 daily OT), Tue-Fri = 8 reg each (32 reg)
+    // Totals: 40 reg + 4 OT = 44 worked
     const r = buildPayrollSummary({
       year: 2026,
       employees: [emp({ id: 'emp-1' })],
@@ -89,7 +90,7 @@ describe('buildPayrollSummary', () => {
       ratesByClassification: SIMPLE_RATES,
     });
     expect(r[0]?.overtimeHours).toBe(4);
-    expect(r[0]?.regularHours).toBe(36);
+    expect(r[0]?.regularHours).toBe(40);
     expect(r[0]?.overtimeWagesCents).toBe(Math.round(4 * 60_00 * 1.5));
   });
 

@@ -123,9 +123,11 @@ describe('buildCloseChecklist', () => {
 
   it('SWPPP weekly check passes when every week has at least one inspection', () => {
     const inspections: SwpppInspection[] = [
-      // April 2026 weeks (Monday starts): 03-30, 04-06, 04-13, 04-20, 04-27.
-      // Use one inspection per Monday-week.
-      ...['2026-03-30', '2026-04-06', '2026-04-13', '2026-04-20', '2026-04-27'].map(
+      // April 2026 ISO weeks (Monday starts): 03-30, 04-06, 04-13, 04-20, 04-27.
+      // The week of Mar 30 extends into April (Wed 4/1 – Sun 4/5), so log
+      // its inspection on 04-01 — buildCloseChecklist only counts inspections
+      // dated inside the month being closed.
+      ...['2026-04-01', '2026-04-06', '2026-04-13', '2026-04-20', '2026-04-27'].map(
         (date, i) =>
           ({
             id: `swp-${i + 1}`,
