@@ -175,3 +175,4 @@ export * from './daily-cash-net';
 export * from './employee-labor-cost';
 export * from './job-dr-streak';
 export * from './job-overhead-allocation';
+export * from './job-sub-bid-variance';
