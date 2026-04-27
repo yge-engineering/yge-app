@@ -80,3 +80,4 @@ export * from './punch-board';
 export * from './cost-code-library';
 export * from './vendor-spend';
 export * from './sub-scorecard';
+export * from './meal-break-summary';
