@@ -112,3 +112,4 @@ export * from './tool-checkout';
 export * from './bid-go-nogo';
 export * from './equipment-maintenance-cost';
 export * from './dr-weekly-summary';
+export * from './sub-scope-grouping';
