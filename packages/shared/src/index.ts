@@ -173,3 +173,4 @@ export * from './job-ar-aging';
 export * from './job-equipment-cost';
 export * from './daily-cash-net';
 export * from './employee-labor-cost';
+export * from './job-dr-streak';
