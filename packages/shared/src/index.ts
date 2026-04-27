@@ -151,3 +151,4 @@ export * from './job-warranty-tracker';
 export * from './customer-collection-scorecard';
 export * from './cash-receipts-ledger';
 export * from './vendor-job-crosstab';
+export * from './employee-cooccurrence';
