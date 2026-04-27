@@ -153,3 +153,4 @@ export * from './cash-receipts-ledger';
 export * from './vendor-job-crosstab';
 export * from './employee-cooccurrence';
 export * from './cert-renewal-calendar';
+export * from './ar-writeoff-candidates';
