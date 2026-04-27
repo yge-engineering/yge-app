@@ -7,6 +7,8 @@ import {
   ApInvoicePatchSchema,
   ApInvoicePaySchema,
   ApInvoiceRejectSchema,
+  csvDollars,
+  type ApInvoice,
 } from '@yge/shared';
 import {
   approveApInvoice,
@@ -17,8 +19,27 @@ import {
   rejectApInvoice,
   updateApInvoice,
 } from '../lib/ap-invoices-store';
+import { maybeCsv } from '../lib/csv-response';
 
 export const apInvoicesRouter = Router();
+
+const AP_INVOICE_CSV_COLUMNS = [
+  { header: 'Vendor', get: (i: ApInvoice) => i.vendorName },
+  { header: 'Invoice #', get: (i: ApInvoice) => i.invoiceNumber ?? '' },
+  { header: 'Date', get: (i: ApInvoice) => i.invoiceDate },
+  { header: 'Due', get: (i: ApInvoice) => i.dueDate ?? '' },
+  { header: 'Job', get: (i: ApInvoice) => i.jobId ?? '' },
+  { header: 'Status', get: (i: ApInvoice) => i.status },
+  { header: 'Subtotal', get: (i: ApInvoice) => csvDollars(i.subtotalCents ?? 0) },
+  { header: 'Tax', get: (i: ApInvoice) => csvDollars(i.taxCents ?? 0) },
+  { header: 'Freight', get: (i: ApInvoice) => csvDollars(i.freightCents ?? 0) },
+  { header: 'Total', get: (i: ApInvoice) => csvDollars(i.totalCents) },
+  { header: 'Paid', get: (i: ApInvoice) => csvDollars(i.paidCents) },
+  {
+    header: 'Balance',
+    get: (i: ApInvoice) => csvDollars(Math.max(0, i.totalCents - i.paidCents)),
+  },
+] as const;
 
 apInvoicesRouter.get('/', async (req, res, next) => {
   try {
@@ -26,6 +47,7 @@ apInvoicesRouter.get('/', async (req, res, next) => {
       status: typeof req.query.status === 'string' ? req.query.status : undefined,
       jobId: typeof req.query.jobId === 'string' ? req.query.jobId : undefined,
     });
+    if (maybeCsv(req, res, invoices, AP_INVOICE_CSV_COLUMNS, 'ap-invoices')) return;
     return res.json({ invoices });
   } catch (err) {
     next(err);

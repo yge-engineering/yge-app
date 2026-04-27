@@ -1,21 +1,51 @@
 // Vendor routes.
 
 import { Router } from 'express';
-import { VendorCreateSchema, VendorPatchSchema } from '@yge/shared';
+import {
+  VendorCreateSchema,
+  VendorPatchSchema,
+  maskTaxId,
+  vendorCoiCurrent,
+  vendorKindLabel,
+  vendorPaymentTermsLabel,
+  vendorW9Current,
+  type Vendor,
+} from '@yge/shared';
 import {
   createVendor,
   getVendor,
   listVendors,
   updateVendor,
 } from '../lib/vendors-store';
+import { maybeCsv } from '../lib/csv-response';
 
 export const vendorsRouter = Router();
+
+const VENDOR_CSV_COLUMNS = [
+  { header: 'Legal name', get: (v: Vendor) => v.legalName },
+  { header: 'DBA', get: (v: Vendor) => v.dbaName ?? '' },
+  { header: 'Kind', get: (v: Vendor) => vendorKindLabel(v.kind) },
+  { header: 'Tax ID (masked)', get: (v: Vendor) => maskTaxId(v.taxId) },
+  { header: '1099-NEC', get: (v: Vendor) => (v.is1099Reportable ? 'Yes' : 'No') },
+  { header: 'W-9 current', get: (v: Vendor) => (vendorW9Current(v) ? 'Yes' : 'No') },
+  { header: 'COI current', get: (v: Vendor) => (vendorCoiCurrent(v) ? 'Yes' : 'No') },
+  { header: 'COI expires', get: (v: Vendor) => v.coiExpiresOn ?? '' },
+  { header: 'Payment terms', get: (v: Vendor) => vendorPaymentTermsLabel(v.paymentTerms) },
+  { header: 'On hold', get: (v: Vendor) => (v.onHold ? 'Yes' : 'No') },
+  { header: 'CSLB #', get: (v: Vendor) => v.cslbLicense ?? '' },
+  { header: 'DIR #', get: (v: Vendor) => v.dirRegistration ?? '' },
+  { header: 'Phone', get: (v: Vendor) => v.phone ?? '' },
+  { header: 'Email', get: (v: Vendor) => v.email ?? '' },
+  { header: 'City', get: (v: Vendor) => v.city ?? '' },
+  { header: 'State', get: (v: Vendor) => v.state ?? '' },
+] as const;
 
 vendorsRouter.get('/', async (req, res, next) => {
   try {
     const vendors = await listVendors({
       kind: typeof req.query.kind === 'string' ? req.query.kind : undefined,
     });
+    if (maybeCsv(req, res, vendors, VENDOR_CSV_COLUMNS, 'vendors')) return;
     return res.json({ vendors });
   } catch (err) {
     next(err);

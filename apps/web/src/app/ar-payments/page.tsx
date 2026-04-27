@@ -14,6 +14,9 @@ function apiBaseUrl(): string {
     process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
   );
 }
+function publicApiBaseUrl(): string {
+  return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+}
 
 async function fetchPayments(filter: {
   arInvoiceId?: string;
@@ -41,12 +44,20 @@ export default async function ArPaymentsPage({
         <Link href="/" className="text-sm text-yge-blue-500 hover:underline">
           &larr; Home
         </Link>
-        <Link
-          href="/ar-payments/new"
-          className="rounded bg-yge-blue-500 px-3 py-1 text-sm font-medium text-white hover:bg-yge-blue-700"
-        >
-          + Record payment
-        </Link>
+        <div className="flex items-center gap-2">
+          <a
+            href={`${publicApiBaseUrl()}/api/ar-payments?format=csv${searchParams.arInvoiceId ? '&arInvoiceId=' + encodeURIComponent(searchParams.arInvoiceId) : ''}${searchParams.jobId ? '&jobId=' + encodeURIComponent(searchParams.jobId) : ''}`}
+            className="rounded border border-yge-blue-500 px-3 py-1 text-sm font-medium text-yge-blue-500 hover:bg-yge-blue-50"
+          >
+            Download CSV
+          </a>
+          <Link
+            href="/ar-payments/new"
+            className="rounded bg-yge-blue-500 px-3 py-1 text-sm font-medium text-white hover:bg-yge-blue-700"
+          >
+            + Record payment
+          </Link>
+        </div>
       </div>
 
       <h1 className="text-3xl font-bold text-yge-blue-500">Customer Payments</h1>

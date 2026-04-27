@@ -30,6 +30,33 @@ export function csvEscape(value: string | number | undefined | null): string {
   return s;
 }
 
+/** Generic typed-row CSV builder.
+ *
+ *  Columns are defined as `{ header, get }` pairs. The `get` function can
+ *  return any of: string, number, undefined, or null — `csvEscape` handles
+ *  the formatting per RFC 4180. Output ends with `\r\n` for Excel + Mac
+ *  newlines on the same wire format.
+ */
+export function objectsToCsv<T>(
+  rows: T[],
+  columns: ReadonlyArray<{
+    header: string;
+    get: (row: T) => string | number | undefined | null;
+  }>,
+): string {
+  const out: string[] = [columns.map((c) => csvEscape(c.header)).join(',')];
+  for (const r of rows) {
+    out.push(columns.map((c) => csvEscape(c.get(r))).join(','));
+  }
+  return out.join('\r\n') + '\r\n';
+}
+
+/** Format cents as a bare dollar string for CSV cells (no $ sign / commas). */
+export function csvDollars(cents: number | null | undefined): string {
+  if (cents == null) return '';
+  return (cents / 100).toFixed(2);
+}
+
 export function bidItemsToCsv(items: PtoEBidItem[]): string {
   const rows: string[] = [BID_ITEM_CSV_HEADERS.map(csvEscape).join(',')];
   for (const item of items) {

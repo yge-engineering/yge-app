@@ -5,7 +5,12 @@ import {
   ArInvoiceBuildFromReportsSchema,
   ArInvoiceCreateSchema,
   ArInvoicePatchSchema,
+  arInvoiceStatusLabel,
+  arInvoiceSourceLabel,
+  arUnpaidBalanceCents,
   computeArTotals,
+  csvDollars,
+  type ArInvoice,
 } from '@yge/shared';
 import {
   createArInvoice,
@@ -16,8 +21,27 @@ import {
 import { listDailyReports } from '../lib/daily-reports-store';
 import { listEmployees } from '../lib/employees-store';
 import { buildArLineItemsFromReports } from '../lib/ar-build-from-reports';
+import { maybeCsv } from '../lib/csv-response';
 
 export const arInvoicesRouter = Router();
+
+const AR_INVOICE_CSV_COLUMNS = [
+  { header: 'Invoice #', get: (i: ArInvoice) => i.invoiceNumber },
+  { header: 'Date', get: (i: ArInvoice) => i.invoiceDate },
+  { header: 'Job', get: (i: ArInvoice) => i.jobId },
+  { header: 'Customer', get: (i: ArInvoice) => i.customerName },
+  { header: 'Customer PO', get: (i: ArInvoice) => i.customerProjectNumber ?? '' },
+  { header: 'Period start', get: (i: ArInvoice) => i.billingPeriodStart ?? '' },
+  { header: 'Period end', get: (i: ArInvoice) => i.billingPeriodEnd ?? '' },
+  { header: 'Source', get: (i: ArInvoice) => arInvoiceSourceLabel(i.source) },
+  { header: 'Status', get: (i: ArInvoice) => arInvoiceStatusLabel(i.status) },
+  { header: 'Subtotal', get: (i: ArInvoice) => csvDollars(i.subtotalCents) },
+  { header: 'Tax', get: (i: ArInvoice) => csvDollars(i.taxCents ?? 0) },
+  { header: 'Retention', get: (i: ArInvoice) => csvDollars(i.retentionCents ?? 0) },
+  { header: 'Total', get: (i: ArInvoice) => csvDollars(i.totalCents) },
+  { header: 'Paid', get: (i: ArInvoice) => csvDollars(i.paidCents) },
+  { header: 'Balance', get: (i: ArInvoice) => csvDollars(arUnpaidBalanceCents(i)) },
+] as const;
 
 arInvoicesRouter.get('/', async (req, res, next) => {
   try {
@@ -25,6 +49,7 @@ arInvoicesRouter.get('/', async (req, res, next) => {
       status: typeof req.query.status === 'string' ? req.query.status : undefined,
       jobId: typeof req.query.jobId === 'string' ? req.query.jobId : undefined,
     });
+    if (maybeCsv(req, res, invoices, AR_INVOICE_CSV_COLUMNS, 'ar-invoices')) return;
     return res.json({ invoices });
   } catch (err) {
     next(err);

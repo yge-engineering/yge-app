@@ -1,15 +1,42 @@
 // DIR prevailing wage rate routes.
 
 import { Router } from 'express';
-import { DirRateCreateSchema, DirRatePatchSchema } from '@yge/shared';
+import {
+  DirRateCreateSchema,
+  DirRatePatchSchema,
+  classificationLabel,
+  csvDollars,
+  totalFringeCents,
+  totalPrevailingWageCents,
+  type DirRate,
+} from '@yge/shared';
 import {
   createDirRate,
   getDirRate,
   listDirRates,
   updateDirRate,
 } from '../lib/dir-rates-store';
+import { maybeCsv } from '../lib/csv-response';
 
 export const dirRatesRouter = Router();
+
+const DIR_RATE_CSV_COLUMNS = [
+  { header: 'Classification', get: (r: DirRate) => classificationLabel(r.classification) },
+  { header: 'County', get: (r: DirRate) => r.county },
+  { header: 'Effective', get: (r: DirRate) => r.effectiveDate },
+  { header: 'Expires', get: (r: DirRate) => r.expiresOn ?? '' },
+  { header: 'Basic', get: (r: DirRate) => csvDollars(r.basicHourlyCents) },
+  { header: 'H&W', get: (r: DirRate) => csvDollars(r.healthAndWelfareCents) },
+  { header: 'Pension', get: (r: DirRate) => csvDollars(r.pensionCents) },
+  { header: 'Vac/Hol', get: (r: DirRate) => csvDollars(r.vacationHolidayCents) },
+  { header: 'Training', get: (r: DirRate) => csvDollars(r.trainingCents) },
+  { header: 'Other fringe', get: (r: DirRate) => csvDollars(r.otherFringeCents) },
+  { header: 'Total fringe', get: (r: DirRate) => csvDollars(totalFringeCents(r)) },
+  {
+    header: 'Total prevailing',
+    get: (r: DirRate) => csvDollars(totalPrevailingWageCents(r)),
+  },
+] as const;
 
 dirRatesRouter.get('/', async (req, res, next) => {
   try {
@@ -18,6 +45,7 @@ dirRatesRouter.get('/', async (req, res, next) => {
         typeof req.query.classification === 'string' ? req.query.classification : undefined,
       county: typeof req.query.county === 'string' ? req.query.county : undefined,
     });
+    if (maybeCsv(req, res, rates, DIR_RATE_CSV_COLUMNS, 'dir-rates')) return;
     return res.json({ rates });
   } catch (err) {
     next(err);

@@ -28,6 +28,10 @@ function apiBaseUrl(): string {
     process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
   );
 }
+/** URL the browser uses (skips internal API_URL). */
+function publicApiBaseUrl(): string {
+  return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+}
 
 async function fetchVendors(filter: { kind?: string }): Promise<Vendor[]> {
   const url = new URL(`${apiBaseUrl()}/api/vendors`);
@@ -64,12 +68,20 @@ export default async function VendorsPage({
         <Link href="/" className="text-sm text-yge-blue-500 hover:underline">
           &larr; Home
         </Link>
-        <Link
-          href="/vendors/new"
-          className="rounded bg-yge-blue-500 px-3 py-1 text-sm font-medium text-white hover:bg-yge-blue-700"
-        >
-          + Add vendor
-        </Link>
+        <div className="flex items-center gap-2">
+          <a
+            href={`${publicApiBaseUrl()}/api/vendors?format=csv${searchParams.kind ? '&kind=' + encodeURIComponent(searchParams.kind) : ''}`}
+            className="rounded border border-yge-blue-500 px-3 py-1 text-sm font-medium text-yge-blue-500 hover:bg-yge-blue-50"
+          >
+            Download CSV
+          </a>
+          <Link
+            href="/vendors/new"
+            className="rounded bg-yge-blue-500 px-3 py-1 text-sm font-medium text-white hover:bg-yge-blue-700"
+          >
+            + Add vendor
+          </Link>
+        </div>
       </div>
 
       <h1 className="text-3xl font-bold text-yge-blue-500">Vendors</h1>

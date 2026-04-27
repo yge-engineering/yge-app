@@ -1,15 +1,36 @@
 // AR payment routes.
 
 import { Router } from 'express';
-import { ArPaymentCreateSchema, ArPaymentPatchSchema } from '@yge/shared';
+import {
+  ArPaymentCreateSchema,
+  ArPaymentPatchSchema,
+  arPaymentKindLabel,
+  arPaymentMethodLabel,
+  csvDollars,
+  type ArPayment,
+} from '@yge/shared';
 import {
   createArPayment,
   getArPayment,
   listArPayments,
   updateArPayment,
 } from '../lib/ar-payments-store';
+import { maybeCsv } from '../lib/csv-response';
 
 export const arPaymentsRouter = Router();
+
+const AR_PAYMENT_CSV_COLUMNS = [
+  { header: 'Received', get: (p: ArPayment) => p.receivedOn },
+  { header: 'Job', get: (p: ArPayment) => p.jobId },
+  { header: 'Invoice', get: (p: ArPayment) => p.arInvoiceId },
+  { header: 'Kind', get: (p: ArPayment) => arPaymentKindLabel(p.kind) },
+  { header: 'Method', get: (p: ArPayment) => arPaymentMethodLabel(p.method) },
+  { header: 'Reference', get: (p: ArPayment) => p.referenceNumber ?? '' },
+  { header: 'Payer', get: (p: ArPayment) => p.payerName ?? '' },
+  { header: 'Deposit account', get: (p: ArPayment) => p.depositAccount ?? '' },
+  { header: 'Deposited', get: (p: ArPayment) => p.depositedOn ?? '' },
+  { header: 'Amount', get: (p: ArPayment) => csvDollars(p.amountCents) },
+] as const;
 
 arPaymentsRouter.get('/', async (req, res, next) => {
   try {
@@ -18,6 +39,7 @@ arPaymentsRouter.get('/', async (req, res, next) => {
         typeof req.query.arInvoiceId === 'string' ? req.query.arInvoiceId : undefined,
       jobId: typeof req.query.jobId === 'string' ? req.query.jobId : undefined,
     });
+    if (maybeCsv(req, res, payments, AR_PAYMENT_CSV_COLUMNS, 'ar-payments')) return;
     return res.json({ payments });
   } catch (err) {
     next(err);
