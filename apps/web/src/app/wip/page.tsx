@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import {
+  buildCostForecast,
   buildWipRow,
   computeWipRollup,
   formatUSD,
@@ -9,6 +10,7 @@ import {
   type ArInvoice,
   type ArPayment,
   type ChangeOrder,
+  type CostForecastFlag,
   type Job,
   type WipRow,
 } from '@yge/shared';
@@ -89,6 +91,7 @@ export default async function WipPage({
   }
   rows.sort((a, b) => b.adjustedContractCents - a.adjustedContractCents);
   const rollup = computeWipRollup(rows);
+  const forecast = buildCostForecast(rows);
 
   return (
     <main className="mx-auto max-w-7xl p-8">
@@ -225,6 +228,114 @@ export default async function WipPage({
         </div>
       )}
 
+      {forecast.rows.length > 0 && (
+        <section className="mt-12">
+          <h2 className="text-xl font-bold text-gray-900">Cost Forecast</h2>
+          <p className="mt-1 max-w-3xl text-sm text-gray-600">
+            Earned-value projection per job. CPI &lt; 1 means costs are
+            running ahead of progress — FEAC is what the job will actually
+            cost if performance keeps trending the same way. Worst CPI
+            first; finished jobs pinned to the bottom.
+          </p>
+
+          <div className="mt-4 grid gap-4 sm:grid-cols-4">
+            <Stat
+              label="Blended CPI"
+              value={forecast.rollup.blendedCostPerformanceIndex.toFixed(2)}
+              variant={
+                forecast.rollup.blendedCostPerformanceIndex < 0.85
+                  ? 'bad'
+                  : forecast.rollup.blendedCostPerformanceIndex < 0.95
+                    ? 'warn'
+                    : 'ok'
+              }
+            />
+            <Stat
+              label="Forecast EAC"
+              value={formatUSD(forecast.rollup.totalForecastEacCents)}
+            />
+            <Stat
+              label="Cost to complete"
+              value={formatUSD(forecast.rollup.totalCostToCompleteCents)}
+            />
+            <Stat
+              label="Variance at completion"
+              value={formatUSD(forecast.rollup.totalVarianceAtCompletionCents)}
+              variant={
+                forecast.rollup.totalVarianceAtCompletionCents < 0
+                  ? 'bad'
+                  : 'ok'
+              }
+            />
+          </div>
+
+          <div className="mt-4 overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-gray-50 uppercase tracking-wide text-gray-500">
+                <tr>
+                  <th className="px-3 py-2">Job</th>
+                  <th className="px-3 py-2 text-right">BAC</th>
+                  <th className="px-3 py-2 text-right">AC</th>
+                  <th className="px-3 py-2 text-right">EV</th>
+                  <th className="px-3 py-2 text-right">CPI</th>
+                  <th className="px-3 py-2 text-right">FEAC</th>
+                  <th className="px-3 py-2 text-right">ETC</th>
+                  <th className="px-3 py-2 text-right">VAC</th>
+                  <th className="px-3 py-2">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {forecast.rows.map((r) => (
+                  <tr key={r.jobId} className={forecastTint(r.flag)}>
+                    <td className="px-3 py-2 font-medium text-gray-900">
+                      {r.projectName}
+                    </td>
+                    <td className="px-3 py-2 text-right font-mono">
+                      {formatUSD(r.budgetAtCompletionCents)}
+                    </td>
+                    <td className="px-3 py-2 text-right font-mono">
+                      {formatUSD(r.actualCostCents)}
+                    </td>
+                    <td className="px-3 py-2 text-right font-mono">
+                      {formatUSD(r.earnedValueCents)}
+                    </td>
+                    <td
+                      className={`px-3 py-2 text-right font-mono ${
+                        r.costPerformanceIndex < 0.85
+                          ? 'font-bold text-red-700'
+                          : r.costPerformanceIndex < 0.95
+                            ? 'text-amber-700'
+                            : ''
+                      }`}
+                    >
+                      {r.costPerformanceIndex.toFixed(2)}
+                    </td>
+                    <td className="px-3 py-2 text-right font-mono">
+                      {formatUSD(r.forecastEacCents)}
+                    </td>
+                    <td className="px-3 py-2 text-right font-mono">
+                      {formatUSD(r.costToCompleteCents)}
+                    </td>
+                    <td
+                      className={`px-3 py-2 text-right font-mono ${
+                        r.varianceAtCompletionCents < 0
+                          ? 'font-bold text-red-700'
+                          : ''
+                      }`}
+                    >
+                      {formatUSD(r.varianceAtCompletionCents)}
+                    </td>
+                    <td className="px-3 py-2">
+                      <ForecastBadge flag={r.flag} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
       <p className="mt-4 text-xs text-gray-500">
         Tip: until job records carry contract + cost-at-completion fields,
         append <code className="rounded bg-gray-100 px-1">?contract.{'{'}jobId{'}'}=N&amp;cost.{'{'}jobId{'}'}=N</code>{' '}
@@ -232,6 +343,33 @@ export default async function WipPage({
         dollars (e.g. <code>250000.00</code>).
       </p>
     </main>
+  );
+}
+
+function forecastTint(flag: CostForecastFlag): string {
+  if (flag === 'OVER_BUDGET') return 'bg-red-50';
+  if (flag === 'AT_RISK') return 'bg-amber-50';
+  if (flag === 'COMPLETE') return 'bg-gray-50 text-gray-500';
+  return '';
+}
+
+function ForecastBadge({ flag }: { flag: CostForecastFlag }) {
+  const styles: Record<CostForecastFlag, string> = {
+    OVER_BUDGET: 'bg-red-100 text-red-800',
+    AT_RISK: 'bg-amber-100 text-amber-800',
+    ON_TRACK: 'bg-green-100 text-green-800',
+    COMPLETE: 'bg-gray-100 text-gray-600',
+  };
+  const labels: Record<CostForecastFlag, string> = {
+    OVER_BUDGET: 'Over',
+    AT_RISK: 'At risk',
+    ON_TRACK: 'On track',
+    COMPLETE: 'Done',
+  };
+  return (
+    <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${styles[flag]}`}>
+      {labels[flag]}
+    </span>
   );
 }
 
