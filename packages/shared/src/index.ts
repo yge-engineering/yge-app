@@ -71,3 +71,4 @@ export * from './labor-burden';
 export * from './ap-duplicate-detector';
 export * from './morning-briefing';
 export * from './bid-analytics';
+export * from './submittal-board';
