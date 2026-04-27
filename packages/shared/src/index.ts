@@ -167,3 +167,4 @@ export * from './bid-to-award-variance';
 export * from './equipment-daily-dispatch';
 export * from './punch-closeout-velocity';
 export * from './employee-cert-board';
+export * from './job-ap-pipeline';
