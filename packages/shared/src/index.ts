@@ -144,3 +144,4 @@ export * from './competitor-frequency';
 export * from './job-revenue-mix';
 export * from './job-sub-spend';
 export * from './foreman-throughput';
+export * from './ap-processing-time';
