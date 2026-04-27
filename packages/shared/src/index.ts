@@ -78,3 +78,4 @@ export * from './pco-exposure';
 export * from './daily-report-compliance';
 export * from './punch-board';
 export * from './cost-code-library';
+export * from './vendor-spend';
