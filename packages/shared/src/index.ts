@@ -114,3 +114,4 @@ export * from './equipment-maintenance-cost';
 export * from './dr-weekly-summary';
 export * from './sub-scope-grouping';
 export * from './job-dashboard';
+export * from './collection-priority';
