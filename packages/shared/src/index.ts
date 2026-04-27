@@ -160,3 +160,4 @@ export * from './job-rfi-age';
 export * from './employee-mileage-rollup';
 export * from './job-billing-cadence';
 export * from './job-co-summary';
+export * from './customer-open-ar';
