@@ -52,3 +52,4 @@ export * from './coa';
 export * from './journal-entry';
 export * from './income-statement';
 export * from './balance-sheet';
+export * from './ap-payment';
