@@ -176,3 +176,4 @@ export * from './employee-labor-cost';
 export * from './job-dr-streak';
 export * from './job-overhead-allocation';
 export * from './job-sub-bid-variance';
+export * from './vendor-onhold-exposure';
