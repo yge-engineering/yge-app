@@ -47,8 +47,10 @@ export function buildBidGoNogo(estimate: PricedEstimate): GoNogoReport {
   const blockers: GoNogoBlocker[] = [];
   const warnings: GoNogoBlocker[] = [];
 
+  const totals = computeEstimateTotals(estimate);
+
   // ---- bid-checklist (existing module) -------------------------
-  const checklist = computeBidChecklist(estimate);
+  const checklist = computeBidChecklist(estimate, totals);
   for (const item of checklist.items) {
     if (item.severity === 'blocker' && item.status === 'fail') {
       blockers.push({
@@ -64,7 +66,6 @@ export function buildBidGoNogo(estimate: PricedEstimate): GoNogoReport {
   }
 
   // ---- §4104 sub-list completeness ----------------------------
-  const totals = computeEstimateTotals(estimate);
   const subAudit = buildSubListAudit({
     estimate,
     bidTotalCents: totals.bidTotalCents,
