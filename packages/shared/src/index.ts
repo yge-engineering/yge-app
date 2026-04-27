@@ -96,3 +96,4 @@ export * from './equipment-idle';
 export * from './bid-pipeline';
 export * from './material-price-history';
 export * from './customer-dso';
+export * from './billing-pace';
