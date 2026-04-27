@@ -86,3 +86,4 @@ export * from './material-reorder';
 export * from './cpr-gap-detector';
 export * from './lien-waiver-chase';
 export * from './heat-illness-audit';
+export * from './vendor-w9-chase';
