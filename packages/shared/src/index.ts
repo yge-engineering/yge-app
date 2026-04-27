@@ -124,3 +124,4 @@ export * from './co-density';
 export * from './material-slow-mover';
 export * from './vendor-concentration';
 export * from './dispatch-vs-dr';
+export * from './equipment-fleet-age';
