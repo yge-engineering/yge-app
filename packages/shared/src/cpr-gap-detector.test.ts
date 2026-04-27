@@ -101,16 +101,16 @@ describe('buildCprGapReport', () => {
     expect(r.jobs[0]?.gaps[0]?.reason).toBe('TIME_CARDS_NO_CPR');
   });
 
-  it('skips DRAFT and REJECTED CPRs', () => {
+  it('skips DRAFT CPRs', () => {
     const r = buildCprGapReport({
       asOf: '2026-04-27',
       certifiedPayrolls: [
         cpr({ id: 'a', status: 'DRAFT', payrollNumber: 1, weekStarting: '2026-04-06' }),
-        cpr({ id: 'b', status: 'REJECTED', payrollNumber: 2, weekStarting: '2026-04-13' }),
+        cpr({ id: 'b', status: 'ACCEPTED', payrollNumber: 2, weekStarting: '2026-04-13' }),
         cpr({ id: 'c', status: 'SUBMITTED', payrollNumber: 3, weekStarting: '2026-04-20' }),
       ],
     });
-    expect(r.jobs[0]?.cprsFiled).toBe(1);
+    expect(r.jobs[0]?.cprsFiled).toBe(2);
   });
 
   it('jobId filter restricts the audit', () => {

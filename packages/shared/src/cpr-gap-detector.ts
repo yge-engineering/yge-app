@@ -14,6 +14,10 @@
 //     (the strongest gap signal — labor was billed but not certified).
 //
 // Pure derivation. No persisted records.
+//
+// "Filed" CPRs include SUBMITTED, ACCEPTED, AMENDED, and
+// NON_PERFORMANCE (the "no work performed this week" filing also
+// proves the week was reported). DRAFT is filtered out.
 
 import type { CertifiedPayroll } from './certified-payroll';
 import type { TimeCard } from './time-card';
@@ -69,10 +73,10 @@ export interface CprGapInputs {
 export function buildCprGapReport(inputs: CprGapInputs): CprGapReport {
   const asOf = inputs.asOf ?? new Date().toISOString().slice(0, 10);
 
-  // Filter CPRs we trust as "filed" — exclude DRAFT and REJECTED.
-  let cprs = inputs.certifiedPayrolls.filter(
-    (c) => c.status !== 'DRAFT' && c.status !== 'REJECTED',
-  );
+  // Filter CPRs we trust as "filed". Counts SUBMITTED + ACCEPTED +
+  // AMENDED + NON_PERFORMANCE (the "no work performed" filing still
+  // proves the week was filed). Excludes DRAFT.
+  let cprs = inputs.certifiedPayrolls.filter((c) => c.status !== 'DRAFT');
   if (inputs.jobId) cprs = cprs.filter((c) => c.jobId === inputs.jobId);
 
   // Group CPRs by job.
