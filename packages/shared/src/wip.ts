@@ -101,7 +101,7 @@ export function buildWipRow(inputs: WipInputs): WipRow {
   let changeOrderTotalCents = 0;
   for (const co of changeOrders) {
     if (co.status === 'APPROVED' || co.status === 'EXECUTED') {
-      changeOrderTotalCents += co.amountCents;
+      changeOrderTotalCents += co.totalCostImpactCents;
     }
   }
 
@@ -109,14 +109,10 @@ export function buildWipRow(inputs: WipInputs): WipRow {
   const estimatedGrossProfitCents = adjustedContractCents - estimatedCostAtCompletionCents;
 
   // Costs incurred — Phase 1: AP invoices in approved/paid status that
-  // are coded to this job. Skip drafts, voided, on-hold.
+  // are coded to this job. Skip drafts, pending, rejected.
   let costsIncurredCents = 0;
   for (const ap of apInvoices) {
-    if (
-      ap.status === 'APPROVED' ||
-      ap.status === 'PAID' ||
-      ap.status === 'PARTIALLY_PAID'
-    ) {
+    if (ap.status === 'APPROVED' || ap.status === 'PAID') {
       costsIncurredCents += ap.totalCents;
     }
   }
