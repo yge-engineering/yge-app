@@ -80,6 +80,12 @@ export default async function EstimateDetailPage({
         >
           §4104 Sub list
         </Link>
+        <Link
+          href={`/estimates/${data.estimate.id}/addenda`}
+          className="rounded border border-yge-blue-500 px-3 py-1 font-medium text-yge-blue-500 hover:bg-yge-blue-50"
+        >
+          Addendum ack
+        </Link>
       </div>
 
       <div className="mb-4">
