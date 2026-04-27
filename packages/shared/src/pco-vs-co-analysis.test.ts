@@ -29,10 +29,13 @@ function co(over: Partial<ChangeOrder>): ChangeOrder {
     createdAt: '',
     updatedAt: '',
     jobId: 'job-1',
-    coNumber: 'CO-001',
-    title: 'Extra rebar',
+    changeOrderNumber: 'CO-001',
+    subject: 'Extra rebar',
     description: 'something',
-    amountCents: 100_00,
+    reason: 'OWNER_DIRECTED',
+    lineItems: [],
+    totalCostImpactCents: 100_00,
+    totalScheduleImpactDays: 0,
     status: 'EXECUTED',
     ...over,
   } as ChangeOrder;
@@ -42,7 +45,7 @@ describe('buildPcoCoVarianceReport', () => {
   it('joins PCO to executed CO and computes variance', () => {
     const r = buildPcoCoVarianceReport({
       pcos: [pco({ costImpactCents: 100_00 })],
-      changeOrders: [co({ amountCents: 80_00 })],
+      changeOrders: [co({ totalCostImpactCents: 80_00 })],
     });
     expect(r.pairsConsidered).toBe(1);
     expect(r.rows[0]?.varianceCents).toBe(-20_00);
@@ -84,8 +87,8 @@ describe('buildPcoCoVarianceReport', () => {
         pco({ id: '2', costImpactCents: 100_00, changeOrderId: 'co-b' }),
       ],
       changeOrders: [
-        co({ id: 'co-a', amountCents: 100_00 }), // accepted
-        co({ id: 'co-b', amountCents: 80_00 }),  // negotiated down
+        co({ id: 'co-a', totalCostImpactCents: 100_00 }), // accepted
+        co({ id: 'co-b', totalCostImpactCents: 80_00 }),  // negotiated down
       ],
     });
     expect(r.acceptedAtFullCount).toBe(1);
@@ -99,8 +102,8 @@ describe('buildPcoCoVarianceReport', () => {
         pco({ id: 'big-cut', costImpactCents: 100_00, changeOrderId: 'co-b' }),
       ],
       changeOrders: [
-        co({ id: 'co-a', amountCents: 90_00 }),  // -10
-        co({ id: 'co-b', amountCents: 50_00 }),  // -50
+        co({ id: 'co-a', totalCostImpactCents: 90_00 }),  // -10
+        co({ id: 'co-b', totalCostImpactCents: 50_00 }),  // -50
       ],
     });
     expect(r.rows[0]?.pcoId).toBe('big-cut');
@@ -113,8 +116,8 @@ describe('buildPcoCoVarianceReport', () => {
         pco({ id: '2', costImpactCents: 100_00, changeOrderId: 'co-b' }),
       ],
       changeOrders: [
-        co({ id: 'co-a', amountCents: 100_00 }),  // 0
-        co({ id: 'co-b', amountCents: 60_00 }),   // -40
+        co({ id: 'co-a', totalCostImpactCents: 100_00 }),  // 0
+        co({ id: 'co-b', totalCostImpactCents: 60_00 }),   // -40
       ],
     });
     expect(r.totalProposedCents).toBe(200_00);

@@ -99,7 +99,7 @@ export function buildBillingPaceReport(inputs: BillingPaceInputs): {
     if (co.status !== 'EXECUTED' && co.status !== 'APPROVED') continue;
     coByJob.set(
       co.jobId,
-      (coByJob.get(co.jobId) ?? 0) + co.amountCents,
+      (coByJob.get(co.jobId) ?? 0) + co.totalCostImpactCents,
     );
   }
 

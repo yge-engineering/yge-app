@@ -65,7 +65,7 @@ export function buildPcoCoVarianceReport(
     if (!co) continue;
 
     const proposed = p.costImpactCents;
-    const executed = co.amountCents;
+    const executed = co.totalCostImpactCents;
     const variance = executed - proposed;
     const variancePct =
       proposed === 0 ? 0 : variance / Math.abs(proposed);
