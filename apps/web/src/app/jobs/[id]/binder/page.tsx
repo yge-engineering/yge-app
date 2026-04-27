@@ -212,8 +212,8 @@ export default async function JobBinderPage({
           <Row
             key={dr.id}
             href={`/daily-reports/${dr.id}`}
-            primary={dr.workDate}
-            secondary={`${dr.crewEntries?.length ?? 0} crew · ${dr.equipmentEntries?.length ?? 0} equip`}
+            primary={dr.date}
+            secondary={`${dr.crewOnSite.length} crew${dr.scopeCompleted ? ' · scope logged' : ''}`}
           />
         ))}
       </SectionPanel>
@@ -229,7 +229,7 @@ export default async function JobBinderPage({
             key={r.id}
             href={`/rfis/${r.id}`}
             primary={`#${r.rfiNumber} · ${r.subject}`}
-            secondary={`${r.status} · submitted ${r.submittedOn ?? '—'}`}
+            secondary={`${r.status} · sent ${r.sentAt ?? '—'}`}
           />
         ))}
       </SectionPanel>
@@ -244,7 +244,7 @@ export default async function JobBinderPage({
           <Row
             key={s.id}
             href={`/submittals/${s.id}`}
-            primary={`#${s.submittalNumber} · ${s.title}`}
+            primary={`#${s.submittalNumber} · ${s.subject}`}
             secondary={s.status}
           />
         ))}
