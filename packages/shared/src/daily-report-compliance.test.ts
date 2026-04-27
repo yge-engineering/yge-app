@@ -70,32 +70,29 @@ describe('buildDailyReportCompliance', () => {
   });
 
   it('rolls up by foreman and ranks worst-first', () => {
+    // NOTE: matching is by (jobId, date), not by foreman. So this
+    // fixture gives each foreman their own job to keep the math clean.
     const r = buildDailyReportCompliance({
       start: '2026-04-13',
       end: '2026-04-17',
       dispatches: [
-        // Bob: 3 dispatches, 2 reports → 67%
-        dispatch({ id: 'a', foremanName: 'Bob', jobId: 'job-1', scheduledFor: '2026-04-13' }),
-        dispatch({ id: 'b', foremanName: 'Bob', jobId: 'job-1', scheduledFor: '2026-04-14' }),
-        dispatch({ id: 'c', foremanName: 'Bob', jobId: 'job-2', scheduledFor: '2026-04-15' }),
-        // Carol: 2 dispatches, 0 reports → 0%
-        dispatch({ id: 'd', foremanName: 'Carol', jobId: 'job-1', scheduledFor: '2026-04-13' }),
-        dispatch({ id: 'e', foremanName: 'Carol', jobId: 'job-1', scheduledFor: '2026-04-14' }),
+        // Bob on job-A: 3 dispatches, 2 reports → 67%
+        dispatch({ id: 'a', foremanName: 'Bob', jobId: 'job-A', scheduledFor: '2026-04-13' }),
+        dispatch({ id: 'b', foremanName: 'Bob', jobId: 'job-A', scheduledFor: '2026-04-14' }),
+        dispatch({ id: 'c', foremanName: 'Bob', jobId: 'job-A', scheduledFor: '2026-04-15' }),
+        // Carol on job-C: 2 dispatches, 0 reports → 0%
+        dispatch({ id: 'd', foremanName: 'Carol', jobId: 'job-C', scheduledFor: '2026-04-13' }),
+        dispatch({ id: 'e', foremanName: 'Carol', jobId: 'job-C', scheduledFor: '2026-04-14' }),
       ],
       dailyReports: [
-        dr({ id: 'r1', jobId: 'job-1', date: '2026-04-13' }),
-        dr({ id: 'r2', jobId: 'job-1', date: '2026-04-14' }),
+        dr({ id: 'r1', jobId: 'job-A', date: '2026-04-13' }),
+        dr({ id: 'r2', jobId: 'job-A', date: '2026-04-14' }),
       ],
     });
-    expect(r.byForeman[0]?.foremanName).toBe('Carol'); // worst first
+    expect(r.byForeman[0]?.foremanName).toBe('Carol'); // worst first (0%)
     expect(r.byForeman[0]?.complianceRate).toBe(0);
-    // Bob: 1 of 3 dispatched-days had a report (job-1/04-13).
-    // Wait - r1 jobId=job-1 date=04-13 matches a dispatch (Bob, job-1, 04-13).
-    //   But Carol also dispatched to job-1 on 04-13 — same key. Both count
-    //   as compliant since the report exists.
-    // Better fixture: foreman is the dispatch attribute, but match key is
-    // (jobId, date) — so Carol gets credit too. Adjust expectations.
     expect(r.byForeman[1]?.foremanName).toBe('Bob');
+    expect(r.byForeman[1]?.complianceRate).toBeCloseTo(2 / 3, 4);
   });
 
   it('blendedComplianceRate uses dispatch-matched reports only', () => {
