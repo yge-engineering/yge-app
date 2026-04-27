@@ -119,3 +119,4 @@ export * from './vendor-payment-velocity';
 export * from './backup-withholding-alert';
 export * from './co-stale-tracker';
 export * from './foreman-scorecard';
+export * from './timecard-dr-variance';
