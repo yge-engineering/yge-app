@@ -64,3 +64,4 @@ export * from './vendor-1099';
 export * from './payroll-summary';
 export * from './job-cost-breakdown';
 export * from './aging';
+export * from './prompt-pay';

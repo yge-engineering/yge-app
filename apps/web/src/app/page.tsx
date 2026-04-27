@@ -85,6 +85,7 @@ const GROUPS: NavGroup[] = [
       { href: '/ar-payments', label: 'Customer Payments' },
       { href: '/lien-waivers', label: 'Lien Waivers' },
       { href: '/retention', label: 'Retention' },
+      { href: '/prompt-pay', label: 'Prompt-Pay Interest' },
     ],
   },
   {
