@@ -72,3 +72,4 @@ export * from './ap-duplicate-detector';
 export * from './morning-briefing';
 export * from './bid-analytics';
 export * from './submittal-board';
+export * from './equipment-service';
