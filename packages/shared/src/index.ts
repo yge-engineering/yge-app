@@ -46,3 +46,4 @@ export * from './wip';
 export * from './dir-rate';
 export * from './vendor-prequal';
 export * from './cert-watchlist';
+export * from './photo';
