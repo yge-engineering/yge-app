@@ -75,3 +75,4 @@ export * from './submittal-board';
 export * from './equipment-service';
 export * from './toolbox-compliance';
 export * from './pco-exposure';
+export * from './daily-report-compliance';
