@@ -169,3 +169,4 @@ export * from './punch-closeout-velocity';
 export * from './employee-cert-board';
 export * from './job-ap-pipeline';
 export * from './customer-revenue-trend';
+export * from './job-ar-aging';
