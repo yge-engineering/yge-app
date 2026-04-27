@@ -121,3 +121,4 @@ export * from './co-stale-tracker';
 export * from './foreman-scorecard';
 export * from './timecard-dr-variance';
 export * from './co-density';
+export * from './material-slow-mover';
