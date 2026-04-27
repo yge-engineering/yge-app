@@ -161,3 +161,4 @@ export * from './employee-mileage-rollup';
 export * from './job-billing-cadence';
 export * from './job-co-summary';
 export * from './customer-open-ar';
+export * from './vendor-1099-readiness';
