@@ -82,3 +82,4 @@ export * from './vendor-spend';
 export * from './sub-scorecard';
 export * from './meal-break-summary';
 export * from './photo-evidence';
+export * from './material-reorder';
