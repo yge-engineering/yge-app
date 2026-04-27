@@ -131,3 +131,4 @@ export * from './job-material-spend';
 export * from './job-schedule-slip';
 export * from './contract-value-waterfall';
 export * from './punch-list-aging';
+export * from './sub-coi-watch';
