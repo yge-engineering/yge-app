@@ -145,3 +145,4 @@ export * from './job-revenue-mix';
 export * from './job-sub-spend';
 export * from './foreman-throughput';
 export * from './ap-processing-time';
+export * from './job-risk-score';
