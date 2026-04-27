@@ -41,6 +41,7 @@ import { coaRouter } from './routes/coa';
 import { journalEntriesRouter } from './routes/journal-entries';
 import { apPaymentsRouter } from './routes/ap-payments';
 import { bankRecsRouter } from './routes/bank-recs';
+import { customersRouter } from './routes/customers';
 
 const app = express();
 
@@ -85,6 +86,7 @@ app.use('/api/coa', coaRouter);
 app.use('/api/journal-entries', journalEntriesRouter);
 app.use('/api/ap-payments', apPaymentsRouter);
 app.use('/api/bank-recs', bankRecsRouter);
+app.use('/api/customers', customersRouter);
 
 // 404
 app.use((_req, res) => {

@@ -55,3 +55,4 @@ export * from './balance-sheet';
 export * from './ap-payment';
 export * from './close-checklist';
 export * from './bank-rec';
+export * from './customer';
