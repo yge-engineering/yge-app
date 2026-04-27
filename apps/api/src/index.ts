@@ -35,6 +35,7 @@ import { weatherLogsRouter } from './routes/weather-logs';
 import { pcosRouter } from './routes/pcos';
 import { swpppInspectionsRouter } from './routes/swppp-inspections';
 import { dispatchesRouter } from './routes/dispatches';
+import { dirRatesRouter } from './routes/dir-rates';
 
 const app = express();
 
@@ -73,6 +74,7 @@ app.use('/api/weather-logs', weatherLogsRouter);
 app.use('/api/pcos', pcosRouter);
 app.use('/api/swppp-inspections', swpppInspectionsRouter);
 app.use('/api/dispatches', dispatchesRouter);
+app.use('/api/dir-rates', dirRatesRouter);
 
 // 404
 app.use((_req, res) => {

@@ -43,3 +43,4 @@ export * from './pco';
 export * from './swppp-inspection';
 export * from './dispatch';
 export * from './wip';
+export * from './dir-rate';
