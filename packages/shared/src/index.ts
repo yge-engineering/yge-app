@@ -164,3 +164,4 @@ export * from './customer-open-ar';
 export * from './vendor-1099-readiness';
 export * from './job-photo-coverage';
 export * from './bid-to-award-variance';
+export * from './equipment-daily-dispatch';
