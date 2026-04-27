@@ -25,6 +25,13 @@ import { submittalsRouter } from './routes/submittals';
 import { changeOrdersRouter } from './routes/change-orders';
 import { timeCardsRouter } from './routes/time-cards';
 import { certifiedPayrollsRouter } from './routes/certified-payrolls';
+import { vendorsRouter } from './routes/vendors';
+import { arPaymentsRouter } from './routes/ar-payments';
+import { lienWaiversRouter } from './routes/lien-waivers';
+import { punchItemsRouter } from './routes/punch-items';
+import { toolboxTalksRouter } from './routes/toolbox-talks';
+import { incidentsRouter } from './routes/incidents';
+import { weatherLogsRouter } from './routes/weather-logs';
 
 const app = express();
 
@@ -53,6 +60,13 @@ app.use('/api/submittals', submittalsRouter);
 app.use('/api/change-orders', changeOrdersRouter);
 app.use('/api/time-cards', timeCardsRouter);
 app.use('/api/certified-payrolls', certifiedPayrollsRouter);
+app.use('/api/vendors', vendorsRouter);
+app.use('/api/ar-payments', arPaymentsRouter);
+app.use('/api/lien-waivers', lienWaiversRouter);
+app.use('/api/punch-items', punchItemsRouter);
+app.use('/api/toolbox-talks', toolboxTalksRouter);
+app.use('/api/incidents', incidentsRouter);
+app.use('/api/weather-logs', weatherLogsRouter);
 
 // 404
 app.use((_req, res) => {

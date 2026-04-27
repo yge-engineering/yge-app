@@ -139,6 +139,48 @@ export default function HomePage() {
           >
             Certified Payroll
           </Link>
+          <Link
+            href="/vendors"
+            className="rounded border border-yge-blue-500 px-6 py-3 text-yge-blue-500 hover:bg-yge-blue-50"
+          >
+            Vendors
+          </Link>
+          <Link
+            href="/ar-payments"
+            className="rounded border border-yge-blue-500 px-6 py-3 text-yge-blue-500 hover:bg-yge-blue-50"
+          >
+            Customer Payments
+          </Link>
+          <Link
+            href="/lien-waivers"
+            className="rounded border border-yge-blue-500 px-6 py-3 text-yge-blue-500 hover:bg-yge-blue-50"
+          >
+            Lien Waivers
+          </Link>
+          <Link
+            href="/punch-list"
+            className="rounded border border-yge-blue-500 px-6 py-3 text-yge-blue-500 hover:bg-yge-blue-50"
+          >
+            Punch List
+          </Link>
+          <Link
+            href="/toolbox-talks"
+            className="rounded border border-yge-blue-500 px-6 py-3 text-yge-blue-500 hover:bg-yge-blue-50"
+          >
+            Toolbox Talks
+          </Link>
+          <Link
+            href="/incidents"
+            className="rounded border border-yge-blue-500 px-6 py-3 text-yge-blue-500 hover:bg-yge-blue-50"
+          >
+            OSHA 300 Log
+          </Link>
+          <Link
+            href="/weather"
+            className="rounded border border-yge-blue-500 px-6 py-3 text-yge-blue-500 hover:bg-yge-blue-50"
+          >
+            Weather Log
+          </Link>
         </div>
         <p className="mt-12 text-xs text-gray-400">
           Phase 1 MVP — under active development. See README.md and CLAUDE.md.
