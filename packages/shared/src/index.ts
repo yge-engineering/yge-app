@@ -50,3 +50,4 @@ export * from './photo';
 export * from './cash-forecast';
 export * from './coa';
 export * from './journal-entry';
+export * from './income-statement';
