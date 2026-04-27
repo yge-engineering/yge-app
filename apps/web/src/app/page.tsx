@@ -49,6 +49,7 @@ const GROUPS: NavGroup[] = [
       { href: '/dispatch', label: 'Dispatch Board' },
       { href: '/daily-reports', label: 'Daily Reports' },
       { href: '/time-cards', label: 'Time Cards' },
+      { href: '/crew-utilization', label: 'Crew Utilization' },
       { href: '/mileage', label: 'Mileage Log' },
       { href: '/photos', label: 'Photo Log' },
     ],
