@@ -40,6 +40,7 @@ import { photosRouter } from './routes/photos';
 import { coaRouter } from './routes/coa';
 import { journalEntriesRouter } from './routes/journal-entries';
 import { apPaymentsRouter } from './routes/ap-payments';
+import { bankRecsRouter } from './routes/bank-recs';
 
 const app = express();
 
@@ -83,6 +84,7 @@ app.use('/api/photos', photosRouter);
 app.use('/api/coa', coaRouter);
 app.use('/api/journal-entries', journalEntriesRouter);
 app.use('/api/ap-payments', apPaymentsRouter);
+app.use('/api/bank-recs', bankRecsRouter);
 
 // 404
 app.use((_req, res) => {
