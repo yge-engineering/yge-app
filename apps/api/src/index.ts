@@ -37,6 +37,7 @@ import { swpppInspectionsRouter } from './routes/swppp-inspections';
 import { dispatchesRouter } from './routes/dispatches';
 import { dirRatesRouter } from './routes/dir-rates';
 import { photosRouter } from './routes/photos';
+import { coaRouter } from './routes/coa';
 
 const app = express();
 
@@ -77,6 +78,7 @@ app.use('/api/swppp-inspections', swpppInspectionsRouter);
 app.use('/api/dispatches', dispatchesRouter);
 app.use('/api/dir-rates', dirRatesRouter);
 app.use('/api/photos', photosRouter);
+app.use('/api/coa', coaRouter);
 
 // 404
 app.use((_req, res) => {
