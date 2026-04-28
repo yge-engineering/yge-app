@@ -197,3 +197,5 @@ export * from './vendor-invoice-size';
 export * from './co-origin-monthly';
 export * from './customer-waiver-cadence';
 export * from './job-weather-gaps';
+export * from './monthly-billing';
+export * from './vendor-first-seen';
