@@ -76,27 +76,19 @@ describe('buildVendorInvoiceCadence', () => {
   });
 
   it('flags IRREGULAR when intervals scatter widely', () => {
+    // Intervals: 1, 23, 1 days. Median 1, stdDev ~10.4 — well over
+    // the 0.5*median threshold. Last invoice is the day before
+    // asOf so the OVERDUE branch doesn't fire.
     const r = buildVendorInvoiceCadence({
       asOf: '2026-04-27',
       apInvoices: [
         ap({ id: 'a', invoiceDate: '2026-04-01' }),
-        ap({ id: 'b', invoiceDate: '2026-04-10' }), // 9 days
-        ap({ id: 'c', invoiceDate: '2026-04-15' }), // 5 days
-        ap({ id: 'd', invoiceDate: '2026-04-20' }), // 5 days — wait we need irregular
+        ap({ id: 'b', invoiceDate: '2026-04-02' }),
+        ap({ id: 'c', invoiceDate: '2026-04-25' }),
+        ap({ id: 'd', invoiceDate: '2026-04-26' }),
       ],
     });
-    // Adjust: vary intervals more dramatically
-    const r2 = buildVendorInvoiceCadence({
-      asOf: '2026-04-27',
-      apInvoices: [
-        ap({ id: 'a', invoiceDate: '2026-01-01' }),
-        ap({ id: 'b', invoiceDate: '2026-01-05' }),  // 4 days
-        ap({ id: 'c', invoiceDate: '2026-03-01' }),  // 55 days
-        ap({ id: 'd', invoiceDate: '2026-04-15' }),  // 45 days
-      ],
-    });
-    expect(r2.rows[0]?.flag === 'IRREGULAR' || r2.rows[0]?.flag === 'OVERDUE').toBe(true);
-    void r;
+    expect(r.rows[0]?.flag).toBe('IRREGULAR');
   });
 
   it('skips DRAFT and REJECTED invoices', () => {

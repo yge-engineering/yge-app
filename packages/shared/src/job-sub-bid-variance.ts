@@ -86,17 +86,26 @@ export function buildJobSubBidVariance(
     if (v.dbaName) byName.set(normalize(v.dbaName), v);
   }
 
-  // AP spend per (jobId, normalized vendor key).
+  // AP spend per (jobId, vendor canonical key). We key by vendor.id
+  // when we can resolve the AP invoice to a master record — that
+  // way a sub listed by DBA name and an invoice paid to legal name
+  // collide on the same key. Fallback `name:<normalized>` for
+  // invoices we can't resolve.
   const apSpend = new Map<string, Map<string, number>>();
+  /** displayName lookup for fallback keys. */
+  const fallbackDisplay = new Map<string, string>();
   for (const inv of inputs.apInvoices) {
     if (inv.status === 'DRAFT' || inv.status === 'REJECTED') continue;
     if (!inv.jobId) continue;
     const v = byName.get(normalize(inv.vendorName));
     if (!v) continue; // not a tracked sub
-    const key = normalize(inv.vendorName);
+    const key = `vid:${v.id}`;
     const jobMap = apSpend.get(inv.jobId) ?? new Map<string, number>();
     jobMap.set(key, (jobMap.get(key) ?? 0) + inv.totalCents);
     apSpend.set(inv.jobId, jobMap);
+    if (!fallbackDisplay.has(key)) {
+      fallbackDisplay.set(key, v.dbaName ?? v.legalName);
+    }
   }
 
   const jobs: JobSubVarianceJobRow[] = [];
@@ -116,7 +125,12 @@ export function buildJobSubBidVariance(
     let matched = 0;
 
     for (const s of listedSubs) {
-      const key = normalize(s.contractorName);
+      // Resolve listed contractor to vendor master so the apSpend
+      // lookup uses the same canonical key. If no master row,
+      // fall back to a name-based key (won't match AP either way
+      // since AP requires a master row to be tracked).
+      const v = byName.get(normalize(s.contractorName));
+      const key = v ? `vid:${v.id}` : `name:${normalize(s.contractorName)}`;
       seenKeys.add(key);
       const actual = apForJob.get(key) ?? 0;
       totalListed += s.bidAmountCents;
@@ -151,17 +165,16 @@ export function buildJobSubBidVariance(
       }
     }
 
-    // Unlisted-with-spend: AP keys that weren't in listedSubs.
+    // Unlisted-with-spend: vid keys that weren't matched by any
+    // listed sub.
     let unlistedWithSpend = 0;
     for (const [key, actual] of apForJob.entries()) {
       if (seenKeys.has(key)) continue;
       unlistedWithSpend += 1;
-      // Use the matched vendor's display name when we have one;
-      // otherwise the normalized key as a fallback.
-      const v = byName.get(key);
+      const display = fallbackDisplay.get(key) ?? key;
       rows.push({
         jobId: j.id,
-        contractorName: v?.dbaName ?? v?.legalName ?? key,
+        contractorName: display,
         kind: 'UNLISTED_WITH_SPEND',
         bidAmountCents: null,
         actualSpendCents: actual,

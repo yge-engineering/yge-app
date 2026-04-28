@@ -30,6 +30,7 @@ function ap(over: Partial<ApPayment>): ApPayment {
     method: 'CHECK',
     paidOn: '2026-04-15',
     amountCents: 20_000_00,
+    ...over,
   } as ApPayment;
 }
 
