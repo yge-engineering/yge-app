@@ -194,3 +194,4 @@ export * from './job-cash-net';
 export * from './daily-rfi-volume';
 export * from './swppp-cadence';
 export * from './vendor-invoice-size';
+export * from './co-origin-monthly';
