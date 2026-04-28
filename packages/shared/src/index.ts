@@ -184,3 +184,4 @@ export * from './vendor-invoice-shape';
 export * from './customer-first-payment-timing';
 export * from './employee-timecard-accuracy';
 export * from './job-retention-release-readiness';
+export * from './job-rfi-to-co';
