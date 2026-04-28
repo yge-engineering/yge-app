@@ -215,3 +215,5 @@ export * from './job-punch-by-responsible';
 export * from './customer-payment-lag';
 export * from './overtime-monthly';
 export * from './foreman-crew-turnover';
+export * from './job-dispatch-posting-lateness';
+export * from './customer-ar-aging';
