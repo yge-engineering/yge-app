@@ -5,7 +5,7 @@ import type { Employee } from './employee';
 
 import { buildEmployeeClassificationMix } from './employee-classification-mix';
 
-function emp(over: Partial<Employee> & { id: string }): Employee {
+function emp(over: Partial<Employee>): Employee {
   return {
     id: 'e1',
     createdAt: '2026-01-01T00:00:00.000Z',
