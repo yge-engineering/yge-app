@@ -178,3 +178,4 @@ export * from './job-overhead-allocation';
 export * from './job-sub-bid-variance';
 export * from './vendor-onhold-exposure';
 export * from './customer-prompt-pay-claim';
+export * from './daily-ar-billing';
