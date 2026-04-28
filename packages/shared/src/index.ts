@@ -181,3 +181,4 @@ export * from './customer-prompt-pay-claim';
 export * from './daily-ar-billing';
 export * from './job-timecard-hours';
 export * from './vendor-invoice-shape';
+export * from './customer-first-payment-timing';
