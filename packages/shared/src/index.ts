@@ -201,3 +201,5 @@ export * from './monthly-billing';
 export * from './vendor-first-seen';
 export * from './employee-dr-appearances';
 export * from './job-dr-scope-completeness';
+export * from './job-submittal-pipeline';
+export * from './toolbox-topic-recency';
