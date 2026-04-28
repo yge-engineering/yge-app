@@ -48,6 +48,10 @@ describe('buildDailyRfiVolume', () => {
   });
 
   it('tracks running cumulative backlog', () => {
+    // Day-by-day:
+    //   04-01: a sent (+1), c sent (+1)      → running 2
+    //   04-02: b sent (+1)                   → running 3
+    //   04-03: c answered (-1)               → running 2
     const r = buildDailyRfiVolume({
       fromDate: '2026-04-01',
       toDate: '2026-04-30',
@@ -57,9 +61,9 @@ describe('buildDailyRfiVolume', () => {
         rfi({ id: 'c', sentAt: '2026-04-01', answeredAt: '2026-04-03', status: 'ANSWERED' }),
       ],
     });
-    expect(r.rows[0]?.cumulativeBacklog).toBe(1); // 04-01: +1
-    expect(r.rows[1]?.cumulativeBacklog).toBe(2); // 04-02: +1
-    expect(r.rows[2]?.cumulativeBacklog).toBe(1); // 04-03: -1
+    expect(r.rows[0]?.cumulativeBacklog).toBe(2);
+    expect(r.rows[1]?.cumulativeBacklog).toBe(3);
+    expect(r.rows[2]?.cumulativeBacklog).toBe(2);
   });
 
   it('respects openingBacklog', () => {
