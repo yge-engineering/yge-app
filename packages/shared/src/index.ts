@@ -211,3 +211,5 @@ export * from './job-photo-category-mix';
 export * from './vendor-line-count';
 export * from './rfi-monthly-volume';
 export * from './employee-mileage-monthly';
+export * from './job-punch-by-responsible';
+export * from './customer-payment-lag';
