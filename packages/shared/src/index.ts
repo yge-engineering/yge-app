@@ -207,3 +207,4 @@ export * from './workforce-headcount-monthly';
 export * from './monthly-sub-spend';
 export * from './job-stock-consumption';
 export * from './job-co-win-rate';
+export * from './job-photo-category-mix';
