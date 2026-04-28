@@ -199,3 +199,5 @@ export * from './customer-waiver-cadence';
 export * from './job-weather-gaps';
 export * from './monthly-billing';
 export * from './vendor-first-seen';
+export * from './employee-dr-appearances';
+export * from './job-dr-scope-completeness';
