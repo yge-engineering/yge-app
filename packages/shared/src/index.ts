@@ -188,3 +188,4 @@ export * from './job-rfi-to-co';
 export * from './vendor-invoice-cadence';
 export * from './employee-classification-mix';
 export * from './incident-monthly-trend';
+export * from './bid-pursuit-monthly';
