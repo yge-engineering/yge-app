@@ -467,3 +467,4 @@ export * from './portfolio-incident-yoy';
 export * from './portfolio-bid-yoy';
 export * from './portfolio-toolbox-yoy';
 export * from './portfolio-photo-yoy';
+export * from './portfolio-document-yoy';
