@@ -472,3 +472,4 @@ export * from './portfolio-headcount-yoy';
 export * from './portfolio-overtime-yoy';
 export * from './portfolio-equipment-yoy';
 export * from './portfolio-cash-net-yoy';
+export * from './portfolio-vendor-yoy';
