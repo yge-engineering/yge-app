@@ -444,3 +444,4 @@ export * from './portfolio-pco-monthly';
 export * from './portfolio-photo-monthly';
 export * from './portfolio-toolbox-monthly';
 export * from './portfolio-incident-monthly';
+export * from './portfolio-weather-monthly';
