@@ -409,3 +409,4 @@ export * from './equipment-fleet-by-category';
 export * from './customer-co-monthly';
 export * from './customer-pco-monthly';
 export * from './customer-rfi-monthly';
+export * from './customer-submittal-monthly';
