@@ -427,3 +427,4 @@ export * from './job-revenue-vs-cost-monthly';
 export * from './customer-margin-yoy';
 export * from './job-margin-yoy';
 export * from './portfolio-margin-monthly';
+export * from './portfolio-cash-net-monthly';
