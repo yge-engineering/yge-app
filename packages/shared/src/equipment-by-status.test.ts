@@ -54,7 +54,7 @@ describe('buildEquipmentByStatus', () => {
       ],
     });
     expect(r.rows.map((x) => x.status)).toEqual([
-      'IN_YARD', 'ASSIGNED', 'OUT_FOR_REPAIR', 'RETIRED', 'SOLD',
+      'IN_YARD', 'ASSIGNED', 'IN_SERVICE', 'OUT_FOR_REPAIR', 'RETIRED', 'SOLD',
     ]);
   });
 
