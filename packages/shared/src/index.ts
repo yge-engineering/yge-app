@@ -397,3 +397,4 @@ export * from './punch-list-by-job-monthly';
 export * from './expense-by-category-monthly';
 export * from './mileage-by-purpose-monthly';
 export * from './submittal-by-author-monthly';
+export * from './vendor-w9-by-collected-monthly';
