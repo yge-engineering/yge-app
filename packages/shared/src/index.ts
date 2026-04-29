@@ -403,3 +403,4 @@ export * from './customer-revenue-by-state';
 export * from './vendor-spend-by-state';
 export * from './customer-revenue-by-kind-monthly';
 export * from './vendor-prequal-by-kind';
+export * from './incident-by-employee';
