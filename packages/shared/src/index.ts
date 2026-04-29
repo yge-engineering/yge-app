@@ -406,3 +406,4 @@ export * from './vendor-prequal-by-kind';
 export * from './incident-by-employee';
 export * from './journal-entry-by-job-monthly';
 export * from './equipment-fleet-by-category';
+export * from './customer-co-monthly';
