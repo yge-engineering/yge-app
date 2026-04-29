@@ -453,3 +453,4 @@ export * from './portfolio-lien-waiver-monthly';
 export * from './portfolio-vendor-monthly';
 export * from './portfolio-customer-monthly';
 export * from './portfolio-job-status-monthly';
+export * from './portfolio-vendor-payment-monthly';
