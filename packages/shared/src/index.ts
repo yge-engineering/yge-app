@@ -380,3 +380,4 @@ export * from './customer-revenue-by-job';
 export * from './dispatch-by-month-by-status';
 export * from './expense-by-job-monthly';
 export * from './job-ap-spend-monthly';
+export * from './job-ar-billing-monthly';
