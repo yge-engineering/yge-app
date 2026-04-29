@@ -365,3 +365,5 @@ export * from './job-photo-by-category';
 export * from './ar-payment-by-kind-monthly';
 export * from './vendor-onhold-by-kind';
 export * from './customer-billing-yoy';
+export * from './equipment-fleet-by-year';
+export * from './job-incident-monthly';
