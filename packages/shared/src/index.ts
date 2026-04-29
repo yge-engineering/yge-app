@@ -435,3 +435,4 @@ export * from './portfolio-equipment-monthly';
 export * from './portfolio-bid-monthly';
 export * from './portfolio-ar-aging-monthly';
 export * from './portfolio-ap-aging-monthly';
+export * from './portfolio-retention-monthly';
