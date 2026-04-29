@@ -414,3 +414,4 @@ export * from './customer-incident-monthly';
 export * from './customer-photo-monthly';
 export * from './customer-toolbox-monthly';
 export * from './customer-dispatch-monthly';
+export * from './customer-timecard-monthly';
