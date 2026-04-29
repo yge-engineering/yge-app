@@ -445,3 +445,4 @@ export * from './portfolio-photo-monthly';
 export * from './portfolio-toolbox-monthly';
 export * from './portfolio-incident-monthly';
 export * from './portfolio-weather-monthly';
+export * from './portfolio-mileage-monthly';
