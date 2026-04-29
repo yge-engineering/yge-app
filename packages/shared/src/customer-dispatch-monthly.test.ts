@@ -1,0 +1,132 @@
+import { describe, expect, it } from 'vitest';
+
+import type { Dispatch } from './dispatch';
+import type { Job } from './job';
+
+import { buildCustomerDispatchMonthly } from './customer-dispatch-monthly';
+
+function job(over: Partial<Job>): Job {
+  return {
+    id: 'j1',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    projectName: 'Test',
+    projectType: 'ROAD_RECONSTRUCTION',
+    contractType: 'PUBLIC',
+    status: 'AWARDED',
+    ownerAgency: 'Caltrans D2',
+    ...over,
+  } as Job;
+}
+
+function disp(over: Partial<Dispatch>): Dispatch {
+  return {
+    id: 'd-1',
+    createdAt: '2026-04-01T00:00:00.000Z',
+    updatedAt: '2026-04-01T00:00:00.000Z',
+    jobId: 'j1',
+    scheduledFor: '2026-04-15',
+    foremanName: 'Pat',
+    scopeOfWork: 'work',
+    crew: [],
+    equipment: [],
+    status: 'POSTED',
+    ...over,
+  } as Dispatch;
+}
+
+describe('buildCustomerDispatchMonthly', () => {
+  it('groups by (customer, month)', () => {
+    const r = buildCustomerDispatchMonthly({
+      jobs: [
+        job({ id: 'j1', ownerAgency: 'Caltrans D2' }),
+        job({ id: 'j2', ownerAgency: 'CAL FIRE' }),
+      ],
+      dispatches: [
+        disp({ id: 'a', jobId: 'j1', scheduledFor: '2026-04-15' }),
+        disp({ id: 'b', jobId: 'j2', scheduledFor: '2026-04-15' }),
+        disp({ id: 'c', jobId: 'j1', scheduledFor: '2026-05-01' }),
+      ],
+    });
+    expect(r.rows).toHaveLength(3);
+  });
+
+  it('breaks down by status', () => {
+    const r = buildCustomerDispatchMonthly({
+      jobs: [job({ id: 'j1' })],
+      dispatches: [
+        disp({ id: 'a', status: 'POSTED' }),
+        disp({ id: 'b', status: 'COMPLETED' }),
+        disp({ id: 'c', status: 'CANCELLED' }),
+        disp({ id: 'd', status: 'DRAFT' }),
+      ],
+    });
+    expect(r.rows[0]?.posted).toBe(1);
+    expect(r.rows[0]?.completed).toBe(1);
+    expect(r.rows[0]?.cancelled).toBe(1);
+    expect(r.rows[0]?.draft).toBe(1);
+  });
+
+  it('counts distinct foremen + jobs', () => {
+    const r = buildCustomerDispatchMonthly({
+      jobs: [
+        job({ id: 'j1', ownerAgency: 'Caltrans D2' }),
+        job({ id: 'j2', ownerAgency: 'Caltrans D2' }),
+      ],
+      dispatches: [
+        disp({ id: 'a', jobId: 'j1', foremanName: 'Pat' }),
+        disp({ id: 'b', jobId: 'j2', foremanName: 'Sam' }),
+        disp({ id: 'c', jobId: 'j1', foremanName: 'Pat' }),
+      ],
+    });
+    expect(r.rows[0]?.distinctForemen).toBe(2);
+    expect(r.rows[0]?.distinctJobs).toBe(2);
+  });
+
+  it('counts unattributed (no matching job)', () => {
+    const r = buildCustomerDispatchMonthly({
+      jobs: [job({ id: 'j1' })],
+      dispatches: [
+        disp({ id: 'a', jobId: 'j1' }),
+        disp({ id: 'b', jobId: 'orphan' }),
+      ],
+    });
+    expect(r.rollup.unattributed).toBe(1);
+  });
+
+  it('respects fromMonth / toMonth', () => {
+    const r = buildCustomerDispatchMonthly({
+      fromMonth: '2026-04',
+      toMonth: '2026-04',
+      jobs: [job({ id: 'j1' })],
+      dispatches: [
+        disp({ id: 'old', scheduledFor: '2026-03-15' }),
+        disp({ id: 'in', scheduledFor: '2026-04-15' }),
+      ],
+    });
+    expect(r.rollup.totalDispatches).toBe(1);
+  });
+
+  it('sorts by customerName asc, month asc', () => {
+    const r = buildCustomerDispatchMonthly({
+      jobs: [
+        job({ id: 'jA', ownerAgency: 'A Agency' }),
+        job({ id: 'jZ', ownerAgency: 'Z Agency' }),
+      ],
+      dispatches: [
+        disp({ id: 'a', jobId: 'jZ', scheduledFor: '2026-04-15' }),
+        disp({ id: 'b', jobId: 'jA', scheduledFor: '2026-05-01' }),
+        disp({ id: 'c', jobId: 'jA', scheduledFor: '2026-04-15' }),
+      ],
+    });
+    expect(r.rows[0]?.customerName).toBe('A Agency');
+    expect(r.rows[0]?.month).toBe('2026-04');
+    expect(r.rows[2]?.customerName).toBe('Z Agency');
+  });
+
+  it('handles empty input', () => {
+    const r = buildCustomerDispatchMonthly({ jobs: [], dispatches: [] });
+    expect(r.rows).toHaveLength(0);
+    expect(r.rollup.totalDispatches).toBe(0);
+  });
+});
