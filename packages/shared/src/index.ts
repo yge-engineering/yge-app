@@ -433,3 +433,4 @@ export * from './portfolio-safety-monthly';
 export * from './portfolio-document-monthly';
 export * from './portfolio-equipment-monthly';
 export * from './portfolio-bid-monthly';
+export * from './portfolio-ar-aging-monthly';
