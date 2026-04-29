@@ -430,3 +430,4 @@ export * from './portfolio-margin-monthly';
 export * from './portfolio-cash-net-monthly';
 export * from './portfolio-headcount-monthly';
 export * from './portfolio-safety-monthly';
+export * from './portfolio-document-monthly';
