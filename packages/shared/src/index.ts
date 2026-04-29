@@ -375,3 +375,4 @@ export * from './expense-by-job';
 export * from './ar-payment-by-job-method';
 export * from './ap-payment-by-job-method';
 export * from './vendor-1099-by-kind';
+export * from './employee-tenure-by-classification';
