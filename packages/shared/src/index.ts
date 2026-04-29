@@ -361,3 +361,7 @@ export * from './vendor-w9-monthly-expiring';
 export * from './employee-classification-monthly';
 export * from './submittal-by-month-by-kind';
 export * from './equipment-maintenance-by-make';
+export * from './job-photo-by-category';
+export * from './ar-payment-by-kind-monthly';
+export * from './vendor-onhold-by-kind';
+export * from './customer-billing-yoy';
