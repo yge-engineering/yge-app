@@ -378,3 +378,4 @@ export * from './vendor-1099-by-kind';
 export * from './employee-tenure-by-classification';
 export * from './customer-revenue-by-job';
 export * from './dispatch-by-month-by-status';
+export * from './expense-by-job-monthly';
