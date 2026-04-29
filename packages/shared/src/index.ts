@@ -458,3 +458,4 @@ export * from './portfolio-customer-payment-monthly';
 export * from './portfolio-cert-monthly-expiring';
 export * from './portfolio-coi-monthly-expiring';
 export * from './portfolio-w9-monthly-expiring';
+export * from './portfolio-punch-monthly';
