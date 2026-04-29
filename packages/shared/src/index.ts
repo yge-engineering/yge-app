@@ -367,3 +367,6 @@ export * from './vendor-onhold-by-kind';
 export * from './customer-billing-yoy';
 export * from './equipment-fleet-by-year';
 export * from './job-incident-monthly';
+export * from './submittal-by-job-monthly';
+export * from './job-billing-by-source';
+export * from './vendor-spend-by-kind-monthly';
