@@ -379,3 +379,4 @@ export * from './employee-tenure-by-classification';
 export * from './customer-revenue-by-job';
 export * from './dispatch-by-month-by-status';
 export * from './expense-by-job-monthly';
+export * from './job-ap-spend-monthly';
