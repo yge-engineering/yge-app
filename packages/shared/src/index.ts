@@ -463,3 +463,4 @@ export * from './portfolio-journal-entry-monthly';
 export * from './portfolio-overtime-monthly';
 export * from './portfolio-mileage-yoy';
 export * from './portfolio-expense-yoy';
+export * from './portfolio-incident-yoy';
