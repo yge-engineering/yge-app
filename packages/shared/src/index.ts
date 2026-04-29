@@ -373,3 +373,4 @@ export * from './vendor-spend-by-kind-monthly';
 export * from './job-dispatch-by-day-of-week';
 export * from './expense-by-job';
 export * from './ar-payment-by-job-method';
+export * from './ap-payment-by-job-method';
