@@ -395,3 +395,4 @@ export * from './journal-entry-by-account-monthly';
 export * from './incident-by-outcome-monthly';
 export * from './punch-list-by-job-monthly';
 export * from './expense-by-category-monthly';
+export * from './mileage-by-purpose-monthly';
