@@ -387,3 +387,4 @@ export * from './vendor-payment-by-vendor-monthly';
 export * from './equipment-utilization-monthly';
 export * from './customer-bid-pursuit-monthly';
 export * from './job-dr-monthly';
+export * from './material-spend-by-category-monthly';
