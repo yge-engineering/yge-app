@@ -456,3 +456,4 @@ export * from './portfolio-job-status-monthly';
 export * from './portfolio-vendor-payment-monthly';
 export * from './portfolio-customer-payment-monthly';
 export * from './portfolio-cert-monthly-expiring';
+export * from './portfolio-coi-monthly-expiring';
