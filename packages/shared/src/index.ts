@@ -337,3 +337,6 @@ export * from './vendor-spend-by-job';
 export * from './employee-mileage-monthly-by-purpose';
 export * from './dispatch-by-job-foreman';
 export * from './weather-condition-by-job';
+export * from './job-co-by-reason';
+export * from './equipment-by-make';
+export * from './customer-payment-by-customer-monthly';
