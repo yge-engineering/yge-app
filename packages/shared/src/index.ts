@@ -419,3 +419,4 @@ export * from './customer-weather-monthly';
 export * from './customer-equipment-monthly';
 export * from './customer-mileage-monthly';
 export * from './customer-expense-monthly';
+export * from './customer-ap-spend-monthly';
