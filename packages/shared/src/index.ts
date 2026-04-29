@@ -425,3 +425,4 @@ export * from './customer-daily-report-monthly';
 export * from './customer-revenue-vs-cost-monthly';
 export * from './job-revenue-vs-cost-monthly';
 export * from './customer-margin-yoy';
+export * from './job-margin-yoy';
