@@ -399,3 +399,4 @@ export * from './mileage-by-purpose-monthly';
 export * from './submittal-by-author-monthly';
 export * from './vendor-w9-by-collected-monthly';
 export * from './journal-entry-by-source-monthly';
+export * from './customer-revenue-by-state';
