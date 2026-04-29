@@ -402,3 +402,4 @@ export * from './journal-entry-by-source-monthly';
 export * from './customer-revenue-by-state';
 export * from './vendor-spend-by-state';
 export * from './customer-revenue-by-kind-monthly';
+export * from './vendor-prequal-by-kind';
