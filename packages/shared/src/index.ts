@@ -340,3 +340,5 @@ export * from './weather-condition-by-job';
 export * from './job-co-by-reason';
 export * from './equipment-by-make';
 export * from './customer-payment-by-customer-monthly';
+export * from './expense-by-employee';
+export * from './rfi-by-job-asker';
