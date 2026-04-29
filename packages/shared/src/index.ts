@@ -436,3 +436,4 @@ export * from './portfolio-bid-monthly';
 export * from './portfolio-ar-aging-monthly';
 export * from './portfolio-ap-aging-monthly';
 export * from './portfolio-retention-monthly';
+export * from './portfolio-backlog-monthly';
