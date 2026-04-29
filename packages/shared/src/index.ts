@@ -383,3 +383,4 @@ export * from './job-ap-spend-monthly';
 export * from './job-ar-billing-monthly';
 export * from './job-toolbox-monthly';
 export * from './job-mileage-monthly';
+export * from './vendor-payment-by-vendor-monthly';
