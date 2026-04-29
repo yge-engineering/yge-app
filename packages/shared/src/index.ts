@@ -417,3 +417,4 @@ export * from './customer-dispatch-monthly';
 export * from './customer-timecard-monthly';
 export * from './customer-weather-monthly';
 export * from './customer-equipment-monthly';
+export * from './customer-mileage-monthly';
