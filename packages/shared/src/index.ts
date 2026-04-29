@@ -411,3 +411,4 @@ export * from './customer-pco-monthly';
 export * from './customer-rfi-monthly';
 export * from './customer-submittal-monthly';
 export * from './customer-incident-monthly';
+export * from './customer-photo-monthly';
