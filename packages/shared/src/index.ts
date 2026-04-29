@@ -422,3 +422,4 @@ export * from './customer-expense-monthly';
 export * from './customer-ap-spend-monthly';
 export * from './customer-cash-net-monthly';
 export * from './customer-daily-report-monthly';
+export * from './customer-revenue-vs-cost-monthly';
