@@ -332,3 +332,8 @@ export * from './weather-job-monthly';
 export * from './dispatch-crew-monthly';
 export * from './vendor-prequal-summary';
 export * from './customer-revenue-by-source';
+export * from './job-equipment-monthly';
+export * from './vendor-spend-by-job';
+export * from './employee-mileage-monthly-by-purpose';
+export * from './dispatch-by-job-foreman';
+export * from './weather-condition-by-job';
