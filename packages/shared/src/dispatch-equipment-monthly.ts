@@ -19,8 +19,7 @@
 
 import type { Dispatch } from './dispatch';
 import type { Equipment, EquipmentCategory } from './equipment';
-
-export type DispatchCategoryKey = EquipmentCategory | 'UNKNOWN';
+import type { DispatchCategoryKey } from './dispatch-equipment-category-mix';
 
 export interface DispatchEquipmentMonthlyRow {
   month: string;
