@@ -354,3 +354,6 @@ export * from './vendor-coi-monthly-expiring';
 export * from './employee-by-foreman-monthly';
 export * from './photo-evidence-by-job-monthly';
 export * from './dispatch-by-job-equipment-category';
+export * from './job-pco-monthly';
+export * from './ap-by-status-monthly';
+export * from './vendor-spend-yoy';
