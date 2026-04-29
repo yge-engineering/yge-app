@@ -439,3 +439,4 @@ export * from './portfolio-retention-monthly';
 export * from './portfolio-backlog-monthly';
 export * from './portfolio-rfi-priority-monthly';
 export * from './portfolio-submittal-monthly';
+export * from './portfolio-co-monthly';
