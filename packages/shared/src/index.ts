@@ -385,3 +385,4 @@ export * from './job-toolbox-monthly';
 export * from './job-mileage-monthly';
 export * from './vendor-payment-by-vendor-monthly';
 export * from './equipment-utilization-monthly';
+export * from './customer-bid-pursuit-monthly';
