@@ -469,3 +469,4 @@ export * from './portfolio-toolbox-yoy';
 export * from './portfolio-photo-yoy';
 export * from './portfolio-document-yoy';
 export * from './portfolio-headcount-yoy';
+export * from './portfolio-overtime-yoy';
