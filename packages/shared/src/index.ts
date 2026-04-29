@@ -359,3 +359,5 @@ export * from './ap-by-status-monthly';
 export * from './vendor-spend-yoy';
 export * from './vendor-w9-monthly-expiring';
 export * from './employee-classification-monthly';
+export * from './submittal-by-month-by-kind';
+export * from './equipment-maintenance-by-make';
