@@ -357,3 +357,5 @@ export * from './dispatch-by-job-equipment-category';
 export * from './job-pco-monthly';
 export * from './ap-by-status-monthly';
 export * from './vendor-spend-yoy';
+export * from './vendor-w9-monthly-expiring';
+export * from './employee-classification-monthly';
