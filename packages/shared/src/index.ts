@@ -370,3 +370,5 @@ export * from './job-incident-monthly';
 export * from './submittal-by-job-monthly';
 export * from './job-billing-by-source';
 export * from './vendor-spend-by-kind-monthly';
+export * from './job-dispatch-by-day-of-week';
+export * from './expense-by-job';
