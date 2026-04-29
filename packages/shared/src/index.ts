@@ -421,3 +421,4 @@ export * from './customer-mileage-monthly';
 export * from './customer-expense-monthly';
 export * from './customer-ap-spend-monthly';
 export * from './customer-cash-net-monthly';
+export * from './customer-daily-report-monthly';
