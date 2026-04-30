@@ -474,3 +474,4 @@ export * from './portfolio-equipment-yoy';
 export * from './portfolio-cash-net-yoy';
 export * from './portfolio-vendor-yoy';
 export * from './portfolio-customer-yoy';
+export * from './portfolio-dispatch-yoy';
