@@ -644,3 +644,4 @@ export * from './job-cash-net-yoy';
 export * from './vendor-ap-yoy';
 export * from './vendor-payment-yoy';
 export * from './vendor-expense-yoy';
+export * from './job-equipment-yoy';
