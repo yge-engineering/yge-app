@@ -710,3 +710,4 @@ export * from './customer-weather-detail-snapshot';
 export * from './customer-punch-detail-snapshot';
 export * from './customer-lien-waiver-detail-snapshot';
 export * from './customer-ap-detail-snapshot';
+export * from './customer-ar-detail-snapshot';
