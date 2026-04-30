@@ -478,3 +478,4 @@ export * from './portfolio-dispatch-yoy';
 export * from './portfolio-weather-yoy';
 export * from './portfolio-rfi-yoy';
 export * from './portfolio-submittal-yoy';
+export * from './portfolio-co-yoy';
