@@ -611,3 +611,4 @@ export * from './customer-timecard-yoy';
 export * from './customer-dispatch-yoy';
 export * from './customer-weather-yoy';
 export * from './customer-daily-report-yoy';
+export * from './customer-punch-yoy';
