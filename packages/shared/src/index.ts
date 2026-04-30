@@ -579,3 +579,4 @@ export * from './employee-mileage-snapshot';
 export * from './employee-expense-snapshot';
 export * from './employee-incident-snapshot';
 export * from './employee-toolbox-snapshot';
+export * from './employee-cert-snapshot';
