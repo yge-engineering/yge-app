@@ -531,3 +531,4 @@ export * from './portfolio-overtime-snapshot';
 export * from './portfolio-customer-payment-snapshot';
 export * from './portfolio-vendor-payment-snapshot';
 export * from './portfolio-cash-net-snapshot';
+export * from './portfolio-headcount-snapshot';
