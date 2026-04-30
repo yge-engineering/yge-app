@@ -596,3 +596,4 @@ export * from './employee-job-snapshot';
 export * from './employee-customer-snapshot';
 export * from './customer-equipment-snapshot';
 export * from './customer-employee-snapshot';
+export * from './job-employee-snapshot';
