@@ -542,3 +542,4 @@ export * from './job-toolbox-snapshot';
 export * from './job-incident-snapshot';
 export * from './job-punch-snapshot';
 export * from './job-lien-waiver-snapshot';
+export * from './job-mileage-snapshot';
