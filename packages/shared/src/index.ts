@@ -561,3 +561,4 @@ export * from './vendor-ap-snapshot';
 export * from './vendor-payment-snapshot';
 export * from './customer-payment-snapshot';
 export * from './customer-cash-net-snapshot';
+export * from './customer-incident-snapshot';
