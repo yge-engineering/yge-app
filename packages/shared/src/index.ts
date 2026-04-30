@@ -698,3 +698,4 @@ export * from './customer-incident-detail-snapshot';
 export * from './customer-bid-detail-snapshot';
 export * from './customer-mileage-detail-snapshot';
 export * from './customer-expense-detail-snapshot';
+export * from './customer-timecard-detail-snapshot';
