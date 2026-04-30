@@ -486,3 +486,4 @@ export * from './portfolio-customer-payment-yoy';
 export * from './portfolio-vendor-payment-yoy';
 export * from './portfolio-timecard-yoy';
 export * from './portfolio-journal-entry-yoy';
+export * from './portfolio-w9-yoy';
