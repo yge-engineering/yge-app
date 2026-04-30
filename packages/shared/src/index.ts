@@ -506,3 +506,4 @@ export * from './portfolio-ar-snapshot';
 export * from './portfolio-ap-snapshot';
 export * from './portfolio-retention-snapshot';
 export * from './portfolio-backlog-snapshot';
+export * from './portfolio-cash-position-snapshot';
