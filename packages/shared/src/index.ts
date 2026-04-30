@@ -703,3 +703,4 @@ export * from './customer-rfi-detail-snapshot';
 export * from './customer-submittal-detail-snapshot';
 export * from './customer-co-detail-snapshot';
 export * from './customer-pco-detail-snapshot';
+export * from './customer-dispatch-detail-snapshot';
