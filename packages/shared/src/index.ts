@@ -667,3 +667,4 @@ export * from './employee-equipment-snapshot';
 export * from './customer-job-snapshot';
 export * from './equipment-employee-snapshot';
 export * from './vendor-job-detail-snapshot';
+export * from './customer-job-detail-snapshot';
