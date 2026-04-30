@@ -677,3 +677,4 @@ export * from './equipment-operator-yoy';
 export * from './customer-job-yoy';
 export * from './vendor-job-detail-yoy';
 export * from './customer-cash-net-detail-snapshot';
+export * from './customer-cash-net-detail-yoy';
