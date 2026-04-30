@@ -526,3 +526,4 @@ export * from './portfolio-dispatch-snapshot';
 export * from './portfolio-daily-report-snapshot';
 export * from './portfolio-journal-entry-snapshot';
 export * from './portfolio-lien-waiver-snapshot';
+export * from './portfolio-bid-snapshot';
