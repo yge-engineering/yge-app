@@ -510,3 +510,4 @@ export * from './portfolio-cash-position-snapshot';
 export * from './portfolio-cert-snapshot';
 export * from './portfolio-coi-snapshot';
 export * from './portfolio-w9-snapshot';
+export * from './portfolio-rfi-snapshot';
