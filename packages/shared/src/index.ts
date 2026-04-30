@@ -477,3 +477,4 @@ export * from './portfolio-customer-yoy';
 export * from './portfolio-dispatch-yoy';
 export * from './portfolio-weather-yoy';
 export * from './portfolio-rfi-yoy';
+export * from './portfolio-submittal-yoy';
