@@ -521,3 +521,4 @@ export * from './portfolio-photo-snapshot';
 export * from './portfolio-weather-snapshot';
 export * from './portfolio-mileage-snapshot';
 export * from './portfolio-expense-snapshot';
+export * from './portfolio-timecard-snapshot';
