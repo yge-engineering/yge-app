@@ -696,3 +696,4 @@ export * from './customer-photo-detail-snapshot';
 export * from './customer-toolbox-detail-snapshot';
 export * from './customer-incident-detail-snapshot';
 export * from './customer-bid-detail-snapshot';
+export * from './customer-mileage-detail-snapshot';
