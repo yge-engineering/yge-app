@@ -499,3 +499,4 @@ export * from './portfolio-vendor-prequal-yoy';
 export * from './portfolio-customer-prequal-yoy';
 export * from './portfolio-job-status-snapshot';
 export * from './portfolio-vendor-snapshot';
+export * from './portfolio-employee-snapshot';
