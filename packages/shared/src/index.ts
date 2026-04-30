@@ -614,3 +614,4 @@ export * from './customer-daily-report-yoy';
 export * from './customer-punch-yoy';
 export * from './customer-lien-waiver-yoy';
 export * from './customer-cash-net-yoy';
+export * from './customer-payment-yoy';
