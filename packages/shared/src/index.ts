@@ -642,3 +642,4 @@ export * from './job-weather-yoy';
 export * from './job-daily-report-yoy';
 export * from './job-cash-net-yoy';
 export * from './vendor-ap-yoy';
+export * from './vendor-payment-yoy';
