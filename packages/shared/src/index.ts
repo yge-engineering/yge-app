@@ -603,3 +603,4 @@ export * from './customer-incident-yoy';
 export * from './customer-rfi-yoy';
 export * from './customer-co-yoy';
 export * from './customer-pco-yoy';
+export * from './customer-submittal-yoy';
