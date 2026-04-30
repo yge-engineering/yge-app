@@ -556,3 +556,4 @@ export * from './customer-rfi-snapshot';
 export * from './customer-co-snapshot';
 export * from './customer-pco-snapshot';
 export * from './customer-submittal-snapshot';
+export * from './customer-ar-snapshot';
