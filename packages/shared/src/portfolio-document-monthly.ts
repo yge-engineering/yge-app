@@ -77,9 +77,9 @@ export function buildPortfolioDocumentMonthly(
   const fromM = inputs.fromMonth;
   const toM = inputs.toMonth;
 
-  function bump(month: string, field: keyof Omit<Acc, 'month'>): void {
-    if (fromM && month < fromM) return;
-    if (toM && month > toM) return;
+  function bump(month: string, field: keyof Omit<Acc, 'month'>): boolean {
+    if (fromM && month < fromM) return false;
+    if (toM && month > toM) return false;
     let a = accs.get(month);
     if (!a) {
       a = {
@@ -93,30 +93,26 @@ export function buildPortfolioDocumentMonthly(
       accs.set(month, a);
     }
     a[field] += 1;
+    return true;
   }
 
   for (const r of inputs.rfis) {
     if (!r.sentAt) continue;
-    bump(r.sentAt.slice(0, 7), 'rfis');
-    totalRfis += 1;
+    if (bump(r.sentAt.slice(0, 7), 'rfis')) totalRfis += 1;
   }
   for (const s of inputs.submittals) {
     if (!s.submittedAt) continue;
-    bump(s.submittedAt.slice(0, 7), 'submittals');
-    totalSubmittals += 1;
+    if (bump(s.submittedAt.slice(0, 7), 'submittals')) totalSubmittals += 1;
   }
   for (const p of inputs.pcos) {
-    bump(p.noticedOn.slice(0, 7), 'pcos');
-    totalPcos += 1;
+    if (bump(p.noticedOn.slice(0, 7), 'pcos')) totalPcos += 1;
   }
   for (const co of inputs.changeOrders) {
     if (!co.proposedAt) continue;
-    bump(co.proposedAt.slice(0, 7), 'changeOrders');
-    totalChangeOrders += 1;
+    if (bump(co.proposedAt.slice(0, 7), 'changeOrders')) totalChangeOrders += 1;
   }
   for (const lw of inputs.lienWaivers) {
-    bump(lw.throughDate.slice(0, 7), 'lienWaivers');
-    totalLienWaivers += 1;
+    if (bump(lw.throughDate.slice(0, 7), 'lienWaivers')) totalLienWaivers += 1;
   }
 
   const rows: PortfolioDocumentMonthlyRow[] = [...accs.values()]
