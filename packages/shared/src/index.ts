@@ -713,3 +713,4 @@ export * from './customer-ap-detail-snapshot';
 export * from './customer-ar-detail-snapshot';
 export * from './vendor-ap-detail-snapshot';
 export * from './vendor-expense-detail-snapshot';
+export * from './employee-mileage-detail-snapshot';
