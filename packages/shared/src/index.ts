@@ -684,3 +684,4 @@ export * from './employee-job-detail-snapshot';
 export * from './vendor-employee-detail-snapshot';
 export * from './employee-vendor-detail-snapshot';
 export * from './customer-vendor-detail-snapshot';
+export * from './customer-employee-detail-snapshot';
