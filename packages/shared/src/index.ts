@@ -707,3 +707,4 @@ export * from './customer-dispatch-detail-snapshot';
 export * from './customer-daily-report-detail-snapshot';
 export * from './customer-equipment-detail-snapshot';
 export * from './customer-weather-detail-snapshot';
+export * from './customer-punch-detail-snapshot';
