@@ -571,3 +571,4 @@ export * from './customer-expense-snapshot';
 export * from './customer-timecard-snapshot';
 export * from './customer-dispatch-snapshot';
 export * from './customer-weather-snapshot';
+export * from './customer-daily-report-snapshot';
