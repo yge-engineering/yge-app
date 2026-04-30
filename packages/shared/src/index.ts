@@ -688,3 +688,4 @@ export * from './customer-employee-detail-snapshot';
 export * from './job-employee-detail-snapshot';
 export * from './job-vendor-detail-snapshot';
 export * from './employee-expense-detail-snapshot';
+export * from './employee-timecard-detail-snapshot';
