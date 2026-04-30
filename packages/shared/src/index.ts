@@ -599,3 +599,4 @@ export * from './customer-employee-snapshot';
 export * from './job-employee-snapshot';
 export * from './customer-photo-yoy';
 export * from './customer-toolbox-yoy';
+export * from './customer-incident-yoy';
