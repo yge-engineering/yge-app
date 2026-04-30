@@ -658,3 +658,4 @@ export * from './employee-customer-yoy';
 export * from './customer-vendor-yoy';
 export * from './customer-employee-yoy';
 export * from './job-employee-yoy';
+export * from './equipment-customer-snapshot';
