@@ -565,3 +565,4 @@ export * from './customer-incident-snapshot';
 export * from './customer-photo-snapshot';
 export * from './customer-toolbox-snapshot';
 export * from './customer-punch-snapshot';
+export * from './customer-lien-waiver-snapshot';
