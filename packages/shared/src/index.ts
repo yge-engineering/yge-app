@@ -663,3 +663,4 @@ export * from './equipment-job-snapshot';
 export * from './equipment-operator-snapshot';
 export * from './vendor-employee-snapshot';
 export * from './employee-vendor-snapshot';
+export * from './employee-equipment-snapshot';
