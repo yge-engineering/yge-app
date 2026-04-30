@@ -628,3 +628,4 @@ export * from './equipment-maintenance-yoy';
 export * from './job-photo-yoy';
 export * from './job-toolbox-yoy';
 export * from './job-incident-yoy';
+export * from './job-rfi-yoy';
