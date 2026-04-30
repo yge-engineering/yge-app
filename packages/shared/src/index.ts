@@ -554,3 +554,4 @@ export * from './job-headcount-snapshot';
 export * from './job-equipment-snapshot';
 export * from './customer-rfi-snapshot';
 export * from './customer-co-snapshot';
+export * from './customer-pco-snapshot';
