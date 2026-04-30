@@ -557,3 +557,4 @@ export * from './customer-co-snapshot';
 export * from './customer-pco-snapshot';
 export * from './customer-submittal-snapshot';
 export * from './customer-ar-snapshot';
+export * from './vendor-ap-snapshot';
