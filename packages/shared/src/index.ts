@@ -505,3 +505,4 @@ export * from './portfolio-equipment-snapshot';
 export * from './portfolio-ar-snapshot';
 export * from './portfolio-ap-snapshot';
 export * from './portfolio-retention-snapshot';
+export * from './portfolio-backlog-snapshot';
