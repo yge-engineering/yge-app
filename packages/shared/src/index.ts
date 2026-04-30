@@ -650,3 +650,4 @@ export * from './job-ar-yoy';
 export * from './job-ap-yoy';
 export * from './job-vendor-yoy';
 export * from './customer-equipment-yoy';
+export * from './customer-headcount-yoy';
