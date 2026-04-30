@@ -528,3 +528,4 @@ export * from './portfolio-journal-entry-snapshot';
 export * from './portfolio-lien-waiver-snapshot';
 export * from './portfolio-bid-snapshot';
 export * from './portfolio-overtime-snapshot';
+export * from './portfolio-customer-payment-snapshot';
