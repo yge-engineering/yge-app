@@ -498,3 +498,4 @@ export * from './portfolio-equipment-fleet-yoy';
 export * from './portfolio-vendor-prequal-yoy';
 export * from './portfolio-customer-prequal-yoy';
 export * from './portfolio-job-status-snapshot';
+export * from './portfolio-vendor-snapshot';
