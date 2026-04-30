@@ -700,3 +700,4 @@ export * from './customer-mileage-detail-snapshot';
 export * from './customer-expense-detail-snapshot';
 export * from './customer-timecard-detail-snapshot';
 export * from './customer-rfi-detail-snapshot';
+export * from './customer-submittal-detail-snapshot';
