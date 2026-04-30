@@ -546,3 +546,4 @@ export * from './job-mileage-snapshot';
 export * from './job-expense-snapshot';
 export * from './job-weather-snapshot';
 export * from './job-dispatch-snapshot';
+export * from './job-daily-report-snapshot';
