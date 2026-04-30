@@ -494,3 +494,4 @@ export * from './portfolio-ar-aging-yoy';
 export * from './portfolio-ap-aging-yoy';
 export * from './portfolio-retention-yoy';
 export * from './portfolio-backlog-yoy';
+export * from './portfolio-equipment-fleet-yoy';
