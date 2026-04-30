@@ -623,3 +623,4 @@ export * from './employee-toolbox-yoy';
 export * from './employee-photo-yoy';
 export * from './employee-dispatch-yoy';
 export * from './employee-daily-report-yoy';
+export * from './equipment-utilization-yoy';
