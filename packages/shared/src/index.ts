@@ -583,3 +583,4 @@ export * from './employee-cert-snapshot';
 export * from './employee-daily-report-snapshot';
 export * from './employee-dispatch-snapshot';
 export * from './employee-photo-snapshot';
+export * from './equipment-maintenance-snapshot';
