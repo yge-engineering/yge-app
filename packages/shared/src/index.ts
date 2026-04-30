@@ -541,3 +541,4 @@ export * from './job-photo-snapshot';
 export * from './job-toolbox-snapshot';
 export * from './job-incident-snapshot';
 export * from './job-punch-snapshot';
+export * from './job-lien-waiver-snapshot';
