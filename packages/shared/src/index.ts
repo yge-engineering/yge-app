@@ -716,3 +716,4 @@ export * from './vendor-expense-detail-snapshot';
 export * from './employee-mileage-detail-snapshot';
 export * from './employee-photo-detail-snapshot';
 export * from './employee-incident-detail-snapshot';
+export * from './employee-toolbox-detail-snapshot';
