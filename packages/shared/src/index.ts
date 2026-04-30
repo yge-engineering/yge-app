@@ -714,3 +714,4 @@ export * from './customer-ar-detail-snapshot';
 export * from './vendor-ap-detail-snapshot';
 export * from './vendor-expense-detail-snapshot';
 export * from './employee-mileage-detail-snapshot';
+export * from './employee-photo-detail-snapshot';
