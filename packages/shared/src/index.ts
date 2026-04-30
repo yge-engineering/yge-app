@@ -483,3 +483,4 @@ export * from './portfolio-pco-yoy';
 export * from './portfolio-lien-waiver-yoy';
 export * from './portfolio-job-status-yoy';
 export * from './portfolio-customer-payment-yoy';
+export * from './portfolio-vendor-payment-yoy';
