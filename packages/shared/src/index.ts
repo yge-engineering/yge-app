@@ -654,3 +654,4 @@ export * from './customer-headcount-yoy';
 export * from './vendor-job-yoy';
 export * from './vendor-customer-yoy';
 export * from './employee-job-yoy';
+export * from './employee-customer-yoy';
