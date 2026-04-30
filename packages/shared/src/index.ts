@@ -568,3 +568,4 @@ export * from './customer-punch-snapshot';
 export * from './customer-lien-waiver-snapshot';
 export * from './customer-mileage-snapshot';
 export * from './customer-expense-snapshot';
+export * from './customer-timecard-snapshot';
