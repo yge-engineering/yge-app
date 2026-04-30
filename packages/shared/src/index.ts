@@ -670,3 +670,4 @@ export * from './vendor-job-detail-snapshot';
 export * from './customer-job-detail-snapshot';
 export * from './vendor-employee-yoy';
 export * from './employee-vendor-yoy';
+export * from './equipment-customer-yoy';
