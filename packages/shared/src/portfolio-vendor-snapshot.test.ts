@@ -46,7 +46,7 @@ describe('buildPortfolioVendorSnapshot', () => {
       asOf: new Date('2026-04-15T00:00:00Z'),
       vendors: [
         vend({ id: 'a' }),
-        vend({ id: 'b', w9OnFile: false }),
+        vend({ id: 'b', kind: 'SUPPLIER', w9OnFile: false }),
         vend({ id: 'c', kind: 'SUBCONTRACTOR', coiOnFile: false }),
       ],
     });

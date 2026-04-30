@@ -61,8 +61,8 @@ describe('buildCustomerCashNetSnapshot', () => {
       jobs: [jb({ id: 'j1', ownerAgency: 'Caltrans' }), jb({ id: 'j2', ownerAgency: 'Other' })],
       arInvoices: [],
       arPayments: [
-        ar({ id: 'a', payerName: 'Caltrans', amountCents: 100_000_00 }),
-        ar({ id: 'b', payerName: 'Other', amountCents: 50_000_00 }),
+        ar({ id: 'a', jobId: 'j1', payerName: 'Caltrans', amountCents: 100_000_00 }),
+        ar({ id: 'b', jobId: 'j2', payerName: 'Other', amountCents: 50_000_00 }),
       ],
       apPayments: [
         ap({ id: 'p1', apInvoiceId: 'apinv-1', amountCents: 30_000_00 }),

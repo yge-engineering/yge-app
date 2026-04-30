@@ -43,11 +43,11 @@ function ex(over: Partial<Expense>): Expense {
 describe('buildVendorJobSnapshot', () => {
   it('counts distinct jobs across both rails', () => {
     const r = buildVendorJobSnapshot({
-      vendorName: 'Granite Construction',
+      vendorName: 'Granite',
       asOf: '2026-04-30',
       apInvoices: [
         ap({ id: 'a', vendorName: 'Granite', jobId: 'j1' }),
-        ap({ id: 'b', vendorName: 'Granite', jobId: 'j2' }),
+        ap({ id: 'b', vendorName: 'Granite Construction Inc', jobId: 'j2' }),
       ],
       expenses: [
         ex({ id: 'c', vendor: 'GRANITE INC', jobId: 'j3' }),
