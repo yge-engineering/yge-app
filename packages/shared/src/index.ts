@@ -533,3 +533,4 @@ export * from './portfolio-vendor-payment-snapshot';
 export * from './portfolio-cash-net-snapshot';
 export * from './portfolio-headcount-snapshot';
 export * from './portfolio-equipment-fleet-snapshot';
+export * from './job-rfi-snapshot';
