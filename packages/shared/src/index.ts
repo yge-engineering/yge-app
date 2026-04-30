@@ -536,3 +536,4 @@ export * from './portfolio-equipment-fleet-snapshot';
 export * from './job-rfi-snapshot';
 export * from './job-submittal-snapshot';
 export * from './job-co-snapshot';
+export * from './job-pco-snapshot';
