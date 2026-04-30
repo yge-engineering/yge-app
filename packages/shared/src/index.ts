@@ -682,3 +682,4 @@ export * from './customer-job-detail-yoy';
 export * from './equipment-job-detail-snapshot';
 export * from './employee-job-detail-snapshot';
 export * from './vendor-employee-detail-snapshot';
+export * from './employee-vendor-detail-snapshot';
