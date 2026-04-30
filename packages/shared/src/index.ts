@@ -490,3 +490,4 @@ export * from './portfolio-w9-yoy';
 export * from './portfolio-coi-yoy';
 export * from './portfolio-cert-yoy';
 export * from './portfolio-punch-yoy';
+export * from './portfolio-ar-aging-yoy';
