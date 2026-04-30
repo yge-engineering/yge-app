@@ -679,3 +679,4 @@ export * from './vendor-job-detail-yoy';
 export * from './customer-cash-net-detail-snapshot';
 export * from './customer-cash-net-detail-yoy';
 export * from './customer-job-detail-yoy';
+export * from './equipment-job-detail-snapshot';
