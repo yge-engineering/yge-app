@@ -712,3 +712,4 @@ export * from './customer-lien-waiver-detail-snapshot';
 export * from './customer-ap-detail-snapshot';
 export * from './customer-ar-detail-snapshot';
 export * from './vendor-ap-detail-snapshot';
+export * from './vendor-expense-detail-snapshot';
