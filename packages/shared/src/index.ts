@@ -718,3 +718,4 @@ export * from './employee-photo-detail-snapshot';
 export * from './employee-incident-detail-snapshot';
 export * from './employee-toolbox-detail-snapshot';
 export * from './vendor-punch-detail-snapshot';
+export * from './customer-payment-detail-snapshot';
