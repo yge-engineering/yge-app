@@ -608,3 +608,4 @@ export * from './customer-bid-yoy';
 export * from './customer-mileage-yoy';
 export * from './customer-expense-yoy';
 export * from './customer-timecard-yoy';
+export * from './customer-dispatch-yoy';
