@@ -503,3 +503,4 @@ export * from './portfolio-employee-snapshot';
 export * from './portfolio-customer-snapshot';
 export * from './portfolio-equipment-snapshot';
 export * from './portfolio-ar-snapshot';
+export * from './portfolio-ap-snapshot';
