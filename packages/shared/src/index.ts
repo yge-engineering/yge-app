@@ -548,3 +548,4 @@ export * from './job-weather-snapshot';
 export * from './job-dispatch-snapshot';
 export * from './job-daily-report-snapshot';
 export * from './job-ar-snapshot';
+export * from './job-ap-snapshot';
