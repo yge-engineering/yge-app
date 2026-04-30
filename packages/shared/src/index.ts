@@ -524,3 +524,4 @@ export * from './portfolio-expense-snapshot';
 export * from './portfolio-timecard-snapshot';
 export * from './portfolio-dispatch-snapshot';
 export * from './portfolio-daily-report-snapshot';
+export * from './portfolio-journal-entry-snapshot';
