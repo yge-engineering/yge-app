@@ -519,3 +519,4 @@ export * from './portfolio-incident-snapshot';
 export * from './portfolio-toolbox-snapshot';
 export * from './portfolio-photo-snapshot';
 export * from './portfolio-weather-snapshot';
+export * from './portfolio-mileage-snapshot';
