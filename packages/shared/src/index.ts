@@ -705,3 +705,4 @@ export * from './customer-co-detail-snapshot';
 export * from './customer-pco-detail-snapshot';
 export * from './customer-dispatch-detail-snapshot';
 export * from './customer-daily-report-detail-snapshot';
+export * from './customer-equipment-detail-snapshot';
