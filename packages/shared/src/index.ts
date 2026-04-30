@@ -586,3 +586,4 @@ export * from './employee-photo-snapshot';
 export * from './equipment-maintenance-snapshot';
 export * from './equipment-utilization-snapshot';
 export * from './customer-bid-snapshot';
+export * from './customer-overtime-snapshot';
