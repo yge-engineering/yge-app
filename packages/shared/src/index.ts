@@ -691,3 +691,4 @@ export * from './employee-expense-detail-snapshot';
 export * from './employee-timecard-detail-snapshot';
 export * from './employee-equipment-detail-snapshot';
 export * from './vendor-customer-detail-snapshot';
+export * from './employee-customer-detail-snapshot';
