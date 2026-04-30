@@ -637,3 +637,4 @@ export * from './job-lien-waiver-yoy';
 export * from './job-mileage-yoy';
 export * from './job-expense-yoy';
 export * from './job-timecard-yoy';
+export * from './job-dispatch-yoy';
