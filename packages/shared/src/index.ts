@@ -600,3 +600,4 @@ export * from './job-employee-snapshot';
 export * from './customer-photo-yoy';
 export * from './customer-toolbox-yoy';
 export * from './customer-incident-yoy';
+export * from './customer-rfi-yoy';
