@@ -47,10 +47,10 @@ describe('buildVendorJobSnapshot', () => {
       asOf: '2026-04-30',
       apInvoices: [
         ap({ id: 'a', vendorName: 'Granite', jobId: 'j1' }),
-        ap({ id: 'b', vendorName: 'Granite Construction Inc', jobId: 'j2' }),
+        ap({ id: 'b', vendorName: 'Granite Inc.', jobId: 'j2' }),
       ],
       expenses: [
-        ex({ id: 'c', vendor: 'GRANITE INC', jobId: 'j3' }),
+        ex({ id: 'c', vendor: 'GRANITE LLC', jobId: 'j3' }),
       ],
     });
     expect(r.apJobCount).toBe(2);
