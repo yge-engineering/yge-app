@@ -643,3 +643,4 @@ export * from './job-daily-report-yoy';
 export * from './job-cash-net-yoy';
 export * from './vendor-ap-yoy';
 export * from './vendor-payment-yoy';
+export * from './vendor-expense-yoy';
