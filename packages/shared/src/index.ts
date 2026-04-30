@@ -590,3 +590,4 @@ export * from './customer-overtime-snapshot';
 export * from './job-overtime-snapshot';
 export * from './job-vendor-snapshot';
 export * from './customer-vendor-snapshot';
+export * from './vendor-job-snapshot';
