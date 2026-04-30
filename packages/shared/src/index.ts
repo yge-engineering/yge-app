@@ -593,3 +593,4 @@ export * from './customer-vendor-snapshot';
 export * from './vendor-job-snapshot';
 export * from './vendor-customer-snapshot';
 export * from './employee-job-snapshot';
+export * from './employee-customer-snapshot';
