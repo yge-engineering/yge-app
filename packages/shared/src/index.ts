@@ -492,3 +492,4 @@ export * from './portfolio-cert-yoy';
 export * from './portfolio-punch-yoy';
 export * from './portfolio-ar-aging-yoy';
 export * from './portfolio-ap-aging-yoy';
+export * from './portfolio-retention-yoy';
