@@ -552,3 +552,4 @@ export * from './job-ap-snapshot';
 export * from './job-cash-net-snapshot';
 export * from './job-headcount-snapshot';
 export * from './job-equipment-snapshot';
+export * from './customer-rfi-snapshot';
