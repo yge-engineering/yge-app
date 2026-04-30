@@ -539,3 +539,4 @@ export * from './job-co-snapshot';
 export * from './job-pco-snapshot';
 export * from './job-photo-snapshot';
 export * from './job-toolbox-snapshot';
+export * from './job-incident-snapshot';
