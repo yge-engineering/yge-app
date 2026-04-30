@@ -621,3 +621,4 @@ export * from './employee-expense-yoy';
 export * from './employee-incident-yoy';
 export * from './employee-toolbox-yoy';
 export * from './employee-photo-yoy';
+export * from './employee-dispatch-yoy';
