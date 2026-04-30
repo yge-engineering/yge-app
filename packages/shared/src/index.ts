@@ -674,3 +674,4 @@ export * from './equipment-customer-yoy';
 export * from './equipment-job-yoy';
 export * from './employee-equipment-yoy';
 export * from './equipment-operator-yoy';
+export * from './customer-job-yoy';
