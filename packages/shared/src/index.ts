@@ -563,3 +563,4 @@ export * from './customer-payment-snapshot';
 export * from './customer-cash-net-snapshot';
 export * from './customer-incident-snapshot';
 export * from './customer-photo-snapshot';
+export * from './customer-toolbox-snapshot';
