@@ -10,6 +10,7 @@ import Link from 'next/link';
 
 import {
   AppShell,
+  Avatar,
   DataTable,
   EmptyState,
   LinkButton,
@@ -86,9 +87,12 @@ export default async function EmployeesPage() {
                 key: 'name',
                 header: 'Name',
                 cell: (e) => (
-                  <Link href={`/employees/${e.id}`} className="font-medium text-blue-700 hover:underline">
-                    {e.firstName} {e.lastName}
-                  </Link>
+                  <span className="flex items-center gap-2">
+                    <Avatar name={`${e.firstName} ${e.lastName}`} size="sm" />
+                    <Link href={`/employees/${e.id}`} className="font-medium text-blue-700 hover:underline">
+                      {e.firstName} {e.lastName}
+                    </Link>
+                  </span>
                 ),
               },
               {

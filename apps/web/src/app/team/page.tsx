@@ -7,6 +7,7 @@
 
 import {
   AppShell,
+  Avatar,
   Card,
   DataTable,
   PageHeader,
@@ -58,7 +59,16 @@ export default function TeamPage() {
           rows={TEAM}
           keyFn={(t) => t.email}
           columns={[
-            { key: 'name', header: 'Name', cell: (t) => <span className="font-medium text-gray-900">{t.name}</span> },
+            {
+              key: 'name',
+              header: 'Name',
+              cell: (t) => (
+                <span className="flex items-center gap-2">
+                  <Avatar name={t.name} size="sm" />
+                  <span className="font-medium text-gray-900">{t.name}</span>
+                </span>
+              ),
+            },
             { key: 'role', header: 'Role', cell: (t) => <RoleBadge role={t.role} size="md" /> },
             { key: 'email', header: 'Email', cell: (t) => <span className="font-mono text-xs text-gray-700">{t.email}</span> },
             { key: 'phone', header: 'Phone', cell: (t) => t.phone ?? <span className="text-gray-400">—</span> },
