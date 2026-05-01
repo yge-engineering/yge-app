@@ -735,3 +735,4 @@ export * from './job-lien-waiver-detail-snapshot';
 export * from './job-expense-detail-snapshot';
 export * from './job-timecard-detail-snapshot';
 export * from './job-daily-report-detail-snapshot';
+export * from './job-dispatch-detail-snapshot';
