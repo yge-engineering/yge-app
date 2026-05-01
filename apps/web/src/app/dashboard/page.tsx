@@ -136,10 +136,18 @@ export default async function DashboardPage() {
             · {activeJobs} active jobs
           </p>
         </div>
-        <Link href="/" className="text-sm text-yge-blue-500 hover:underline">
+        <Link href="/all-modules" className="text-sm text-yge-blue-500 hover:underline">
           All modules &rarr;
         </Link>
       </header>
+
+      {/* QUICK ACTIONS — the 4 things you do most */}
+      <div className="mb-6 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        <QuickAction href="/jobs/new" label="New job" sub="Start a bid pursuit" />
+        <QuickAction href="/daily-reports/new" label="New daily report" sub="Log today's crew + scope" />
+        <QuickAction href="/ar-invoices/new" label="New AR invoice" sub="Bill a customer" />
+        <QuickAction href="/time-cards/new" label="New time card" sub="Submit your week" />
+      </div>
 
       {/* COMPLIANCE BAR — anything that's actively a problem */}
       <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -376,6 +384,18 @@ function QuickLink({ href, label }: { href: string; label: string }) {
       className="block rounded border border-yge-blue-500 px-3 py-2 text-center text-sm text-yge-blue-500 hover:bg-yge-blue-50"
     >
       {label}
+    </Link>
+  );
+}
+
+function QuickAction({ href, label, sub }: { href: string; label: string; sub: string }) {
+  return (
+    <Link
+      href={href}
+      className="block rounded-md border border-gray-200 bg-white px-4 py-3 hover:border-blue-500 hover:bg-blue-50"
+    >
+      <div className="text-sm font-semibold text-gray-900">{label}</div>
+      <div className="mt-0.5 text-xs text-gray-500">{sub}</div>
     </Link>
   );
 }
