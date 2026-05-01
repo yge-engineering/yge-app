@@ -143,6 +143,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </aside>
         <main className="flex-1 px-8 py-6">{children}</main>
       </div>
+      <footer className="border-t border-gray-200 bg-white px-6 py-3 text-center text-xs text-gray-400">
+        Young General Engineering, Inc · CSLB 1145219 · DIR 2000018967 · DOT 4528204 · Trouble? Call Ryan at 707-599-9921 ·{' '}
+        <Link href="/changelog" className="hover:underline">
+          What&apos;s new
+        </Link>
+      </footer>
     </div>
   );
 }
