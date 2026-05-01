@@ -13,6 +13,7 @@ import {
   EmptyState,
   Money,
   PageHeader,
+  ProgressBar,
   Tile,
 } from '../../components';
 import {
@@ -130,7 +131,25 @@ export default async function RetentionPage({
               },
               { key: 'customer', header: 'Customer', cell: (r) => <span className="text-sm text-gray-900">{r.customerName}</span> },
               { key: 'held', header: 'Held', numeric: true, cell: (r) => <Money cents={r.totalRetentionHeldCents} /> },
-              { key: 'released', header: 'Released', numeric: true, cell: (r) => <Money cents={r.totalRetentionReleasedCents} /> },
+              {
+                key: 'released',
+                header: 'Released',
+                numeric: true,
+                cell: (r) => (
+                  <span className="inline-flex w-24 flex-col items-stretch align-middle">
+                    <Money cents={r.totalRetentionReleasedCents} />
+                    {r.totalRetentionHeldCents > 0 ? (
+                      <ProgressBar
+                        value={r.totalRetentionReleasedCents}
+                        max={r.totalRetentionHeldCents}
+                        tone={r.totalRetentionReleasedCents >= r.totalRetentionHeldCents ? 'success' : 'info'}
+                        size="sm"
+                        className="mt-0.5"
+                      />
+                    ) : null}
+                  </span>
+                ),
+              },
               {
                 key: 'outstanding',
                 header: 'Outstanding',
