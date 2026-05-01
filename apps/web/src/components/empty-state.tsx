@@ -4,6 +4,7 @@
 // yet" block, use this. Bigger and friendlier than a single line of
 // gray text — it explains why and gives the user a one-click action.
 
+import type React from 'react';
 import Link from 'next/link';
 
 interface Action {
@@ -14,7 +15,8 @@ interface Action {
 
 interface Props {
   title: string;
-  body?: string;
+  /** Body copy — a string, or a React node when an inline link is needed. */
+  body?: React.ReactNode;
   actions?: Action[];
   /** Compact: smaller padding when the page is dense. */
   compact?: boolean;
