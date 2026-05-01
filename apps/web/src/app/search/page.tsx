@@ -7,7 +7,7 @@
 
 import Link from 'next/link';
 
-import { AppShell } from '../../components/app-shell';
+import { AppShell, Card, FORM_INPUT_CLASS, PageHeader } from '../../components';
 import type { Customer, Employee, Job, Vendor } from '@yge/shared';
 
 function apiBaseUrl(): string {
@@ -64,24 +64,28 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   return (
     <AppShell>
       <main className="mx-auto max-w-4xl">
-        <header className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Search</h1>
-          <form action="/search" method="get" className="mt-3">
-            <input
-              name="q"
-              type="search"
-              defaultValue={q}
-              placeholder="Search jobs, customers, vendors, employees…"
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-700/20"
-              autoFocus
-            />
-          </form>
-          {q ? (
-            <p className="mt-2 text-xs text-gray-500">
-              {totalMatches} result{totalMatches === 1 ? '' : 's'} for &ldquo;{q}&rdquo;
-            </p>
-          ) : null}
-        </header>
+        <PageHeader
+          title="Search"
+          subtitle={
+            q ? (
+              <>
+                {totalMatches} result{totalMatches === 1 ? '' : 's'} for &ldquo;{q}&rdquo;
+              </>
+            ) : (
+              'Type something below to search jobs, customers, vendors, and employees.'
+            )
+          }
+        />
+        <form action="/search" method="get" className="mb-6">
+          <input
+            name="q"
+            type="search"
+            defaultValue={q}
+            placeholder="Search jobs, customers, vendors, employees…"
+            className={FORM_INPUT_CLASS}
+            autoFocus
+          />
+        </form>
 
         {!q ? (
           <p className="text-sm text-gray-500">Type something above to search.</p>
@@ -136,10 +140,10 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-md border border-gray-200 bg-white p-4">
+    <Card>
       <h2 className="mb-2 text-sm font-semibold text-gray-900">{title}</h2>
       <ul className="divide-y divide-gray-100">{children}</ul>
-    </section>
+    </Card>
   );
 }
 
