@@ -15,7 +15,9 @@ interface BreadcrumbLink {
 }
 
 interface Props {
-  title: string;
+  /** Page title. Strings are rendered as plain text; React nodes
+   * (e.g. an Avatar + name combo) render verbatim inside the h1. */
+  title: React.ReactNode;
   subtitle?: React.ReactNode;
   /** Default '← Dashboard'. Pass null to hide. */
   back?: BreadcrumbLink | null;
