@@ -730,3 +730,4 @@ export * from './job-incident-detail-snapshot';
 export * from './job-toolbox-detail-snapshot';
 export * from './job-weather-detail-snapshot';
 export * from './job-punch-detail-snapshot';
+export * from './job-mileage-detail-snapshot';
