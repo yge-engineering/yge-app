@@ -6,8 +6,8 @@
 // that needs hunting down.
 
 import {
+  Alert,
   AppShell,
-  Card,
   Money,
   PageHeader,
 } from '../../components';
@@ -61,16 +61,13 @@ export default async function TrialBalancePage() {
           back={{ href: '/journal-entries', label: '← Journal Entries' }}
         />
 
-        <Card
-          className={`mb-4 ${
-            balanced ? 'border-emerald-300 bg-emerald-50' : 'border-red-300 bg-red-50'
-          }`}
+        <Alert
+          tone={balanced ? 'success' : 'danger'}
+          title={balanced ? '✓ Books in balance' : '✗ OUT OF BALANCE'}
+          className="mb-4"
         >
-          <p className={`text-sm ${balanced ? 'text-emerald-900' : 'text-red-900'}`}>
-            <strong>{balanced ? '✓ Books in balance' : '✗ OUT OF BALANCE'}</strong>{' '}
-            Total debits <Money cents={totalDebit} /> · total credits <Money cents={totalCredit} />
-          </p>
-        </Card>
+          Total debits <Money cents={totalDebit} /> · total credits <Money cents={totalCredit} />
+        </Alert>
 
         {balances.length === 0 ? (
           <div className="rounded-md border border-gray-200 bg-gray-50 p-6 text-sm text-gray-600">

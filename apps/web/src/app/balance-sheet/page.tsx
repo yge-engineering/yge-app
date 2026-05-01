@@ -6,8 +6,8 @@
 // step before printing the statement.
 
 import {
+  Alert,
   AppShell,
-  Card,
   LinkButton,
   Money,
   PageHeader,
@@ -81,14 +81,15 @@ export default async function BalanceSheetPage({
           </button>
         </form>
 
-        <Card className={sheet.inBalance ? 'mb-4 border-emerald-300 bg-emerald-50' : 'mb-4 border-red-300 bg-red-50'}>
-          <p className={`text-sm ${sheet.inBalance ? 'text-emerald-900' : 'text-red-900'}`}>
-            <strong>{sheet.inBalance ? '✓ Books in balance' : '✗ OUT OF BALANCE'}</strong>{' '}
-            Assets <Money cents={sheet.assets.totalCents} /> = Liabilities + Equity{' '}
-            <Money cents={sheet.totalLiabilitiesAndEquityCents} />
-            {!sheet.inBalance ? <> (Δ <Money cents={sheet.imbalanceCents} />)</> : null}
-          </p>
-        </Card>
+        <Alert
+          tone={sheet.inBalance ? 'success' : 'danger'}
+          title={sheet.inBalance ? '✓ Books in balance' : '✗ OUT OF BALANCE'}
+          className="mb-4"
+        >
+          Assets <Money cents={sheet.assets.totalCents} /> = Liabilities + Equity{' '}
+          <Money cents={sheet.totalLiabilitiesAndEquityCents} />
+          {!sheet.inBalance ? <> (Δ <Money cents={sheet.imbalanceCents} />)</> : null}
+        </Alert>
 
         <article className="rounded-md border border-gray-200 bg-white p-6">
           <header className="border-b border-gray-300 pb-2 text-center">
