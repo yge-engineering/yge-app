@@ -1,8 +1,22 @@
 // /dispatch — daily dispatch board.
+//
+// Plain English: today's crew + equipment assignments. Print one yard
+// handout per job. Double-bookings (same crew member or piece of
+// equipment assigned to two dispatches the same day) get flagged at
+// the top — that's the call-the-foreman situation.
 
 import Link from 'next/link';
 
-import { AppShell } from '../../components/app-shell';
+import {
+  AppShell,
+  Avatar,
+  Card,
+  EmptyState,
+  LinkButton,
+  PageHeader,
+  StatusPill,
+  Tile,
+} from '../../components';
 import {
   computeDispatchRollup,
   detectDoubleBookings,
@@ -23,17 +37,31 @@ async function fetchDispatches(filter: {
   scheduledFor?: string;
   jobId?: string;
 }): Promise<Dispatch[]> {
-  const url = new URL(`${apiBaseUrl()}/api/dispatches`);
-  if (filter.scheduledFor) url.searchParams.set('scheduledFor', filter.scheduledFor);
-  if (filter.jobId) url.searchParams.set('jobId', filter.jobId);
-  const res = await fetch(url.toString(), { cache: 'no-store' });
-  if (!res.ok) return [];
-  return ((await res.json()) as { dispatches: Dispatch[] }).dispatches;
+  try {
+    const url = new URL(`${apiBaseUrl()}/api/dispatches`);
+    if (filter.scheduledFor) url.searchParams.set('scheduledFor', filter.scheduledFor);
+    if (filter.jobId) url.searchParams.set('jobId', filter.jobId);
+    const res = await fetch(url.toString(), { cache: 'no-store' });
+    if (!res.ok) return [];
+    return ((await res.json()) as { dispatches: Dispatch[] }).dispatches;
+  } catch { return []; }
 }
 async function fetchAll(): Promise<Dispatch[]> {
-  const res = await fetch(`${apiBaseUrl()}/api/dispatches`, { cache: 'no-store' });
-  if (!res.ok) return [];
-  return ((await res.json()) as { dispatches: Dispatch[] }).dispatches;
+  try {
+    const res = await fetch(`${apiBaseUrl()}/api/dispatches`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    return ((await res.json()) as { dispatches: Dispatch[] }).dispatches;
+  } catch { return []; }
+}
+
+function statusTone(s: Dispatch['status']): 'success' | 'warn' | 'danger' | 'muted' | 'neutral' {
+  switch (s) {
+    case 'POSTED': return 'success';
+    case 'COMPLETED': return 'muted';
+    case 'CANCELLED': return 'danger';
+    case 'DRAFT': return 'warn';
+    default: return 'neutral';
+  }
 }
 
 export default async function DispatchPage({
@@ -53,137 +81,117 @@ export default async function DispatchPage({
     (db) => db.scheduledFor === filter.scheduledFor,
   );
 
+  const csvHref = `${publicApiBaseUrl()}/api/dispatches?format=csv&scheduledFor=${encodeURIComponent(filter.scheduledFor)}${
+    filter.jobId ? '&jobId=' + encodeURIComponent(filter.jobId) : ''
+  }`;
+
   return (
     <AppShell>
-    <main className="mx-auto max-w-6xl p-8">
-      <div className="mb-6 flex items-center justify-between">
-        <Link href="/dashboard" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Dashboard
-        </Link>
-        <div className="flex items-center gap-2">
-          <a
-            href={`${publicApiBaseUrl()}/api/dispatches?format=csv&scheduledFor=${encodeURIComponent(filter.scheduledFor)}${filter.jobId ? '&jobId=' + encodeURIComponent(filter.jobId) : ''}`}
-            className="rounded border border-yge-blue-500 px-3 py-1 text-sm font-medium text-yge-blue-500 hover:bg-yge-blue-50"
-          >
-            Download CSV
-          </a>
-          <Link
-            href="/dispatch/new"
-            className="rounded bg-yge-blue-500 px-3 py-1 text-sm font-medium text-white hover:bg-yge-blue-700"
-          >
-            + New dispatch
-          </Link>
-        </div>
-      </div>
-
-      <h1 className="text-3xl font-bold text-yge-blue-500">Dispatch Board</h1>
-      <p className="mt-2 text-gray-700">
-        Today's crew + equipment assignments. Print one yard handout per job.
-      </p>
-
-      <section className="mt-6 grid gap-4 sm:grid-cols-4">
-        <Stat label="Today's jobs" value={rollup.todayCount} />
-        <Stat label="Crew on today" value={rollup.todayCrewHeadcount} />
-        <Stat label="Equipment today" value={rollup.todayEquipmentCount} />
-        <Stat
-          label="Double-bookings"
-          value={rollup.doubleBookings}
-          variant={rollup.doubleBookings > 0 ? 'bad' : 'ok'}
+      <main className="mx-auto max-w-6xl">
+        <PageHeader
+          title="Dispatch board"
+          subtitle="Today's crew + equipment assignments. Print one yard handout per job."
+          actions={
+            <span className="flex gap-2">
+              <a
+                href={csvHref}
+                className="inline-flex items-center rounded-md border border-blue-700 px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-50"
+              >
+                Download CSV
+              </a>
+              <LinkButton href="/dispatch/new" variant="primary" size="md">
+                + New dispatch
+              </LinkButton>
+            </span>
+          }
         />
-      </section>
 
-      {todaysDoubleBookings.length > 0 && (
-        <div className="mt-4 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-900">
-          <strong>Double-booked on {filter.scheduledFor}:</strong>
-          <ul className="mt-1 list-disc pl-5">
-            {todaysDoubleBookings.map((db, i) => (
-              <li key={i}>
-                {db.kind === 'CREW' ? 'Crew member' : 'Equipment'}{' '}
-                <strong>{db.name}</strong> assigned to {db.dispatchIds.length} dispatches
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      <section className="mt-6 flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 bg-white p-3 shadow-sm">
-        <span className="text-xs uppercase tracking-wide text-gray-500">Day:</span>
-        <DayLink label="Today" date={today} active={filter.scheduledFor === today} />
-        <DayLink
-          label="Tomorrow"
-          date={addDays(today, 1)}
-          active={filter.scheduledFor === addDays(today, 1)}
-        />
-        <DayLink
-          label="Yesterday"
-          date={addDays(today, -1)}
-          active={filter.scheduledFor === addDays(today, -1)}
-        />
-        <form action="/dispatch" className="ml-2 flex items-center gap-2">
-          <input
-            type="date"
-            name="scheduledFor"
-            defaultValue={filter.scheduledFor}
-            className="rounded border border-gray-300 px-2 py-1 text-xs"
+        <section className="mb-4 grid gap-3 sm:grid-cols-4">
+          <Tile label="Today's jobs" value={rollup.todayCount} />
+          <Tile label="Crew on today" value={rollup.todayCrewHeadcount} />
+          <Tile label="Equipment today" value={rollup.todayEquipmentCount} />
+          <Tile
+            label="Double-bookings"
+            value={rollup.doubleBookings}
+            tone={rollup.doubleBookings > 0 ? 'danger' : 'success'}
           />
-          <button
-            type="submit"
-            className="rounded border border-yge-blue-500 px-2 py-1 text-xs text-yge-blue-500 hover:bg-yge-blue-50"
-          >
-            Go
-          </button>
-        </form>
-      </section>
+        </section>
 
-      {dispatches.length === 0 ? (
-        <div className="mt-6 rounded border border-gray-200 bg-gray-50 p-6 text-sm text-gray-600">
-          No dispatches scheduled for {filter.scheduledFor}. Click{' '}
-          <em>New dispatch</em> to assign a crew.
-        </div>
-      ) : (
-        <div className="mt-6 grid gap-4 lg:grid-cols-2">
-          {dispatches.map((d) => (
-            <DispatchCard key={d.id} d={d} />
-          ))}
-        </div>
-      )}
-    </main>
+        {todaysDoubleBookings.length > 0 ? (
+          <Card className="mb-4 border-red-300 bg-red-50">
+            <p className="text-sm text-red-900">
+              <strong>Double-booked on {filter.scheduledFor}:</strong>
+            </p>
+            <ul className="mt-1 list-disc pl-5 text-sm text-red-900">
+              {todaysDoubleBookings.map((db, i) => (
+                <li key={i}>
+                  {db.kind === 'CREW' ? 'Crew member' : 'Equipment'} <strong>{db.name}</strong> assigned to{' '}
+                  {db.dispatchIds.length} dispatches
+                </li>
+              ))}
+            </ul>
+          </Card>
+        ) : null}
+
+        <section className="mb-4 flex flex-wrap items-center gap-2 rounded-md border border-gray-200 bg-white p-3">
+          <span className="text-xs uppercase tracking-wide text-gray-500">Day:</span>
+          <DayLink label="Today" date={today} active={filter.scheduledFor === today} />
+          <DayLink label="Tomorrow" date={addDays(today, 1)} active={filter.scheduledFor === addDays(today, 1)} />
+          <DayLink label="Yesterday" date={addDays(today, -1)} active={filter.scheduledFor === addDays(today, -1)} />
+          <form action="/dispatch" className="ml-2 flex items-center gap-2">
+            <input
+              type="date"
+              name="scheduledFor"
+              defaultValue={filter.scheduledFor}
+              className="rounded border border-gray-300 px-2 py-1 text-xs"
+            />
+            <button
+              type="submit"
+              className="rounded-md border border-blue-700 px-2 py-1 text-xs text-blue-700 hover:bg-blue-50"
+            >
+              Go
+            </button>
+          </form>
+        </section>
+
+        {dispatches.length === 0 ? (
+          <EmptyState
+            title={`No dispatches scheduled for ${filter.scheduledFor}`}
+            body="Pick a different day, or assign a crew to a job for this date."
+            actions={[{ href: '/dispatch/new', label: 'New dispatch', primary: true }]}
+          />
+        ) : (
+          <div className="grid gap-4 lg:grid-cols-2">
+            {dispatches.map((d) => (
+              <DispatchCard key={d.id} d={d} />
+            ))}
+          </div>
+        )}
+      </main>
     </AppShell>
   );
 }
 
 function DispatchCard({ d }: { d: Dispatch }) {
   return (
-    <article className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-      <div className="flex items-start justify-between">
+    <Card>
+      <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="text-xs uppercase tracking-wide text-gray-500">
-            {d.scheduledFor}
-          </div>
-          <h2 className="text-lg font-semibold text-gray-900">{d.jobId}</h2>
-          <p className="text-sm text-gray-700">
-            Foreman: {d.foremanName}
-            {d.foremanPhone ? ` · ${d.foremanPhone}` : ''}
+          <div className="text-xs uppercase tracking-wide text-gray-500">{d.scheduledFor}</div>
+          <Link href={`/dispatch/${d.id}`} className="text-lg font-semibold text-blue-700 hover:underline">
+            <span className="font-mono">{d.jobId}</span>
+          </Link>
+          <p className="mt-1 flex items-center gap-2 text-sm text-gray-700">
+            <Avatar name={d.foremanName} size="sm" />
+            <span>
+              Foreman: {d.foremanName}
+              {d.foremanPhone ? ` · ${d.foremanPhone}` : ''}
+            </span>
           </p>
         </div>
         <div className="flex flex-col items-end gap-1">
-          <span
-            className={`rounded px-1.5 py-0.5 text-xs font-semibold ${
-              d.status === 'POSTED'
-                ? 'bg-green-100 text-green-800'
-                : d.status === 'COMPLETED'
-                  ? 'bg-gray-100 text-gray-700'
-                  : d.status === 'CANCELLED'
-                    ? 'bg-red-100 text-red-800'
-                    : 'bg-yellow-100 text-yellow-800'
-            }`}
-          >
-            {dispatchStatusLabel(d.status)}
-          </span>
-          <Link
-            href={`/dispatch/${d.id}/handout`}
-            className="text-xs text-yge-blue-500 hover:underline"
-          >
+          <StatusPill label={dispatchStatusLabel(d.status)} tone={statusTone(d.status)} />
+          <Link href={`/dispatch/${d.id}/handout`} className="text-xs text-blue-700 hover:underline">
             Print handout
           </Link>
         </div>
@@ -196,33 +204,24 @@ function DispatchCard({ d }: { d: Dispatch }) {
         </div>
         <div>
           <div className="font-semibold uppercase text-gray-500">Headcount</div>
-          <div>
-            {d.crew.length} crew · {d.equipment.length} equip
-          </div>
+          <div>{d.crew.length} crew · {d.equipment.length} equip</div>
         </div>
       </div>
       <div className="mt-3">
         <div className="text-xs font-semibold uppercase text-gray-500">Scope</div>
         <div className="line-clamp-3 text-sm text-gray-800">{d.scopeOfWork}</div>
       </div>
-      {d.crew.length > 0 && (
+      {d.crew.length > 0 ? (
         <div className="mt-2 text-xs text-gray-700">
-          <span className="font-semibold">Crew:</span>{' '}
-          {d.crew.map((c) => c.name).join(', ')}
+          <span className="font-semibold">Crew:</span> {d.crew.map((c) => c.name).join(', ')}
         </div>
-      )}
-      {d.equipment.length > 0 && (
+      ) : null}
+      {d.equipment.length > 0 ? (
         <div className="mt-1 text-xs text-gray-700">
-          <span className="font-semibold">Equipment:</span>{' '}
-          {d.equipment.map((e) => e.name).join(', ')}
+          <span className="font-semibold">Equipment:</span> {d.equipment.map((e) => e.name).join(', ')}
         </div>
-      )}
-      <div className="mt-3 flex justify-end gap-3 text-sm">
-        <Link href={`/dispatch/${d.id}`} className="text-yge-blue-500 hover:underline">
-          Edit
-        </Link>
-      </div>
-    </article>
+      ) : null}
+    </Card>
   );
 }
 
@@ -240,7 +239,7 @@ function DayLink({
       href={`/dispatch?scheduledFor=${date}`}
       className={`rounded px-2 py-1 text-xs ${
         active
-          ? 'bg-yge-blue-500 text-white'
+          ? 'bg-blue-700 text-white'
           : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
       }`}
     >
@@ -253,29 +252,4 @@ function addDays(date: string, n: number): string {
   const d = new Date(date + 'T00:00:00');
   d.setDate(d.getDate() + n);
   return d.toISOString().slice(0, 10);
-}
-
-function Stat({
-  label,
-  value,
-  variant = 'neutral',
-}: {
-  label: string;
-  value: string | number;
-  variant?: 'neutral' | 'ok' | 'warn' | 'bad';
-}) {
-  const cls =
-    variant === 'ok'
-      ? 'border-green-200 bg-green-50 text-green-800'
-      : variant === 'warn'
-        ? 'border-yellow-200 bg-yellow-50 text-yellow-800'
-        : variant === 'bad'
-          ? 'border-red-200 bg-red-50 text-red-800'
-          : 'border-gray-200 bg-white text-gray-900';
-  return (
-    <div className={`rounded-lg border p-4 shadow-sm ${cls}`}>
-      <div className="text-xs uppercase tracking-wide opacity-70">{label}</div>
-      <div className="mt-1 text-xl font-bold">{value}</div>
-    </div>
-  );
 }
