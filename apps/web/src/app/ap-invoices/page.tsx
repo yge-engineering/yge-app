@@ -1,13 +1,26 @@
 // /ap-invoices — vendor bill list with rollup + status filters.
+//
+// Plain English: vendor bills. Manual entry for Phase 1; AI-scan from
+// a PDF lands in a later phase that drops the same shape into the
+// create endpoint. Overdue dollars at the top, dueSoon rows tinted,
+// so AP knows which checks to cut next.
 
 import Link from 'next/link';
 
-import { AppShell } from '../../components/app-shell';
+import {
+  AppShell,
+  DataTable,
+  EmptyState,
+  LinkButton,
+  Money,
+  PageHeader,
+  StatusPill,
+  Tile,
+} from '../../components';
 import {
   apDueLevel,
   apStatusLabel,
   computeApInvoiceRollup,
-  formatUSD,
   unpaidBalanceCents,
   type ApInvoice,
   type ApInvoiceStatus,
@@ -26,24 +39,38 @@ function publicApiBaseUrl(): string {
 }
 
 async function fetchInvoices(filter: { status?: string; jobId?: string }): Promise<ApInvoice[]> {
-  const url = new URL(`${apiBaseUrl()}/api/ap-invoices`);
-  if (filter.status) url.searchParams.set('status', filter.status);
-  if (filter.jobId) url.searchParams.set('jobId', filter.jobId);
-  const res = await fetch(url.toString(), { cache: 'no-store' });
-  if (!res.ok) return [];
-  return ((await res.json()) as { invoices: ApInvoice[] }).invoices;
+  try {
+    const url = new URL(`${apiBaseUrl()}/api/ap-invoices`);
+    if (filter.status) url.searchParams.set('status', filter.status);
+    if (filter.jobId) url.searchParams.set('jobId', filter.jobId);
+    const res = await fetch(url.toString(), { cache: 'no-store' });
+    if (!res.ok) return [];
+    return ((await res.json()) as { invoices: ApInvoice[] }).invoices;
+  } catch { return []; }
 }
 async function fetchAllInvoices(): Promise<ApInvoice[]> {
-  // Always fetched unfiltered so the rollup tiles reflect totals across all
-  // statuses regardless of the filter.
-  const res = await fetch(`${apiBaseUrl()}/api/ap-invoices`, { cache: 'no-store' });
-  if (!res.ok) return [];
-  return ((await res.json()) as { invoices: ApInvoice[] }).invoices;
+  try {
+    const res = await fetch(`${apiBaseUrl()}/api/ap-invoices`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    return ((await res.json()) as { invoices: ApInvoice[] }).invoices;
+  } catch { return []; }
 }
 async function fetchJobs(): Promise<Job[]> {
-  const res = await fetch(`${apiBaseUrl()}/api/jobs`, { cache: 'no-store' });
-  if (!res.ok) return [];
-  return ((await res.json()) as { jobs: Job[] }).jobs;
+  try {
+    const res = await fetch(`${apiBaseUrl()}/api/jobs`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    return ((await res.json()) as { jobs: Job[] }).jobs;
+  } catch { return []; }
+}
+
+function statusTone(s: ApInvoiceStatus): 'success' | 'info' | 'warn' | 'danger' | 'neutral' {
+  switch (s) {
+    case 'PAID': return 'success';
+    case 'APPROVED': return 'info';
+    case 'PENDING': return 'warn';
+    case 'REJECTED': return 'danger';
+    default: return 'neutral';
+  }
 }
 
 export default async function ApInvoicesPage({
@@ -68,190 +95,127 @@ export default async function ApInvoicesPage({
     return q ? `/ap-invoices?${q}` : '/ap-invoices';
   }
 
+  const csvHref = `${publicApiBaseUrl()}/api/ap-invoices?format=csv${
+    searchParams.status ? '&status=' + encodeURIComponent(searchParams.status) : ''
+  }${searchParams.jobId ? '&jobId=' + encodeURIComponent(searchParams.jobId) : ''}`;
+
   return (
     <AppShell>
-    <main className="mx-auto max-w-6xl p-8">
-      <div className="mb-6 flex items-center justify-between">
-        <Link href="/dashboard" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Dashboard
-        </Link>
-        <div className="flex items-center gap-2">
-          <a
-            href={`${publicApiBaseUrl()}/api/ap-invoices?format=csv${searchParams.status ? '&status=' + encodeURIComponent(searchParams.status) : ''}${searchParams.jobId ? '&jobId=' + encodeURIComponent(searchParams.jobId) : ''}`}
-            className="rounded border border-yge-blue-500 px-3 py-1 text-sm font-medium text-yge-blue-500 hover:bg-yge-blue-50"
-          >
-            Download CSV
-          </a>
-          <Link
-            href="/ap-invoices/new"
-            className="rounded bg-yge-blue-500 px-3 py-1 text-sm font-medium text-white hover:bg-yge-blue-700"
-          >
-            + New invoice
-          </Link>
-        </div>
-      </div>
-
-      <h1 className="text-3xl font-bold text-yge-blue-500">AP invoices</h1>
-      <p className="mt-2 text-gray-700">
-        Vendor bills. Manual entry for Phase 1; AI-scan from a PDF lands in
-        a later phase that drops the same shape into the create endpoint.
-      </p>
-
-      {/* Rollup */}
-      <section className="mt-6 grid gap-4 sm:grid-cols-4">
-        <Stat
-          label="Outstanding"
-          value={formatUSD(rollup.outstandingCents)}
-          subtitle={`${rollup.draft + rollup.pending + rollup.approved} invoice(s)`}
-          variant={rollup.outstandingCents > 0 ? 'warn' : 'neutral'}
+      <main className="mx-auto max-w-6xl">
+        <PageHeader
+          title="AP invoices"
+          subtitle="Vendor bills. Manual entry for Phase 1; AI-scan from a PDF lands in a later phase that drops the same shape into the create endpoint."
+          actions={
+            <span className="flex gap-2">
+              <a
+                href={csvHref}
+                className="inline-flex items-center rounded-md border border-blue-700 px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-50"
+              >
+                Download CSV
+              </a>
+              <LinkButton href="/ap-invoices/new" variant="primary" size="md">
+                + New invoice
+              </LinkButton>
+            </span>
+          }
         />
-        <Stat
-          label="Overdue"
-          value={formatUSD(rollup.overdueCents)}
-          variant={rollup.overdueCents > 0 ? 'bad' : 'ok'}
-        />
-        <Stat label="Pending approval" value={rollup.pending} />
-        <Stat label="Paid (lifetime)" value={rollup.paid} variant="ok" />
-      </section>
 
-      {/* Filters */}
-      <section className="mt-6 flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 bg-white p-3 shadow-sm">
-        <span className="text-xs uppercase tracking-wide text-gray-500">Status:</span>
-        <Link
-          href={buildHref({ status: undefined })}
-          className={`rounded px-2 py-1 text-xs ${!searchParams.status ? 'bg-yge-blue-500 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
-        >
-          All
-        </Link>
-        {STATUSES.map((s) => (
+        <section className="mb-4 grid gap-3 sm:grid-cols-4">
+          <Tile
+            label="Outstanding"
+            value={<Money cents={rollup.outstandingCents} />}
+            sublabel={`${rollup.draft + rollup.pending + rollup.approved} invoice(s)`}
+            tone={rollup.outstandingCents > 0 ? 'warn' : 'neutral'}
+          />
+          <Tile
+            label="Overdue"
+            value={<Money cents={rollup.overdueCents} />}
+            tone={rollup.overdueCents > 0 ? 'danger' : 'success'}
+          />
+          <Tile label="Pending approval" value={rollup.pending} />
+          <Tile label="Paid (lifetime)" value={rollup.paid} tone="success" />
+        </section>
+
+        <section className="mb-4 flex flex-wrap items-center gap-2 rounded-md border border-gray-200 bg-white p-3">
+          <span className="text-xs uppercase tracking-wide text-gray-500">Status:</span>
           <Link
-            key={s}
-            href={buildHref({ status: s })}
-            className={`rounded px-2 py-1 text-xs ${searchParams.status === s ? 'bg-yge-blue-500 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+            href={buildHref({ status: undefined })}
+            className={`rounded px-2 py-1 text-xs ${!searchParams.status ? 'bg-blue-700 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
           >
-            {apStatusLabel(s)}
+            All
           </Link>
-        ))}
-      </section>
+          {STATUSES.map((s) => (
+            <Link
+              key={s}
+              href={buildHref({ status: s })}
+              className={`rounded px-2 py-1 text-xs ${searchParams.status === s ? 'bg-blue-700 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+            >
+              {apStatusLabel(s)}
+            </Link>
+          ))}
+        </section>
 
-      {invoices.length === 0 ? (
-        <div className="mt-6 rounded border border-gray-200 bg-gray-50 p-6 text-sm text-gray-600">
-          No invoices match. Click <em>New invoice</em> to log a bill.
-        </div>
-      ) : (
-        <div className="mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
-              <tr>
-                <th className="px-4 py-2">Vendor</th>
-                <th className="px-4 py-2">Invoice #</th>
-                <th className="px-4 py-2">Job</th>
-                <th className="px-4 py-2">Date</th>
-                <th className="px-4 py-2">Due</th>
-                <th className="px-4 py-2">Total</th>
-                <th className="px-4 py-2">Balance</th>
-                <th className="px-4 py-2">Status</th>
-                <th className="px-4 py-2"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {invoices.map((inv) => {
-                const lvl = apDueLevel(inv);
-                const job = inv.jobId ? jobById.get(inv.jobId) : undefined;
-                const balance = unpaidBalanceCents(inv);
-                const rowClass =
-                  lvl === 'overdue'
-                    ? 'bg-red-50'
-                    : lvl === 'dueSoon'
-                      ? 'bg-yellow-50'
-                      : '';
-                return (
-                  <tr key={inv.id} className={rowClass}>
-                    <td className="px-4 py-3 font-medium text-gray-900">
-                      {inv.vendorName}
-                    </td>
-                    <td className="px-4 py-3 text-sm font-mono text-gray-700">
-                      {inv.invoiceNumber ?? <span className="text-gray-400 font-sans">—</span>}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-700">
-                      {job ? (
-                        <Link href={`/jobs/${job.id}`} className="text-yge-blue-500 hover:underline">
-                          {job.projectName}
-                        </Link>
-                      ) : (
-                        <span className="text-gray-400">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-700">{inv.invoiceDate}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700">
-                      {inv.dueDate ?? <span className="text-gray-400">—</span>}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-700">{formatUSD(inv.totalCents)}</td>
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                      {balance > 0 ? formatUSD(balance) : <span className="text-gray-400">paid</span>}
-                    </td>
-                    <td className="px-4 py-3 text-xs">
-                      <StatusPill status={inv.status} />
-                    </td>
-                    <td className="px-4 py-3 text-right text-sm">
-                      <Link href={`/ap-invoices/${inv.id}`} className="text-yge-blue-500 hover:underline">
-                        Open
-                      </Link>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </main>
+        {invoices.length === 0 ? (
+          <EmptyState
+            title="No invoices match"
+            body="Vendor bills land here once we log them. Phase 2 will OCR a PDF and pre-fill the form for you."
+            actions={[{ href: '/ap-invoices/new', label: 'New invoice', primary: true }]}
+          />
+        ) : (
+          <div className="overflow-x-auto rounded-md border border-gray-200 bg-white">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+                <tr>
+                  <th className="px-4 py-2">Vendor</th>
+                  <th className="px-4 py-2">Invoice #</th>
+                  <th className="px-4 py-2">Job</th>
+                  <th className="px-4 py-2">Date</th>
+                  <th className="px-4 py-2">Due</th>
+                  <th className="px-4 py-2 text-right">Total</th>
+                  <th className="px-4 py-2 text-right">Balance</th>
+                  <th className="px-4 py-2">Status</th>
+                  <th className="px-4 py-2"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {invoices.map((inv) => {
+                  const lvl = apDueLevel(inv);
+                  const job = inv.jobId ? jobById.get(inv.jobId) : undefined;
+                  const balance = unpaidBalanceCents(inv);
+                  const rowClass = lvl === 'overdue' ? 'bg-red-50' : lvl === 'dueSoon' ? 'bg-amber-50' : '';
+                  return (
+                    <tr key={inv.id} className={rowClass}>
+                      <td className="px-4 py-3 font-medium text-gray-900">{inv.vendorName}</td>
+                      <td className="px-4 py-3 text-sm font-mono text-gray-700">
+                        {inv.invoiceNumber ?? <span className="text-gray-400 font-sans">—</span>}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-700">
+                        {job ? (
+                          <Link href={`/jobs/${job.id}`} className="text-blue-700 hover:underline">{job.projectName}</Link>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 font-mono text-xs text-gray-700">{inv.invoiceDate}</td>
+                      <td className="px-4 py-3 font-mono text-xs text-gray-700">
+                        {inv.dueDate ?? <span className="text-gray-400 font-sans">—</span>}
+                      </td>
+                      <td className="px-4 py-3 text-right"><Money cents={inv.totalCents} /></td>
+                      <td className="px-4 py-3 text-right">
+                        {balance > 0 ? <Money cents={balance} className="font-semibold" /> : <span className="text-sm text-gray-400">paid</span>}
+                      </td>
+                      <td className="px-4 py-3"><StatusPill label={apStatusLabel(inv.status)} tone={statusTone(inv.status)} /></td>
+                      <td className="px-4 py-3 text-right text-sm">
+                        <Link href={`/ap-invoices/${inv.id}`} className="text-blue-700 hover:underline">Open</Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </main>
     </AppShell>
-  );
-}
-
-function Stat({
-  label,
-  value,
-  subtitle,
-  variant = 'neutral',
-}: {
-  label: string;
-  value: string | number;
-  subtitle?: string;
-  variant?: 'neutral' | 'ok' | 'warn' | 'bad';
-}) {
-  const cls =
-    variant === 'ok'
-      ? 'border-green-200 bg-green-50 text-green-800'
-      : variant === 'warn'
-        ? 'border-yellow-200 bg-yellow-50 text-yellow-800'
-        : variant === 'bad'
-          ? 'border-red-200 bg-red-50 text-red-800'
-          : 'border-gray-200 bg-white text-gray-900';
-  return (
-    <div className={`rounded-lg border p-4 shadow-sm ${cls}`}>
-      <div className="text-xs uppercase tracking-wide opacity-70">{label}</div>
-      <div className="mt-1 text-xl font-bold">{value}</div>
-      {subtitle && <div className="text-xs opacity-70">{subtitle}</div>}
-    </div>
-  );
-}
-
-function StatusPill({ status }: { status: ApInvoiceStatus }) {
-  const cls =
-    status === 'PAID'
-      ? 'bg-green-100 text-green-800'
-      : status === 'APPROVED'
-        ? 'bg-blue-100 text-blue-800'
-        : status === 'PENDING'
-          ? 'bg-yellow-100 text-yellow-800'
-          : status === 'REJECTED'
-            ? 'bg-red-100 text-red-800'
-            : 'bg-gray-100 text-gray-700';
-  return (
-    <span className={`inline-block rounded px-2 py-0.5 font-semibold uppercase tracking-wide ${cls}`}>
-      {apStatusLabel(status)}
-    </span>
   );
 }
