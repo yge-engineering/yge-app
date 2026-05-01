@@ -42,8 +42,7 @@ function statusTone(s: BankRec['status']): 'success' | 'warn' | 'muted' | 'neutr
   switch (s) {
     case 'RECONCILED': return 'success';
     case 'VOIDED': return 'muted';
-    case 'DRAFT':
-    case 'IN_PROGRESS': return 'warn';
+    case 'DRAFT': return 'warn';
     default: return 'neutral';
   }
 }
