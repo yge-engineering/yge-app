@@ -7,6 +7,7 @@
 import Link from 'next/link';
 
 import { AppShell } from '../../components/app-shell';
+import { GettingStartedBanner } from '../../components/getting-started-banner';
 import { getCurrentUser } from '../../lib/auth';
 import {
   computeArPaymentRollup,
@@ -57,6 +58,8 @@ export default async function DashboardPage() {
   const today = new Date().toISOString().slice(0, 10);
   const [
     jobs,
+    customers,
+    employees,
     arInvoices,
     arPayments,
     apInvoices,
@@ -69,6 +72,8 @@ export default async function DashboardPage() {
     swpppInspections,
   ] = await Promise.all([
     fetchJson<Job>('/api/jobs', 'jobs'),
+    fetchJson<{ id: string }>('/api/customers', 'customers'),
+    fetchJson<{ id: string }>('/api/employees', 'employees'),
     fetchJson<ArInvoice>('/api/ar-invoices', 'invoices'),
     fetchJson<ArPayment>('/api/ar-payments', 'payments'),
     fetchJson<ApInvoice>('/api/ap-invoices', 'invoices'),
@@ -156,6 +161,12 @@ export default async function DashboardPage() {
           <code className="rounded bg-amber-100 px-1 font-mono text-xs">pnpm dev</code> in <code className="rounded bg-amber-100 px-1 font-mono text-xs">apps/api</code>. In production, check that <code className="rounded bg-amber-100 px-1 font-mono text-xs">NEXT_PUBLIC_API_URL</code> points at a running API.
         </div>
       )}
+
+      <GettingStartedBanner
+        customers={customers.length}
+        jobs={jobs.length}
+        employees={employees.length}
+      />
 
       {/* QUICK ACTIONS — the 4 things you do most */}
       <div className="mb-6 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
