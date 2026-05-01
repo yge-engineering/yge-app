@@ -58,7 +58,21 @@ function statusPillClass(status: JobStatus): string {
   }
 }
 
-export default async function JobsPage() {
+interface PageProps {
+  searchParams?: { status?: string };
+}
+
+const FILTER_PRESETS: { label: string; value: string; matches: (s: JobStatus) => boolean }[] = [
+  { label: 'All', value: 'all', matches: () => true },
+  { label: 'Active', value: 'active', matches: (s) => s === 'PURSUING' || s === 'BID_SUBMITTED' || s === 'AWARDED' },
+  { label: 'Pursuing', value: 'PURSUING', matches: (s) => s === 'PURSUING' },
+  { label: 'Bid submitted', value: 'BID_SUBMITTED', matches: (s) => s === 'BID_SUBMITTED' },
+  { label: 'Awarded', value: 'AWARDED', matches: (s) => s === 'AWARDED' },
+  { label: 'Lost / no bid', value: 'lost', matches: (s) => s === 'LOST' || s === 'NO_BID' },
+  { label: 'Archived', value: 'ARCHIVED', matches: (s) => s === 'ARCHIVED' },
+];
+
+export default async function JobsPage({ searchParams }: PageProps) {
   let jobs: Job[] = [];
   let fetchError: string | null = null;
   try {
@@ -66,6 +80,10 @@ export default async function JobsPage() {
   } catch (err) {
     fetchError = err instanceof Error ? err.message : 'Unknown error';
   }
+
+  const filterValue = searchParams?.status ?? 'active';
+  const preset = FILTER_PRESETS.find((p) => p.value === filterValue) ?? FILTER_PRESETS[1];
+  const filteredJobs = preset ? jobs.filter((j) => preset.matches(j.status)) : jobs;
 
   return (
     <AppShell>
@@ -88,6 +106,22 @@ export default async function JobsPage() {
         awarded jobs. Open one to see its drafts and priced estimates.
       </p>
 
+      {/* Filter pills */}
+      <div className="mt-5 flex flex-wrap gap-2">
+        {FILTER_PRESETS.map((p) => {
+          const active = p.value === filterValue;
+          return (
+            <Link
+              key={p.value}
+              href={p.value === 'all' ? '/jobs' : `/jobs?status=${p.value}`}
+              className={`rounded-full px-3 py-1 text-xs font-medium ${active ? 'bg-blue-700 text-white' : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-100'}`}
+            >
+              {p.label}
+            </Link>
+          );
+        })}
+      </div>
+
       {fetchError && (
         <div className="mt-6 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700">
           Couldn&rsquo;t load jobs from the API: {fetchError}. Make sure the API server is
@@ -104,7 +138,16 @@ export default async function JobsPage() {
         </div>
       )}
 
-      {jobs.length > 0 && (
+      {!fetchError && jobs.length > 0 && filteredJobs.length === 0 && (
+        <div className="mt-6 rounded border border-gray-200 bg-gray-50 p-6 text-sm text-gray-600">
+          No jobs match the &ldquo;{preset?.label}&rdquo; filter.{' '}
+          <Link href="/jobs?status=all" className="text-yge-blue-500 hover:underline">
+            Show all &rarr;
+          </Link>
+        </div>
+      )}
+
+      {filteredJobs.length > 0 && (
         <div className="mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
           <table className="w-full text-left text-sm">
             <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
@@ -119,7 +162,7 @@ export default async function JobsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {jobs.map((j) => (
+              {filteredJobs.map((j) => (
                 <tr key={j.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3">
                     <div className="font-medium text-gray-900">{j.projectName}</div>
