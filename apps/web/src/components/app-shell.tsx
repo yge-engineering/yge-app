@@ -112,12 +112,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </Link>
         <form action="/search" method="get" className="ml-auto hidden flex-1 max-w-md sm:block sm:mx-6">
-          <input
-            name="q"
-            type="search"
-            placeholder="Search jobs, customers, vendors, employees…"
-            className="w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm focus:border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-700/20"
-          />
+          <div className="relative">
+            <input
+              name="q"
+              type="search"
+              placeholder="Search jobs, customers, vendors, employees…"
+              className="w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 pr-10 text-sm focus:border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-700/20"
+            />
+            <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded border border-gray-300 bg-gray-50 px-1.5 py-0.5 font-mono text-[10px] text-gray-500" aria-label="Press slash to focus">
+              /
+            </kbd>
+          </div>
         </form>
         <div className="ml-auto sm:ml-0">
           <AccountChip />
