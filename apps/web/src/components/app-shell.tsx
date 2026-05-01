@@ -94,6 +94,7 @@ const NAV: NavGroup[] = [
     links: [
       { label: 'All modules', href: '/all-modules' },
       { label: 'Print views', href: '/print' },
+      { label: 'Settings', href: '/settings' },
       { label: 'Help', href: '/help' },
       { label: "What's new", href: '/changelog' },
     ],
