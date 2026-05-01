@@ -84,13 +84,16 @@ export default async function ApiStatusPage() {
         />
 
         {noneUp && (
-          <div className="mb-6 rounded-md border border-red-300 bg-red-50 p-4 text-sm text-red-900">
-            <strong>API is unreachable.</strong> Locally, run <code className="rounded bg-red-100 px-1 font-mono text-xs">pnpm dev</code> in <code className="rounded bg-red-100 px-1 font-mono text-xs">apps/api</code>. In production, check that the <code className="rounded bg-red-100 px-1 font-mono text-xs">NEXT_PUBLIC_API_URL</code> environment variable points at a running API server.
+          <div role="alert" className="mb-4 rounded-md border border-red-300 bg-red-50 p-4 text-sm text-red-900">
+            <strong>API is unreachable.</strong>{' '}
+            Locally, run <code className="rounded bg-red-100 px-1 font-mono text-xs">pnpm dev</code> in{' '}
+            <code className="rounded bg-red-100 px-1 font-mono text-xs">apps/api</code>. In production, check that{' '}
+            <code className="rounded bg-red-100 px-1 font-mono text-xs">NEXT_PUBLIC_API_URL</code> points at a running API server.
           </div>
         )}
 
         {allUp && (
-          <div className="mb-6 rounded-md border border-green-300 bg-green-50 p-4 text-sm text-green-900">
+          <div role="status" className="mb-4 rounded-md border border-green-300 bg-green-50 p-4 text-sm text-green-900">
             <strong>All routes responding.</strong> Dashboard tiles should be filling in normally.
           </div>
         )}
