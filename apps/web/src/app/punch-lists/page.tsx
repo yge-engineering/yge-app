@@ -4,15 +4,20 @@
 // "overdue" badge for anything past its dueOn date. This is what
 // you walk down with your foreman the week before substantial
 // completion.
+//
+// Refactored to use the shared component library.
 
 import Link from 'next/link';
 
-import { AppShell } from '../../components/app-shell';
 import {
-  punchItemSeverityLabel,
-  punchItemStatusLabel,
-  type PunchItem,
-} from '@yge/shared';
+  AppShell,
+  DataTable,
+  EmptyState,
+  LinkButton,
+  PageHeader,
+  StatusPill,
+} from '../../components';
+import { punchItemStatusLabel, punchItemSeverityLabel, type PunchItem } from '@yge/shared';
 
 function apiBaseUrl(): string {
   return (
@@ -36,12 +41,11 @@ function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-function severityClass(sev: string): string {
+function severityTone(sev: string): 'danger' | 'warn' | 'muted' {
   switch (sev) {
-    case 'SAFETY': return 'bg-red-100 text-red-800';
-    case 'MAJOR':  return 'bg-amber-100 text-amber-800';
-    case 'MINOR':  return 'bg-gray-100 text-gray-700';
-    default:       return 'bg-gray-100 text-gray-700';
+    case 'SAFETY': return 'danger';
+    case 'MAJOR':  return 'warn';
+    default:       return 'muted';
   }
 }
 
@@ -52,82 +56,80 @@ export default async function PunchListsPage() {
   const today = todayIso();
   const open = items.filter((i) => OPEN_STATUSES.has(i.status));
   const closed = items.filter((i) => !OPEN_STATUSES.has(i.status));
-  // Open: oldest identifiedOn first (most urgent).
   open.sort((a, b) => a.identifiedOn.localeCompare(b.identifiedOn));
   const overdueCount = open.filter((i) => i.dueOn && i.dueOn < today).length;
 
   return (
     <AppShell>
       <main className="mx-auto max-w-6xl">
-        <div className="mb-6 flex items-center justify-between">
-          <Link href="/dashboard" className="text-sm text-yge-blue-500 hover:underline">
-            &larr; Dashboard
-          </Link>
-          <Link
-            href="/punch-lists/new"
-            className="rounded-md bg-blue-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-800"
-          >
-            + New punch item
-          </Link>
-        </div>
-
-        <header className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Punch lists</h1>
-          <p className="mt-1 text-sm text-gray-600">
-            {open.length} open · {overdueCount > 0 ? <span className="font-semibold text-red-700">{overdueCount} overdue</span> : '0 overdue'} · {closed.length} closed
-          </p>
-        </header>
+        <PageHeader
+          title="Punch lists"
+          subtitle={
+            <>
+              {open.length} open ·{' '}
+              {overdueCount > 0 ? (
+                <span className="font-semibold text-red-700">{overdueCount} overdue</span>
+              ) : (
+                '0 overdue'
+              )}{' '}
+              · {closed.length} closed
+            </>
+          }
+          actions={
+            <LinkButton href="/punch-lists/new" variant="primary" size="md">
+              + New punch item
+            </LinkButton>
+          }
+        />
 
         {open.length === 0 ? (
-          <div className="rounded-md border border-dashed border-gray-300 bg-white p-12 text-center text-sm text-gray-500">
-            No open punch items. Either everything's done or you haven't done a closeout walkthrough yet.
-          </div>
+          <EmptyState
+            title="No open punch items"
+            body="Either everything's done or you haven't done a closeout walkthrough yet."
+            actions={[{ href: '/punch-lists/new', label: 'Add a punch item', primary: true }]}
+          />
         ) : (
-          <div className="overflow-hidden rounded-md border border-gray-200 bg-white">
-            <table className="min-w-full divide-y divide-gray-200 text-sm">
-              <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
-                <tr>
-                  <th className="px-4 py-2 font-semibold">Identified</th>
-                  <th className="px-4 py-2 font-semibold">Job</th>
-                  <th className="px-4 py-2 font-semibold">Location</th>
-                  <th className="px-4 py-2 font-semibold">Severity</th>
-                  <th className="px-4 py-2 font-semibold">Description</th>
-                  <th className="px-4 py-2 font-semibold">Due</th>
-                  <th className="px-4 py-2 font-semibold">Responsible</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {open.map((i) => {
-                  const overdue = i.dueOn && i.dueOn < today;
-                  return (
-                    <tr key={i.id} className={overdue ? 'bg-red-50' : 'hover:bg-gray-50'}>
-                      <td className="px-4 py-2 text-gray-700">{i.identifiedOn}</td>
-                      <td className="px-4 py-2">
-                        <Link href={`/jobs/${i.jobId}`} className="text-blue-700 hover:underline">
-                          {i.jobId}
-                        </Link>
-                      </td>
-                      <td className="px-4 py-2 text-gray-700">{i.location}</td>
-                      <td className="px-4 py-2">
-                        <span className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ${severityClass(i.severity)}`}>
-                          {punchItemSeverityLabel(i.severity)}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2 text-gray-700">{i.description}</td>
-                      <td className="px-4 py-2 text-gray-700">
-                        {i.dueOn ? (
-                          <span className={overdue ? 'font-semibold text-red-700' : ''}>{i.dueOn}</span>
-                        ) : (
-                          <span className="text-gray-400">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-2 text-gray-700">{i.responsibleParty ?? <span className="text-gray-400">unassigned</span>}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <DataTable
+            rows={open}
+            keyFn={(i) => i.id}
+            columns={[
+              {
+                key: 'identifiedOn',
+                header: 'Identified',
+                cell: (i) => i.identifiedOn,
+              },
+              {
+                key: 'jobId',
+                header: 'Job',
+                cell: (i) => (
+                  <Link href={`/jobs/${i.jobId}`} className="text-blue-700 hover:underline">
+                    {i.jobId}
+                  </Link>
+                ),
+              },
+              { key: 'location', header: 'Location', cell: (i) => i.location },
+              {
+                key: 'severity',
+                header: 'Severity',
+                cell: (i) => <StatusPill label={punchItemSeverityLabel(i.severity)} tone={severityTone(i.severity)} />,
+              },
+              { key: 'description', header: 'Description', cell: (i) => i.description },
+              {
+                key: 'dueOn',
+                header: 'Due',
+                cell: (i) => {
+                  if (!i.dueOn) return <span className="text-gray-400">—</span>;
+                  const overdue = i.dueOn < today;
+                  return <span className={overdue ? 'font-semibold text-red-700' : ''}>{i.dueOn}</span>;
+                },
+              },
+              {
+                key: 'responsibleParty',
+                header: 'Responsible',
+                cell: (i) => i.responsibleParty ?? <span className="text-gray-400">unassigned</span>,
+              },
+            ]}
+          />
         )}
 
         {closed.length > 0 && (
