@@ -84,6 +84,12 @@ const NAV: NavGroup[] = [
       { label: 'Documents', href: '/documents' },
     ],
   },
+  {
+    label: 'More',
+    links: [
+      { label: 'All modules', href: '/all-modules' },
+    ],
+  },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
