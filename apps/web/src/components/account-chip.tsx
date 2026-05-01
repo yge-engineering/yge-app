@@ -5,6 +5,7 @@
 
 import Link from 'next/link';
 
+import { Avatar } from './avatar';
 import { signOut } from '../app/login/actions';
 import { getCurrentUser } from '../lib/auth';
 
@@ -23,9 +24,12 @@ export function AccountChip() {
   if (!user) return null;
   return (
     <div className="flex items-center gap-3">
-      <Link href="/profile" className="text-right hover:opacity-75">
-        <div className="text-sm font-medium text-gray-900">{user.name}</div>
-        <div className="text-[11px] uppercase tracking-wide text-gray-500">{roleLabel(user.role)}</div>
+      <Link href="/profile" className="flex items-center gap-2 hover:opacity-75">
+        <Avatar name={user.name} size="md" />
+        <span className="text-right hidden sm:inline-block">
+          <span className="block text-sm font-medium text-gray-900">{user.name}</span>
+          <span className="block text-[11px] uppercase tracking-wide text-gray-500">{roleLabel(user.role)}</span>
+        </span>
       </Link>
       <form action={signOut}>
         <button
