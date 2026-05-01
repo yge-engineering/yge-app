@@ -6,7 +6,7 @@
 
 import Link from 'next/link';
 
-import { AppShell } from '../../components/app-shell';
+import { AppShell, DataTable, PageHeader, StatusPill } from '../../components';
 
 interface ProbeResult {
   name: string;
@@ -74,12 +74,14 @@ export default async function ApiStatusPage() {
   return (
     <AppShell>
       <main className="mx-auto max-w-3xl">
-        <header className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">API status</h1>
-          <p className="mt-1 text-sm text-gray-600">
-            Pinging <code className="rounded bg-gray-100 px-1 font-mono text-xs">{apiBaseUrl()}</code>. {upCount} of {results.length} routes responding.
-          </p>
-        </header>
+        <PageHeader
+          title="API status"
+          subtitle={
+            <>
+              Pinging <code className="rounded bg-gray-100 px-1 font-mono text-xs">{apiBaseUrl()}</code>. {upCount} of {results.length} routes responding.
+            </>
+          }
+        />
 
         {noneUp && (
           <div className="mb-6 rounded-md border border-red-300 bg-red-50 p-4 text-sm text-red-900">
