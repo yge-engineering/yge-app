@@ -6,7 +6,7 @@
 
 import Link from 'next/link';
 
-import { AppShell } from '../../components/app-shell';
+import { Alert, AppShell } from '../../components';
 
 interface DraftSummary {
   id: string;
@@ -98,10 +98,9 @@ export default async function DraftsPage() {
       </p>
 
       {fetchError && (
-        <div className="mt-6 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700">
-          Couldn&rsquo;t load drafts from the API: {fetchError}. Make sure the API server is
-          running on port 4000.
-        </div>
+        <Alert tone="danger" className="mt-6" title="Couldn&rsquo;t load drafts from the API">
+          {fetchError}. Make sure the API server is running on port 4000.
+        </Alert>
       )}
 
       {!fetchError && drafts.length === 0 && (
