@@ -5,8 +5,7 @@
 
 import Link from 'next/link';
 
-import { AppShell } from '../../components/app-shell';
-import { Money } from '../../components/money';
+import { Alert, AppShell, Money } from '../../components';
 
 interface EstimateSummary {
   id: string;
@@ -94,10 +93,9 @@ export default async function EstimatesPage() {
       </p>
 
       {fetchError && (
-        <div className="mt-6 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700">
-          Couldn&rsquo;t load estimates from the API: {fetchError}. Make sure the API server is
-          running on port 4000.
-        </div>
+        <Alert tone="danger" className="mt-6" title="Couldn&rsquo;t load estimates from the API">
+          {fetchError}. Make sure the API server is running on port 4000.
+        </Alert>
       )}
 
       {!fetchError && estimates.length === 0 && (
