@@ -2,10 +2,21 @@
 //
 // Plain English: roster page. Pulls every employee from the API,
 // shows name, classification, role, status. Active first.
+//
+// Refactored to use the shared component library: PageHeader,
+// LinkButton, EmptyState, DataTable, StatusPill, RoleBadge.
 
 import Link from 'next/link';
 
-import { AppShell } from '../../components/app-shell';
+import {
+  AppShell,
+  DataTable,
+  EmptyState,
+  LinkButton,
+  PageHeader,
+  RoleBadge,
+  StatusPill,
+} from '../../components';
 import type { Employee } from '@yge/shared';
 
 function apiBaseUrl(): string {
@@ -26,23 +37,18 @@ async function fetchEmployees(): Promise<Employee[]> {
   }
 }
 
-function statusBadgeClass(status: string): string {
+function statusTone(status: string): 'success' | 'warn' | 'muted' | 'neutral' {
   switch (status) {
-    case 'ACTIVE':
-      return 'bg-green-100 text-green-800';
-    case 'ON_LEAVE':
-      return 'bg-amber-100 text-amber-800';
-    case 'TERMINATED':
-      return 'bg-gray-100 text-gray-700';
-    default:
-      return 'bg-gray-100 text-gray-700';
+    case 'ACTIVE': return 'success';
+    case 'ON_LEAVE': return 'warn';
+    case 'TERMINATED': return 'muted';
+    default: return 'neutral';
   }
 }
 
 export default async function EmployeesPage() {
   const employees = await fetchEmployees();
   const sorted = [...employees].sort((a, b) => {
-    // Active first, then by last name.
     if (a.status !== b.status) {
       if (a.status === 'ACTIVE') return -1;
       if (b.status === 'ACTIVE') return 1;
@@ -55,67 +61,58 @@ export default async function EmployeesPage() {
   return (
     <AppShell>
       <main className="mx-auto max-w-6xl">
-        <div className="mb-6 flex items-center justify-between">
-          <Link href="/dashboard" className="text-sm text-yge-blue-500 hover:underline">
-            &larr; Dashboard
-          </Link>
-          <Link
-            href="/employees/new"
-            className="rounded-md bg-blue-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-800"
-          >
-            + New employee
-          </Link>
-        </div>
-
-        <header className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Employees</h1>
-          <p className="mt-1 text-sm text-gray-600">
-            {activeCount} active · {sorted.length} total on file
-          </p>
-        </header>
+        <PageHeader
+          title="Employees"
+          subtitle={`${activeCount} active · ${sorted.length} total on file`}
+          actions={
+            <LinkButton href="/employees/new" variant="primary" size="md">
+              + New employee
+            </LinkButton>
+          }
+        />
 
         {sorted.length === 0 ? (
-          <div className="rounded-md border border-dashed border-gray-300 bg-white p-12 text-center text-sm text-gray-500">
-            No employees yet. Add one to get started.
-          </div>
+          <EmptyState
+            title="No employees yet"
+            body="Add your foremen, operators, and laborers so dispatch boards and certified payrolls have people to reference."
+            actions={[{ href: '/employees/new', label: 'Add your first employee', primary: true }]}
+          />
         ) : (
-          <div className="overflow-hidden rounded-md border border-gray-200 bg-white">
-            <table className="min-w-full divide-y divide-gray-200 text-sm">
-              <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
-                <tr>
-                  <th className="px-4 py-2 font-semibold">Name</th>
-                  <th className="px-4 py-2 font-semibold">Role</th>
-                  <th className="px-4 py-2 font-semibold">Classification</th>
-                  <th className="px-4 py-2 font-semibold">Status</th>
-                  <th className="px-4 py-2 font-semibold">Phone</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {sorted.map((e) => (
-                  <tr key={e.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-2">
-                      <Link
-                        href={`/employees/${e.id}`}
-                        className="font-medium text-blue-700 hover:underline"
-                      >
-                        {e.firstName} {e.lastName}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-2 text-gray-700">{e.role}</td>
-                    <td className="px-4 py-2 text-gray-700">{e.classification}</td>
-                    <td className="px-4 py-2">
-                      <span
-                        className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ${statusBadgeClass(e.status)}`}
-                      >
-                        {e.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-2 text-gray-700">{e.phone ?? '—'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <DataTable
+            rows={sorted}
+            keyFn={(e) => e.id}
+            columns={[
+              {
+                key: 'name',
+                header: 'Name',
+                cell: (e) => (
+                  <Link href={`/employees/${e.id}`} className="font-medium text-blue-700 hover:underline">
+                    {e.firstName} {e.lastName}
+                  </Link>
+                ),
+              },
+              {
+                key: 'role',
+                header: 'Role',
+                cell: (e) => <RoleBadge role={e.role} />,
+              },
+              {
+                key: 'classification',
+                header: 'Classification',
+                cell: (e) => <span className="text-gray-700">{e.classification}</span>,
+              },
+              {
+                key: 'status',
+                header: 'Status',
+                cell: (e) => <StatusPill label={e.status} tone={statusTone(e.status)} />,
+              },
+              {
+                key: 'phone',
+                header: 'Phone',
+                cell: (e) => e.phone ?? <span className="text-gray-400">—</span>,
+              },
+            ]}
+          />
         )}
       </main>
     </AppShell>
