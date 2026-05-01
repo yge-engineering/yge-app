@@ -25,7 +25,7 @@ export { Toggle } from './toggle';
 export { Toaster, showToast } from './toast';
 export { Modal } from './modal';
 export { ConfirmButton } from './confirm-button';
-export { Tile } from './tile';
+export { Tile, type TileTone } from './tile';
 export { Breadcrumbs, type Crumb } from './breadcrumbs';
 export { DescriptionList } from './description-list';
 export { Spinner } from './spinner';
