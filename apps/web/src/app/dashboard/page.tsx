@@ -7,6 +7,7 @@
 import Link from 'next/link';
 import type React from 'react';
 
+import { Alert } from '../../components/alert';
 import { AppShell } from '../../components/app-shell';
 import { GettingStartedBanner } from '../../components/getting-started-banner';
 import { Money } from '../../components/money';
@@ -157,11 +158,13 @@ export default async function DashboardPage() {
       </header>
 
       {apiUnreachable && (
-        <div className="mb-6 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
-          <strong>API not reachable.</strong>{' '}
+        <Alert tone="warn" title="API not reachable" className="mb-6">
           The dashboard tiles below show zeros because the API server isn&apos;t running. Locally, run{' '}
-          <code className="rounded bg-amber-100 px-1 font-mono text-xs">pnpm dev</code> in <code className="rounded bg-amber-100 px-1 font-mono text-xs">apps/api</code>. In production, check that <code className="rounded bg-amber-100 px-1 font-mono text-xs">NEXT_PUBLIC_API_URL</code> points at a running API.
-        </div>
+          <code className="rounded bg-amber-100 px-1 font-mono text-xs">pnpm dev</code> in{' '}
+          <code className="rounded bg-amber-100 px-1 font-mono text-xs">apps/api</code>. In production,
+          check that <code className="rounded bg-amber-100 px-1 font-mono text-xs">NEXT_PUBLIC_API_URL</code>{' '}
+          points at a running API.
+        </Alert>
       )}
 
       <GettingStartedBanner
