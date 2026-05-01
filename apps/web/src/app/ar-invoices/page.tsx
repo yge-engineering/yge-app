@@ -1,13 +1,26 @@
 // /ar-invoices — outgoing customer/agency bills.
+//
+// Plain English: outgoing bills to customers and agencies. Pull line
+// items from daily reports for monthly billing (e.g. Cal Fire), or
+// build manually for progress + lump-sum jobs. Outstanding dollars
+// are the page's whole point — that number drives the cash forecast.
 
 import Link from 'next/link';
 
-import { AppShell } from '../../components/app-shell';
+import {
+  AppShell,
+  DataTable,
+  EmptyState,
+  LinkButton,
+  Money,
+  PageHeader,
+  StatusPill,
+  Tile,
+} from '../../components';
 import {
   arInvoiceStatusLabel,
   arUnpaidBalanceCents,
   computeArRollup,
-  formatUSD,
   type ArInvoice,
   type ArInvoiceStatus,
   type Job,
@@ -25,22 +38,39 @@ function publicApiBaseUrl(): string {
 }
 
 async function fetchInvoices(filter: { status?: string; jobId?: string }): Promise<ArInvoice[]> {
-  const url = new URL(`${apiBaseUrl()}/api/ar-invoices`);
-  if (filter.status) url.searchParams.set('status', filter.status);
-  if (filter.jobId) url.searchParams.set('jobId', filter.jobId);
-  const res = await fetch(url.toString(), { cache: 'no-store' });
-  if (!res.ok) return [];
-  return ((await res.json()) as { invoices: ArInvoice[] }).invoices;
+  try {
+    const url = new URL(`${apiBaseUrl()}/api/ar-invoices`);
+    if (filter.status) url.searchParams.set('status', filter.status);
+    if (filter.jobId) url.searchParams.set('jobId', filter.jobId);
+    const res = await fetch(url.toString(), { cache: 'no-store' });
+    if (!res.ok) return [];
+    return ((await res.json()) as { invoices: ArInvoice[] }).invoices;
+  } catch { return []; }
 }
 async function fetchAllInvoices(): Promise<ArInvoice[]> {
-  const res = await fetch(`${apiBaseUrl()}/api/ar-invoices`, { cache: 'no-store' });
-  if (!res.ok) return [];
-  return ((await res.json()) as { invoices: ArInvoice[] }).invoices;
+  try {
+    const res = await fetch(`${apiBaseUrl()}/api/ar-invoices`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    return ((await res.json()) as { invoices: ArInvoice[] }).invoices;
+  } catch { return []; }
 }
 async function fetchJobs(): Promise<Job[]> {
-  const res = await fetch(`${apiBaseUrl()}/api/jobs`, { cache: 'no-store' });
-  if (!res.ok) return [];
-  return ((await res.json()) as { jobs: Job[] }).jobs;
+  try {
+    const res = await fetch(`${apiBaseUrl()}/api/jobs`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    return ((await res.json()) as { jobs: Job[] }).jobs;
+  } catch { return []; }
+}
+
+function statusTone(s: ArInvoiceStatus): 'success' | 'info' | 'danger' | 'muted' | 'neutral' {
+  switch (s) {
+    case 'PAID': return 'success';
+    case 'PARTIALLY_PAID':
+    case 'SENT': return 'info';
+    case 'DISPUTED': return 'danger';
+    case 'WRITTEN_OFF': return 'muted';
+    default: return 'neutral';
+  }
 }
 
 export default async function ArInvoicesPage({
@@ -65,172 +95,115 @@ export default async function ArInvoicesPage({
     return q ? `/ar-invoices?${q}` : '/ar-invoices';
   }
 
+  const csvHref = `${publicApiBaseUrl()}/api/ar-invoices?format=csv${
+    searchParams.status ? '&status=' + encodeURIComponent(searchParams.status) : ''
+  }${searchParams.jobId ? '&jobId=' + encodeURIComponent(searchParams.jobId) : ''}`;
+
   return (
     <AppShell>
-    <main className="mx-auto max-w-6xl p-8">
-      <div className="mb-6 flex items-center justify-between">
-        <Link href="/dashboard" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Dashboard
-        </Link>
-        <div className="flex items-center gap-2">
-          <a
-            href={`${publicApiBaseUrl()}/api/ar-invoices?format=csv${searchParams.status ? '&status=' + encodeURIComponent(searchParams.status) : ''}${searchParams.jobId ? '&jobId=' + encodeURIComponent(searchParams.jobId) : ''}`}
-            className="rounded border border-yge-blue-500 px-3 py-1 text-sm font-medium text-yge-blue-500 hover:bg-yge-blue-50"
-          >
-            Download CSV
-          </a>
+      <main className="mx-auto max-w-6xl">
+        <PageHeader
+          title="Customer invoices (AR)"
+          subtitle="Outgoing bills to customers and agencies. Pull line items from daily reports for monthly billing (e.g. Cal Fire), or build manually for progress + lump-sum jobs."
+          actions={
+            <span className="flex gap-2">
+              <a
+                href={csvHref}
+                className="inline-flex items-center rounded-md border border-blue-700 px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-50"
+              >
+                Download CSV
+              </a>
+              <LinkButton href="/ar-invoices/new" variant="primary" size="md">
+                + New invoice
+              </LinkButton>
+            </span>
+          }
+        />
+
+        <section className="mb-4 grid gap-3 sm:grid-cols-4">
+          <Tile
+            label="Outstanding"
+            value={<Money cents={rollup.outstandingCents} />}
+            tone={rollup.outstandingCents > 0 ? 'warn' : 'success'}
+          />
+          <Tile label="Drafts" value={rollup.draft} />
+          <Tile label="Sent" value={rollup.sent} />
+          <Tile label="Paid (lifetime)" value={<Money cents={rollup.paidCents} />} tone="success" />
+        </section>
+
+        <section className="mb-4 flex flex-wrap items-center gap-2 rounded-md border border-gray-200 bg-white p-3">
+          <span className="text-xs uppercase tracking-wide text-gray-500">Status:</span>
           <Link
-            href="/ar-invoices/new"
-            className="rounded bg-yge-blue-500 px-3 py-1 text-sm font-medium text-white hover:bg-yge-blue-700"
+            href={buildHref({ status: undefined })}
+            className={`rounded px-2 py-1 text-xs ${!searchParams.status ? 'bg-blue-700 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
           >
-            + New invoice
+            All
           </Link>
-        </div>
-      </div>
+          {STATUSES.map((s) => (
+            <Link
+              key={s}
+              href={buildHref({ status: s })}
+              className={`rounded px-2 py-1 text-xs ${searchParams.status === s ? 'bg-blue-700 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+            >
+              {arInvoiceStatusLabel(s)}
+            </Link>
+          ))}
+        </section>
 
-      <h1 className="text-3xl font-bold text-yge-blue-500">Customer invoices (AR)</h1>
-      <p className="mt-2 text-gray-700">
-        Outgoing bills to customers and agencies. Pull line items from
-        daily reports for monthly billing (e.g. Cal Fire), or build manually
-        for progress + lump-sum jobs.
-      </p>
-
-      <section className="mt-6 grid gap-4 sm:grid-cols-4">
-        <Stat label="Outstanding" value={formatUSD(rollup.outstandingCents)} variant={rollup.outstandingCents > 0 ? 'warn' : 'ok'} />
-        <Stat label="Drafts" value={rollup.draft} />
-        <Stat label="Sent" value={rollup.sent} />
-        <Stat label="Paid (lifetime)" value={formatUSD(rollup.paidCents)} variant="ok" />
-      </section>
-
-      <section className="mt-6 flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 bg-white p-3 shadow-sm">
-        <span className="text-xs uppercase tracking-wide text-gray-500">Status:</span>
-        <Link
-          href={buildHref({ status: undefined })}
-          className={`rounded px-2 py-1 text-xs ${!searchParams.status ? 'bg-yge-blue-500 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
-        >
-          All
-        </Link>
-        {STATUSES.map((s) => (
-          <Link
-            key={s}
-            href={buildHref({ status: s })}
-            className={`rounded px-2 py-1 text-xs ${searchParams.status === s ? 'bg-yge-blue-500 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
-          >
-            {arInvoiceStatusLabel(s)}
-          </Link>
-        ))}
-      </section>
-
-      {invoices.length === 0 ? (
-        <div className="mt-6 rounded border border-gray-200 bg-gray-50 p-6 text-sm text-gray-600">
-          No invoices match. Click <em>New invoice</em> to create one.
-        </div>
-      ) : (
-        <div className="mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
-              <tr>
-                <th className="px-4 py-2">#</th>
-                <th className="px-4 py-2">Customer</th>
-                <th className="px-4 py-2">Job</th>
-                <th className="px-4 py-2">Period</th>
-                <th className="px-4 py-2">Date</th>
-                <th className="px-4 py-2">Total</th>
-                <th className="px-4 py-2">Balance</th>
-                <th className="px-4 py-2">Status</th>
-                <th className="px-4 py-2"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {invoices.map((inv) => {
-                const job = jobById.get(inv.jobId);
-                const balance = arUnpaidBalanceCents(inv);
-                return (
-                  <tr key={inv.id}>
-                    <td className="px-4 py-3 font-mono font-bold text-gray-900">
-                      {inv.invoiceNumber}
-                    </td>
-                    <td className="px-4 py-3 font-medium text-gray-900">
-                      {inv.customerName}
-                    </td>
-                    <td className="px-4 py-3 text-sm">
-                      {job ? (
-                        <Link href={`/jobs/${job.id}`} className="text-yge-blue-500 hover:underline">
-                          {job.projectName}
-                        </Link>
-                      ) : (
-                        <span className="text-gray-400">{inv.jobId}</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-gray-700">
-                      {inv.billingPeriodStart && inv.billingPeriodEnd
-                        ? `${inv.billingPeriodStart} → ${inv.billingPeriodEnd}`
-                        : '—'}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-700">{inv.invoiceDate}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700">{formatUSD(inv.totalCents)}</td>
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                      {balance > 0 ? formatUSD(balance) : <span className="text-gray-400">paid</span>}
-                    </td>
-                    <td className="px-4 py-3 text-xs">
-                      <StatusPill status={inv.status} />
-                    </td>
-                    <td className="px-4 py-3 text-right text-sm">
-                      <Link href={`/ar-invoices/${inv.id}`} className="text-yge-blue-500 hover:underline">
-                        Open
-                      </Link>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </main>
+        {invoices.length === 0 ? (
+          <EmptyState
+            title="No invoices match"
+            body="Create one from a daily-report rollup or as a one-off progress / lump-sum bill. Anything you bill here flows into the cash forecast."
+            actions={[{ href: '/ar-invoices/new', label: 'New invoice', primary: true }]}
+          />
+        ) : (
+          <DataTable
+            rows={invoices}
+            keyFn={(inv) => inv.id}
+            columns={[
+              {
+                key: 'invoiceNumber',
+                header: '#',
+                cell: (inv) => (
+                  <Link href={`/ar-invoices/${inv.id}`} className="font-mono font-bold text-blue-700 hover:underline">
+                    {inv.invoiceNumber}
+                  </Link>
+                ),
+              },
+              { key: 'customer', header: 'Customer', cell: (inv) => <span className="font-medium text-gray-900">{inv.customerName}</span> },
+              {
+                key: 'job',
+                header: 'Job',
+                cell: (inv) => {
+                  const job = jobById.get(inv.jobId);
+                  return job
+                    ? <Link href={`/jobs/${job.id}`} className="text-sm text-blue-700 hover:underline">{job.projectName}</Link>
+                    : <span className="text-sm text-gray-400">{inv.jobId}</span>;
+                },
+              },
+              {
+                key: 'period',
+                header: 'Period',
+                cell: (inv) => inv.billingPeriodStart && inv.billingPeriodEnd
+                  ? <span className="text-xs text-gray-700">{inv.billingPeriodStart} → {inv.billingPeriodEnd}</span>
+                  : <span className="text-xs text-gray-400">—</span>,
+              },
+              { key: 'date', header: 'Date', cell: (inv) => <span className="font-mono text-xs text-gray-700">{inv.invoiceDate}</span> },
+              { key: 'total', header: 'Total', numeric: true, cell: (inv) => <Money cents={inv.totalCents} /> },
+              {
+                key: 'balance',
+                header: 'Balance',
+                numeric: true,
+                cell: (inv) => {
+                  const balance = arUnpaidBalanceCents(inv);
+                  return balance > 0 ? <Money cents={balance} className="font-semibold" /> : <span className="text-sm text-gray-400">paid</span>;
+                },
+              },
+              { key: 'status', header: 'Status', cell: (inv) => <StatusPill label={arInvoiceStatusLabel(inv.status)} tone={statusTone(inv.status)} /> },
+            ]}
+          />
+        )}
+      </main>
     </AppShell>
-  );
-}
-
-function Stat({
-  label,
-  value,
-  variant = 'neutral',
-}: {
-  label: string;
-  value: string | number;
-  variant?: 'neutral' | 'ok' | 'warn' | 'bad';
-}) {
-  const cls =
-    variant === 'ok'
-      ? 'border-green-200 bg-green-50 text-green-800'
-      : variant === 'warn'
-        ? 'border-yellow-200 bg-yellow-50 text-yellow-800'
-        : variant === 'bad'
-          ? 'border-red-200 bg-red-50 text-red-800'
-          : 'border-gray-200 bg-white text-gray-900';
-  return (
-    <div className={`rounded-lg border p-4 shadow-sm ${cls}`}>
-      <div className="text-xs uppercase tracking-wide opacity-70">{label}</div>
-      <div className="mt-1 text-xl font-bold">{value}</div>
-    </div>
-  );
-}
-
-function StatusPill({ status }: { status: ArInvoiceStatus }) {
-  const cls =
-    status === 'PAID'
-      ? 'bg-green-100 text-green-800'
-      : status === 'PARTIALLY_PAID' || status === 'SENT'
-        ? 'bg-blue-100 text-blue-800'
-        : status === 'DISPUTED'
-          ? 'bg-red-100 text-red-800'
-          : status === 'WRITTEN_OFF'
-            ? 'bg-gray-200 text-gray-600'
-            : 'bg-gray-100 text-gray-700';
-  return (
-    <span className={`inline-block rounded px-2 py-0.5 font-semibold uppercase tracking-wide ${cls}`}>
-      {arInvoiceStatusLabel(status)}
-    </span>
   );
 }
