@@ -6,7 +6,7 @@
 import Link from 'next/link';
 
 import { AppShell } from '../../components/app-shell';
-import { formatUSD } from '@yge/shared';
+import { Money } from '../../components/money';
 
 interface EstimateSummary {
   id: string;
@@ -173,11 +173,11 @@ export default async function EstimatesPage() {
                   <td className="px-4 py-3 font-medium text-gray-900">
                     {e.unpricedLineCount > 0 ? (
                       <span className="text-gray-500">
-                        {formatUSD(e.bidTotalCents)}{' '}
+                        <Money cents={e.bidTotalCents} />{' '}
                         <span className="text-[10px] uppercase">running</span>
                       </span>
                     ) : (
-                      formatUSD(e.bidTotalCents)
+                      <Money cents={e.bidTotalCents} />
                     )}
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-600">
