@@ -6,7 +6,7 @@
 
 import Link from 'next/link';
 
-import { AppShell, DataTable, PageHeader, StatusPill } from '../../components';
+import { Alert, AppShell, DataTable, PageHeader, StatusPill } from '../../components';
 
 interface ProbeResult {
   name: string;
@@ -84,18 +84,17 @@ export default async function ApiStatusPage() {
         />
 
         {noneUp && (
-          <div role="alert" className="mb-4 rounded-md border border-red-300 bg-red-50 p-4 text-sm text-red-900">
-            <strong>API is unreachable.</strong>{' '}
+          <Alert tone="danger" title="API is unreachable" className="mb-4">
             Locally, run <code className="rounded bg-red-100 px-1 font-mono text-xs">pnpm dev</code> in{' '}
             <code className="rounded bg-red-100 px-1 font-mono text-xs">apps/api</code>. In production, check that{' '}
             <code className="rounded bg-red-100 px-1 font-mono text-xs">NEXT_PUBLIC_API_URL</code> points at a running API server.
-          </div>
+          </Alert>
         )}
 
         {allUp && (
-          <div role="status" className="mb-4 rounded-md border border-green-300 bg-green-50 p-4 text-sm text-green-900">
-            <strong>All routes responding.</strong> Dashboard tiles should be filling in normally.
-          </div>
+          <Alert tone="success" title="All routes responding" className="mb-4">
+            Dashboard tiles should be filling in normally.
+          </Alert>
         )}
 
         <div className="overflow-hidden rounded-md border border-gray-200 bg-white">
