@@ -7,6 +7,7 @@
 import { notFound } from 'next/navigation';
 
 import {
+  Alert,
   AppShell,
   Avatar,
   Card,
@@ -118,11 +119,9 @@ export default async function EmployeeReimbursementPage({
         </section>
 
         {summary.totalCents === 0 ? (
-          <Card className="border-emerald-300 bg-emerald-50">
-            <p className="text-sm text-emerald-900">
-              ✓ Nothing owed to {summary.employeeName} right now.
-            </p>
-          </Card>
+          <Alert tone="success">
+            ✓ Nothing owed to {summary.employeeName} right now.
+          </Alert>
         ) : (
           <>
             {summary.mileageRows.length > 0 ? (
