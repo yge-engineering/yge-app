@@ -4,9 +4,7 @@
 // Aimed at someone who just logged in and doesn't know where to
 // start. Will grow as we land more features.
 
-import Link from 'next/link';
-
-import { AppShell } from '../../components/app-shell';
+import { AppShell, Card, LinkButton, PageHeader } from '../../components';
 
 interface HowTo {
   title: string;
@@ -84,18 +82,16 @@ export default function HelpPage() {
   return (
     <AppShell>
       <main className="mx-auto max-w-3xl">
-        <header className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Help</h1>
-          <p className="mt-1 text-sm text-gray-600">
-            Plain-English how-tos for the things you&apos;ll do most. Bookmark this page for the first month.
-          </p>
-        </header>
+        <PageHeader
+          title="Help"
+          subtitle="Plain-English how-tos for the things you'll do most. Bookmark this page for the first month."
+        />
 
         <section className="mb-10">
           <h2 className="mb-4 text-base font-semibold text-gray-900">How-tos</h2>
           <div className="space-y-4">
             {HOW_TOS.map((h) => (
-              <div key={h.title} className="rounded-md border border-gray-200 bg-white p-5">
+              <Card key={h.title}>
                 <h3 className="text-sm font-semibold text-gray-900">{h.title}</h3>
                 <ol className="mt-3 space-y-2 text-sm text-gray-700">
                   {h.steps.map((s, i) => (
@@ -106,14 +102,11 @@ export default function HelpPage() {
                   ))}
                 </ol>
                 <div className="mt-4">
-                  <Link
-                    href={h.done.href}
-                    className="inline-block rounded-md bg-blue-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-800"
-                  >
+                  <LinkButton href={h.done.href} variant="primary" size="sm">
                     {h.done.label}
-                  </Link>
+                  </LinkButton>
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
         </section>
@@ -122,10 +115,10 @@ export default function HelpPage() {
           <h2 className="mb-4 text-base font-semibold text-gray-900">Common questions</h2>
           <dl className="space-y-3">
             {FAQS.map((f) => (
-              <div key={f.q} className="rounded-md border border-gray-200 bg-white p-4">
+              <Card key={f.q}>
                 <dt className="text-sm font-medium text-gray-900">{f.q}</dt>
                 <dd className="mt-1 text-sm text-gray-700">{f.a}</dd>
-              </div>
+              </Card>
             ))}
           </dl>
         </section>
