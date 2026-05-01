@@ -5,13 +5,16 @@
 // number stands out. Used in dashboard tile boards and detail-page
 // summary strips.
 
+import type React from 'react';
 import Link from 'next/link';
 
 export type TileTone = 'neutral' | 'success' | 'warn' | 'danger';
 
 interface Props {
   label: string;
-  value: number | string;
+  /** Value to display. Plain strings/numbers pick up the tone color;
+   * a React node (e.g. a Money component) renders verbatim. */
+  value: React.ReactNode;
   /** Optional sublabel (e.g. '12 vendors', 'over 90 days'). */
   sublabel?: string;
   /** Optional href — turns the whole tile into a link. */
