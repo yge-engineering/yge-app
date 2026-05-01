@@ -1,6 +1,8 @@
 // /toolbox-talks — Cal/OSHA T8 §1509 weekly safety meeting tracker.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../components/app-shell';
 import {
   computeToolboxTalkRollup,
   signedAttendeeCount,
@@ -49,10 +51,11 @@ export default async function ToolboxTalksPage({
   }
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-6xl p-8">
       <div className="mb-6 flex items-center justify-between">
-        <Link href="/" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Home
+        <Link href="/dashboard" className="text-sm text-yge-blue-500 hover:underline">
+          &larr; Dashboard
         </Link>
         <Link
           href="/toolbox-talks/new"
@@ -155,6 +158,7 @@ export default async function ToolboxTalksPage({
         </div>
       )}
     </main>
+    </AppShell>
   );
 }
 
