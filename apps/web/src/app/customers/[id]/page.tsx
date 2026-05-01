@@ -1,6 +1,8 @@
 // /customers/[id] — customer detail / edit.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../../components/app-shell';
 import { notFound } from 'next/navigation';
 import { customerDisplayName, type Customer } from '@yge/shared';
 import { CustomerEditor } from '../../../components/customer-editor';
@@ -26,6 +28,7 @@ export default async function CustomerDetailPage({
   if (!customer) notFound();
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-3xl p-8">
       <div className="mb-6">
         <Link href="/customers" className="text-sm text-yge-blue-500 hover:underline">
@@ -43,5 +46,6 @@ export default async function CustomerDetailPage({
         <CustomerEditor mode="edit" customer={customer} />
       </div>
     </main>
+    </AppShell>
   );
 }

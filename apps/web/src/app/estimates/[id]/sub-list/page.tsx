@@ -4,6 +4,8 @@
 // before sealing.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../../../components/app-shell';
 import { notFound } from 'next/navigation';
 import {
   classifySubBids,
@@ -64,6 +66,7 @@ export default async function SubListPage({
   const totalListedCents = printRows.reduce((acc, s) => acc + s.bidAmountCents, 0);
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-3xl p-8 text-black">
       <div className="mb-6 flex items-center justify-between print:hidden">
         <Link
@@ -182,6 +185,7 @@ export default async function SubListPage({
         </div>
       </article>
     </main>
+    </AppShell>
   );
 }
 

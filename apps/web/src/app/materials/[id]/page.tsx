@@ -1,6 +1,8 @@
 // /materials/[id] — material detail with movement ledger.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../../components/app-shell';
 import { notFound } from 'next/navigation';
 import type { Job, Material } from '@yge/shared';
 import { MaterialEditor } from '@/components/material-editor';
@@ -37,6 +39,7 @@ export default async function MaterialDetailPage({
   if (!material) notFound();
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-4xl p-8">
       <div className="mb-6">
         <Link href="/materials" className="text-sm text-yge-blue-500 hover:underline">
@@ -48,5 +51,6 @@ export default async function MaterialDetailPage({
         <MaterialEditor initial={material} jobs={jobs} apiBaseUrl={publicApiBaseUrl()} />
       </div>
     </main>
+    </AppShell>
   );
 }

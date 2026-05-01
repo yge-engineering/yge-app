@@ -1,6 +1,8 @@
 // /vendors/[id] — vendor detail / edit page.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../../components/app-shell';
 import { notFound } from 'next/navigation';
 import type { Vendor } from '@yge/shared';
 import { VendorEditor } from '../../../components/vendor-editor';
@@ -27,6 +29,7 @@ export default async function VendorDetailPage({
   if (!vendor) notFound();
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-3xl p-8">
       <div className="mb-6 flex items-center justify-between">
         <Link href="/vendors" className="text-sm text-yge-blue-500 hover:underline">
@@ -52,5 +55,6 @@ export default async function VendorDetailPage({
         <VendorEditor mode="edit" vendor={vendor} />
       </div>
     </main>
+    </AppShell>
   );
 }

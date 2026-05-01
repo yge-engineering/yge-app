@@ -1,6 +1,8 @@
 // /certified-payrolls/[id] — full CPR editor.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../../components/app-shell';
 import { notFound } from 'next/navigation';
 import type { CertifiedPayroll, Employee, Job } from '@yge/shared';
 import { CertifiedPayrollEditor } from '@/components/certified-payroll-editor';
@@ -42,6 +44,7 @@ export default async function CprDetailPage({ params }: { params: { id: string }
   if (!cpr) notFound();
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-6xl p-8">
       <div className="mb-6">
         <Link href="/certified-payrolls" className="text-sm text-yge-blue-500 hover:underline">
@@ -58,5 +61,6 @@ export default async function CprDetailPage({ params }: { params: { id: string }
         />
       </div>
     </main>
+    </AppShell>
   );
 }

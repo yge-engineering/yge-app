@@ -1,6 +1,8 @@
 // /tools/[id] — edit a single tool. Inline patches against PATCH /api/tools/:id.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../../components/app-shell';
 import { notFound } from 'next/navigation';
 import type { Tool, Employee } from '@yge/shared';
 import { ToolEditor } from '@/components/tool-editor';
@@ -43,6 +45,7 @@ export default async function ToolDetailPage({
   if (!tool) notFound();
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-3xl p-8">
       <div className="mb-6">
         <Link href="/tools" className="text-sm text-yge-blue-500 hover:underline">
@@ -58,5 +61,6 @@ export default async function ToolDetailPage({
         />
       </div>
     </main>
+    </AppShell>
   );
 }

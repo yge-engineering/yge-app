@@ -1,6 +1,8 @@
 // /time-cards/[id] — full time card editor.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../../components/app-shell';
 import { notFound } from 'next/navigation';
 import type { Employee, Job, TimeCard } from '@yge/shared';
 import { TimeCardEditor } from '@/components/time-card-editor';
@@ -46,6 +48,7 @@ export default async function TimeCardDetailPage({
   if (!card) notFound();
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-5xl p-8">
       <div className="mb-6">
         <Link href="/time-cards" className="text-sm text-yge-blue-500 hover:underline">
@@ -62,5 +65,6 @@ export default async function TimeCardDetailPage({
         />
       </div>
     </main>
+    </AppShell>
   );
 }

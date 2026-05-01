@@ -1,6 +1,8 @@
 // /bid-results/[id] — edit a bid result; bidder list editor + outcome.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../../components/app-shell';
 import { notFound } from 'next/navigation';
 import type { BidResult, Job } from '@yge/shared';
 import { BidResultEditor } from '@/components/bid-result-editor';
@@ -43,6 +45,7 @@ export default async function BidResultDetailPage({
   const job = jobs.find((j) => j.id === result.jobId);
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-4xl p-8">
       <div className="mb-6">
         <Link href="/bid-results" className="text-sm text-yge-blue-500 hover:underline">
@@ -58,5 +61,6 @@ export default async function BidResultDetailPage({
         />
       </div>
     </main>
+    </AppShell>
   );
 }

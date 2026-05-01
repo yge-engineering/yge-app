@@ -1,6 +1,8 @@
 // /vendors/[id]/prequal — printable subcontractor pre-qualification packet.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../../../components/app-shell';
 import { notFound } from 'next/navigation';
 import {
   buildVendorPrequal,
@@ -32,6 +34,7 @@ export default async function VendorPrequalPage({
   const report = buildVendorPrequal(vendor);
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-3xl p-8 text-black">
       <div className="mb-6 flex items-center justify-between print:hidden">
         <Link href={`/vendors/${vendor.id}`} className="text-sm text-yge-blue-500 hover:underline">
@@ -152,6 +155,7 @@ export default async function VendorPrequalPage({
         </section>
       </article>
     </main>
+    </AppShell>
   );
 }
 

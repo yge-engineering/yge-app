@@ -1,6 +1,8 @@
 // /expenses/[id] — expense detail / edit.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../../components/app-shell';
 import { notFound } from 'next/navigation';
 import type { Expense } from '@yge/shared';
 import { ExpenseEditor } from '../../../components/expense-editor';
@@ -26,6 +28,7 @@ export default async function ExpenseDetailPage({
   if (!expense) notFound();
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-3xl p-8">
       <div className="mb-6">
         <Link href="/expenses" className="text-sm text-yge-blue-500 hover:underline">
@@ -41,5 +44,6 @@ export default async function ExpenseDetailPage({
         <ExpenseEditor mode="edit" expense={expense} />
       </div>
     </main>
+    </AppShell>
   );
 }

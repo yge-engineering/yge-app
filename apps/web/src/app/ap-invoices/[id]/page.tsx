@@ -1,6 +1,8 @@
 // /ap-invoices/[id] — full editor with line items + approve / pay / reject.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../../components/app-shell';
 import { notFound } from 'next/navigation';
 import type { ApInvoice, Job } from '@yge/shared';
 import { ApInvoiceEditor } from '@/components/ap-invoice-editor';
@@ -38,6 +40,7 @@ export default async function ApInvoiceDetailPage({
   if (!invoice) notFound();
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-4xl p-8">
       <div className="mb-6">
         <Link href="/ap-invoices" className="text-sm text-yge-blue-500 hover:underline">
@@ -49,5 +52,6 @@ export default async function ApInvoiceDetailPage({
         <ApInvoiceEditor initial={invoice} jobs={jobs} apiBaseUrl={publicApiBaseUrl()} />
       </div>
     </main>
+    </AppShell>
   );
 }

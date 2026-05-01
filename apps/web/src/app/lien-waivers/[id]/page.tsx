@@ -1,6 +1,8 @@
 // /lien-waivers/[id] — waiver detail / edit page.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../../components/app-shell';
 import { notFound } from 'next/navigation';
 import {
   lienWaiverKindLabel,
@@ -29,6 +31,7 @@ export default async function LienWaiverDetailPage({
   if (!waiver) notFound();
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-3xl p-8">
       <div className="mb-6 flex items-center justify-between">
         <Link href="/lien-waivers" className="text-sm text-yge-blue-500 hover:underline">
@@ -52,5 +55,6 @@ export default async function LienWaiverDetailPage({
         <LienWaiverEditor mode="edit" waiver={waiver} />
       </div>
     </main>
+    </AppShell>
   );
 }
