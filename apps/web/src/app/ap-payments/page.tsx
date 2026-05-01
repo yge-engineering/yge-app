@@ -1,6 +1,8 @@
 // /ap-payments — outgoing payment register (the "check register").
 
 import Link from 'next/link';
+
+import { AppShell } from '../../components/app-shell';
 import {
   apPaymentMethodLabel,
   computeApPaymentRollup,
@@ -52,10 +54,11 @@ export default async function ApPaymentsPage({
   }
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-6xl p-8">
       <div className="mb-6 flex items-center justify-between">
-        <Link href="/" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Home
+        <Link href="/dashboard" className="text-sm text-yge-blue-500 hover:underline">
+          &larr; Dashboard
         </Link>
         <div className="flex items-center gap-2">
           <a
@@ -188,6 +191,7 @@ export default async function ApPaymentsPage({
         </div>
       )}
     </main>
+    </AppShell>
   );
 }
 
