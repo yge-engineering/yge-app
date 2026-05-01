@@ -9,14 +9,14 @@
 
 import type { ArInvoice } from './ar-invoice';
 
-export type AgingBucket = '0-30' | '31-60' | '61-90' | '91+';
+type Bucket = '0-30' | '31-60' | '61-90' | '91+';
 
 export interface JobArAgingDetailRow {
   invoiceId: string;
   invoiceNumber: string;
   invoiceDate: string;
   ageDays: number;
-  bucket: AgingBucket;
+  bucket: Bucket;
   totalCents: number;
   paidCents: number;
   outstandingCents: number;
@@ -51,7 +51,7 @@ function daysBetween(aIso: string, bIso: string): number {
   return Math.round((b - a) / 86_400_000);
 }
 
-function bucketFor(age: number): AgingBucket {
+function bucketFor(age: number): Bucket {
   if (age <= 30) return '0-30';
   if (age <= 60) return '31-60';
   if (age <= 90) return '61-90';
