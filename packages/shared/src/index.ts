@@ -731,3 +731,4 @@ export * from './job-toolbox-detail-snapshot';
 export * from './job-weather-detail-snapshot';
 export * from './job-punch-detail-snapshot';
 export * from './job-mileage-detail-snapshot';
+export * from './job-lien-waiver-detail-snapshot';
