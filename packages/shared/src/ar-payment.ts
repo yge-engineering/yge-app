@@ -145,12 +145,12 @@ export function ca7107RetentionInterest(args: {
   const { completedOn, releasedOn, retentionHeldCents } = args;
   const now = args.now ?? new Date();
 
-  const completed = new Date(completedOn + 'T00:00:00');
+  const completed = new Date(completedOn + 'T00:00:00Z');
   const dueDate = new Date(completed.getTime() + 60 * 24 * 60 * 60 * 1000);
   const dueOn = dueDate.toISOString().slice(0, 10);
 
   const endDate = releasedOn
-    ? new Date(releasedOn + 'T00:00:00')
+    ? new Date(releasedOn + 'T00:00:00Z')
     : now;
 
   const msPerDay = 24 * 60 * 60 * 1000;
