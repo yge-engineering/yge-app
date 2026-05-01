@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 
-import { AppShell } from '../../components/app-shell';
+import { Alert, AppShell } from '../../components';
 import {
   buildCloseChecklist,
   severityLabel,
@@ -108,13 +108,7 @@ export default async function CloseChecklistPage({
         </button>
       </form>
 
-      <div
-        className={`mt-4 rounded border p-3 text-sm ${
-          checklist.readyToClose
-            ? 'border-green-300 bg-green-50 text-green-900'
-            : 'border-red-300 bg-red-50 text-red-900'
-        }`}
-      >
+      <Alert tone={checklist.readyToClose ? 'success' : 'danger'} className="mt-4">
         <strong>
           {checklist.readyToClose
             ? `✓ Ready to close ${checklist.month}`
@@ -125,7 +119,7 @@ export default async function CloseChecklistPage({
             ({checklist.warnCount} advisor{checklist.warnCount === 1 ? 'y' : 'ies'})
           </span>
         )}
-      </div>
+      </Alert>
 
       <article className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <header className="border-b border-gray-300 pb-2 text-center">
