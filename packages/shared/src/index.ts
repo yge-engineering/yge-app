@@ -733,3 +733,4 @@ export * from './job-punch-detail-snapshot';
 export * from './job-mileage-detail-snapshot';
 export * from './job-lien-waiver-detail-snapshot';
 export * from './job-expense-detail-snapshot';
+export * from './job-timecard-detail-snapshot';
