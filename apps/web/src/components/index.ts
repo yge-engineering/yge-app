@@ -26,3 +26,4 @@ export { Toaster, showToast } from './toast';
 export { Modal } from './modal';
 export { ConfirmButton } from './confirm-button';
 export { Tile } from './tile';
+export { Breadcrumbs, type Crumb } from './breadcrumbs';
