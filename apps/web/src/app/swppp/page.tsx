@@ -1,6 +1,8 @@
 // /swppp — SWPPP / BMP inspection log.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../components/app-shell';
 import {
   computeSwpppRollup,
   deficiencyCount,
@@ -32,10 +34,11 @@ export default async function SwpppPage({
   const rollup = computeSwpppRollup(inspections);
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-6xl p-8">
       <div className="mb-6 flex items-center justify-between">
-        <Link href="/" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Home
+        <Link href="/dashboard" className="text-sm text-yge-blue-500 hover:underline">
+          &larr; Dashboard
         </Link>
         <Link
           href="/swppp/new"
@@ -149,6 +152,7 @@ export default async function SwpppPage({
         </div>
       )}
     </main>
+    </AppShell>
   );
 }
 

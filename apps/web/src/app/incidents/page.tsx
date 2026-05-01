@@ -1,6 +1,8 @@
 // /incidents — OSHA 300 incident log.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../components/app-shell';
 import {
   computeForm300A,
   computeIncidentRollup,
@@ -53,10 +55,11 @@ export default async function IncidentsPage({
   years.sort((a, b) => b - a);
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-6xl p-8">
       <div className="mb-6 flex items-center justify-between">
-        <Link href="/" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Home
+        <Link href="/dashboard" className="text-sm text-yge-blue-500 hover:underline">
+          &larr; Dashboard
         </Link>
         <div className="flex gap-2">
           <Link
@@ -173,6 +176,7 @@ export default async function IncidentsPage({
 
       <Form300ASummary summary={summary} />
     </main>
+    </AppShell>
   );
 }
 
