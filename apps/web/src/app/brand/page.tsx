@@ -6,6 +6,8 @@
 // Also doubles as a self-test for the <Letterhead> component.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../components/app-shell';
 import { YGE_COMPANY_INFO } from '@yge/shared';
 import { Letterhead } from '@/components/letterhead';
 
@@ -53,10 +55,11 @@ const COLORS: ColorSwatch[] = [
 export default function BrandPage() {
   const company = YGE_COMPANY_INFO;
   return (
+    <AppShell>
     <main className="mx-auto max-w-5xl space-y-10 p-8">
       <div className="flex items-center justify-between">
-        <Link href="/" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Home
+        <Link href="/dashboard" className="text-sm text-yge-blue-500 hover:underline">
+          &larr; Dashboard
         </Link>
         <div className="text-xs text-gray-500">
           Phase-1 placeholder kit &middot; swap for designer-final assets when
@@ -218,5 +221,6 @@ Vice President: ${company.vicePresident.name} (${company.vicePresident.phone})`}
         </div>
       </section>
     </main>
+    </AppShell>
   );
 }

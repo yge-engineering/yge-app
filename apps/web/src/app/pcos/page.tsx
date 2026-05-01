@@ -1,6 +1,8 @@
 // /pcos — Potential Change Order log.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../components/app-shell';
 import {
   computePcoRollup,
   daysAwaitingResponse,
@@ -60,10 +62,11 @@ export default async function PcoListPage({
   }
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-6xl p-8">
       <div className="mb-6 flex items-center justify-between">
-        <Link href="/" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Home
+        <Link href="/dashboard" className="text-sm text-yge-blue-500 hover:underline">
+          &larr; Dashboard
         </Link>
         <Link
           href="/pcos/new"
@@ -197,6 +200,7 @@ export default async function PcoListPage({
         </div>
       )}
     </main>
+    </AppShell>
   );
 }
 

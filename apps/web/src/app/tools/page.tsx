@@ -6,6 +6,8 @@
 // and a quick-action menu (assign / return / edit).
 
 import Link from 'next/link';
+
+import { AppShell } from '../../components/app-shell';
 import {
   categoryLabel,
   fullName,
@@ -50,10 +52,11 @@ export default async function ToolsPage() {
   const repairCount = tools.filter((t) => t.status === 'OUT_FOR_REPAIR').length;
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-6xl p-8">
       <div className="mb-6 flex items-center justify-between">
-        <Link href="/" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Home
+        <Link href="/dashboard" className="text-sm text-yge-blue-500 hover:underline">
+          &larr; Dashboard
         </Link>
         <div className="flex items-center gap-3 text-sm">
           <Link href="/crew" className="text-yge-blue-500 hover:underline">
@@ -161,6 +164,7 @@ export default async function ToolsPage() {
         </div>
       )}
     </main>
+    </AppShell>
   );
 }
 

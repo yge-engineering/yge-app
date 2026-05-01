@@ -4,6 +4,8 @@
 // top so missing items are the first thing Brook + Ryan see.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../components/app-shell';
 import {
   buildVendorPrequal,
   computeVendorPrequalRollup,
@@ -40,10 +42,11 @@ export default async function SubsPage() {
   const rollup = computeVendorPrequalRollup(subs);
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-6xl p-8">
       <div className="mb-6 flex items-center justify-between">
-        <Link href="/" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Home
+        <Link href="/dashboard" className="text-sm text-yge-blue-500 hover:underline">
+          &larr; Dashboard
         </Link>
         <Link
           href="/vendors/new"
@@ -194,6 +197,7 @@ export default async function SubsPage() {
         </div>
       )}
     </main>
+    </AppShell>
   );
 }
 

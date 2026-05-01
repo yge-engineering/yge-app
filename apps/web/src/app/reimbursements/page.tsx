@@ -2,6 +2,8 @@
 // reimbursement owed.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../components/app-shell';
 import {
   buildAllReimbursementSummaries,
   computeReimbursementGrandTotals,
@@ -33,10 +35,11 @@ export default async function ReimbursementsPage() {
   const totals = computeReimbursementGrandTotals(summaries);
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-5xl p-8">
       <div className="mb-6">
-        <Link href="/" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Home
+        <Link href="/dashboard" className="text-sm text-yge-blue-500 hover:underline">
+          &larr; Dashboard
         </Link>
       </div>
 
@@ -114,6 +117,7 @@ export default async function ReimbursementsPage() {
         </div>
       )}
     </main>
+    </AppShell>
   );
 }
 

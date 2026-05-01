@@ -1,6 +1,8 @@
 // /watchlist — certification + COI expiry rollup.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../components/app-shell';
 import {
   bucketLabel,
   computeWatchlistRollup,
@@ -68,10 +70,11 @@ export default async function WatchlistPage({
   }
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-6xl p-8">
       <div className="mb-6">
-        <Link href="/" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Home
+        <Link href="/dashboard" className="text-sm text-yge-blue-500 hover:underline">
+          &larr; Dashboard
         </Link>
       </div>
 
@@ -164,6 +167,7 @@ export default async function WatchlistPage({
         </div>
       )}
     </main>
+    </AppShell>
   );
 }
 

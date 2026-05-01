@@ -1,6 +1,8 @@
 // /materials — parts/inventory list with reorder + valuation rollup.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../components/app-shell';
 import {
   computeInventoryRollup,
   formatUSD,
@@ -75,10 +77,11 @@ export default async function MaterialsPage({
   }
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-6xl p-8">
       <div className="mb-6 flex items-center justify-between">
-        <Link href="/" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Home
+        <Link href="/dashboard" className="text-sm text-yge-blue-500 hover:underline">
+          &larr; Dashboard
         </Link>
         <Link
           href="/materials/new"
@@ -187,6 +190,7 @@ export default async function MaterialsPage({
         </div>
       )}
     </main>
+    </AppShell>
   );
 }
 

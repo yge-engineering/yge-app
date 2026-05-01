@@ -1,6 +1,8 @@
 // /trial-balance — debit/credit by account from posted journal entries.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../components/app-shell';
 import {
   accountTypeLabel,
   computeAccountBalances,
@@ -40,6 +42,7 @@ export default async function TrialBalancePage() {
   const balanced = totalDebit === totalCredit;
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-5xl p-8">
       <div className="mb-6">
         <Link href="/journal-entries" className="text-sm text-yge-blue-500 hover:underline">
@@ -128,5 +131,6 @@ export default async function TrialBalancePage() {
         </div>
       )}
     </main>
+    </AppShell>
   );
 }

@@ -1,6 +1,8 @@
 // /income-statement — period-bounded P&L from posted journal entries.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../components/app-shell';
 import {
   buildIncomeStatement,
   formatUSD,
@@ -62,10 +64,11 @@ export default async function IncomeStatementPage({
   const npm = netProfitMargin(stmt);
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-5xl p-8">
       <div className="mb-6 flex items-center justify-between">
-        <Link href="/" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Home
+        <Link href="/dashboard" className="text-sm text-yge-blue-500 hover:underline">
+          &larr; Dashboard
         </Link>
         <Link
           href="/journal-entries"
@@ -160,6 +163,7 @@ export default async function IncomeStatementPage({
         />
       </article>
     </main>
+    </AppShell>
   );
 }
 

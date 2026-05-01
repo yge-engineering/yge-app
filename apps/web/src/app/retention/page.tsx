@@ -1,6 +1,8 @@
 // /retention — retention dashboard rolled up from AR invoices + payments.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../components/app-shell';
 import {
   buildJobRetentionStatus,
   computeRetentionRollup,
@@ -64,10 +66,11 @@ export default async function RetentionPage({
   const rollup = computeRetentionRollup(rows);
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-6xl p-8">
       <div className="mb-6">
-        <Link href="/" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Home
+        <Link href="/dashboard" className="text-sm text-yge-blue-500 hover:underline">
+          &larr; Dashboard
         </Link>
       </div>
 
@@ -163,6 +166,7 @@ export default async function RetentionPage({
         to the URL to project §7107 interest for a single job.
       </p>
     </main>
+    </AppShell>
   );
 }
 

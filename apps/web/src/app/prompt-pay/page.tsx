@@ -7,6 +7,8 @@
 // push.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../components/app-shell';
 import {
   buildPromptPayReport,
   formatUSD,
@@ -45,10 +47,11 @@ export default async function PromptPayPage({
   const report = buildPromptPayReport({ asOf, arInvoices, arPayments });
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-7xl p-8">
       <div className="mb-6">
-        <Link href="/" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Home
+        <Link href="/dashboard" className="text-sm text-yge-blue-500 hover:underline">
+          &larr; Dashboard
         </Link>
       </div>
 
@@ -208,6 +211,7 @@ export default async function PromptPayPage({
         that math separately.
       </p>
     </main>
+    </AppShell>
   );
 }
 

@@ -1,6 +1,8 @@
 // /vendor-1099 — year-end 1099-NEC reporting roll-up.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../components/app-shell';
 import {
   buildVendor1099Report,
   formatUSD,
@@ -39,10 +41,11 @@ export default async function Vendor1099Page({
   const report = buildVendor1099Report({ year, vendors, payments });
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-6xl p-8">
       <div className="mb-6">
-        <Link href="/" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Home
+        <Link href="/dashboard" className="text-sm text-yge-blue-500 hover:underline">
+          &larr; Dashboard
         </Link>
       </div>
 
@@ -126,6 +129,7 @@ export default async function Vendor1099Page({
         </div>
       )}
     </main>
+    </AppShell>
   );
 }
 

@@ -1,6 +1,8 @@
 // /payroll-summary — per-employee year-to-date payroll roll-up.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../components/app-shell';
 import {
   buildPayrollSummary,
   computePayrollSummaryRollup,
@@ -86,10 +88,11 @@ export default async function PayrollSummaryPage({
   );
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-7xl p-8">
       <div className="mb-6">
-        <Link href="/" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Home
+        <Link href="/dashboard" className="text-sm text-yge-blue-500 hover:underline">
+          &larr; Dashboard
         </Link>
       </div>
 
@@ -216,6 +219,7 @@ export default async function PayrollSummaryPage({
         SUTA + workers comp blended).
       </p>
     </main>
+    </AppShell>
   );
 }
 
