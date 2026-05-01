@@ -4,6 +4,8 @@
 // small (just metadata), so a single GET /api/jobs round-trip is plenty.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../components/app-shell';
 import {
   contractTypeLabel,
   formatUSD,
@@ -66,10 +68,11 @@ export default async function JobsPage() {
   }
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-6xl p-8">
       <div className="mb-6 flex items-center justify-between">
-        <Link href="/" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Home
+        <Link href="/dashboard" className="text-sm text-yge-blue-500 hover:underline">
+          &larr; Dashboard
         </Link>
         <Link
           href="/jobs/new"
@@ -167,5 +170,6 @@ export default async function JobsPage() {
         </div>
       )}
     </main>
+    </AppShell>
   );
 }
