@@ -1,8 +1,22 @@
 // /coa — chart of accounts list view.
+//
+// Plain English: GL backbone for AP coding, AR posting, and Phase 2
+// trial balance / P&L. Standard 5-digit construction numbering: 1xxxx
+// assets, 2xxxx liabilities, 3xxxx equity, 4xxxx revenue, 5xxxx job
+// cost (COGS), 6xxxx overhead, 7xxxx other.
 
 import Link from 'next/link';
 
-import { AppShell } from '../../components/app-shell';
+import {
+  AppShell,
+  Card,
+  DataTable,
+  EmptyState,
+  LinkButton,
+  PageHeader,
+  StatusPill,
+  Tile,
+} from '../../components';
 import {
   accountTypeLabel,
   computeCoaRollup,
@@ -32,16 +46,24 @@ function publicApiBaseUrl(): string {
 }
 
 async function fetchAccounts(filter: { type?: string }): Promise<Account[]> {
-  const url = new URL(`${apiBaseUrl()}/api/coa`);
-  if (filter.type) url.searchParams.set('type', filter.type);
-  const res = await fetch(url.toString(), { cache: 'no-store' });
-  if (!res.ok) return [];
-  return ((await res.json()) as { accounts: Account[] }).accounts;
+  try {
+    const url = new URL(`${apiBaseUrl()}/api/coa`);
+    if (filter.type) url.searchParams.set('type', filter.type);
+    const res = await fetch(url.toString(), { cache: 'no-store' });
+    if (!res.ok) return [];
+    return ((await res.json()) as { accounts: Account[] }).accounts;
+  } catch {
+    return [];
+  }
 }
 async function fetchAll(): Promise<Account[]> {
-  const res = await fetch(`${apiBaseUrl()}/api/coa`, { cache: 'no-store' });
-  if (!res.ok) return [];
-  return ((await res.json()) as { accounts: Account[] }).accounts;
+  try {
+    const res = await fetch(`${apiBaseUrl()}/api/coa`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    return ((await res.json()) as { accounts: Account[] }).accounts;
+  } catch {
+    return [];
+  }
 }
 
 export default async function CoaPage({
@@ -63,128 +85,96 @@ export default async function CoaPage({
 
   return (
     <AppShell>
-    <main className="mx-auto max-w-6xl p-8">
-      <div className="mb-6 flex items-center justify-between">
-        <Link href="/dashboard" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Dashboard
-        </Link>
-        <div className="flex items-center gap-2">
-          {empty && <CoaSeedButton apiBaseUrl={publicApiBaseUrl()} />}
-          <Link
-            href="/coa/new"
-            className="rounded bg-yge-blue-500 px-3 py-1 text-sm font-medium text-white hover:bg-yge-blue-700"
-          >
-            + Add account
-          </Link>
-        </div>
-      </div>
-
-      <h1 className="text-3xl font-bold text-yge-blue-500">Chart of Accounts</h1>
-      <p className="mt-2 text-gray-700">
-        GL backbone for AP coding, AR posting, and Phase 2 trial balance / P&amp;L.
-        Standard 5-digit construction numbering: 1xxxx assets, 2xxxx liabilities,
-        3xxxx equity, 4xxxx revenue, 5xxxx job cost (COGS), 6xxxx overhead,
-        7xxxx other.
-      </p>
-
-      <section className="mt-6 grid gap-4 sm:grid-cols-4">
-        <Stat label="Total accounts" value={rollup.total} />
-        <Stat label="Active" value={rollup.active} />
-        <Stat label="Inactive" value={rollup.inactive} />
-        <Stat
-          label="Account types"
-          value={rollup.byType.length}
+      <main className="mx-auto max-w-6xl">
+        <PageHeader
+          title="Chart of accounts"
+          subtitle="GL backbone for AP coding, AR posting, and Phase 2 trial balance / P&L. Standard 5-digit construction numbering."
+          actions={
+            <span className="flex gap-2">
+              {empty ? <CoaSeedButton apiBaseUrl={publicApiBaseUrl()} /> : null}
+              <LinkButton href="/coa/new" variant="primary" size="md">
+                + Add account
+              </LinkButton>
+            </span>
+          }
         />
-      </section>
 
-      <section className="mt-6 flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 bg-white p-3 shadow-sm">
-        <span className="text-xs uppercase tracking-wide text-gray-500">Type:</span>
-        <Link
-          href={buildHref({ type: undefined })}
-          className={`rounded px-2 py-1 text-xs ${!searchParams.type ? 'bg-yge-blue-500 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
-        >
-          All
-        </Link>
-        {TYPES.map((t) => (
+        <section className="mb-4 grid gap-3 sm:grid-cols-4">
+          <Tile label="Total accounts" value={rollup.total} />
+          <Tile label="Active" value={rollup.active} />
+          <Tile label="Inactive" value={rollup.inactive} />
+          <Tile label="Account types" value={rollup.byType.length} />
+        </section>
+
+        <section className="mb-4 flex flex-wrap items-center gap-2 rounded-md border border-gray-200 bg-white p-3">
+          <span className="text-xs uppercase tracking-wide text-gray-500">Type:</span>
           <Link
-            key={t}
-            href={buildHref({ type: t })}
-            className={`rounded px-2 py-1 text-xs ${searchParams.type === t ? 'bg-yge-blue-500 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+            href={buildHref({ type: undefined })}
+            className={`rounded px-2 py-1 text-xs ${!searchParams.type ? 'bg-blue-700 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
           >
-            {accountTypeLabel(t)}
+            All
           </Link>
-        ))}
-      </section>
+          {TYPES.map((t) => (
+            <Link
+              key={t}
+              href={buildHref({ type: t })}
+              className={`rounded px-2 py-1 text-xs ${searchParams.type === t ? 'bg-blue-700 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+            >
+              {accountTypeLabel(t)}
+            </Link>
+          ))}
+        </section>
 
-      {empty ? (
-        <div className="mt-6 rounded border border-yellow-300 bg-yellow-50 p-6 text-sm text-yellow-900">
-          <strong>No accounts yet.</strong> Click <em>Apply default seed</em>{' '}
-          above to drop in the starter CA construction COA (~50 accounts) — you
-          can prune it after.
-        </div>
-      ) : accounts.length === 0 ? (
-        <div className="mt-6 rounded border border-gray-200 bg-gray-50 p-6 text-sm text-gray-600">
-          Nothing in this filter.
-        </div>
-      ) : (
-        <div className="mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
-              <tr>
-                <th className="px-4 py-2">#</th>
-                <th className="px-4 py-2">Name</th>
-                <th className="px-4 py-2">Type</th>
-                <th className="px-4 py-2">Parent</th>
-                <th className="px-4 py-2">Status</th>
-                <th className="px-4 py-2"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {accounts.map((a) => (
-                <tr key={a.id} className={a.active ? '' : 'text-gray-400'}>
-                  <td className="px-4 py-3 font-mono text-sm">{a.number}</td>
-                  <td className="px-4 py-3 text-sm">
-                    {a.parentNumber && <span className="text-gray-400">↳ </span>}
+        {empty ? (
+          <Card className="border-amber-300 bg-amber-50">
+            <p className="text-sm text-amber-900">
+              <strong>No accounts yet.</strong> Click <em>Apply default seed</em> above
+              to drop in the starter CA construction COA (~50 accounts) — you can
+              prune it after.
+            </p>
+          </Card>
+        ) : accounts.length === 0 ? (
+          <EmptyState title="Nothing in this filter" body="Try widening the type filter, or add a new account." />
+        ) : (
+          <DataTable
+            rows={accounts}
+            keyFn={(a) => a.id}
+            columns={[
+              {
+                key: 'number',
+                header: '#',
+                cell: (a) => (
+                  <Link href={`/coa/${a.id}`} className={`font-mono text-sm font-medium ${a.active ? 'text-blue-700 hover:underline' : 'text-gray-400'}`}>
+                    {a.number}
+                  </Link>
+                ),
+              },
+              {
+                key: 'name',
+                header: 'Name',
+                cell: (a) => (
+                  <span className={`text-sm ${a.active ? 'text-gray-900' : 'text-gray-400'}`}>
+                    {a.parentNumber ? <span className="text-gray-400">↳ </span> : null}
                     {a.name}
-                  </td>
-                  <td className="px-4 py-3 text-xs">
-                    {accountTypeLabel(a.type)}
-                  </td>
-                  <td className="px-4 py-3 font-mono text-xs text-gray-700">
-                    {a.parentNumber ?? '—'}
-                  </td>
-                  <td className="px-4 py-3 text-xs">
-                    {a.active ? (
-                      <span className="rounded bg-green-100 px-1.5 py-0.5 font-semibold text-green-800">
-                        Active
-                      </span>
-                    ) : (
-                      <span className="rounded bg-gray-100 px-1.5 py-0.5 font-semibold text-gray-700">
-                        Inactive
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-right text-sm">
-                    <Link href={`/coa/${a.id}`} className="text-yge-blue-500 hover:underline">
-                      Open
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </main>
+                  </span>
+                ),
+              },
+              { key: 'type', header: 'Type', cell: (a) => <span className="text-xs text-gray-700">{accountTypeLabel(a.type)}</span> },
+              {
+                key: 'parent',
+                header: 'Parent',
+                cell: (a) => <span className="font-mono text-xs text-gray-700">{a.parentNumber ?? '—'}</span>,
+              },
+              {
+                key: 'status',
+                header: 'Status',
+                cell: (a) =>
+                  a.active ? <StatusPill label="Active" tone="success" /> : <StatusPill label="Inactive" tone="muted" />,
+              },
+            ]}
+          />
+        )}
+      </main>
     </AppShell>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-      <div className="text-xs uppercase tracking-wide text-gray-500">{label}</div>
-      <div className="mt-1 text-xl font-bold text-gray-900">{value}</div>
-    </div>
   );
 }
