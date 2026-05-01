@@ -1,6 +1,8 @@
 // /photos — field photo log (cross-job).
 
 import Link from 'next/link';
+
+import { AppShell } from '../../components/app-shell';
 import {
   computePhotoRollup,
   photoCategoryLabel,
@@ -58,10 +60,11 @@ export default async function PhotosPage({
   }
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-6xl p-8">
       <div className="mb-6 flex items-center justify-between">
-        <Link href="/" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Home
+        <Link href="/dashboard" className="text-sm text-yge-blue-500 hover:underline">
+          &larr; Dashboard
         </Link>
         <Link
           href="/photos/new"
@@ -172,6 +175,7 @@ export default async function PhotosPage({
         </div>
       )}
     </main>
+    </AppShell>
   );
 }
 

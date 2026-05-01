@@ -5,6 +5,8 @@
 // link to /crew/new and /crew/print (the emailable version).
 
 import Link from 'next/link';
+
+import { AppShell } from '../../components/app-shell';
 import {
   buildCrewRoster,
   certKindLabel,
@@ -41,10 +43,11 @@ export default async function CrewPage() {
   const roster = buildCrewRoster({ employees, tools });
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-6xl p-8">
       <div className="mb-6 flex items-center justify-between">
-        <Link href="/" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Home
+        <Link href="/dashboard" className="text-sm text-yge-blue-500 hover:underline">
+          &larr; Dashboard
         </Link>
         <div className="flex items-center gap-3 text-sm">
           <Link href="/tools" className="text-yge-blue-500 hover:underline">
@@ -191,5 +194,6 @@ export default async function CrewPage() {
         ))}
       </div>
     </main>
+    </AppShell>
   );
 }
