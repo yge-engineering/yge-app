@@ -1,10 +1,13 @@
 // /coa/new — add a new account.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../../components/app-shell';
 import { AccountEditor } from '../../../components/account-editor';
 
 export default function NewAccountPage() {
   return (
+    <AppShell>
     <main className="mx-auto max-w-3xl p-8">
       <div className="mb-6">
         <Link href="/coa" className="text-sm text-yge-blue-500 hover:underline">
@@ -20,5 +23,6 @@ export default function NewAccountPage() {
         <AccountEditor mode="create" />
       </div>
     </main>
+    </AppShell>
   );
 }

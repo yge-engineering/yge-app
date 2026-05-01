@@ -5,6 +5,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+
+import { AppShell } from '../../../components/app-shell';
 import { useRouter } from 'next/navigation';
 import {
   contractTypeLabel,
@@ -135,6 +137,7 @@ export default function NewJobPage() {
   }
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-3xl p-8">
       <div className="mb-6 flex items-center justify-between">
         <Link href="/jobs" className="text-sm text-yge-blue-500 hover:underline">
@@ -359,5 +362,6 @@ export default function NewJobPage() {
         </div>
       </form>
     </main>
+    </AppShell>
   );
 }

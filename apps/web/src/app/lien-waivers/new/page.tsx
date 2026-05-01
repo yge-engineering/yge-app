@@ -1,10 +1,13 @@
 // /lien-waivers/new — create a new lien waiver.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../../components/app-shell';
 import { LienWaiverEditor } from '../../../components/lien-waiver-editor';
 
 export default function NewLienWaiverPage() {
   return (
+    <AppShell>
     <main className="mx-auto max-w-3xl p-8">
       <div className="mb-6">
         <Link href="/lien-waivers" className="text-sm text-yge-blue-500 hover:underline">
@@ -20,5 +23,6 @@ export default function NewLienWaiverPage() {
         <LienWaiverEditor mode="create" />
       </div>
     </main>
+    </AppShell>
   );
 }

@@ -1,10 +1,13 @@
 // /weather/new — log a new day's weather.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../../components/app-shell';
 import { WeatherLogEditor } from '../../../components/weather-log-editor';
 
 export default function NewWeatherLogPage() {
   return (
+    <AppShell>
     <main className="mx-auto max-w-3xl p-8">
       <div className="mb-6">
         <Link href="/weather" className="text-sm text-yge-blue-500 hover:underline">
@@ -20,5 +23,6 @@ export default function NewWeatherLogPage() {
         <WeatherLogEditor mode="create" />
       </div>
     </main>
+    </AppShell>
   );
 }

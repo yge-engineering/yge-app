@@ -1,10 +1,13 @@
 // /ap-payments/new — record a new outgoing payment.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../../components/app-shell';
 import { ApPaymentEditor } from '../../../components/ap-payment-editor';
 
 export default function NewApPaymentPage() {
   return (
+    <AppShell>
     <main className="mx-auto max-w-3xl p-8">
       <div className="mb-6">
         <Link href="/ap-payments" className="text-sm text-yge-blue-500 hover:underline">
@@ -19,5 +22,6 @@ export default function NewApPaymentPage() {
         <ApPaymentEditor mode="create" />
       </div>
     </main>
+    </AppShell>
   );
 }

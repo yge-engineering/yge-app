@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+
+import { AppShell } from '../../../components/app-shell';
 import { useRouter } from 'next/navigation';
 import {
   submittalKindLabel,
@@ -71,6 +73,7 @@ export default function NewSubmittalPage() {
   }
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-xl p-8">
       <div className="mb-6">
         <Link href="/submittals" className="text-sm text-yge-blue-500 hover:underline">
@@ -158,6 +161,7 @@ export default function NewSubmittalPage() {
         </div>
       </form>
     </main>
+    </AppShell>
   );
 }
 

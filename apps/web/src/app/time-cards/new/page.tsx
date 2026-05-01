@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+
+import { AppShell } from '../../../components/app-shell';
 import { useRouter } from 'next/navigation';
 import { fullName, mondayOfWeek, type Employee, type TimeCard } from '@yge/shared';
 import { ApiError, postJson } from '@/lib/api';
@@ -49,6 +51,7 @@ export default function NewTimeCardPage() {
   }
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-xl p-8">
       <div className="mb-6">
         <Link href="/time-cards" className="text-sm text-yge-blue-500 hover:underline">
@@ -106,6 +109,7 @@ export default function NewTimeCardPage() {
         </div>
       </form>
     </main>
+    </AppShell>
   );
 }
 

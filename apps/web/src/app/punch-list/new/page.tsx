@@ -1,10 +1,13 @@
 // /punch-list/new — create a new punch item.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../../components/app-shell';
 import { PunchItemEditor } from '../../../components/punch-item-editor';
 
 export default function NewPunchItemPage() {
   return (
+    <AppShell>
     <main className="mx-auto max-w-3xl p-8">
       <div className="mb-6">
         <Link href="/punch-list" className="text-sm text-yge-blue-500 hover:underline">
@@ -19,5 +22,6 @@ export default function NewPunchItemPage() {
         <PunchItemEditor mode="create" />
       </div>
     </main>
+    </AppShell>
   );
 }

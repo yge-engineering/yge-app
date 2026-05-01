@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+
+import { AppShell } from '../../../components/app-shell';
 import { useRouter } from 'next/navigation';
 import { mondayOfWeek, type CertifiedPayroll, type Job } from '@yge/shared';
 import { ApiError, postJson } from '@/lib/api';
@@ -65,6 +67,7 @@ export default function NewCprPage() {
   }
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-xl p-8">
       <div className="mb-6">
         <Link href="/certified-payrolls" className="text-sm text-yge-blue-500 hover:underline">
@@ -131,6 +134,7 @@ export default function NewCprPage() {
         </div>
       </form>
     </main>
+    </AppShell>
   );
 }
 

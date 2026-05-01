@@ -5,6 +5,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+
+import { AppShell } from '../../../components/app-shell';
 import { useRouter } from 'next/navigation';
 import type { BidResult, Job } from '@yge/shared';
 import { ApiError, postJson } from '@/lib/api';
@@ -57,6 +59,7 @@ export default function NewBidResultPage() {
   }
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-xl p-8">
       <div className="mb-6">
         <Link href="/bid-results" className="text-sm text-yge-blue-500 hover:underline">
@@ -117,6 +120,7 @@ export default function NewBidResultPage() {
         </div>
       </form>
     </main>
+    </AppShell>
   );
 }
 

@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+
+import { AppShell } from '../../../components/app-shell';
 import { useRouter } from 'next/navigation';
 import type { ArInvoice, Job } from '@yge/shared';
 import { ApiError, postJson } from '@/lib/api';
@@ -61,6 +63,7 @@ export default function NewArInvoicePage() {
   }
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-xl p-8">
       <div className="mb-6">
         <Link href="/ar-invoices" className="text-sm text-yge-blue-500 hover:underline">
@@ -139,6 +142,7 @@ export default function NewArInvoicePage() {
         </div>
       </form>
     </main>
+    </AppShell>
   );
 }
 

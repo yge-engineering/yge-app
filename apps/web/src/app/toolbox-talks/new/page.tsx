@@ -1,10 +1,13 @@
 // /toolbox-talks/new — log a new tailgate meeting.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../../components/app-shell';
 import { ToolboxTalkEditor } from '../../../components/toolbox-talk-editor';
 
 export default function NewToolboxTalkPage() {
   return (
+    <AppShell>
     <main className="mx-auto max-w-3xl p-8">
       <div className="mb-6">
         <Link href="/toolbox-talks" className="text-sm text-yge-blue-500 hover:underline">
@@ -20,5 +23,6 @@ export default function NewToolboxTalkPage() {
         <ToolboxTalkEditor mode="create" />
       </div>
     </main>
+    </AppShell>
   );
 }

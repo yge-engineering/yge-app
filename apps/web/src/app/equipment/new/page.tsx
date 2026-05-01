@@ -5,6 +5,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+
+import { AppShell } from '../../../components/app-shell';
 import { useRouter } from 'next/navigation';
 import {
   equipmentCategoryLabel,
@@ -155,6 +157,7 @@ export default function NewEquipmentPage() {
   }
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-2xl p-8">
       <div className="mb-6">
         <Link href="/equipment" className="text-sm text-yge-blue-500 hover:underline">
@@ -319,6 +322,7 @@ export default function NewEquipmentPage() {
         </div>
       </form>
     </main>
+    </AppShell>
   );
 }
 

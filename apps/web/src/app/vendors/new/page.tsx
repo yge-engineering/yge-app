@@ -1,10 +1,13 @@
 // /vendors/new — create a new vendor.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../../components/app-shell';
 import { VendorEditor } from '../../../components/vendor-editor';
 
 export default function NewVendorPage() {
   return (
+    <AppShell>
     <main className="mx-auto max-w-3xl p-8">
       <div className="mb-6">
         <Link href="/vendors" className="text-sm text-yge-blue-500 hover:underline">
@@ -19,5 +22,6 @@ export default function NewVendorPage() {
         <VendorEditor mode="create" />
       </div>
     </main>
+    </AppShell>
   );
 }

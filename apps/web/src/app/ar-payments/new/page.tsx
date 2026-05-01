@@ -1,10 +1,13 @@
 // /ar-payments/new — record a new customer payment.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../../components/app-shell';
 import { ArPaymentEditor } from '../../../components/ar-payment-editor';
 
 export default function NewArPaymentPage() {
   return (
+    <AppShell>
     <main className="mx-auto max-w-3xl p-8">
       <div className="mb-6">
         <Link href="/ar-payments" className="text-sm text-yge-blue-500 hover:underline">
@@ -19,5 +22,6 @@ export default function NewArPaymentPage() {
         <ArPaymentEditor mode="create" />
       </div>
     </main>
+    </AppShell>
   );
 }

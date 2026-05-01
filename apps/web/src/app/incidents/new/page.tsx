@@ -1,10 +1,13 @@
 // /incidents/new — log a new OSHA 300 incident.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../../components/app-shell';
 import { IncidentEditor } from '../../../components/incident-editor';
 
 export default function NewIncidentPage() {
   return (
+    <AppShell>
     <main className="mx-auto max-w-3xl p-8">
       <div className="mb-6">
         <Link href="/incidents" className="text-sm text-yge-blue-500 hover:underline">
@@ -20,5 +23,6 @@ export default function NewIncidentPage() {
         <IncidentEditor mode="create" />
       </div>
     </main>
+    </AppShell>
   );
 }

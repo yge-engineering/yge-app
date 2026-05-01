@@ -1,10 +1,13 @@
 // /mileage/new — log a new mileage entry.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../../components/app-shell';
 import { MileageEntryEditor } from '../../../components/mileage-entry-editor';
 
 export default function NewMileagePage() {
   return (
+    <AppShell>
     <main className="mx-auto max-w-3xl p-8">
       <div className="mb-6">
         <Link href="/mileage" className="text-sm text-yge-blue-500 hover:underline">
@@ -20,5 +23,6 @@ export default function NewMileagePage() {
         <MileageEntryEditor mode="create" />
       </div>
     </main>
+    </AppShell>
   );
 }

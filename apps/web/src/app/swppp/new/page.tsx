@@ -1,10 +1,13 @@
 // /swppp/new — log a new SWPPP/BMP inspection.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../../components/app-shell';
 import { SwpppInspectionEditor } from '../../../components/swppp-inspection-editor';
 
 export default function NewSwpppInspectionPage() {
   return (
+    <AppShell>
     <main className="mx-auto max-w-3xl p-8">
       <div className="mb-6">
         <Link href="/swppp" className="text-sm text-yge-blue-500 hover:underline">
@@ -20,5 +23,6 @@ export default function NewSwpppInspectionPage() {
         <SwpppInspectionEditor mode="create" />
       </div>
     </main>
+    </AppShell>
   );
 }

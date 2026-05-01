@@ -5,6 +5,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+
+import { AppShell } from '../../../components/app-shell';
 import { useRouter } from 'next/navigation';
 import {
   documentKindLabel,
@@ -91,6 +93,7 @@ export default function NewDocumentPage() {
   }
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-2xl p-8">
       <div className="mb-6">
         <Link href="/documents" className="text-sm text-yge-blue-500 hover:underline">
@@ -191,6 +194,7 @@ export default function NewDocumentPage() {
         </div>
       </form>
     </main>
+    </AppShell>
   );
 }
 

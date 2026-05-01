@@ -1,10 +1,13 @@
 // /dir-rates/new — add a new DIR prevailing wage determination.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../../components/app-shell';
 import { DirRateEditor } from '../../../components/dir-rate-editor';
 
 export default function NewDirRatePage() {
   return (
+    <AppShell>
     <main className="mx-auto max-w-3xl p-8">
       <div className="mb-6">
         <Link href="/dir-rates" className="text-sm text-yge-blue-500 hover:underline">
@@ -20,5 +23,6 @@ export default function NewDirRatePage() {
         <DirRateEditor mode="create" />
       </div>
     </main>
+    </AppShell>
   );
 }
