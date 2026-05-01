@@ -5,7 +5,7 @@
 
 import Link from 'next/link';
 
-import { AppShell } from '../../../../components/app-shell';
+import { AppShell, Money } from '../../../../components';
 import { notFound } from 'next/navigation';
 import {
   classifySubBids,
@@ -126,8 +126,8 @@ export default async function SubListPage({
                 <td className="px-1 py-2" colSpan={6}>
                   Total listed
                 </td>
-                <td className="px-1 py-2 text-right font-mono">
-                  {formatUSD(totalListedCents)}
+                <td className="px-1 py-2 text-right">
+                  <Money cents={totalListedCents} highlightNegative={false} />
                 </td>
               </tr>
             </tbody>
@@ -204,8 +204,8 @@ function SubRow({ idx, sub }: { idx: number; sub: SubBid }) {
         {sub.dirRegistration ?? 'MISSING'}
       </td>
       <td className="px-1 py-1.5">{sub.portionOfWork}</td>
-      <td className="px-1 py-1.5 text-right font-mono">
-        {formatUSD(sub.bidAmountCents)}
+      <td className="px-1 py-1.5 text-right">
+        <Money cents={sub.bidAmountCents} highlightNegative={false} />
       </td>
     </tr>
   );
