@@ -10,6 +10,7 @@
 import { useFormState, useFormStatus } from 'react-dom';
 
 import { signIn, type SignInState } from './actions';
+import { FormField, FORM_INPUT_CLASS } from '../../components/form-field';
 
 const initialState: SignInState = {};
 
@@ -41,10 +42,7 @@ export default function LoginPage() {
         </div>
 
         <form action={formAction} className="space-y-4">
-          <div>
-            <label htmlFor="email" className="mb-1 block text-xs font-medium text-gray-700">
-              Work email
-            </label>
+          <FormField name="email" label="Work email" required error={state.error}>
             <input
               id="email"
               name="email"
@@ -52,15 +50,9 @@ export default function LoginPage() {
               autoComplete="email"
               required
               placeholder="ryoung@youngge.com"
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm placeholder:text-gray-400 focus:border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-700/20"
+              className={FORM_INPUT_CLASS}
             />
-          </div>
-
-          {state.error ? (
-            <div role="alert" className="rounded-md border border-red-200 bg-red-50 p-2 text-xs text-red-800">
-              {state.error}
-            </div>
-          ) : null}
+          </FormField>
 
           <SubmitButton />
         </form>
