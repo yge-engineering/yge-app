@@ -6,7 +6,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
-import { AppShell } from '../../../components/app-shell';
+import { Alert, AppShell } from '../../../components';
 import { useRouter } from 'next/navigation';
 import type { BidResult, Job } from '@yge/shared';
 import { ApiError, postJson } from '@/lib/api';
@@ -101,9 +101,7 @@ export default function NewBidResultPage() {
         </Field>
 
         {error && (
-          <div className="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700">
-            {error}
-          </div>
+          <Alert tone="danger">{error}</Alert>
         )}
 
         <div className="flex items-center gap-3">
