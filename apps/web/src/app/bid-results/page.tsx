@@ -1,12 +1,24 @@
 // /bid-results — list of every bid result + lifetime rollup stats.
+//
+// Plain English: pursuit-intel database. Every agency-posted bid
+// tabulation we've recorded, plus a running win-rate and competitor
+// breakdown. The "competitors we run into most" list helps us figure
+// out who's pricing what work — and how aggressively.
 
 import Link from 'next/link';
 
-import { AppShell } from '../../components/app-shell';
+import {
+  AppShell,
+  EmptyState,
+  LinkButton,
+  Money,
+  PageHeader,
+  StatusPill,
+  Tile,
+} from '../../components';
 import {
   bidOutcomeLabel,
   computeBidResultRollup,
-  formatUSD,
   winningAmountCents,
   ygeBid,
   ygeDeltaToWinnerCents,
@@ -22,14 +34,27 @@ function apiBaseUrl(): string {
 }
 
 async function fetchResults(): Promise<BidResult[]> {
-  const res = await fetch(`${apiBaseUrl()}/api/bid-results`, { cache: 'no-store' });
-  if (!res.ok) return [];
-  return ((await res.json()) as { results: BidResult[] }).results;
+  try {
+    const res = await fetch(`${apiBaseUrl()}/api/bid-results`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    return ((await res.json()) as { results: BidResult[] }).results;
+  } catch { return []; }
 }
 async function fetchJobs(): Promise<Job[]> {
-  const res = await fetch(`${apiBaseUrl()}/api/jobs`, { cache: 'no-store' });
-  if (!res.ok) return [];
-  return ((await res.json()) as { jobs: Job[] }).jobs;
+  try {
+    const res = await fetch(`${apiBaseUrl()}/api/jobs`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    return ((await res.json()) as { jobs: Job[] }).jobs;
+  } catch { return []; }
+}
+
+function outcomeTone(o: BidResult['outcome']): 'success' | 'danger' | 'warn' | 'muted' {
+  switch (o) {
+    case 'WON_BY_YGE': return 'success';
+    case 'WON_BY_OTHER': return 'danger';
+    case 'NO_AWARD': return 'muted';
+    default: return 'warn';
+  }
 }
 
 export default async function BidResultsPage() {
@@ -39,180 +64,114 @@ export default async function BidResultsPage() {
 
   return (
     <AppShell>
-    <main className="mx-auto max-w-6xl p-8">
-      <div className="mb-6 flex items-center justify-between">
-        <Link href="/dashboard" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Dashboard
-        </Link>
-        <Link
-          href="/bid-results/new"
-          className="rounded bg-yge-blue-500 px-3 py-1 text-sm font-medium text-white hover:bg-yge-blue-700"
-        >
-          + New result
-        </Link>
-      </div>
-
-      <h1 className="text-3xl font-bold text-yge-blue-500">Bid results</h1>
-      <p className="mt-2 text-gray-700">
-        Pursuit-intel database. Every agency-posted bid tabulation we&rsquo;ve
-        recorded, plus a running win-rate and competitor breakdown.
-      </p>
-
-      {/* Rollup stats */}
-      <section className="mt-6 grid gap-4 sm:grid-cols-4">
-        <Stat label="Bids tracked" value={rollup.bidsTracked} />
-        <Stat
-          label="Win rate"
-          value={`${(rollup.winRate * 100).toFixed(1)}%`}
-          subtitle={`${rollup.wins}W / ${rollup.losses}L`}
+      <main className="mx-auto max-w-6xl">
+        <PageHeader
+          title="Bid results"
+          subtitle="Pursuit-intel database. Every agency-posted bid tabulation we've recorded, plus a running win-rate and competitor breakdown."
+          actions={
+            <LinkButton href="/bid-results/new" variant="primary" size="md">
+              + New result
+            </LinkButton>
+          }
         />
-        <Stat
-          label="Apparent low"
-          value={rollup.apparentLowCount}
-          subtitle="Lowest bid on tab"
-        />
-        <Stat
-          label="Avg rank"
-          value={rollup.averageRank > 0 ? rollup.averageRank.toFixed(2) : '—'}
-        />
-      </section>
 
-      {rollup.competitorAppearances.length > 0 && (
-        <section className="mt-8">
-          <h2 className="text-lg font-semibold text-gray-900">
-            Competitors we run into most
-          </h2>
-          <ul className="mt-2 divide-y divide-gray-100 rounded-lg border border-gray-200 bg-white text-sm shadow-sm">
-            {rollup.competitorAppearances.slice(0, 8).map((c) => (
-              <li
-                key={c.bidderName}
-                className="flex items-center justify-between px-4 py-2"
-              >
-                <span className="font-medium text-gray-800">{c.bidderName}</span>
-                <span className="text-xs text-gray-600">
-                  {c.appearances} bid{c.appearances === 1 ? '' : 's'}
-                  {c.wins > 0 && (
-                    <>
-                      {' '}&middot; {c.wins} win{c.wins === 1 ? '' : 's'}
-                    </>
-                  )}
-                </span>
-              </li>
-            ))}
-          </ul>
+        <section className="mb-4 grid gap-3 sm:grid-cols-4">
+          <Tile label="Bids tracked" value={rollup.bidsTracked} />
+          <Tile
+            label="Win rate"
+            value={`${(rollup.winRate * 100).toFixed(1)}%`}
+            sublabel={`${rollup.wins}W / ${rollup.losses}L`}
+            tone={rollup.winRate >= 0.25 ? 'success' : rollup.winRate >= 0.15 ? 'warn' : 'neutral'}
+          />
+          <Tile label="Apparent low" value={rollup.apparentLowCount} sublabel="Lowest bid on tab" />
+          <Tile label="Avg rank" value={rollup.averageRank > 0 ? rollup.averageRank.toFixed(2) : '—'} />
         </section>
-      )}
 
-      <section className="mt-10">
-        <h2 className="text-lg font-semibold text-gray-900">Recent results</h2>
-        {results.length === 0 ? (
-          <p className="mt-2 text-sm text-gray-500">
-            No results recorded yet. Click <em>New result</em> to log one.
-          </p>
-        ) : (
-          <div className="mt-3 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
-                <tr>
-                  <th className="px-4 py-2">Bid date</th>
-                  <th className="px-4 py-2">Job</th>
-                  <th className="px-4 py-2">Outcome</th>
-                  <th className="px-4 py-2">YGE bid</th>
-                  <th className="px-4 py-2">Winning bid</th>
-                  <th className="px-4 py-2">Rank</th>
-                  <th className="px-4 py-2"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {results.map((r) => {
-                  const yge = ygeBid(r);
-                  const win = winningAmountCents(r);
-                  const rank = ygeRank(r);
-                  const delta = ygeDeltaToWinnerCents(r);
-                  const job = jobById.get(r.jobId);
-                  return (
-                    <tr key={r.id} className={r.outcome === 'WON_BY_YGE' ? 'bg-green-50' : ''}>
-                      <td className="px-4 py-3 text-gray-900">{r.bidOpenedAt}</td>
-                      <td className="px-4 py-3 text-gray-700">
-                        {job ? (
-                          <Link
-                            href={`/jobs/${job.id}`}
-                            className="text-yge-blue-500 hover:underline"
-                          >
-                            {job.projectName}
-                          </Link>
-                        ) : (
-                          <span className="text-gray-400">{r.jobId}</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-xs">
-                        <OutcomePill outcome={r.outcome} />
-                      </td>
-                      <td className="px-4 py-3 text-gray-700">
-                        {yge ? formatUSD(yge.amountCents) : <span className="text-gray-400">&mdash;</span>}
-                      </td>
-                      <td className="px-4 py-3 text-gray-700">
-                        {win !== undefined ? formatUSD(win) : <span className="text-gray-400">&mdash;</span>}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-700">
-                        {rank ?? <span className="text-gray-400">&mdash;</span>}
-                        {delta !== undefined && delta > 0 && (
-                          <span className="ml-1 text-xs text-gray-500">
-                            (+{formatUSD(delta)})
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <Link
-                          href={`/bid-results/${r.id}`}
-                          className="text-yge-blue-500 hover:underline"
-                        >
-                          Open
-                        </Link>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-    </main>
+        {rollup.competitorAppearances.length > 0 ? (
+          <section className="mb-8">
+            <h2 className="text-lg font-semibold text-gray-900">Competitors we run into most</h2>
+            <ul className="mt-2 divide-y divide-gray-100 rounded-md border border-gray-200 bg-white text-sm">
+              {rollup.competitorAppearances.slice(0, 8).map((c) => (
+                <li key={c.bidderName} className="flex items-center justify-between px-4 py-2">
+                  <span className="font-medium text-gray-800">{c.bidderName}</span>
+                  <span className="text-xs text-gray-600">
+                    {c.appearances} bid{c.appearances === 1 ? '' : 's'}
+                    {c.wins > 0 ? <> · {c.wins} win{c.wins === 1 ? '' : 's'}</> : null}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+
+        <section>
+          <h2 className="text-lg font-semibold text-gray-900">Recent results</h2>
+          {results.length === 0 ? (
+            <div className="mt-3">
+              <EmptyState
+                title="No results recorded yet"
+                body="Bid tabulation is the public record of who bid what. Logging it here makes the pursuit history searchable when planning the next bid."
+                actions={[{ href: '/bid-results/new', label: 'New result', primary: true }]}
+              />
+            </div>
+          ) : (
+            <div className="mt-3 overflow-x-auto rounded-md border border-gray-200 bg-white">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+                  <tr>
+                    <th className="px-4 py-2">Bid date</th>
+                    <th className="px-4 py-2">Job</th>
+                    <th className="px-4 py-2">Outcome</th>
+                    <th className="px-4 py-2 text-right">YGE bid</th>
+                    <th className="px-4 py-2 text-right">Winning bid</th>
+                    <th className="px-4 py-2">Rank</th>
+                    <th className="px-4 py-2"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {results.map((r) => {
+                    const yge = ygeBid(r);
+                    const win = winningAmountCents(r);
+                    const rank = ygeRank(r);
+                    const delta = ygeDeltaToWinnerCents(r);
+                    const job = jobById.get(r.jobId);
+                    return (
+                      <tr key={r.id} className={r.outcome === 'WON_BY_YGE' ? 'bg-emerald-50' : ''}>
+                        <td className="px-4 py-3 font-mono text-xs text-gray-700">
+                          <Link href={`/bid-results/${r.id}`} className="text-blue-700 hover:underline">{r.bidOpenedAt}</Link>
+                        </td>
+                        <td className="px-4 py-3 text-gray-700">
+                          {job ? (
+                            <Link href={`/jobs/${job.id}`} className="text-blue-700 hover:underline">{job.projectName}</Link>
+                          ) : (
+                            <span className="text-gray-400">{r.jobId}</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3"><StatusPill label={bidOutcomeLabel(r.outcome)} tone={outcomeTone(r.outcome)} /></td>
+                        <td className="px-4 py-3 text-right">
+                          {yge ? <Money cents={yge.amountCents} /> : <span className="font-mono text-gray-400">—</span>}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          {win !== undefined ? <Money cents={win} /> : <span className="font-mono text-gray-400">—</span>}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-700">
+                          {rank ?? <span className="text-gray-400">—</span>}
+                          {delta !== undefined && delta > 0 ? (
+                            <span className="ml-1 text-xs text-gray-500">
+                              (+<Money cents={delta} />)
+                            </span>
+                          ) : null}
+                        </td>
+                        <td className="px-4 py-3"></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      </main>
     </AppShell>
-  );
-}
-
-function Stat({
-  label,
-  value,
-  subtitle,
-}: {
-  label: string;
-  value: string | number;
-  subtitle?: string;
-}) {
-  return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-      <div className="text-xs uppercase tracking-wide text-gray-500">{label}</div>
-      <div className="mt-1 text-2xl font-bold text-yge-blue-500">{value}</div>
-      {subtitle && <div className="text-xs text-gray-600">{subtitle}</div>}
-    </div>
-  );
-}
-
-function OutcomePill({ outcome }: { outcome: BidResult['outcome'] }) {
-  const cls =
-    outcome === 'WON_BY_YGE'
-      ? 'bg-green-100 text-green-800'
-      : outcome === 'WON_BY_OTHER'
-        ? 'bg-red-100 text-red-800'
-        : outcome === 'NO_AWARD'
-          ? 'bg-gray-100 text-gray-700'
-          : 'bg-yellow-100 text-yellow-800';
-  return (
-    <span className={`inline-block rounded px-2 py-0.5 font-semibold uppercase tracking-wide ${cls}`}>
-      {bidOutcomeLabel(outcome)}
-    </span>
   );
 }
