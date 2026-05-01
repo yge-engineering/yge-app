@@ -4,6 +4,8 @@
 // list rows can show foreman names + project names instead of raw ids.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../components/app-shell';
 import {
   fullName,
   reportViolations,
@@ -48,10 +50,11 @@ export default async function DailyReportsPage() {
   const jobById = new Map(jobs.map((j) => [j.id, j]));
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-6xl p-8">
       <div className="mb-6 flex items-center justify-between">
-        <Link href="/" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Home
+        <Link href="/dashboard" className="text-sm text-yge-blue-500 hover:underline">
+          &larr; Dashboard
         </Link>
         <Link
           href="/daily-reports/new"
@@ -149,5 +152,6 @@ export default async function DailyReportsPage() {
         </div>
       )}
     </main>
+    </AppShell>
   );
 }
