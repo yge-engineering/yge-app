@@ -23,3 +23,4 @@ export { RoleBadge } from './role-badge';
 export { StatusPill, jobStatusTone, workflowStatusTone } from './status-pill';
 export { Toggle } from './toggle';
 export { Toaster, showToast } from './toast';
+export { Modal } from './modal';
