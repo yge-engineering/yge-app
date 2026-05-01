@@ -13,6 +13,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+
+import { AppShell } from '../../components/app-shell';
 import { useSearchParams } from 'next/navigation';
 import type { Job, PtoEOutput } from '@yge/shared';
 import { ApiError, getJson, postJson } from '@/lib/api';
@@ -120,6 +122,7 @@ export default function PlansToEstimatePage() {
   }
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-6xl p-8">
       <div className="mb-6">
         <div className="flex items-center justify-between">
@@ -274,5 +277,6 @@ export default function PlansToEstimatePage() {
         </section>
       </div>
     </main>
+    </AppShell>
   );
 }
