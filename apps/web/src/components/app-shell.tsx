@@ -26,6 +26,7 @@ const NAV: NavGroup[] = [
     label: 'Daily',
     links: [
       { label: 'Dashboard', href: '/dashboard' },
+      { label: 'Calendar', href: '/calendar' },
       { label: 'Dispatch', href: '/dispatch' },
       { label: 'Daily reports', href: '/daily-reports' },
       { label: 'Time cards', href: '/time-cards' },
