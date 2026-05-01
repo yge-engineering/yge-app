@@ -5,6 +5,9 @@
 // page Brook + Ryan should look at every morning.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../components/app-shell';
+import { getCurrentUser } from '../../lib/auth';
 import {
   computeArPaymentRollup,
   computeArRollup,
@@ -110,11 +113,19 @@ export default async function DashboardPage() {
     (d) => d.scheduledFor === today && d.status !== 'CANCELLED',
   );
 
+  const user = getCurrentUser();
+  const firstName = user ? user.name.split(' ')[0] : '';
+  const hour = new Date().getHours();
+  const partOfDay = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
+
   return (
+    <AppShell>
     <main className="mx-auto max-w-7xl p-6">
       <header className="mb-6 flex flex-wrap items-baseline justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-yge-blue-500">Good morning</h1>
+          <h1 className="text-3xl font-bold text-yge-blue-500">
+            Good {partOfDay}{firstName ? `, ${firstName}` : ''}
+          </h1>
           <p className="text-sm text-gray-600">
             {new Date().toLocaleDateString(undefined, {
               weekday: 'long',
@@ -266,6 +277,7 @@ export default async function DashboardPage() {
         </section>
       </div>
     </main>
+    </AppShell>
   );
 }
 
