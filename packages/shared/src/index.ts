@@ -721,3 +721,4 @@ export * from './vendor-punch-detail-snapshot';
 export * from './customer-payment-detail-snapshot';
 export * from './vendor-payment-detail-snapshot';
 export * from './equipment-utilization-detail-snapshot';
+export * from './job-photo-detail-snapshot';
