@@ -1,13 +1,20 @@
 // /balance-sheet — point-in-time financial position from posted JEs.
+//
+// Plain English: Assets = Liabilities + Equity + current-period
+// earnings. Built from POSTED journal entries through the as-of date.
+// The in-balance check at the top is the bookkeeper's first sanity
+// step before printing the statement.
 
-import Link from 'next/link';
-
-import { AppShell } from '../../components/app-shell';
+import {
+  AppShell,
+  Card,
+  LinkButton,
+  Money,
+  PageHeader,
+} from '../../components';
 import {
   buildBalanceSheet,
-  formatUSD,
   type Account,
-  type BalanceSheet,
   type BalanceSheetSection,
   type JournalEntry,
 } from '@yge/shared';
@@ -19,14 +26,18 @@ function apiBaseUrl(): string {
 }
 
 async function fetchAccounts(): Promise<Account[]> {
-  const res = await fetch(`${apiBaseUrl()}/api/coa`, { cache: 'no-store' });
-  if (!res.ok) return [];
-  return ((await res.json()) as { accounts: Account[] }).accounts;
+  try {
+    const res = await fetch(`${apiBaseUrl()}/api/coa`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    return ((await res.json()) as { accounts: Account[] }).accounts;
+  } catch { return []; }
 }
 async function fetchEntries(): Promise<JournalEntry[]> {
-  const res = await fetch(`${apiBaseUrl()}/api/journal-entries`, { cache: 'no-store' });
-  if (!res.ok) return [];
-  return ((await res.json()) as { entries: JournalEntry[] }).entries;
+  try {
+    const res = await fetch(`${apiBaseUrl()}/api/journal-entries`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    return ((await res.json()) as { entries: JournalEntry[] }).entries;
+  } catch { return []; }
 }
 
 export default async function BalanceSheetPage({
@@ -43,96 +54,73 @@ export default async function BalanceSheetPage({
   const sheet = buildBalanceSheet({ accounts, entries, asOf });
 
   return (
-    <main className="mx-auto max-w-5xl p-8">
-      <div className="mb-6 flex items-center justify-between">
-        <Link href="/dashboard" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Dashboard
-        </Link>
-        <Link
-          href="/income-statement"
-          className="text-sm text-yge-blue-500 hover:underline"
-        >
-          P&amp;L &rarr;
-        </Link>
-      </div>
+    <AppShell>
+      <main className="mx-auto max-w-5xl">
+        <PageHeader
+          title="Balance sheet"
+          subtitle="Point-in-time financial position. Assets = Liabilities + Equity + current-period earnings. Built from POSTED journal entries through the as-of date."
+          actions={
+            <LinkButton href="/income-statement" variant="secondary" size="md">
+              P&L →
+            </LinkButton>
+          }
+        />
 
-      <h1 className="text-3xl font-bold text-yge-blue-500">Balance Sheet</h1>
-      <p className="mt-2 text-gray-700">
-        Point-in-time financial position. Assets = Liabilities + Equity +
-        current-period earnings. Built from POSTED journal entries through the
-        as-of date.
-      </p>
+        <form action="/balance-sheet" className="mb-4 flex flex-wrap items-end gap-3 rounded-md border border-gray-200 bg-white p-3">
+          <label className="block text-xs">
+            <span className="mb-1 block font-medium text-gray-700">As of</span>
+            <input
+              type="date"
+              name="asOf"
+              defaultValue={asOf}
+              className="rounded border border-gray-300 px-2 py-1 text-sm"
+            />
+          </label>
+          <button type="submit" className="rounded-md bg-blue-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-800">
+            Recalculate
+          </button>
+        </form>
 
-      <form
-        action="/balance-sheet"
-        className="mt-4 flex flex-wrap items-end gap-3 rounded-lg border border-gray-200 bg-white p-3 shadow-sm"
-      >
-        <label className="block text-xs">
-          <span className="mb-1 block font-medium text-gray-700">As of</span>
-          <input
-            type="date"
-            name="asOf"
-            defaultValue={asOf}
-            className="rounded border border-gray-300 px-2 py-1 text-sm"
+        <Card className={sheet.inBalance ? 'mb-4 border-emerald-300 bg-emerald-50' : 'mb-4 border-red-300 bg-red-50'}>
+          <p className={`text-sm ${sheet.inBalance ? 'text-emerald-900' : 'text-red-900'}`}>
+            <strong>{sheet.inBalance ? '✓ Books in balance' : '✗ OUT OF BALANCE'}</strong>{' '}
+            Assets <Money cents={sheet.assets.totalCents} /> = Liabilities + Equity{' '}
+            <Money cents={sheet.totalLiabilitiesAndEquityCents} />
+            {!sheet.inBalance ? <> (Δ <Money cents={sheet.imbalanceCents} />)</> : null}
+          </p>
+        </Card>
+
+        <article className="rounded-md border border-gray-200 bg-white p-6">
+          <header className="border-b border-gray-300 pb-2 text-center">
+            <h2 className="text-lg font-bold uppercase">Young General Engineering, Inc.</h2>
+            <p className="text-sm">Balance Sheet</p>
+            <p className="text-xs text-gray-600">As of {sheet.asOf}</p>
+          </header>
+
+          <SectionTable section={sheet.assets} />
+          <SubtotalRow label="Total Assets" cents={sheet.assets.totalCents} highlight />
+
+          <SectionTable section={sheet.liabilities} />
+          <SubtotalRow label="Total Liabilities" cents={sheet.liabilities.totalCents} />
+
+          <SectionTable section={sheet.equity} />
+          <div className="flex items-center justify-between border-b border-gray-100 px-2 py-1 text-sm italic">
+            <span>Current period earnings</span>
+            <Money cents={sheet.currentPeriodEarningsCents} />
+          </div>
+          <SubtotalRow
+            label="Total Equity"
+            cents={sheet.equity.totalCents + sheet.currentPeriodEarningsCents}
           />
-        </label>
-        <button
-          type="submit"
-          className="rounded bg-yge-blue-500 px-3 py-1 text-sm font-medium text-white hover:bg-yge-blue-700"
-        >
-          Recalculate
-        </button>
-      </form>
 
-      <div
-        className={`mt-4 rounded border p-3 text-sm ${
-          sheet.inBalance
-            ? 'border-green-300 bg-green-50 text-green-900'
-            : 'border-red-300 bg-red-50 text-red-900'
-        }`}
-      >
-        <strong>{sheet.inBalance ? '✓ Books in balance' : '✗ OUT OF BALANCE'}</strong>{' '}
-        Assets {formatUSD(sheet.assets.totalCents)} ={' '}
-        Liabilities + Equity {formatUSD(sheet.totalLiabilitiesAndEquityCents)}
-        {!sheet.inBalance && (
-          <span> (Δ {formatUSD(sheet.imbalanceCents)})</span>
-        )}
-      </div>
-
-      <article className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-        <header className="border-b border-gray-300 pb-2 text-center">
-          <h2 className="text-lg font-bold uppercase">
-            Young General Engineering, Inc.
-          </h2>
-          <p className="text-sm">Balance Sheet</p>
-          <p className="text-xs text-gray-600">As of {sheet.asOf}</p>
-        </header>
-
-        <SectionTable section={sheet.assets} />
-        <SubtotalRow label="Total Assets" cents={sheet.assets.totalCents} highlight />
-
-        <SectionTable section={sheet.liabilities} />
-        <SubtotalRow label="Total Liabilities" cents={sheet.liabilities.totalCents} />
-
-        <SectionTable section={sheet.equity} />
-        <div className="flex items-center justify-between border-b border-gray-100 px-2 py-1 text-sm italic">
-          <span>Current period earnings</span>
-          <span className="font-mono">
-            {formatUSD(sheet.currentPeriodEarningsCents)}
-          </span>
-        </div>
-        <SubtotalRow
-          label="Total Equity"
-          cents={sheet.equity.totalCents + sheet.currentPeriodEarningsCents}
-        />
-
-        <SubtotalRow
-          label="Total Liabilities + Equity"
-          cents={sheet.totalLiabilitiesAndEquityCents}
-          highlight
-        />
-      </article>
-    </main>
+          <SubtotalRow
+            label="Total Liabilities + Equity"
+            cents={sheet.totalLiabilitiesAndEquityCents}
+            highlight
+          />
+        </article>
+      </main>
+    </AppShell>
   );
 }
 
@@ -140,28 +128,22 @@ function SectionTable({ section }: { section: BalanceSheetSection }) {
   if (section.lines.length === 0) {
     return (
       <section className="mt-4">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
-          {section.label}
-        </h3>
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">{section.label}</h3>
         <p className="mt-1 text-xs text-gray-400">No activity.</p>
       </section>
     );
   }
   return (
     <section className="mt-4">
-      <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
-        {section.label}
-      </h3>
+      <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">{section.label}</h3>
       <table className="mt-2 w-full text-sm">
         <tbody>
           {section.lines.map((ln) => (
             <tr key={ln.accountNumber} className="border-b border-gray-100">
-              <td className="w-20 px-2 py-1 font-mono text-xs text-gray-600">
-                {ln.accountNumber}
-              </td>
+              <td className="w-20 px-2 py-1 font-mono text-xs text-gray-600">{ln.accountNumber}</td>
               <td className="px-2 py-1">{ln.accountName}</td>
-              <td className="px-2 py-1 text-right font-mono">
-                {formatUSD(ln.amountCents)}
+              <td className="px-2 py-1 text-right">
+                <Money cents={ln.amountCents} />
               </td>
             </tr>
           ))}
@@ -187,7 +169,7 @@ function SubtotalRow({
       }`}
     >
       <span className="uppercase tracking-wide">{label}</span>
-      <span className="font-mono">{formatUSD(cents)}</span>
+      <Money cents={cents} />
     </div>
   );
 }
