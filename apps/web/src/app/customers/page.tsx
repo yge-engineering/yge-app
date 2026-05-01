@@ -1,8 +1,20 @@
 // /customers — customer master list.
+//
+// Plain English: agencies, owners, and primes that YGE bills. Public
+// agencies (state, federal, county, city, special district) trigger
+// DIR + certified payroll requirements on every job — that's the
+// "Public works" tag on the Kind column.
 
 import Link from 'next/link';
 
-import { AppShell } from '../../components/app-shell';
+import {
+  AppShell,
+  EmptyState,
+  LinkButton,
+  PageHeader,
+  StatusPill,
+  Tile,
+} from '../../components';
 import {
   computeCustomerRollup,
   customerDisplayName,
@@ -33,16 +45,20 @@ function publicApiBaseUrl(): string {
 }
 
 async function fetchCustomers(filter: { kind?: string }): Promise<Customer[]> {
-  const url = new URL(`${apiBaseUrl()}/api/customers`);
-  if (filter.kind) url.searchParams.set('kind', filter.kind);
-  const res = await fetch(url.toString(), { cache: 'no-store' });
-  if (!res.ok) return [];
-  return ((await res.json()) as { customers: Customer[] }).customers;
+  try {
+    const url = new URL(`${apiBaseUrl()}/api/customers`);
+    if (filter.kind) url.searchParams.set('kind', filter.kind);
+    const res = await fetch(url.toString(), { cache: 'no-store' });
+    if (!res.ok) return [];
+    return ((await res.json()) as { customers: Customer[] }).customers;
+  } catch { return []; }
 }
 async function fetchAll(): Promise<Customer[]> {
-  const res = await fetch(`${apiBaseUrl()}/api/customers`, { cache: 'no-store' });
-  if (!res.ok) return [];
-  return ((await res.json()) as { customers: Customer[] }).customers;
+  try {
+    const res = await fetch(`${apiBaseUrl()}/api/customers`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    return ((await res.json()) as { customers: Customer[] }).customers;
+  } catch { return []; }
 }
 
 export default async function CustomersPage({
@@ -61,154 +77,112 @@ export default async function CustomersPage({
     return q ? `/customers?${q}` : '/customers';
   }
 
+  const csvHref = `${publicApiBaseUrl()}/api/customers?format=csv${
+    searchParams.kind ? '&kind=' + encodeURIComponent(searchParams.kind) : ''
+  }`;
+
   return (
     <AppShell>
-    <main className="mx-auto max-w-6xl p-8">
-      <div className="mb-6 flex items-center justify-between">
-        <Link href="/dashboard" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Dashboard
-        </Link>
-        <div className="flex items-center gap-2">
-          <a
-            href={`${publicApiBaseUrl()}/api/customers?format=csv${searchParams.kind ? '&kind=' + encodeURIComponent(searchParams.kind) : ''}`}
-            className="rounded border border-yge-blue-500 px-3 py-1 text-sm font-medium text-yge-blue-500 hover:bg-yge-blue-50"
-          >
-            Download CSV
-          </a>
+      <main className="mx-auto max-w-6xl">
+        <PageHeader
+          title="Customers"
+          subtitle="Agencies, owners, and primes that YGE bills. Public agencies trigger DIR + certified-payroll requirements on every job."
+          actions={
+            <span className="flex gap-2">
+              <a
+                href={csvHref}
+                className="inline-flex items-center rounded-md border border-blue-700 px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-50"
+              >
+                Download CSV
+              </a>
+              <LinkButton href="/customers/new" variant="primary" size="md">
+                + Add customer
+              </LinkButton>
+            </span>
+          }
+        />
+
+        <section className="mb-4 grid gap-3 sm:grid-cols-4">
+          <Tile label="Total" value={rollup.total} />
+          <Tile label="Active" value={rollup.active} />
+          <Tile label="On hold" value={rollup.onHold} tone={rollup.onHold > 0 ? 'warn' : 'success'} />
+          <Tile label="Public agencies" value={rollup.publicAgencies} />
+        </section>
+
+        <section className="mb-4 flex flex-wrap items-center gap-2 rounded-md border border-gray-200 bg-white p-3">
+          <span className="text-xs uppercase tracking-wide text-gray-500">Kind:</span>
           <Link
-            href="/customers/new"
-            className="rounded bg-yge-blue-500 px-3 py-1 text-sm font-medium text-white hover:bg-yge-blue-700"
+            href={buildHref({ kind: undefined })}
+            className={`rounded px-2 py-1 text-xs ${!searchParams.kind ? 'bg-blue-700 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
           >
-            + Add customer
+            All
           </Link>
-        </div>
-      </div>
+          {KINDS.map((k) => (
+            <Link
+              key={k}
+              href={buildHref({ kind: k })}
+              className={`rounded px-2 py-1 text-xs ${searchParams.kind === k ? 'bg-blue-700 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+            >
+              {customerKindLabel(k)}
+            </Link>
+          ))}
+        </section>
 
-      <h1 className="text-3xl font-bold text-yge-blue-500">Customers</h1>
-      <p className="mt-2 text-gray-700">
-        Agencies, owners, and primes that YGE bills. Public agencies (state,
-        federal, county, city, special district) trigger DIR + certified
-        payroll requirements on every job.
-      </p>
-
-      <section className="mt-6 grid gap-4 sm:grid-cols-4">
-        <Stat label="Total" value={rollup.total} />
-        <Stat label="Active" value={rollup.active} />
-        <Stat label="On hold" value={rollup.onHold} variant={rollup.onHold > 0 ? 'warn' : 'ok'} />
-        <Stat label="Public agencies" value={rollup.publicAgencies} />
-      </section>
-
-      <section className="mt-6 flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 bg-white p-3 shadow-sm">
-        <span className="text-xs uppercase tracking-wide text-gray-500">Kind:</span>
-        <Link
-          href={buildHref({ kind: undefined })}
-          className={`rounded px-2 py-1 text-xs ${!searchParams.kind ? 'bg-yge-blue-500 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
-        >
-          All
-        </Link>
-        {KINDS.map((k) => (
-          <Link
-            key={k}
-            href={buildHref({ kind: k })}
-            className={`rounded px-2 py-1 text-xs ${searchParams.kind === k ? 'bg-yge-blue-500 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
-          >
-            {customerKindLabel(k)}
-          </Link>
-        ))}
-      </section>
-
-      {customers.length === 0 ? (
-        <div className="mt-6 rounded border border-gray-200 bg-gray-50 p-6 text-sm text-gray-600">
-          No customers in this filter. Click <em>Add customer</em>.
-        </div>
-      ) : (
-        <div className="mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
-              <tr>
-                <th className="px-4 py-2">Customer</th>
-                <th className="px-4 py-2">Kind</th>
-                <th className="px-4 py-2">Contact</th>
-                <th className="px-4 py-2">Terms</th>
-                <th className="px-4 py-2">Status</th>
-                <th className="px-4 py-2"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {customers.map((c) => (
-                <tr key={c.id} className={c.onHold ? 'bg-red-50' : ''}>
-                  <td className="px-4 py-3 text-sm">
-                    <div className="font-medium text-gray-900">
-                      {customerDisplayName(c)}
-                    </div>
-                    {c.dbaName && (
-                      <div className="text-xs text-gray-500">{c.legalName}</div>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-xs">
-                    {customerKindLabel(c.kind)}
-                    {isPublicAgency(c) && (
-                      <div className="mt-0.5 inline-block rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-800">
-                        Public works
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-xs text-gray-700">
-                    {c.contactName ?? '—'}
-                    {c.phone && <div className="text-[10px] text-gray-500">{c.phone}</div>}
-                    {c.email && <div className="text-[10px] text-gray-500">{c.email}</div>}
-                  </td>
-                  <td className="px-4 py-3 text-xs text-gray-700">
-                    {c.paymentTerms ?? '—'}
-                  </td>
-                  <td className="px-4 py-3 text-xs">
-                    {c.onHold ? (
-                      <span className="rounded bg-red-100 px-1.5 py-0.5 font-semibold text-red-800">
-                        On hold
-                      </span>
-                    ) : (
-                      <span className="rounded bg-green-100 px-1.5 py-0.5 font-semibold text-green-800">
-                        Active
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-right text-sm">
-                    <Link href={`/customers/${c.id}`} className="text-yge-blue-500 hover:underline">
-                      Open
-                    </Link>
-                  </td>
+        {customers.length === 0 ? (
+          <EmptyState
+            title="No customers in this filter"
+            body="Add agencies and primes here as you onboard them. The Public-works flag drives DIR + CPR enforcement on jobs they create."
+            actions={[{ href: '/customers/new', label: 'Add customer', primary: true }]}
+          />
+        ) : (
+          <div className="overflow-x-auto rounded-md border border-gray-200 bg-white">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+                <tr>
+                  <th className="px-4 py-2">Customer</th>
+                  <th className="px-4 py-2">Kind</th>
+                  <th className="px-4 py-2">Contact</th>
+                  <th className="px-4 py-2">Terms</th>
+                  <th className="px-4 py-2">Status</th>
+                  <th className="px-4 py-2"></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </main>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {customers.map((c) => (
+                  <tr key={c.id} className={c.onHold ? 'bg-red-50' : ''}>
+                    <td className="px-4 py-3 text-sm">
+                      <Link href={`/customers/${c.id}`} className="font-medium text-blue-700 hover:underline">
+                        {customerDisplayName(c)}
+                      </Link>
+                      {c.dbaName ? <div className="text-xs text-gray-500">{c.legalName}</div> : null}
+                    </td>
+                    <td className="px-4 py-3 text-xs">
+                      {customerKindLabel(c.kind)}
+                      {isPublicAgency(c) ? (
+                        <div className="mt-0.5 inline-block rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-800">
+                          Public works
+                        </div>
+                      ) : null}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-gray-700">
+                      {c.contactName ?? '—'}
+                      {c.phone ? <div className="text-[10px] text-gray-500">{c.phone}</div> : null}
+                      {c.email ? <div className="text-[10px] text-gray-500">{c.email}</div> : null}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-gray-700">{c.paymentTerms ?? '—'}</td>
+                    <td className="px-4 py-3">
+                      {c.onHold
+                        ? <StatusPill label="On hold" tone="danger" />
+                        : <StatusPill label="Active" tone="success" />}
+                    </td>
+                    <td className="px-4 py-3"></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </main>
     </AppShell>
-  );
-}
-
-function Stat({
-  label,
-  value,
-  variant = 'neutral',
-}: {
-  label: string;
-  value: string | number;
-  variant?: 'neutral' | 'ok' | 'warn' | 'bad';
-}) {
-  const cls =
-    variant === 'ok'
-      ? 'border-green-200 bg-green-50 text-green-800'
-      : variant === 'warn'
-        ? 'border-yellow-200 bg-yellow-50 text-yellow-800'
-        : variant === 'bad'
-          ? 'border-red-200 bg-red-50 text-red-800'
-          : 'border-gray-200 bg-white text-gray-900';
-  return (
-    <div className={`rounded-lg border p-4 shadow-sm ${cls}`}>
-      <div className="text-xs uppercase tracking-wide opacity-70">{label}</div>
-      <div className="mt-1 text-xl font-bold">{value}</div>
-    </div>
   );
 }
