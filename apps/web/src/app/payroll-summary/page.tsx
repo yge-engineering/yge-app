@@ -8,8 +8,8 @@
 import Link from 'next/link';
 
 import {
+  Alert,
   AppShell,
-  Card,
   Money,
   PageHeader,
   Tile,
@@ -144,14 +144,15 @@ export default async function PayrollSummaryPage({
         </form>
 
         {missingRates.length > 0 ? (
-          <Card className="mb-4 border-amber-300 bg-amber-50">
-            <p className="text-sm text-amber-900">
-              <strong>Missing DIR rates for {missingRates.length} classification{missingRates.length === 1 ? '' : 's'}:</strong>{' '}
-              {missingRates.join(', ')}. Add a DIR rate for {county} county at{' '}
-              <Link href="/dir-rates/new" className="text-blue-700 hover:underline">/dir-rates/new</Link>{' '}
-              before relying on these totals for W-2 prep.
-            </p>
-          </Card>
+          <Alert
+            tone="warn"
+            title={`Missing DIR rates for ${missingRates.length} classification${missingRates.length === 1 ? '' : 's'}:`}
+            className="mb-4"
+          >
+            {missingRates.join(', ')}. Add a DIR rate for {county} county at{' '}
+            <Link href="/dir-rates/new" className="text-blue-700 hover:underline">/dir-rates/new</Link>{' '}
+            before relying on these totals for W-2 prep.
+          </Alert>
         ) : null}
 
         <section className="mb-4 grid gap-3 sm:grid-cols-4">

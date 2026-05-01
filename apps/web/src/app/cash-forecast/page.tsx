@@ -6,8 +6,8 @@
 // to run dry before customer payments land.
 
 import {
+  Alert,
   AppShell,
-  Card,
   Money,
   PageHeader,
   Tile,
@@ -122,13 +122,11 @@ export default async function CashForecastPage({
         </section>
 
         {forecast.firstNegativeWeekIndex != null ? (
-          <Card className="mb-4 border-red-300 bg-red-50">
-            <p className="text-sm text-red-900">
-              <strong>First negative week:</strong> Week {forecast.firstNegativeWeekIndex + 1}{' '}
-              (starting {forecast.weeks[forecast.firstNegativeWeekIndex]?.weekStart}). Running
-              balance dips below zero — collect AR or delay AP before this date.
-            </p>
-          </Card>
+          <Alert tone="danger" title="First negative week" className="mb-4">
+            Week {forecast.firstNegativeWeekIndex + 1} (starting{' '}
+            {forecast.weeks[forecast.firstNegativeWeekIndex]?.weekStart}). Running balance dips
+            below zero — collect AR or delay AP before this date.
+          </Alert>
         ) : null}
 
         <div className="overflow-x-auto rounded-md border border-gray-200 bg-white">

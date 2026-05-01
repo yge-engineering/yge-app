@@ -9,8 +9,8 @@
 import Link from 'next/link';
 
 import {
+  Alert,
   AppShell,
-  Card,
   DataTable,
   EmptyState,
   LinkButton,
@@ -84,13 +84,10 @@ export default async function SwpppPage({
         </section>
 
         {rollup.weeklyCadenceLate ? (
-          <Card className="mb-4 border-red-300 bg-red-50">
-            <p className="text-sm text-red-900">
-              <strong>Weekly cadence missed:</strong> {rollup.daysSinceLast} days since
-              last inspection ({rollup.lastInspectedOn}). The CGP requires at least
-              weekly inspections during the rainy season.
-            </p>
-          </Card>
+          <Alert tone="danger" title="Weekly cadence missed" className="mb-4">
+            {rollup.daysSinceLast} days since last inspection ({rollup.lastInspectedOn}). The CGP
+            requires at least weekly inspections during the rainy season.
+          </Alert>
         ) : null}
 
         {inspections.length === 0 ? (

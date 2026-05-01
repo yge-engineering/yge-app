@@ -8,8 +8,8 @@
 import Link from 'next/link';
 
 import {
+  Alert,
   AppShell,
-  Card,
   Money,
   PageHeader,
   StatusPill,
@@ -99,13 +99,14 @@ export default async function Vendor1099Page({
         </section>
 
         {report.missingW9Count > 0 ? (
-          <Card className="mb-4 border-red-300 bg-red-50">
-            <p className="text-sm text-red-900">
-              <strong>{report.missingW9Count} vendor{report.missingW9Count === 1 ? '' : 's'} blocked from 1099 filing</strong>{' '}
-              — over the ${(report.thresholdCents / 100).toFixed(0)} threshold, marked 1099-reportable, but with no
-              current W-9 on file. Collect the W-9 before the bookkeeper files.
-            </p>
-          </Card>
+          <Alert
+            tone="danger"
+            title={`${report.missingW9Count} vendor${report.missingW9Count === 1 ? '' : 's'} blocked from 1099 filing`}
+            className="mb-4"
+          >
+            Over the ${(report.thresholdCents / 100).toFixed(0)} threshold, marked 1099-reportable,
+            but with no current W-9 on file. Collect the W-9 before the bookkeeper files.
+          </Alert>
         ) : null}
 
         {report.rows.length === 0 ? (

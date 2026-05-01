@@ -8,8 +8,8 @@
 import Link from 'next/link';
 
 import {
+  Alert,
   AppShell,
-  Card,
   DataTable,
   Money,
   PageHeader,
@@ -68,11 +68,9 @@ export default async function ReimbursementsPage() {
         </section>
 
         {summaries.length === 0 ? (
-          <Card className="border-emerald-300 bg-emerald-50">
-            <p className="text-sm text-emerald-900">
-              ✓ Nothing owed. Every personal-vehicle mile and every out-of-pocket receipt has been reimbursed.
-            </p>
-          </Card>
+          <Alert tone="success">
+            ✓ Nothing owed. Every personal-vehicle mile and every out-of-pocket receipt has been reimbursed.
+          </Alert>
         ) : (
           <DataTable
             rows={summaries.map((s) => ({ ...s, id: s.employeeId }))}

@@ -8,8 +8,8 @@
 import Link from 'next/link';
 
 import {
+  Alert,
   AppShell,
-  Card,
   DataTable,
   EmptyState,
   LinkButton,
@@ -126,13 +126,10 @@ export default async function CoaPage({
         </section>
 
         {empty ? (
-          <Card className="border-amber-300 bg-amber-50">
-            <p className="text-sm text-amber-900">
-              <strong>No accounts yet.</strong> Click <em>Apply default seed</em> above
-              to drop in the starter CA construction COA (~50 accounts) — you can
-              prune it after.
-            </p>
-          </Card>
+          <Alert tone="warn" title="No accounts yet">
+            Click <em>Apply default seed</em> above to drop in the starter CA construction COA
+            (~50 accounts) — you can prune it after.
+          </Alert>
         ) : accounts.length === 0 ? (
           <EmptyState title="Nothing in this filter" body="Try widening the type filter, or add a new account." />
         ) : (

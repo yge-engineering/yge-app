@@ -8,6 +8,7 @@
 import Link from 'next/link';
 
 import {
+  Alert,
   AppShell,
   Avatar,
   Card,
@@ -118,11 +119,8 @@ export default async function DispatchPage({
         </section>
 
         {todaysDoubleBookings.length > 0 ? (
-          <Card className="mb-4 border-red-300 bg-red-50">
-            <p className="text-sm text-red-900">
-              <strong>Double-booked on {filter.scheduledFor}:</strong>
-            </p>
-            <ul className="mt-1 list-disc pl-5 text-sm text-red-900">
+          <Alert tone="danger" title={`Double-booked on ${filter.scheduledFor}:`} className="mb-4">
+            <ul className="list-disc pl-5">
               {todaysDoubleBookings.map((db, i) => (
                 <li key={i}>
                   {db.kind === 'CREW' ? 'Crew member' : 'Equipment'} <strong>{db.name}</strong> assigned to{' '}
@@ -130,7 +128,7 @@ export default async function DispatchPage({
                 </li>
               ))}
             </ul>
-          </Card>
+          </Alert>
         ) : null}
 
         <section className="mb-4 flex flex-wrap items-center gap-2 rounded-md border border-gray-200 bg-white p-3">
