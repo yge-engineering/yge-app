@@ -24,3 +24,4 @@ export { StatusPill, jobStatusTone, workflowStatusTone } from './status-pill';
 export { Toggle } from './toggle';
 export { Toaster, showToast } from './toast';
 export { Modal } from './modal';
+export { ConfirmButton } from './confirm-button';
