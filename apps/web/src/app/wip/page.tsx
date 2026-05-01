@@ -10,6 +10,7 @@ import {
   AppShell,
   Money,
   PageHeader,
+  ProgressBar,
   StatusPill,
   Tile,
 } from '../../components';
@@ -209,7 +210,19 @@ export default async function WipPage({
                     <td className="px-3 py-2 text-right"><Money cents={r.adjustedContractCents} className="font-semibold" /></td>
                     <td className="px-3 py-2 text-right"><Money cents={r.estimatedCostAtCompletionCents} /></td>
                     <td className="px-3 py-2 text-right"><Money cents={r.costsIncurredCents} /></td>
-                    <td className="px-3 py-2 text-right font-mono">{(r.percentComplete * 100).toFixed(1)}%</td>
+                    <td className="px-3 py-2 text-right">
+                      <span className="inline-flex w-20 flex-col items-stretch align-middle">
+                        <ProgressBar
+                          value={r.percentComplete * 100}
+                          max={100}
+                          tone={r.percentComplete >= 0.95 ? 'success' : r.percentComplete >= 0.5 ? 'info' : 'neutral'}
+                          size="sm"
+                        />
+                        <span className="mt-0.5 font-mono text-[10px] text-gray-700">
+                          {(r.percentComplete * 100).toFixed(1)}%
+                        </span>
+                      </span>
+                    </td>
                     <td className="px-3 py-2 text-right"><Money cents={r.earnedRevenueCents} /></td>
                     <td className="px-3 py-2 text-right"><Money cents={r.billedToDateCents} /></td>
                     <td className="px-3 py-2 text-right"><Money cents={r.collectedToDateCents} /></td>
