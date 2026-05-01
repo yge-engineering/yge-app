@@ -740,3 +740,4 @@ export * from './job-equipment-detail-snapshot';
 export * from './job-bid-detail-snapshot';
 export * from './customer-ar-aging-detail-snapshot';
 export * from './vendor-ap-aging-detail-snapshot';
+export * from './job-ar-aging-detail-snapshot';
