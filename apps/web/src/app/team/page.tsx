@@ -6,9 +6,9 @@
 // account.
 
 import {
+  Alert,
   AppShell,
   Avatar,
-  Card,
   DataTable,
   PageHeader,
   RoleBadge,
@@ -46,13 +46,11 @@ export default function TeamPage() {
         />
 
         {!supabaseLive ? (
-          <Card className="mb-4 border-amber-300 bg-amber-50">
-            <p className="text-sm text-amber-900">
-              <strong>Dev mode.</strong> Adding a new team member today means editing{' '}
-              <code className="rounded bg-amber-100 px-1 font-mono text-xs">apps/web/src/lib/auth.ts</code>{' '}
-              and shipping a commit. When Supabase Auth lands, this becomes a UI flow.
-            </p>
-          </Card>
+          <Alert tone="warn" title="Dev mode" className="mb-4">
+            Adding a new team member today means editing{' '}
+            <code className="rounded bg-amber-100 px-1 font-mono text-xs">apps/web/src/lib/auth.ts</code>{' '}
+            and shipping a commit. When Supabase Auth lands, this becomes a UI flow.
+          </Alert>
         ) : null}
 
         <DataTable
