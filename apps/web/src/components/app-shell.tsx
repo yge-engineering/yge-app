@@ -86,6 +86,7 @@ const NAV: NavGroup[] = [
       { label: 'Customers', href: '/customers' },
       { label: 'Vendors', href: '/vendors' },
       { label: 'Employees', href: '/employees' },
+      { label: 'Team', href: '/team' },
       { label: 'Documents', href: '/documents' },
     ],
   },
