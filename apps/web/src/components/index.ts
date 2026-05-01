@@ -29,3 +29,4 @@ export { Tile } from './tile';
 export { Breadcrumbs, type Crumb } from './breadcrumbs';
 export { DescriptionList } from './description-list';
 export { Spinner } from './spinner';
+export { Avatar } from './avatar';
