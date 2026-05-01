@@ -8,6 +8,7 @@ import Link from 'next/link';
 
 import { AppShell } from '../../components/app-shell';
 import { GettingStartedBanner } from '../../components/getting-started-banner';
+import { RecentActivity } from '../../components/recent-activity';
 import { getCurrentUser } from '../../lib/auth';
 import {
   computeArPaymentRollup,
@@ -294,6 +295,18 @@ export default async function DashboardPage() {
           <KvRow label="Crew headcount" value={dispatchRollup.todayCrewHeadcount} />
           <KvRow label="Equipment out" value={dispatchRollup.todayEquipmentCount} />
         </section>
+
+        {/* RECENT ACTIVITY */}
+        <div className="lg:col-span-2">
+          <RecentActivity
+            jobs={jobs}
+            arInvoices={arInvoices}
+            apInvoices={apInvoices}
+            rfis={rfis}
+            dailyReports={[]}
+            dispatches={dispatches}
+          />
+        </div>
 
         {/* QUICK ACTIONS */}
         <section className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm lg:col-span-2">
