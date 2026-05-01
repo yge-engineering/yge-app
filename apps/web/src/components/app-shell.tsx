@@ -89,6 +89,7 @@ const NAV: NavGroup[] = [
     links: [
       { label: 'All modules', href: '/all-modules' },
       { label: 'Help', href: '/help' },
+      { label: "What's new", href: '/changelog' },
     ],
   },
 ];
