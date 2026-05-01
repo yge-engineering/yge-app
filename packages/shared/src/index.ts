@@ -726,3 +726,4 @@ export * from './job-rfi-detail-snapshot';
 export * from './job-submittal-detail-snapshot';
 export * from './job-pco-detail-snapshot';
 export * from './job-co-detail-snapshot';
+export * from './job-incident-detail-snapshot';
