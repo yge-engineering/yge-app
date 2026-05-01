@@ -4,7 +4,7 @@
 // written in plain English (not git commit messages). When you ship
 // something users should know about, add a row to RELEASE_NOTES below.
 
-import { AppShell } from '../../components/app-shell';
+import { AppShell, Card, PageHeader } from '../../components';
 
 interface ReleaseNote {
   date: string; // yyyy-mm-dd
@@ -84,19 +84,21 @@ export default function ChangelogPage() {
   return (
     <AppShell>
       <main className="mx-auto max-w-3xl">
-        <header className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">What&apos;s new</h1>
-          <p className="mt-1 text-sm text-gray-600">Plain-English notes on recent changes. Newest first.</p>
-        </header>
+        <PageHeader
+          title="What's new"
+          subtitle="Plain-English notes on recent changes. Newest first."
+        />
 
         <ol className="space-y-3">
           {RELEASE_NOTES.map((n, i) => (
-            <li key={i} className="rounded-md border border-gray-200 bg-white p-4">
-              <div className="flex items-baseline justify-between gap-3">
-                <h2 className="text-sm font-semibold text-gray-900">{n.title}</h2>
-                <span className="shrink-0 text-[11px] uppercase tracking-wider text-gray-500">{n.date}</span>
-              </div>
-              <p className="mt-1 text-sm text-gray-700">{n.body}</p>
+            <li key={i}>
+              <Card>
+                <div className="flex items-baseline justify-between gap-3">
+                  <h2 className="text-sm font-semibold text-gray-900">{n.title}</h2>
+                  <span className="shrink-0 text-[11px] uppercase tracking-wider text-gray-500">{n.date}</span>
+                </div>
+                <p className="mt-1 text-sm text-gray-700">{n.body}</p>
+              </Card>
             </li>
           ))}
         </ol>
