@@ -1,6 +1,8 @@
 // /bid-results — list of every bid result + lifetime rollup stats.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../components/app-shell';
 import {
   bidOutcomeLabel,
   computeBidResultRollup,
@@ -36,10 +38,11 @@ export default async function BidResultsPage() {
   const rollup = computeBidResultRollup(results);
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-6xl p-8">
       <div className="mb-6 flex items-center justify-between">
-        <Link href="/" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Home
+        <Link href="/dashboard" className="text-sm text-yge-blue-500 hover:underline">
+          &larr; Dashboard
         </Link>
         <Link
           href="/bid-results/new"
@@ -176,6 +179,7 @@ export default async function BidResultsPage() {
         )}
       </section>
     </main>
+    </AppShell>
   );
 }
 

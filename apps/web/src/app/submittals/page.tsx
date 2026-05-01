@@ -1,6 +1,8 @@
 // /submittals — submittal list with rollup + filters.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../components/app-shell';
 import {
   computeSubmittalRollup,
   submittalDaysOutstanding,
@@ -70,10 +72,11 @@ export default async function SubmittalsPage({
   }
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-6xl p-8">
       <div className="mb-6 flex items-center justify-between">
-        <Link href="/" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Home
+        <Link href="/dashboard" className="text-sm text-yge-blue-500 hover:underline">
+          &larr; Dashboard
         </Link>
         <Link
           href="/submittals/new"
@@ -203,6 +206,7 @@ export default async function SubmittalsPage({
         </div>
       )}
     </main>
+    </AppShell>
   );
 }
 
