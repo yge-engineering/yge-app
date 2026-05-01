@@ -6,9 +6,9 @@
 
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { Money } from '@/components/money';
 import {
   contractTypeLabel,
-  formatUSD,
   nextBidAction,
   statusLabel,
   type Job,
@@ -247,7 +247,7 @@ export default async function JobDetailPage({
               Engineer&rsquo;s estimate
             </dt>
             <dd className="mt-1 text-gray-900">
-              {formatUSD(job.engineersEstimateCents)}
+              <Money cents={job.engineersEstimateCents} />
             </dd>
           </div>
         )}
@@ -341,8 +341,8 @@ export default async function JobDetailPage({
                     {e.projectName}
                   </div>
                   <div className="text-xs text-gray-500">
-                    {e.pricedLineCount} of {e.bidItemCount} priced &middot;{' '}
-                    {formatUSD(e.bidTotalCents)} bid total &middot;{' '}
+                    {e.pricedLineCount} of {e.bidItemCount} priced ·{' '}
+                    <Money cents={e.bidTotalCents} /> bid total ·{' '}
                     {formatWhen(e.updatedAt)}
                   </div>
                 </div>
