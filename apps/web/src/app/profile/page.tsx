@@ -6,7 +6,7 @@
 
 import Link from 'next/link';
 
-import { AppShell, Button, Card, PageHeader, RoleBadge } from '../../components';
+import { AppShell, Button, Card, DescriptionList, PageHeader, RoleBadge } from '../../components';
 import { signOut } from '../login/actions';
 import { getCurrentUser } from '../../lib/auth';
 
@@ -31,12 +31,14 @@ export default function ProfilePage() {
         />
 
         <Card className="mb-6">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Field label="Name" value={user.name} />
-            <Field label="Email" value={user.email} />
-            <Field label="Role" valueNode={<RoleBadge role={user.role} size="md" />} />
-            <Field label="Sign-in method" value="Email allowlist (dev)" />
-          </div>
+          <DescriptionList
+            items={[
+              { label: 'Name', value: user.name },
+              { label: 'Email', value: user.email },
+              { label: 'Role', value: <RoleBadge role={user.role} size="md" /> },
+              { label: 'Sign-in method', value: 'Email allowlist (dev)' },
+            ]}
+          />
           <div className="mt-5 border-t border-gray-100 pt-4">
             <form action={signOut}>
               <Button type="submit" variant="secondary" size="md">
@@ -52,28 +54,21 @@ export default function ProfilePage() {
             This data prints on every transmittal, lien waiver, certified payroll, and bid envelope. To edit it, go to{' '}
             <Link href="/brand" className="text-blue-700 hover:underline">/brand</Link>.
           </p>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Field label="Legal name" value="Young General Engineering, Inc" />
-            <Field label="Address" value="19645 Little Woods Rd, Cottonwood CA 96022" />
-            <Field label="CSLB license" value="1145219" />
-            <Field label="DIR number" value="2000018967" />
-            <Field label="DOT number" value="4528204" />
-            <Field label="NAICS" value="115310" />
-            <Field label="PSC codes" value="F003, F004" />
-            <Field label="President" value="Brook L Young (707-499-7065)" />
-            <Field label="Vice President" value="Ryan D Young (707-599-9921)" />
-          </div>
+          <DescriptionList
+            items={[
+              { label: 'Legal name', value: 'Young General Engineering, Inc' },
+              { label: 'Address', value: '19645 Little Woods Rd, Cottonwood CA 96022', full: true },
+              { label: 'CSLB license', value: '1145219' },
+              { label: 'DIR number', value: '2000018967' },
+              { label: 'DOT number', value: '4528204' },
+              { label: 'NAICS', value: '115310' },
+              { label: 'PSC codes', value: 'F003, F004' },
+              { label: 'President', value: 'Brook L Young (707-499-7065)' },
+              { label: 'Vice President', value: 'Ryan D Young (707-599-9921)' },
+            ]}
+          />
         </Card>
       </main>
     </AppShell>
-  );
-}
-
-function Field({ label, value, valueNode }: { label: string; value?: string; valueNode?: React.ReactNode }) {
-  return (
-    <div>
-      <div className="text-[11px] font-medium uppercase tracking-wider text-gray-500">{label}</div>
-      <div className="mt-0.5 text-sm text-gray-900">{valueNode ?? value}</div>
-    </div>
   );
 }
