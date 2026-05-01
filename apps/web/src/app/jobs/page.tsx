@@ -6,9 +6,9 @@
 import Link from 'next/link';
 
 import { AppShell } from '../../components/app-shell';
+import { Money } from '../../components/money';
 import {
   contractTypeLabel,
-  formatUSD,
   statusLabel,
   type Job,
   type JobStatus,
@@ -193,7 +193,7 @@ export default async function JobsPage({ searchParams }: PageProps) {
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-700">
                     {j.engineersEstimateCents !== undefined ? (
-                      formatUSD(j.engineersEstimateCents)
+                      <Money cents={j.engineersEstimateCents} />
                     ) : (
                       <span className="text-gray-400">—</span>
                     )}
