@@ -98,6 +98,7 @@ const NAV: NavGroup[] = [
       { label: 'Settings', href: '/settings' },
       { label: 'Help', href: '/help' },
       { label: "What's new", href: '/changelog' },
+      { label: 'Feedback', href: '/feedback' },
     ],
   },
 ];
