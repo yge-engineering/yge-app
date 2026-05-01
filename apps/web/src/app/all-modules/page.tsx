@@ -6,7 +6,7 @@
 
 import Link from 'next/link';
 
-import { AppShell } from '../../components/app-shell';
+import { AppShell, Card, PageHeader } from '../../components';
 
 interface ModuleLink {
   href: string;
@@ -137,19 +137,14 @@ export default function AllModulesPage() {
   return (
     <AppShell>
       <main className="mx-auto max-w-6xl">
-        <header className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">All modules</h1>
-          <p className="mt-1 text-sm text-gray-600">
-            Everything in the app on one page. Use the sidebar for the daily stuff; come here when you can&apos;t remember where something lives.
-          </p>
-        </header>
+        <PageHeader
+          title="All modules"
+          subtitle="Everything in the app on one page. Use the sidebar for the daily stuff; come here when you can't remember where something lives."
+        />
 
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-2">
           {GROUPS.map((g) => (
-            <section
-              key={g.title}
-              className="rounded-md border border-gray-200 bg-white p-5"
-            >
+            <Card key={g.title}>
               <h2 className="text-sm font-semibold text-gray-900">{g.title}</h2>
               <p className="mt-0.5 text-xs text-gray-500">{g.blurb}</p>
               <ul className="mt-3 space-y-2">
@@ -165,7 +160,7 @@ export default function AllModulesPage() {
                   </li>
                 ))}
               </ul>
-            </section>
+            </Card>
           ))}
         </div>
       </main>
