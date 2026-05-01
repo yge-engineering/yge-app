@@ -5,9 +5,11 @@
 // page Brook + Ryan should look at every morning.
 
 import Link from 'next/link';
+import type React from 'react';
 
 import { AppShell } from '../../components/app-shell';
 import { GettingStartedBanner } from '../../components/getting-started-banner';
+import { Money } from '../../components/money';
 import { RecentActivity } from '../../components/recent-activity';
 import { getCurrentUser } from '../../lib/auth';
 import {
@@ -19,7 +21,6 @@ import {
   computeSwpppRollup,
   computeWeatherLogRollup,
   detectDoubleBookings,
-  formatUSD,
   type ApInvoice,
   type ArInvoice,
   type ArPayment,
@@ -245,19 +246,19 @@ export default async function DashboardPage() {
         {/* CASH POSITION */}
         <section className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
           <CardHeader title="Cash position" href="/wip" />
-          <KvRow label="AR outstanding" value={formatUSD(arRollup.outstandingCents)} />
+          <KvRow label="AR outstanding" value={<Money cents={arRollup.outstandingCents} />} />
           <KvRow
             label="Collected (lifetime)"
-            value={formatUSD(arPaymentRollup.totalCents)}
+            value={<Money cents={arPaymentRollup.totalCents} />}
           />
           <KvRow
             label="AP unpaid"
-            value={`${apUnpaidCount} · ${formatUSD(apUnpaidCents)}`}
+            value={<>{apUnpaidCount} · <Money cents={apUnpaidCents} /></>}
             warn={apUnpaidCents > 0}
           />
           <KvRow
             label="Retention released"
-            value={formatUSD(arPaymentRollup.retentionReleaseCents)}
+            value={<Money cents={arPaymentRollup.retentionReleaseCents} />}
           />
         </section>
 
@@ -352,7 +353,7 @@ function KvRow({
   warnText,
 }: {
   label: string;
-  value: string | number;
+  value: React.ReactNode;
   link?: string;
   warn?: boolean;
   warnText?: string;
