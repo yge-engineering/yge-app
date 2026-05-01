@@ -37,12 +37,20 @@ function apiBaseUrl(): string {
   );
 }
 
+/** Tracks whether ANY fetch in the page failed at the network level. */
+let apiUnreachable = false;
+
 async function fetchJson<T>(pathname: string, key: string): Promise<T[]> {
-  const res = await fetch(`${apiBaseUrl()}${pathname}`, { cache: 'no-store' });
-  if (!res.ok) return [];
-  const body = (await res.json()) as Record<string, unknown>;
-  const arr = body[key];
-  return Array.isArray(arr) ? (arr as T[]) : [];
+  try {
+    const res = await fetch(`${apiBaseUrl()}${pathname}`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    const body = (await res.json()) as Record<string, unknown>;
+    const arr = body[key];
+    return Array.isArray(arr) ? (arr as T[]) : [];
+  } catch {
+    apiUnreachable = true;
+    return [];
+  }
 }
 
 export default async function DashboardPage() {
@@ -140,6 +148,14 @@ export default async function DashboardPage() {
           All modules &rarr;
         </Link>
       </header>
+
+      {apiUnreachable && (
+        <div className="mb-6 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+          <strong>API not reachable.</strong>{' '}
+          The dashboard tiles below show zeros because the API server isn&apos;t running. Locally, run{' '}
+          <code className="rounded bg-amber-100 px-1 font-mono text-xs">pnpm dev</code> in <code className="rounded bg-amber-100 px-1 font-mono text-xs">apps/api</code>. In production, check that <code className="rounded bg-amber-100 px-1 font-mono text-xs">NEXT_PUBLIC_API_URL</code> points at a running API.
+        </div>
+      )}
 
       {/* QUICK ACTIONS — the 4 things you do most */}
       <div className="mb-6 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
