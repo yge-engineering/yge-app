@@ -1,6 +1,8 @@
 // /cash-forecast — 12-week rolling cash projection.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../components/app-shell';
 import {
   buildCashForecast,
   dollarsToCents,
@@ -45,8 +47,8 @@ export default async function CashForecastPage({
   return (
     <main className="mx-auto max-w-7xl p-8">
       <div className="mb-6">
-        <Link href="/" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Home
+        <Link href="/dashboard" className="text-sm text-yge-blue-500 hover:underline">
+          &larr; Dashboard
         </Link>
       </div>
 
