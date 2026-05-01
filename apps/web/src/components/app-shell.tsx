@@ -7,6 +7,7 @@
 import Link from 'next/link';
 
 import { AccountChip } from './account-chip';
+import { MobileNav } from './mobile-nav';
 
 interface NavLink {
   label: string;
@@ -97,17 +98,18 @@ const NAV: NavGroup[] = [
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-3">
+      <header className="flex items-center gap-3 border-b border-gray-200 bg-white px-4 py-3 sm:px-6">
+        <MobileNav groups={NAV} />
         <Link href="/dashboard" className="flex items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-md bg-blue-700 text-xs font-bold text-white">
             YGE
           </div>
-          <div>
+          <div className="hidden sm:block">
             <div className="text-sm font-semibold text-gray-900">Young General Engineering</div>
             <div className="text-[11px] text-gray-500">Cottonwood, CA · CSLB 1145219 · DIR 2000018967</div>
           </div>
         </Link>
-        <form action="/search" method="get" className="mx-6 max-w-md flex-1">
+        <form action="/search" method="get" className="ml-auto hidden flex-1 max-w-md sm:block sm:mx-6">
           <input
             name="q"
             type="search"
@@ -115,10 +117,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             className="w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm focus:border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-700/20"
           />
         </form>
-        <AccountChip />
+        <div className="ml-auto sm:ml-0">
+          <AccountChip />
+        </div>
       </header>
       <div className="flex flex-1">
-        <aside className="w-56 shrink-0 border-r border-gray-200 bg-white px-3 py-4">
+        <aside className="hidden w-56 shrink-0 border-r border-gray-200 bg-white px-3 py-4 lg:block">
           <nav className="space-y-5">
             {NAV.map((group) => (
               <div key={group.label}>
@@ -141,7 +145,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             ))}
           </nav>
         </aside>
-        <main className="flex-1 px-8 py-6">{children}</main>
+        <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">{children}</main>
       </div>
       <footer className="border-t border-gray-200 bg-white px-6 py-3 text-center text-xs text-gray-400">
         Young General Engineering, Inc · CSLB 1145219 · DIR 2000018967 · DOT 4528204 · Trouble? Call Ryan at 707-599-9921 ·{' '}
