@@ -5,6 +5,8 @@
 // top with a red/yellow flag pill.
 
 import Link from 'next/link';
+
+import { AppShell } from '../../components/app-shell';
 import {
   equipmentCategoryLabel,
   equipmentStatusLabel,
@@ -60,10 +62,11 @@ export default async function EquipmentPage() {
   const assignedCount = equipment.filter((e) => e.status === 'ASSIGNED').length;
 
   return (
+    <AppShell>
     <main className="mx-auto max-w-6xl p-8">
       <div className="mb-6 flex items-center justify-between">
-        <Link href="/" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Home
+        <Link href="/dashboard" className="text-sm text-yge-blue-500 hover:underline">
+          &larr; Dashboard
         </Link>
         <Link
           href="/equipment/new"
@@ -182,6 +185,7 @@ export default async function EquipmentPage() {
         </div>
       )}
     </main>
+    </AppShell>
   );
 }
 
