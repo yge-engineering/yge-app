@@ -14,7 +14,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
-import { AppShell } from '../../components/app-shell';
+import { Alert, AppShell } from '../../components';
 import { useSearchParams } from 'next/navigation';
 import type { Job, PtoEOutput } from '@yge/shared';
 import { ApiError, getJson, postJson } from '@/lib/api';
@@ -233,11 +233,7 @@ export default function PlansToEstimatePage() {
             {loading ? 'Generating draft… (30-90s)' : 'Generate Draft Estimate'}
           </button>
 
-          {error && (
-            <div className="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700">
-              {error}
-            </div>
-          )}
+          {error && <Alert tone="danger">{error}</Alert>}
         </section>
 
         <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
