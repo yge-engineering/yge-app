@@ -106,6 +106,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <div className="text-[11px] text-gray-500">Cottonwood, CA · CSLB 1145219 · DIR 2000018967</div>
           </div>
         </Link>
+        <form action="/search" method="get" className="mx-6 max-w-md flex-1">
+          <input
+            name="q"
+            type="search"
+            placeholder="Search jobs, customers, vendors, employees…"
+            className="w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm focus:border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-700/20"
+          />
+        </form>
         <AccountChip />
       </header>
       <div className="flex flex-1">
