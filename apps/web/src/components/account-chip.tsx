@@ -3,6 +3,8 @@
 // Plain English: the little button in the corner of every page that
 // says who's logged in and gives them a way out.
 
+import Link from 'next/link';
+
 import { signOut } from '../app/login/actions';
 import { getCurrentUser } from '../lib/auth';
 
@@ -21,10 +23,10 @@ export function AccountChip() {
   if (!user) return null;
   return (
     <div className="flex items-center gap-3">
-      <div className="text-right">
+      <Link href="/profile" className="text-right hover:opacity-75">
         <div className="text-sm font-medium text-gray-900">{user.name}</div>
         <div className="text-[11px] uppercase tracking-wide text-gray-500">{roleLabel(user.role)}</div>
-      </div>
+      </Link>
       <form action={signOut}>
         <button
           type="submit"
