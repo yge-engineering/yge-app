@@ -739,3 +739,4 @@ export * from './job-dispatch-detail-snapshot';
 export * from './job-equipment-detail-snapshot';
 export * from './job-bid-detail-snapshot';
 export * from './customer-ar-aging-detail-snapshot';
+export * from './vendor-ap-aging-detail-snapshot';
