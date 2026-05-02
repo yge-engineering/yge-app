@@ -11,17 +11,20 @@ import {
   buildAcceptedApplication,
   computeProposalDiff,
   DirRateProposalStatusSchema,
+  DirRateSchema,
   DirRateSyncSourceSchema,
   type DirRate,
 } from '@yge/shared';
 import {
   acceptProposal,
+  createProposal,
   createSyncRun,
   getProposal,
   getSyncRun,
   listProposals,
   listSyncRuns,
   rejectProposal,
+  updateSyncRunStatus,
 } from '../lib/dir-rate-sync-store';
 import {
   createDirRate,
@@ -68,6 +71,122 @@ dirRateSyncRouter.post('/runs', async (req, res, next) => {
     // off this list. Phase 1 returns the queued row; the scheduled
     // scrape lands in a later commit.
     return res.status(201).json({ run });
+  } catch (err) { next(err); }
+});
+
+// ---- Manual import -----------------------------------------------------
+
+const ProposedRateBodySchema = DirRateSchema.omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+const ManualImportSchema = z.object({
+  /** Optional plain-English summary stored on the run row. */
+  summary: z.string().max(8000).optional(),
+  /** Optional source URL or PDF reference. */
+  sourceReference: z.string().max(800).optional(),
+  /** Operator running the import — recorded on the run row. */
+  initiatedByUserId: z.string().max(120).optional(),
+  /** The proposed rate updates. The route writes one DirRateProposal
+   *  per entry, linked back to the new sync run. */
+  proposals: z
+    .array(
+      z.object({
+        rationale: z.string().max(8000).optional(),
+        proposedRate: ProposedRateBodySchema,
+      }),
+    )
+    .min(1)
+    .max(500),
+});
+
+/**
+ * Operator-driven 'manual' DIR rate import. Creates a sync run with
+ * source=PDF_IMPORT (the closest existing source kind for an
+ * operator-typed batch), then drops one proposal per entry. The
+ * route resolves each proposal's existingRateId by looking up the
+ * live DirRate set for the (classification, county) — null for
+ * brand-new determinations.
+ *
+ * Real automated scraping (Caltrans-quality fetch + parse) layers
+ * on top of this with the same proposal-creation tail; until then,
+ * this is the way YGE updates proposals from a DIR website check
+ * Ryan or Brook do by hand.
+ */
+dirRateSyncRouter.post('/manual-import', async (req, res, next) => {
+  try {
+    const parsed = ManualImportSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Validation failed', issues: parsed.error.issues });
+    }
+
+    const startedAt = new Date().toISOString();
+    let run = await createSyncRun({
+      source: 'PDF_IMPORT',
+      summary: parsed.data.summary,
+      sourceReference: parsed.data.sourceReference,
+      initiatedByUserId: parsed.data.initiatedByUserId,
+      status: 'RUNNING',
+      startedAt,
+    });
+
+    const liveRates = await listDirRates();
+    const liveByKey = new Map<string, DirRate>();
+    for (const r of liveRates) {
+      // Most-recent rate per (classification, county) wins. The
+      // proposal can target the older row explicitly via the diff
+      // engine if needed; this lookup is the default.
+      const key = `${r.classification}::${r.county}`;
+      const existing = liveByKey.get(key);
+      if (!existing || r.effectiveDate > existing.effectiveDate) {
+        liveByKey.set(key, r);
+      }
+    }
+
+    let created = 0;
+    let failed = 0;
+    const errorMessages: string[] = [];
+    const proposalIds: string[] = [];
+    for (const entry of parsed.data.proposals) {
+      try {
+        const key = `${entry.proposedRate.classification}::${entry.proposedRate.county}`;
+        const existing = liveByKey.get(key) ?? null;
+        const created_ = await createProposal({
+          syncRunId: run.id,
+          classification: entry.proposedRate.classification,
+          county: entry.proposedRate.county,
+          existingRateId: existing?.id ?? null,
+          proposedRate: entry.proposedRate,
+          rationale: entry.rationale,
+        });
+        proposalIds.push(created_.id);
+        created += 1;
+      } catch (err) {
+        failed += 1;
+        errorMessages.push(err instanceof Error ? err.message : String(err));
+      }
+    }
+
+    const finishedAt = new Date().toISOString();
+    const status = failed === 0 ? 'SUCCESS' : created === 0 ? 'FAILED' : 'PARTIAL';
+    const updated = await updateSyncRunStatus(run.id, {
+      status,
+      finishedAt,
+      proposalsCreated: created,
+      classificationsScraped: created,
+      classificationsFailed: failed,
+      errorMessages,
+    });
+    if (updated) run = updated;
+
+    return res.status(201).json({
+      run,
+      created,
+      failed,
+      proposalIds,
+    });
   } catch (err) { next(err); }
 });
 

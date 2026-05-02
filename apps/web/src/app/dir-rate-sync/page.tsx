@@ -110,9 +110,13 @@ export default async function DirRateSyncPage() {
 
         {proposals.length === 0 && (
           <Alert tone="info" className="mt-6">
-            No proposals staged yet. The scheduled scrape lands new
-            determinations here when DIR publishes its next semi-annual
-            issue. PDF imports + manual sync can drop in the meantime.
+            No proposals staged yet. POST a manual batch to{' '}
+            <code className="font-mono text-xs">/api/dir-rate-sync/manual-import</code>{' '}
+            with a body of <code className="font-mono text-xs">{'{ proposals: [{ proposedRate: { … } }] }'}</code>{' '}
+            to create a sync run + one proposal per entry. The
+            existingRateId for each is auto-resolved against the live
+            DIR rate set. The scheduled-scrape worker (Caltrans-quality
+            HTTP fetch + parse of the DIR website) lands as a follow-up.
           </Alert>
         )}
 
