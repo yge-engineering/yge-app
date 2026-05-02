@@ -1,3 +1,6 @@
+// Every mutation here records an audit event via recordAudit() —
+// CLAUDE.md mandates 'every mutation is audit-logged'.
+//
 // File-based store for materials + their movement ledger.
 //
 // Movement records always update quantityOnHand atomically with the
@@ -16,6 +19,7 @@ import {
   type StockMovement,
   type StockMovementCreate,
 } from '@yge/shared';
+import { recordAudit, type AuditContext } from './audit-store';
 
 function dataDir(): string {
   return (
@@ -55,7 +59,10 @@ async function writeIndex(entries: Material[]) {
   await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
 }
 
-export async function createMaterial(input: MaterialCreate): Promise<Material> {
+export async function createMaterial(
+  input: MaterialCreate,
+  ctx?: AuditContext,
+): Promise<Material> {
   await ensureDir();
   const now = new Date().toISOString();
   const id = newMaterialId();
@@ -72,6 +79,13 @@ export async function createMaterial(input: MaterialCreate): Promise<Material> {
   const index = await readIndex();
   index.unshift(m);
   await writeIndex(index);
+  await recordAudit({
+    action: 'create',
+    entityType: 'Material',
+    entityId: id,
+    after: m,
+    ctx,
+  });
   return m;
 }
 
@@ -104,6 +118,8 @@ export async function getMaterial(id: string): Promise<Material | null> {
 export async function updateMaterial(
   id: string,
   patch: MaterialPatch,
+  ctx?: AuditContext,
+  auditAction: 'update' = 'update',
 ): Promise<Material | null> {
   const existing = await getMaterial(id);
   if (!existing) return null;
@@ -124,6 +140,14 @@ export async function updateMaterial(
     index.unshift(updated);
   }
   await writeIndex(index);
+  await recordAudit({
+    action: auditAction,
+    entityType: 'Material',
+    entityId: id,
+    before: existing,
+    after: updated,
+    ctx,
+  });
   return updated;
 }
 

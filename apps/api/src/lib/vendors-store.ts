@@ -1,3 +1,6 @@
+// Every mutation here records an audit event via recordAudit() —
+// CLAUDE.md mandates 'every mutation is audit-logged'.
+//
 // File-based store for vendors.
 
 import * as fs from 'node:fs/promises';
@@ -9,6 +12,7 @@ import {
   type VendorCreate,
   type VendorPatch,
 } from '@yge/shared';
+import { recordAudit, type AuditContext } from './audit-store';
 
 function dataDir(): string {
   return process.env.VENDORS_DATA_DIR ?? path.resolve(process.cwd(), 'data', 'vendors');
@@ -45,7 +49,10 @@ async function writeIndex(entries: Vendor[]) {
   await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
 }
 
-export async function createVendor(input: VendorCreate): Promise<Vendor> {
+export async function createVendor(
+  input: VendorCreate,
+  ctx?: AuditContext,
+): Promise<Vendor> {
   await ensureDir();
   const now = new Date().toISOString();
   const id = newVendorId();
@@ -65,6 +72,13 @@ export async function createVendor(input: VendorCreate): Promise<Vendor> {
   const index = await readIndex();
   index.unshift(v);
   await writeIndex(index);
+  await recordAudit({
+    action: 'create',
+    entityType: 'Vendor',
+    entityId: id,
+    after: v,
+    ctx,
+  });
   return v;
 }
 
@@ -89,6 +103,8 @@ export async function getVendor(id: string): Promise<Vendor | null> {
 export async function updateVendor(
   id: string,
   patch: VendorPatch,
+  ctx?: AuditContext,
+  auditAction: 'update' | 'archive' = 'update',
 ): Promise<Vendor | null> {
   const existing = await getVendor(id);
   if (!existing) return null;
@@ -109,5 +125,13 @@ export async function updateVendor(
     index.unshift(updated);
   }
   await writeIndex(index);
+  await recordAudit({
+    action: auditAction,
+    entityType: 'Vendor',
+    entityId: id,
+    before: existing,
+    after: updated,
+    ctx,
+  });
   return updated;
 }

@@ -1,3 +1,6 @@
+// Every mutation here records an audit event via recordAudit() —
+// CLAUDE.md mandates 'every mutation is audit-logged'.
+//
 // File-based store for employees.
 //
 // Phase 1 stand-in for the future Postgres `Employee` table. Surface area
@@ -13,6 +16,7 @@ import {
   type EmployeeCreate,
   type EmployeePatch,
 } from '@yge/shared';
+import { recordAudit, type AuditContext } from './audit-store';
 
 function dataDir(): string {
   return (
@@ -52,7 +56,10 @@ async function writeIndex(entries: Employee[]) {
   await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
 }
 
-export async function createEmployee(input: EmployeeCreate): Promise<Employee> {
+export async function createEmployee(
+  input: EmployeeCreate,
+  ctx?: AuditContext,
+): Promise<Employee> {
   await ensureDir();
   const now = new Date().toISOString();
   const id = newEmployeeId();
@@ -70,6 +77,13 @@ export async function createEmployee(input: EmployeeCreate): Promise<Employee> {
   const index = await readIndex();
   index.unshift(e);
   await writeIndex(index);
+  await recordAudit({
+    action: 'create',
+    entityType: 'Employee',
+    entityId: id,
+    after: e,
+    ctx,
+  });
   return e;
 }
 
@@ -91,6 +105,8 @@ export async function getEmployee(id: string): Promise<Employee | null> {
 export async function updateEmployee(
   id: string,
   patch: EmployeePatch,
+  ctx?: AuditContext,
+  auditAction: 'update' | 'archive' = 'update',
 ): Promise<Employee | null> {
   const existing = await getEmployee(id);
   if (!existing) return null;
@@ -111,5 +127,13 @@ export async function updateEmployee(
     index.unshift(updated);
   }
   await writeIndex(index);
+  await recordAudit({
+    action: auditAction,
+    entityType: 'Employee',
+    entityId: id,
+    before: existing,
+    after: updated,
+    ctx,
+  });
   return updated;
 }

@@ -1,3 +1,6 @@
+// Every mutation here records an audit event via recordAudit() —
+// CLAUDE.md mandates 'every mutation is audit-logged'.
+//
 // File-based store for equipment + vehicles.
 //
 // Phase 1 stand-in for the future Postgres `Equipment` table. The
@@ -16,6 +19,7 @@ import {
   type EquipmentPatch,
   type MaintenanceLogEntry,
 } from '@yge/shared';
+import { recordAudit, type AuditContext } from './audit-store';
 
 function dataDir(): string {
   return (
@@ -55,7 +59,10 @@ async function writeIndex(entries: Equipment[]) {
   await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
 }
 
-export async function createEquipment(input: EquipmentCreate): Promise<Equipment> {
+export async function createEquipment(
+  input: EquipmentCreate,
+  ctx?: AuditContext,
+): Promise<Equipment> {
   await ensureDir();
   const now = new Date().toISOString();
   const id = newEquipmentId();
@@ -73,6 +80,13 @@ export async function createEquipment(input: EquipmentCreate): Promise<Equipment
   const index = await readIndex();
   index.unshift(e);
   await writeIndex(index);
+  await recordAudit({
+    action: 'create',
+    entityType: 'Equipment',
+    entityId: id,
+    after: e,
+    ctx,
+  });
   return e;
 }
 
@@ -94,6 +108,8 @@ export async function getEquipment(id: string): Promise<Equipment | null> {
 export async function updateEquipment(
   id: string,
   patch: EquipmentPatch,
+  ctx?: AuditContext,
+  auditAction: 'update' | 'archive' = 'update',
 ): Promise<Equipment | null> {
   const existing = await getEquipment(id);
   if (!existing) return null;
@@ -114,6 +130,14 @@ export async function updateEquipment(
     index.unshift(updated);
   }
   await writeIndex(index);
+  await recordAudit({
+    action: auditAction,
+    entityType: 'Equipment',
+    entityId: id,
+    before: existing,
+    after: updated,
+    ctx,
+  });
   return updated;
 }
 

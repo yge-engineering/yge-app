@@ -1,3 +1,6 @@
+// Every mutation here records an audit event via recordAudit() —
+// CLAUDE.md mandates 'every mutation is audit-logged'.
+//
 // File-based store for power tools.
 //
 // Phase 1 stand-in for the future Postgres `Tool` table. The dispatch
@@ -13,6 +16,7 @@ import {
   type ToolCreate,
   type ToolPatch,
 } from '@yge/shared';
+import { recordAudit, type AuditContext } from './audit-store';
 
 function dataDir(): string {
   return (
@@ -51,7 +55,10 @@ async function writeIndex(entries: Tool[]) {
   await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
 }
 
-export async function createTool(input: ToolCreate): Promise<Tool> {
+export async function createTool(
+  input: ToolCreate,
+  ctx?: AuditContext,
+): Promise<Tool> {
   await ensureDir();
   const now = new Date().toISOString();
   const id = newToolId();
@@ -67,6 +74,13 @@ export async function createTool(input: ToolCreate): Promise<Tool> {
   const index = await readIndex();
   index.unshift(t);
   await writeIndex(index);
+  await recordAudit({
+    action: 'create',
+    entityType: 'Tool',
+    entityId: id,
+    after: t,
+    ctx,
+  });
   return t;
 }
 
@@ -88,6 +102,8 @@ export async function getTool(id: string): Promise<Tool | null> {
 export async function updateTool(
   id: string,
   patch: ToolPatch,
+  ctx?: AuditContext,
+  auditAction: 'update' | 'assign' | 'unassign' = 'update',
 ): Promise<Tool | null> {
   const existing = await getTool(id);
   if (!existing) return null;
@@ -108,6 +124,14 @@ export async function updateTool(
     index.unshift(updated);
   }
   await writeIndex(index);
+  await recordAudit({
+    action: auditAction,
+    entityType: 'Tool',
+    entityId: id,
+    before: existing,
+    after: updated,
+    ctx,
+  });
   return updated;
 }
 
