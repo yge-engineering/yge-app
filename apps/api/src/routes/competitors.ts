@@ -7,7 +7,10 @@
 
 import { Router } from 'express';
 import { z } from 'zod';
-import { buildCompetitorProfilesFromTabs } from '@yge/shared';
+import {
+  BidTabSourceSchema,
+  buildCompetitorProfilesFromTabs,
+} from '@yge/shared';
 import { listBidTabs } from '../lib/bid-tabs-store';
 import { maybeCsv } from '../lib/csv-response';
 
@@ -18,6 +21,8 @@ const ListQuerySchema = z.object({
   days: z.coerce.number().int().positive().max(36500).optional(),
   /** Minimum appearances to surface. Default 1. */
   minAppearances: z.coerce.number().int().nonnegative().max(100).optional(),
+  /** Restrict to a single bid-tab source. Omit for all sources. */
+  source: BidTabSourceSchema.optional(),
 });
 
 competitorsRouter.get('/', async (req, res, next) => {
@@ -30,10 +35,13 @@ competitorsRouter.get('/', async (req, res, next) => {
     let tabs = allTabs;
     if (parsed.data.days) {
       const cutoff = Date.now() - parsed.data.days * 24 * 60 * 60 * 1000;
-      tabs = allTabs.filter((t) => {
+      tabs = tabs.filter((t) => {
         const ts = Date.parse(`${t.bidOpenedAt.slice(0, 10)}T00:00:00Z`);
         return Number.isFinite(ts) && ts >= cutoff;
       });
+    }
+    if (parsed.data.source) {
+      tabs = tabs.filter((t) => t.source === parsed.data.source);
     }
     const result = buildCompetitorProfilesFromTabs(tabs, parsed.data.minAppearances ?? 1);
     if (

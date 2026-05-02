@@ -68,16 +68,36 @@ function applyWindow(tabs: BidTab[], days: number | null): BidTab[] {
 }
 
 interface PageProps {
-  searchParams?: { window?: string };
+  searchParams?: { window?: string; source?: string };
 }
 
 export default async function CompetitorsPage({ searchParams }: PageProps) {
   const allTabs = await fetchTabs();
   const window = parseWindow(searchParams?.window);
   const windowDef = WINDOWS.find((w) => w.key === window) ?? WINDOWS[0]!;
-  const tabs = applyWindow(allTabs, windowDef.days);
+  const sourceFilter = searchParams?.source?.trim() || undefined;
+
+  // Source counts computed against the WINDOWED set so the chip
+  // numbers match the rollup the operator's about to read.
+  const windowed = applyWindow(allTabs, windowDef.days);
+  const sourceCounts = new Map<string, number>();
+  for (const t of windowed) sourceCounts.set(t.source, (sourceCounts.get(t.source) ?? 0) + 1);
+
+  const tabs = sourceFilter
+    ? windowed.filter((t) => t.source === sourceFilter)
+    : windowed;
   const { rollup, rows } = buildCompetitorProfilesFromTabs(tabs);
   const t = getTranslator();
+
+  function chipHref(over: { window?: WindowKey; source?: string }): string {
+    const params = new URLSearchParams();
+    const nextWindow = over.window !== undefined ? over.window : window;
+    const nextSource = over.source !== undefined ? over.source : sourceFilter;
+    if (nextWindow && nextWindow !== 'all') params.set('window', nextWindow);
+    if (nextSource) params.set('source', nextSource);
+    const q = params.toString();
+    return q ? `/competitors?${q}` : '/competitors';
+  }
 
   return (
     <AppShell>
@@ -100,7 +120,7 @@ export default async function CompetitorsPage({ searchParams }: PageProps) {
             <a
               href={`${publicApiBaseUrl()}/api/competitors?format=csv${
                 windowDef.days ? `&days=${windowDef.days}` : ''
-              }`}
+              }${sourceFilter ? `&source=${encodeURIComponent(sourceFilter)}` : ''}`}
               className="ml-4 mb-2 inline-flex shrink-0 items-center rounded-md border border-yge-blue-500 px-3 py-1.5 text-sm font-medium text-yge-blue-500 hover:bg-yge-blue-50"
             >
               Download CSV
@@ -108,29 +128,63 @@ export default async function CompetitorsPage({ searchParams }: PageProps) {
           )}
         </div>
 
-        <section className="mt-4 flex flex-wrap items-center gap-2 rounded-md border border-gray-200 bg-white p-3">
-          <span className="text-xs uppercase tracking-wide text-gray-500">{t('competitors.window.label')}</span>
-          {WINDOWS.map((w) => {
-            const active = w.key === window;
-            const href = w.key === 'all' ? '/competitors' : `/competitors?window=${w.key}`;
-            return (
+        <section className="mt-4 space-y-2 rounded-md border border-gray-200 bg-white p-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs uppercase tracking-wide text-gray-500">{t('competitors.window.label')}</span>
+            {WINDOWS.map((w) => {
+              const active = w.key === window;
+              return (
+                <Link
+                  key={w.key}
+                  href={chipHref({ window: w.key })}
+                  className={`rounded-full px-3 py-1 text-xs font-medium ${
+                    active
+                      ? 'bg-yge-blue-500 text-white'
+                      : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  {t(w.labelKey)}
+                </Link>
+              );
+            })}
+            {window !== 'all' && (
+              <span className="text-[11px] text-gray-500">
+                {t('competitors.window.tabsInWindow', { tabs: tabs.length, total: allTabs.length })}
+              </span>
+            )}
+          </div>
+          {sourceCounts.size > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs uppercase tracking-wide text-gray-500">{t('bidtabs.filter.source')}</span>
               <Link
-                key={w.key}
-                href={href}
+                href={chipHref({ source: '' })}
                 className={`rounded-full px-3 py-1 text-xs font-medium ${
-                  active
+                  !sourceFilter
                     ? 'bg-yge-blue-500 text-white'
                     : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-100'
                 }`}
               >
-                {t(w.labelKey)}
+                {t('bidtabs.filter.all')} ({windowed.length})
               </Link>
-            );
-          })}
-          {window !== 'all' && (
-            <span className="text-[11px] text-gray-500">
-              {t('competitors.window.tabsInWindow', { tabs: tabs.length, total: allTabs.length })}
-            </span>
+              {[...sourceCounts.entries()]
+                .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+                .map(([source, count]) => {
+                  const active = sourceFilter === source;
+                  return (
+                    <Link
+                      key={source}
+                      href={chipHref({ source })}
+                      className={`rounded-full px-3 py-1 text-xs font-medium ${
+                        active
+                          ? 'bg-yge-blue-500 text-white'
+                          : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      {source} ({count})
+                    </Link>
+                  );
+                })}
+            </div>
           )}
         </section>
 
