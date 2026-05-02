@@ -12,9 +12,11 @@
 
 import {
   RETENTION_RULES,
+  documentRetentionMatch,
   isEntityFrozen,
   isPurgeEligible,
   type AuditEntityType,
+  type Document,
   type LegalHold,
   type RecordRetentionRule,
 } from '@yge/shared';
@@ -24,6 +26,7 @@ import { listApPayments } from './ap-payments-store';
 import { listArInvoices } from './ar-invoices-store';
 import { listArPayments } from './ar-payments-store';
 import { listBankRecs } from './bank-recs-store';
+import { listDocuments } from './documents-store';
 import { listIncidents } from './incidents-store';
 import { listSwpppInspections } from './swppp-inspections-store';
 import { listTimeCards } from './time-cards-store';
@@ -190,9 +193,76 @@ export async function collectRetentionCandidates(rule: RecordRetentionRule): Pro
         triggerDateIso: r.throughDate,
       }));
     }
+    case 'CompanyDocument': {
+      // Two CompanyDocument rules in the table:
+      //   - I-9 (FEDERAL_I9, 3-yr post-EMPLOYEE_SEPARATION)
+      //   - Insurance certs (CA_DOI, 7-yr post-POLICY_EXPIRATION)
+      // The collector returns candidates only for the rule passed
+      // in (rules iterate one at a time in buildRetentionPurgeReport).
+      return collectCompanyDocumentCandidates(rule);
+    }
     default:
       return [];
   }
+}
+
+async function collectCompanyDocumentCandidates(
+  rule: RecordRetentionRule,
+): Promise<RetentionCandidate[]> {
+  const docs = await listDocuments();
+  const out: RetentionCandidate[] = [];
+
+  if (rule.authority === 'FEDERAL_I9') {
+    // I-9 rule: only docs flagged i9, attached to a TERMINATED employee.
+    // Trigger = employee.updatedAt (Phase-1 separation stand-in until
+    // Employee.terminationDate field lands).
+    const employees = await listEmployees();
+    const empById = new Map(employees.map((e) => [e.id, e]));
+    for (const doc of docs) {
+      const match = documentRetentionMatch(doc);
+      if (match?.ruleKey !== 'I9') continue;
+      const empId = doc.linkedEmployeeId;
+      if (!empId) continue;
+      const emp = empById.get(empId);
+      if (!emp || emp.status !== 'TERMINATED') continue;
+      out.push({
+        entityType: 'Document',
+        entityId: doc.id,
+        label: `I-9 · ${emp.firstName} ${emp.lastName} · ${doc.title}`.slice(0, 200),
+        triggerDateIso: emp.updatedAt,
+        contextNote: 'TERMINATED · separation stand-in',
+      });
+    }
+    return out;
+  }
+
+  if (rule.authority === 'CA_DOI') {
+    // Insurance / cert rule: kind in INSURANCE_LIKE_KINDS or tagged
+    // accordingly, with policyExpirationDate set. Skips docs without
+    // an expiration date (the trigger is undefined for them).
+    for (const doc of docs) {
+      const match = documentRetentionMatch(doc);
+      if (match?.ruleKey !== 'INSURANCE') continue;
+      const trigger = doc.policyExpirationDate;
+      if (!trigger) continue;
+      out.push({
+        entityType: 'Document',
+        entityId: doc.id,
+        label: `${doc.title} · ${doc.kind}`.slice(0, 200),
+        triggerDateIso: trigger,
+        contextNote: extractDocContextNote(doc),
+      });
+    }
+    return out;
+  }
+
+  return out;
+}
+
+function extractDocContextNote(doc: Document): string | undefined {
+  if (doc.tags.includes('acord-25')) return 'acord-25';
+  if (doc.tags.length > 0) return doc.tags.slice(0, 3).join(', ');
+  return undefined;
 }
 
 // ---- Report shapes ------------------------------------------------------
@@ -239,7 +309,6 @@ export async function buildRetentionPurgeReport(
   let frozenCount = 0;
 
   for (const rule of RETENTION_RULES) {
-    if (rule.entityType === 'CompanyDocument') continue; // tagged-docs path lands later
     rulesEvaluated += 1;
     const candidates = await collectRetentionCandidates(rule);
     const rows: RetentionPurgeRow[] = [];
@@ -262,8 +331,14 @@ export async function buildRetentionPurgeReport(
       else eligibleCount += 1;
     }
     if (rows.length > 0) {
+      // CompanyDocument rules are stored under that synthetic key in
+      // the rule table; the actual audit entityType for the rows is
+      // 'Document'. Pin the bucket to the audit entity, not the
+      // rule key.
+      const bucketEntityType: AuditEntityType =
+        rule.entityType === 'CompanyDocument' ? 'Document' : (rule.entityType as AuditEntityType);
       perEntity.push({
-        entityType: rule.entityType as AuditEntityType,
+        entityType: bucketEntityType,
         rule: {
           label: rule.label,
           retainYears: rule.retainYears,

@@ -76,6 +76,7 @@ export function RetentionPurgeConfirmForm({
           entityType,
           entityIds,
           operatorReason: reason.trim(),
+          ruleAuthority,
         }),
       });
       const body = (await res.json().catch(() => ({}))) as {

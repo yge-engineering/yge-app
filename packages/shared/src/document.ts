@@ -82,6 +82,29 @@ export const DocumentSchema = z.object({
 
   /** Free-form notes — what's in the doc, what to look out for. */
   notes: z.string().max(10_000).optional(),
+
+  // ---- Retention helpers -----------------------------------------
+  // Optional fields the records-retention engine reads when the
+  // document's kind has a specific statutory rule.
+
+  /** Policy expiration / cert effective-end date for INSURANCE_CERT,
+   *  CSLB_CERT, DIR_CERT, BUSINESS_LICENSE. Drives the
+   *  POLICY_EXPIRATION trigger for the 7-year insurance retention
+   *  window per Cal. Ins. Code §10508 / YGE policy. yyyy-mm-dd. */
+  policyExpirationDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Use yyyy-mm-dd')
+    .optional(),
+
+  /** Document is an I-9 (or I-9 supporting doc). When true, the
+   *  retention rule applies (3 years past linkedEmployeeId's
+   *  separation date per 8 CFR 274a.2(b)(2)(i)). */
+  i9: z.boolean().optional(),
+
+  /** Employee linkage for documents whose retention clock starts at
+   *  EMPLOYEE_SEPARATION (I-9, training certs, personnel-file
+   *  attachments). Empty for company-level docs. */
+  linkedEmployeeId: z.string().max(120).optional(),
 });
 export type Document = z.infer<typeof DocumentSchema>;
 
@@ -129,4 +152,44 @@ export function normalizeTag(raw: string): string {
 export function newDocumentId(): string {
   const hex = Math.floor(Math.random() * 0x100000000).toString(16);
   return `doc-${hex.padStart(8, '0')}`;
+}
+
+/** Document classes records-retention treats as 'insurance / cert'
+ *  (the 7-year POLICY_EXPIRATION rule via Cal. Ins. Code §10508). */
+const INSURANCE_LIKE_KINDS: ReadonlySet<DocumentKind> = new Set([
+  'INSURANCE_CERT',
+  'CSLB_CERT',
+  'DIR_CERT',
+  'BUSINESS_LICENSE',
+]);
+
+export function isI9Document(doc: Document): boolean {
+  return doc.i9 === true || doc.tags.includes('i9');
+}
+
+export function isInsuranceLikeDocument(doc: Document): boolean {
+  if (INSURANCE_LIKE_KINDS.has(doc.kind)) return true;
+  if (doc.tags.includes('insurance-cert') || doc.tags.includes('acord-25')) return true;
+  return false;
+}
+
+export interface DocumentRetentionMatch {
+  /** 'I9' = 3-yr post-separation rule; 'INSURANCE' = 7-yr post-policy
+   *  expiration rule. Other doc kinds return null (not yet covered
+   *  by a CompanyDocument rule). */
+  ruleKey: 'I9' | 'INSURANCE';
+}
+
+/**
+ * Map a Document to its records-retention rule key. Returns null
+ * when the document doesn't fall under any CompanyDocument rule
+ * (correspondence, plain RFP, plan set, etc.).
+ *
+ * The records-retention-job uses this to decide whether the doc
+ * contributes a candidate to the I-9 or insurance bucket.
+ */
+export function documentRetentionMatch(doc: Document): DocumentRetentionMatch | null {
+  if (isI9Document(doc)) return { ruleKey: 'I9' };
+  if (isInsuranceLikeDocument(doc)) return { ruleKey: 'INSURANCE' };
+  return null;
 }

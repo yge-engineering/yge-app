@@ -78,8 +78,20 @@ export async function listRetentionPurgeBatches(): Promise<RetentionPurgeBatch[]
   return [...rows].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
 }
 
-function findRuleForEntityType(entityType: AuditEntityType): RecordRetentionRule | undefined {
-  return RETENTION_RULES.find((r) => r.entityType === entityType);
+function findRuleForEntityType(
+  entityType: AuditEntityType,
+  ruleAuthority?: string,
+): RecordRetentionRule | undefined {
+  // Document buckets pivot through the synthetic 'CompanyDocument'
+  // rules + the authority disambiguator (FEDERAL_I9 vs CA_DOI).
+  if (entityType === 'Document') {
+    return RETENTION_RULES.find(
+      (r) => r.entityType === 'CompanyDocument' && (!ruleAuthority || r.authority === ruleAuthority),
+    );
+  }
+  return RETENTION_RULES.find(
+    (r) => r.entityType === entityType && (!ruleAuthority || r.authority === ruleAuthority),
+  );
 }
 
 function holdsFreezing(
@@ -112,7 +124,7 @@ export async function confirmRetentionPurge(
   ctx?: AuditContext,
   asOfIso: string = new Date().toISOString(),
 ): Promise<RetentionPurgeConfirmResult> {
-  const rule = findRuleForEntityType(input.entityType);
+  const rule = findRuleForEntityType(input.entityType, input.ruleAuthority);
   if (!rule) {
     return {
       batch: null,

@@ -79,6 +79,10 @@ export const RetentionPurgeBatchCreateSchema = z.object({
   entityIds: z.array(z.string().min(1).max(120)).min(1).max(500),
   operatorReason: z.string().min(1).max(4000),
   operatorUserId: z.string().max(120).optional(),
+  /** Disambiguates rules when one entityType has multiple rules
+   *  (e.g. Document → I-9 vs Insurance via FEDERAL_I9 / CA_DOI).
+   *  Required for Document buckets, optional for everything else. */
+  ruleAuthority: z.string().max(60).optional(),
 });
 export type RetentionPurgeBatchCreate = z.infer<typeof RetentionPurgeBatchCreateSchema>;
 
