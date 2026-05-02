@@ -17,6 +17,7 @@ import {
   StatusPill,
   Tile,
 } from '../../components';
+import { getTranslator } from '../../lib/locale';
 import {
   arInvoiceStatusLabel,
   arUnpaidBalanceCents,
@@ -98,23 +99,24 @@ export default async function ArInvoicesPage({
   const csvHref = `${publicApiBaseUrl()}/api/ar-invoices?format=csv${
     searchParams.status ? '&status=' + encodeURIComponent(searchParams.status) : ''
   }${searchParams.jobId ? '&jobId=' + encodeURIComponent(searchParams.jobId) : ''}`;
+  const t = getTranslator();
 
   return (
     <AppShell>
       <main className="mx-auto max-w-6xl">
         <PageHeader
-          title="Customer invoices (AR)"
-          subtitle="Outgoing bills to customers and agencies. Pull line items from daily reports for monthly billing (e.g. Cal Fire), or build manually for progress + lump-sum jobs."
+          title={t('ar.title')}
+          subtitle={t('ar.subtitle')}
           actions={
             <span className="flex gap-2">
               <a
                 href={csvHref}
                 className="inline-flex items-center rounded-md border border-blue-700 px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-50"
               >
-                Download CSV
+                {t('ar.downloadCsv')}
               </a>
               <LinkButton href="/ar-invoices/new" variant="primary" size="md">
-                + New invoice
+                {t('ar.newInvoice')}
               </LinkButton>
             </span>
           }
@@ -122,22 +124,22 @@ export default async function ArInvoicesPage({
 
         <section className="mb-4 grid gap-3 sm:grid-cols-4">
           <Tile
-            label="Outstanding"
+            label={t('ar.tile.outstanding')}
             value={<Money cents={rollup.outstandingCents} />}
             tone={rollup.outstandingCents > 0 ? 'warn' : 'success'}
           />
-          <Tile label="Drafts" value={rollup.draft} />
-          <Tile label="Sent" value={rollup.sent} />
-          <Tile label="Paid (lifetime)" value={<Money cents={rollup.paidCents} />} tone="success" />
+          <Tile label={t('ar.tile.drafts')} value={rollup.draft} />
+          <Tile label={t('ar.tile.sent')} value={rollup.sent} />
+          <Tile label={t('ar.tile.paidLifetime')} value={<Money cents={rollup.paidCents} />} tone="success" />
         </section>
 
         <section className="mb-4 flex flex-wrap items-center gap-2 rounded-md border border-gray-200 bg-white p-3">
-          <span className="text-xs uppercase tracking-wide text-gray-500">Status:</span>
+          <span className="text-xs uppercase tracking-wide text-gray-500">{t('ar.filter.status')}</span>
           <Link
             href={buildHref({ status: undefined })}
             className={`rounded px-2 py-1 text-xs ${!searchParams.status ? 'bg-blue-700 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
           >
-            All
+            {t('ar.filter.all')}
           </Link>
           {STATUSES.map((s) => (
             <Link
@@ -152,9 +154,9 @@ export default async function ArInvoicesPage({
 
         {invoices.length === 0 ? (
           <EmptyState
-            title="No invoices match"
-            body="Create one from a daily-report rollup or as a one-off progress / lump-sum bill. Anything you bill here flows into the cash forecast."
-            actions={[{ href: '/ar-invoices/new', label: 'New invoice', primary: true }]}
+            title={t('ar.empty.title')}
+            body={t('ar.empty.body')}
+            actions={[{ href: '/ar-invoices/new', label: t('ar.empty.action'), primary: true }]}
           />
         ) : (
           <DataTable
@@ -163,17 +165,17 @@ export default async function ArInvoicesPage({
             columns={[
               {
                 key: 'invoiceNumber',
-                header: '#',
+                header: t('ar.col.number'),
                 cell: (inv) => (
                   <Link href={`/ar-invoices/${inv.id}`} className="font-mono font-bold text-blue-700 hover:underline">
                     {inv.invoiceNumber}
                   </Link>
                 ),
               },
-              { key: 'customer', header: 'Customer', cell: (inv) => <span className="font-medium text-gray-900">{inv.customerName}</span> },
+              { key: 'customer', header: t('ar.col.customer'), cell: (inv) => <span className="font-medium text-gray-900">{inv.customerName}</span> },
               {
                 key: 'job',
-                header: 'Job',
+                header: t('ar.col.job'),
                 cell: (inv) => {
                   const job = jobById.get(inv.jobId);
                   return job
@@ -183,23 +185,23 @@ export default async function ArInvoicesPage({
               },
               {
                 key: 'period',
-                header: 'Period',
+                header: t('ar.col.period'),
                 cell: (inv) => inv.billingPeriodStart && inv.billingPeriodEnd
                   ? <span className="text-xs text-gray-700">{inv.billingPeriodStart} → {inv.billingPeriodEnd}</span>
                   : <span className="text-xs text-gray-400">—</span>,
               },
-              { key: 'date', header: 'Date', cell: (inv) => <span className="font-mono text-xs text-gray-700">{inv.invoiceDate}</span> },
-              { key: 'total', header: 'Total', numeric: true, cell: (inv) => <Money cents={inv.totalCents} /> },
+              { key: 'date', header: t('ar.col.date'), cell: (inv) => <span className="font-mono text-xs text-gray-700">{inv.invoiceDate}</span> },
+              { key: 'total', header: t('ar.col.total'), numeric: true, cell: (inv) => <Money cents={inv.totalCents} /> },
               {
                 key: 'balance',
-                header: 'Balance',
+                header: t('ar.col.balance'),
                 numeric: true,
                 cell: (inv) => {
                   const balance = arUnpaidBalanceCents(inv);
-                  return balance > 0 ? <Money cents={balance} className="font-semibold" /> : <span className="text-sm text-gray-400">paid</span>;
+                  return balance > 0 ? <Money cents={balance} className="font-semibold" /> : <span className="text-sm text-gray-400">{t('ar.balance.paid')}</span>;
                 },
               },
-              { key: 'status', header: 'Status', cell: (inv) => <StatusPill label={arInvoiceStatusLabel(inv.status)} tone={statusTone(inv.status)} /> },
+              { key: 'status', header: t('ar.col.status'), cell: (inv) => <StatusPill label={arInvoiceStatusLabel(inv.status)} tone={statusTone(inv.status)} /> },
             ]}
           />
         )}
