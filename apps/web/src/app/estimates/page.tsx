@@ -6,6 +6,7 @@
 import Link from 'next/link';
 
 import { Alert, AppShell, Money } from '../../components';
+import { getTranslator } from '../../lib/locale';
 
 interface EstimateSummary {
   id: string;
@@ -73,6 +74,7 @@ export default async function EstimatesPage() {
   } catch (err) {
     fetchError = err instanceof Error ? err.message : 'Unknown error';
   }
+  const t = getTranslator();
 
   return (
     <AppShell>
@@ -82,29 +84,22 @@ export default async function EstimatesPage() {
           &larr; Dashboard
         </Link>
         <Link href="/drafts" className="text-sm text-yge-blue-500 hover:underline">
-          Saved drafts &rarr;
+          {t('estimates.savedDrafts')} &rarr;
         </Link>
       </div>
 
-      <h1 className="text-3xl font-bold text-yge-blue-500">Priced estimates</h1>
-      <p className="mt-2 text-gray-700">
-        Estimates you&rsquo;ve started pricing. Open one to fill in unit prices, adjust the O&amp;P
-        percentage, and see the running bid total. Convert any saved draft to start a new one.
-      </p>
+      <h1 className="text-3xl font-bold text-yge-blue-500">{t('estimates.title')}</h1>
+      <p className="mt-2 text-gray-700">{t('estimates.subtitle')}</p>
 
       {fetchError && (
-        <Alert tone="danger" className="mt-6" title="Couldn&rsquo;t load estimates from the API">
+        <Alert tone="danger" className="mt-6" title={t('estimates.fetchError.title')}>
           {fetchError}. Make sure the API server is running on port 4000.
         </Alert>
       )}
 
       {!fetchError && estimates.length === 0 && (
         <div className="mt-6 rounded border border-gray-200 bg-gray-50 p-6 text-sm text-gray-600">
-          No estimates yet. Open a saved draft on the{' '}
-          <Link href="/drafts" className="text-yge-blue-500 hover:underline">
-            Saved drafts page
-          </Link>{' '}
-          and click <em>Convert to priced estimate</em> to start one.
+          {t('estimates.empty.no_estimates')}
         </div>
       )}
 
@@ -113,13 +108,13 @@ export default async function EstimatesPage() {
           <table className="w-full text-left text-sm">
             <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
               <tr>
-                <th className="px-4 py-2">Project</th>
-                <th className="px-4 py-2">Type</th>
-                <th className="px-4 py-2">Lines</th>
-                <th className="px-4 py-2">Subs</th>
-                <th className="px-4 py-2">Addenda</th>
-                <th className="px-4 py-2">Bid total</th>
-                <th className="px-4 py-2">Updated</th>
+                <th className="px-4 py-2">{t('estimates.col.project')}</th>
+                <th className="px-4 py-2">{t('estimates.col.type')}</th>
+                <th className="px-4 py-2">{t('estimates.col.lines')}</th>
+                <th className="px-4 py-2">{t('estimates.col.subs')}</th>
+                <th className="px-4 py-2">{t('estimates.col.addenda')}</th>
+                <th className="px-4 py-2">{t('estimates.col.bidTotal')}</th>
+                <th className="px-4 py-2">{t('estimates.col.updated')}</th>
                 <th className="px-4 py-2"></th>
               </tr>
             </thead>
@@ -139,17 +134,17 @@ export default async function EstimatesPage() {
                     {e.pricedLineCount} of {e.bidItemCount}
                     {e.unpricedLineCount > 0 && (
                       <span className="ml-2 inline-block rounded-full bg-yellow-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-yellow-800">
-                        {e.unpricedLineCount} to price
+                        {t('estimates.lines.unpriced', { count: e.unpricedLineCount })}
                       </span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-700">
                     {e.subBidCount && e.subBidCount > 0 ? (
                       <span>
-                        {e.subBidCount} sub{e.subBidCount === 1 ? '' : 's'}
+                        {t('estimates.subs.count', { count: e.subBidCount, plural: e.subBidCount === 1 ? '' : 's' })}
                       </span>
                     ) : (
-                      <span className="text-gray-400">none</span>
+                      <span className="text-gray-400">{t('estimates.subs.none')}</span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-700">
@@ -160,19 +155,19 @@ export default async function EstimatesPage() {
                         {e.unacknowledgedAddendumCount &&
                         e.unacknowledgedAddendumCount > 0 ? (
                           <span className="ml-2 inline-block rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-800">
-                            {e.unacknowledgedAddendumCount} un-acked
+                            {t('estimates.addenda.unacked', { count: e.unacknowledgedAddendumCount })}
                           </span>
                         ) : null}
                       </span>
                     ) : (
-                      <span className="text-gray-400">none</span>
+                      <span className="text-gray-400">{t('estimates.addenda.none')}</span>
                     )}
                   </td>
                   <td className="px-4 py-3 font-medium text-gray-900">
                     {e.unpricedLineCount > 0 ? (
                       <span className="text-gray-500">
                         <Money cents={e.bidTotalCents} />{' '}
-                        <span className="text-[10px] uppercase">running</span>
+                        <span className="text-[10px] uppercase">{t('estimates.bidTotal.running')}</span>
                       </span>
                     ) : (
                       <Money cents={e.bidTotalCents} />
@@ -186,31 +181,31 @@ export default async function EstimatesPage() {
                       href={`/estimates/${e.id}`}
                       className="mr-3 text-yge-blue-500 hover:underline"
                     >
-                      Open
+                      {t('estimates.action.open')}
                     </Link>
                     <Link
                       href={`/estimates/${e.id}/print`}
                       className="mr-3 text-yge-blue-500 hover:underline"
                     >
-                      Print
+                      {t('estimates.action.print')}
                     </Link>
                     <Link
                       href={`/estimates/${e.id}/transmittal`}
                       className="mr-3 text-yge-blue-500 hover:underline"
                     >
-                      Cover
+                      {t('estimates.action.cover')}
                     </Link>
                     <Link
                       href={`/estimates/${e.id}/envelope`}
                       className="mr-3 text-yge-blue-500 hover:underline"
                     >
-                      Envelope
+                      {t('estimates.action.envelope')}
                     </Link>
                     <a
                       href={`${publicApiBaseUrl()}/api/priced-estimates/${e.id}/export.csv`}
                       className="text-yge-blue-500 hover:underline"
                     >
-                      CSV
+                      {t('estimates.action.csv')}
                     </a>
                   </td>
                 </tr>
