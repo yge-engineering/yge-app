@@ -95,7 +95,12 @@ export default async function CompetitorsPage() {
                   return (
                     <tr key={r.nameNormalized}>
                       <td className="px-3 py-2 align-top">
-                        <div className="font-medium text-gray-900">{r.displayName}</div>
+                        <Link
+                          href={`/competitors/${encodeURIComponent(r.nameNormalized)}`}
+                          className="font-medium text-yge-blue-500 hover:underline"
+                        >
+                          {r.displayName}
+                        </Link>
                         <div className="font-mono text-[10px] text-gray-500">
                           {r.cslbLicense ? `CSLB ${r.cslbLicense}` : ''}
                           {r.dirRegistration ? ` · DIR ${r.dirRegistration}` : ''}
