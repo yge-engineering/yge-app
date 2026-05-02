@@ -6,6 +6,7 @@
 import Link from 'next/link';
 
 import { Alert, AppShell, Money } from '../../components';
+import { getTranslator } from '../../lib/locale';
 import {
   contractTypeLabel,
   statusLabel,
@@ -61,14 +62,14 @@ interface PageProps {
   searchParams?: { status?: string };
 }
 
-const FILTER_PRESETS: { label: string; value: string; matches: (s: JobStatus) => boolean }[] = [
-  { label: 'All', value: 'all', matches: () => true },
-  { label: 'Active', value: 'active', matches: (s) => s === 'PURSUING' || s === 'BID_SUBMITTED' || s === 'AWARDED' },
-  { label: 'Pursuing', value: 'PURSUING', matches: (s) => s === 'PURSUING' },
-  { label: 'Bid submitted', value: 'BID_SUBMITTED', matches: (s) => s === 'BID_SUBMITTED' },
-  { label: 'Awarded', value: 'AWARDED', matches: (s) => s === 'AWARDED' },
-  { label: 'Lost / no bid', value: 'lost', matches: (s) => s === 'LOST' || s === 'NO_BID' },
-  { label: 'Archived', value: 'ARCHIVED', matches: (s) => s === 'ARCHIVED' },
+const FILTER_PRESETS: { labelKey: string; value: string; matches: (s: JobStatus) => boolean }[] = [
+  { labelKey: 'jobs.filter.all', value: 'all', matches: () => true },
+  { labelKey: 'jobs.filter.active', value: 'active', matches: (s) => s === 'PURSUING' || s === 'BID_SUBMITTED' || s === 'AWARDED' },
+  { labelKey: 'jobs.filter.pursuing', value: 'PURSUING', matches: (s) => s === 'PURSUING' },
+  { labelKey: 'jobs.filter.bidSubmitted', value: 'BID_SUBMITTED', matches: (s) => s === 'BID_SUBMITTED' },
+  { labelKey: 'jobs.filter.awarded', value: 'AWARDED', matches: (s) => s === 'AWARDED' },
+  { labelKey: 'jobs.filter.lostNoBid', value: 'lost', matches: (s) => s === 'LOST' || s === 'NO_BID' },
+  { labelKey: 'jobs.filter.archived', value: 'ARCHIVED', matches: (s) => s === 'ARCHIVED' },
 ];
 
 export default async function JobsPage({ searchParams }: PageProps) {
@@ -83,6 +84,8 @@ export default async function JobsPage({ searchParams }: PageProps) {
   const filterValue = searchParams?.status ?? 'active';
   const preset = FILTER_PRESETS.find((p) => p.value === filterValue) ?? FILTER_PRESETS[1];
   const filteredJobs = preset ? jobs.filter((j) => preset.matches(j.status)) : jobs;
+  const t = getTranslator();
+  const presetLabel = preset ? t(preset.labelKey) : '';
 
   return (
     <AppShell>
@@ -95,15 +98,12 @@ export default async function JobsPage({ searchParams }: PageProps) {
           href="/jobs/new"
           className="rounded bg-yge-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-yge-blue-700"
         >
-          + New job
+          {t('jobs.newJob')}
         </Link>
       </div>
 
-      <h1 className="text-3xl font-bold text-yge-blue-500">Jobs</h1>
-      <p className="mt-2 text-gray-700">
-        Every project YGE is tracking — prospects, active pursuits, submitted bids, and
-        awarded jobs. Open one to see its drafts and priced estimates.
-      </p>
+      <h1 className="text-3xl font-bold text-yge-blue-500">{t('jobs.title')}</h1>
+      <p className="mt-2 text-gray-700">{t('jobs.subtitle')}</p>
 
       {/* Filter pills */}
       <div className="mt-5 flex flex-wrap gap-2">
@@ -115,32 +115,32 @@ export default async function JobsPage({ searchParams }: PageProps) {
               href={p.value === 'all' ? '/jobs' : `/jobs?status=${p.value}`}
               className={`rounded-full px-3 py-1 text-xs font-medium ${active ? 'bg-blue-700 text-white' : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-100'}`}
             >
-              {p.label}
+              {t(p.labelKey)}
             </Link>
           );
         })}
       </div>
 
       {fetchError && (
-        <Alert tone="danger" className="mt-6" title="Couldn&rsquo;t load jobs from the API">
+        <Alert tone="danger" className="mt-6" title={t('jobs.fetchError.title')}>
           {fetchError}. Make sure the API server is running on port 4000.
         </Alert>
       )}
 
       {!fetchError && jobs.length === 0 && (
         <div className="mt-6 rounded border border-gray-200 bg-gray-50 p-6 text-sm text-gray-600">
-          No jobs yet.{' '}
+          {t('jobs.empty')}{' '}
           <Link href="/jobs/new" className="text-yge-blue-500 hover:underline">
-            Create your first one &rarr;
+            {t('jobs.createFirst')} &rarr;
           </Link>
         </div>
       )}
 
       {!fetchError && jobs.length > 0 && filteredJobs.length === 0 && (
         <div className="mt-6 rounded border border-gray-200 bg-gray-50 p-6 text-sm text-gray-600">
-          No jobs match the &ldquo;{preset?.label}&rdquo; filter.{' '}
+          {t('jobs.noneMatch', { preset: presetLabel })}{' '}
           <Link href="/jobs?status=all" className="text-yge-blue-500 hover:underline">
-            Show all &rarr;
+            {t('jobs.showAll')} &rarr;
           </Link>
         </div>
       )}
@@ -150,12 +150,12 @@ export default async function JobsPage({ searchParams }: PageProps) {
           <table className="w-full text-left text-sm">
             <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
               <tr>
-                <th className="px-4 py-2">Project</th>
-                <th className="px-4 py-2">Status</th>
-                <th className="px-4 py-2">Type</th>
-                <th className="px-4 py-2">Contract</th>
-                <th className="px-4 py-2">Due</th>
-                <th className="px-4 py-2">Engineer&rsquo;s estimate</th>
+                <th className="px-4 py-2">{t('jobs.col.project')}</th>
+                <th className="px-4 py-2">{t('jobs.col.status')}</th>
+                <th className="px-4 py-2">{t('jobs.col.type')}</th>
+                <th className="px-4 py-2">{t('jobs.col.contract')}</th>
+                <th className="px-4 py-2">{t('jobs.col.due')}</th>
+                <th className="px-4 py-2">{t('jobs.col.engineerEstimate')}</th>
                 <th className="px-4 py-2"></th>
               </tr>
             </thead>
@@ -201,7 +201,7 @@ export default async function JobsPage({ searchParams }: PageProps) {
                       href={`/jobs/${j.id}`}
                       className="text-yge-blue-500 hover:underline"
                     >
-                      Open
+                      {t('jobs.open')}
                     </Link>
                   </td>
                 </tr>
