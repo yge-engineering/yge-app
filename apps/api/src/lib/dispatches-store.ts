@@ -1,3 +1,6 @@
+// Every mutation here records an audit event via recordAudit() —
+// CLAUDE.md mandates 'every mutation is audit-logged'.
+//
 // File-based store for daily dispatches.
 
 import * as fs from 'node:fs/promises';
@@ -9,6 +12,7 @@ import {
   type DispatchCreate,
   type DispatchPatch,
 } from '@yge/shared';
+import { recordAudit, type AuditContext } from './audit-store';
 
 function dataDir(): string {
   return process.env.DISPATCHES_DATA_DIR ?? path.resolve(process.cwd(), 'data', 'dispatches');
@@ -45,7 +49,10 @@ async function writeIndex(entries: Dispatch[]) {
   await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
 }
 
-export async function createDispatch(input: DispatchCreate): Promise<Dispatch> {
+export async function createDispatch(
+  input: DispatchCreate,
+  ctx?: AuditContext,
+): Promise<Dispatch> {
   await ensureDir();
   const now = new Date().toISOString();
   const id = newDispatchId();
@@ -63,6 +70,13 @@ export async function createDispatch(input: DispatchCreate): Promise<Dispatch> {
   const index = await readIndex();
   index.unshift(d);
   await writeIndex(index);
+  await recordAudit({
+    action: 'create',
+    entityType: 'Dispatch',
+    entityId: id,
+    after: d,
+    ctx,
+  });
   return d;
 }
 
@@ -94,6 +108,8 @@ export async function getDispatch(id: string): Promise<Dispatch | null> {
 export async function updateDispatch(
   id: string,
   patch: DispatchPatch,
+  ctx?: AuditContext,
+  auditAction: 'update' | 'cancel' = 'update',
 ): Promise<Dispatch | null> {
   const existing = await getDispatch(id);
   if (!existing) return null;
@@ -114,5 +130,13 @@ export async function updateDispatch(
     index.unshift(updated);
   }
   await writeIndex(index);
+  await recordAudit({
+    action: auditAction,
+    entityType: 'Dispatch',
+    entityId: id,
+    before: existing,
+    after: updated,
+    ctx,
+  });
   return updated;
 }

@@ -1,3 +1,6 @@
+// Every mutation here records an audit event via recordAudit() —
+// CLAUDE.md mandates 'every mutation is audit-logged'.
+//
 // File-based store for expense reimbursements.
 
 import * as fs from 'node:fs/promises';
@@ -9,6 +12,7 @@ import {
   type ExpenseCreate,
   type ExpensePatch,
 } from '@yge/shared';
+import { recordAudit, type AuditContext } from './audit-store';
 
 function dataDir(): string {
   return process.env.EXPENSES_DATA_DIR ?? path.resolve(process.cwd(), 'data', 'expenses');
@@ -45,7 +49,10 @@ async function writeIndex(entries: Expense[]) {
   await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
 }
 
-export async function createExpense(input: ExpenseCreate): Promise<Expense> {
+export async function createExpense(
+  input: ExpenseCreate,
+  ctx?: AuditContext,
+): Promise<Expense> {
   await ensureDir();
   const now = new Date().toISOString();
   const id = newExpenseId();
@@ -63,6 +70,13 @@ export async function createExpense(input: ExpenseCreate): Promise<Expense> {
   const index = await readIndex();
   index.unshift(e);
   await writeIndex(index);
+  await recordAudit({
+    action: 'create',
+    entityType: 'Expense',
+    entityId: id,
+    after: e,
+    ctx,
+  });
   return e;
 }
 
@@ -95,6 +109,8 @@ export async function getExpense(id: string): Promise<Expense | null> {
 export async function updateExpense(
   id: string,
   patch: ExpensePatch,
+  ctx?: AuditContext,
+  auditAction: 'update' | 'submit' | 'approve' | 'reject' = 'update',
 ): Promise<Expense | null> {
   const existing = await getExpense(id);
   if (!existing) return null;
@@ -115,5 +131,13 @@ export async function updateExpense(
     index.unshift(updated);
   }
   await writeIndex(index);
+  await recordAudit({
+    action: auditAction,
+    entityType: 'Expense',
+    entityId: id,
+    before: existing,
+    after: updated,
+    ctx,
+  });
   return updated;
 }

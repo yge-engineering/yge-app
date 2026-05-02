@@ -1,3 +1,6 @@
+// Every mutation here records an audit event via recordAudit() —
+// CLAUDE.md mandates 'every mutation is audit-logged'.
+//
 // File-based store for certificates.
 
 import * as fs from 'node:fs/promises';
@@ -9,6 +12,7 @@ import {
   type CertificateCreate,
   type CertificatePatch,
 } from '@yge/shared';
+import { recordAudit, type AuditContext } from './audit-store';
 
 function dataDir(): string {
   return (
@@ -48,7 +52,10 @@ async function writeIndex(entries: Certificate[]) {
   await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
 }
 
-export async function createCertificate(input: CertificateCreate): Promise<Certificate> {
+export async function createCertificate(
+  input: CertificateCreate,
+  ctx?: AuditContext,
+): Promise<Certificate> {
   await ensureDir();
   const now = new Date().toISOString();
   const id = newCertificateId();
@@ -64,6 +71,13 @@ export async function createCertificate(input: CertificateCreate): Promise<Certi
   const index = await readIndex();
   index.unshift(c);
   await writeIndex(index);
+  await recordAudit({
+    action: 'create',
+    entityType: 'Certificate',
+    entityId: id,
+    after: c,
+    ctx,
+  });
   return c;
 }
 
@@ -95,6 +109,8 @@ export async function getCertificate(id: string): Promise<Certificate | null> {
 export async function updateCertificate(
   id: string,
   patch: CertificatePatch,
+  ctx?: AuditContext,
+  auditAction: 'update' | 'archive' = 'update',
 ): Promise<Certificate | null> {
   const existing = await getCertificate(id);
   if (!existing) return null;
@@ -115,5 +131,13 @@ export async function updateCertificate(
     index.unshift(updated);
   }
   await writeIndex(index);
+  await recordAudit({
+    action: auditAction,
+    entityType: 'Certificate',
+    entityId: id,
+    before: existing,
+    after: updated,
+    ctx,
+  });
   return updated;
 }

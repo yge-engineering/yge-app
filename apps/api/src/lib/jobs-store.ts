@@ -1,3 +1,6 @@
+// Every mutation here records an audit event via recordAudit() —
+// CLAUDE.md mandates 'every mutation is audit-logged'.
+//
 // File-based store for jobs.
 //
 // Phase 1 stand-in for the future Postgres `Job` table. Surface area
@@ -13,6 +16,7 @@ import {
   type JobCreate,
   type JobPatch,
 } from '@yge/shared';
+import { recordAudit, type AuditContext } from './audit-store';
 
 function dataDir(): string {
   return process.env.JOBS_DATA_DIR ?? path.resolve(process.cwd(), 'data', 'jobs');
@@ -70,7 +74,10 @@ async function writeIndex(entries: Job[]) {
  *  the per-job storage because the Job model is small (just metadata —
  *  no bid items or sub lists). When Postgres lands we split this into
  *  a real index + per-row table. */
-export async function createJob(input: JobCreate): Promise<Job> {
+export async function createJob(
+  input: JobCreate,
+  ctx?: AuditContext,
+): Promise<Job> {
   await ensureDir();
   const now = new Date();
   const iso = now.toISOString();
@@ -88,6 +95,13 @@ export async function createJob(input: JobCreate): Promise<Job> {
   const index = await readIndex();
   index.unshift(job);
   await writeIndex(index);
+  await recordAudit({
+    action: 'create',
+    entityType: 'Job',
+    entityId: id,
+    after: job,
+    ctx,
+  });
   return job;
 }
 
@@ -110,6 +124,8 @@ export async function getJob(id: string): Promise<Job | null> {
 export async function updateJob(
   id: string,
   patch: JobPatch,
+  ctx?: AuditContext,
+  auditAction: 'update' | 'archive' = 'update',
 ): Promise<Job | null> {
   const existing = await getJob(id);
   if (!existing) return null;
@@ -131,5 +147,13 @@ export async function updateJob(
     index.unshift(updated);
   }
   await writeIndex(index);
+  await recordAudit({
+    action: auditAction,
+    entityType: 'Job',
+    entityId: id,
+    before: existing,
+    after: updated,
+    ctx,
+  });
   return updated;
 }

@@ -1,3 +1,6 @@
+// Every mutation here records an audit event via recordAudit() —
+// CLAUDE.md mandates 'every mutation is audit-logged'.
+//
 // File-based store for journal entries.
 
 import * as fs from 'node:fs/promises';
@@ -9,6 +12,7 @@ import {
   type JournalEntryCreate,
   type JournalEntryPatch,
 } from '@yge/shared';
+import { recordAudit, type AuditContext } from './audit-store';
 
 function dataDir(): string {
   return process.env.JOURNAL_ENTRIES_DATA_DIR ?? path.resolve(process.cwd(), 'data', 'journal-entries');
@@ -45,7 +49,10 @@ async function writeIndex(entries: JournalEntry[]) {
   await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
 }
 
-export async function createJournalEntry(input: JournalEntryCreate): Promise<JournalEntry> {
+export async function createJournalEntry(
+  input: JournalEntryCreate,
+  ctx?: AuditContext,
+): Promise<JournalEntry> {
   await ensureDir();
   const now = new Date().toISOString();
   const id = newJournalEntryId();
@@ -63,6 +70,13 @@ export async function createJournalEntry(input: JournalEntryCreate): Promise<Jou
   const index = await readIndex();
   index.unshift(je);
   await writeIndex(index);
+  await recordAudit({
+    action: 'create',
+    entityType: 'JournalEntry',
+    entityId: id,
+    after: je,
+    ctx,
+  });
   return je;
 }
 
@@ -91,6 +105,8 @@ export async function getJournalEntry(id: string): Promise<JournalEntry | null> 
 export async function updateJournalEntry(
   id: string,
   patch: JournalEntryPatch,
+  ctx?: AuditContext,
+  auditAction: 'update' | 'post' | 'unpost' | 'void' = 'update',
 ): Promise<JournalEntry | null> {
   const existing = await getJournalEntry(id);
   if (!existing) return null;
@@ -111,5 +127,13 @@ export async function updateJournalEntry(
     index.unshift(updated);
   }
   await writeIndex(index);
+  await recordAudit({
+    action: auditAction,
+    entityType: 'JournalEntry',
+    entityId: id,
+    before: existing,
+    after: updated,
+    ctx,
+  });
   return updated;
 }

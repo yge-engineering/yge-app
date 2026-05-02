@@ -1,3 +1,6 @@
+// Every mutation here records an audit event via recordAudit() —
+// CLAUDE.md mandates 'every mutation is audit-logged'.
+//
 // File-based store for daily weather logs.
 
 import * as fs from 'node:fs/promises';
@@ -9,6 +12,7 @@ import {
   type WeatherLogCreate,
   type WeatherLogPatch,
 } from '@yge/shared';
+import { recordAudit, type AuditContext } from './audit-store';
 
 function dataDir(): string {
   return process.env.WEATHER_LOGS_DATA_DIR ?? path.resolve(process.cwd(), 'data', 'weather-logs');
@@ -45,7 +49,10 @@ async function writeIndex(entries: WeatherLog[]) {
   await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
 }
 
-export async function createWeatherLog(input: WeatherLogCreate): Promise<WeatherLog> {
+export async function createWeatherLog(
+  input: WeatherLogCreate,
+  ctx?: AuditContext,
+): Promise<WeatherLog> {
   await ensureDir();
   const now = new Date().toISOString();
   const id = newWeatherLogId();
@@ -65,6 +72,13 @@ export async function createWeatherLog(input: WeatherLogCreate): Promise<Weather
   const index = await readIndex();
   index.unshift(w);
   await writeIndex(index);
+  await recordAudit({
+    action: 'create',
+    entityType: 'WeatherLog',
+    entityId: id,
+    after: w,
+    ctx,
+  });
   return w;
 }
 
@@ -91,6 +105,8 @@ export async function getWeatherLog(id: string): Promise<WeatherLog | null> {
 export async function updateWeatherLog(
   id: string,
   patch: WeatherLogPatch,
+  ctx?: AuditContext,
+  auditAction: 'update' = 'update',
 ): Promise<WeatherLog | null> {
   const existing = await getWeatherLog(id);
   if (!existing) return null;
@@ -111,5 +127,13 @@ export async function updateWeatherLog(
     index.unshift(updated);
   }
   await writeIndex(index);
+  await recordAudit({
+    action: auditAction,
+    entityType: 'WeatherLog',
+    entityId: id,
+    before: existing,
+    after: updated,
+    ctx,
+  });
   return updated;
 }
