@@ -37,8 +37,40 @@ function formatMoney(cents: number): string {
   return `$${(cents / 100).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
 }
 
-export default async function CompetitorsPage() {
-  const tabs = await fetchTabs();
+type WindowKey = 'all' | '12m' | '6m' | '3m' | '1m';
+
+const WINDOWS: { key: WindowKey; label: string; days: number | null }[] = [
+  { key: 'all', label: 'All time', days: null },
+  { key: '12m', label: 'Last 12 mo', days: 365 },
+  { key: '6m', label: 'Last 6 mo', days: 183 },
+  { key: '3m', label: 'Last 3 mo', days: 91 },
+  { key: '1m', label: 'Last 30 d', days: 30 },
+];
+
+function parseWindow(raw: string | undefined): WindowKey {
+  if (raw === '12m' || raw === '6m' || raw === '3m' || raw === '1m') return raw;
+  return 'all';
+}
+
+function applyWindow(tabs: BidTab[], days: number | null): BidTab[] {
+  if (days === null) return tabs;
+  const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+  return tabs.filter((t) => {
+    const day = t.bidOpenedAt.slice(0, 10);
+    const ts = Date.parse(`${day}T00:00:00Z`);
+    return Number.isFinite(ts) && ts >= cutoff;
+  });
+}
+
+interface PageProps {
+  searchParams?: { window?: string };
+}
+
+export default async function CompetitorsPage({ searchParams }: PageProps) {
+  const allTabs = await fetchTabs();
+  const window = parseWindow(searchParams?.window);
+  const windowDef = WINDOWS.find((w) => w.key === window) ?? WINDOWS[0]!;
+  const tabs = applyWindow(allTabs, windowDef.days);
   const { rollup, rows } = buildCompetitorProfilesFromTabs(tabs);
 
   return (
@@ -57,6 +89,32 @@ export default async function CompetitorsPage() {
           title="Competitors"
           subtitle="Local-market competitor profiles rolled up from the public bid-tab corpus. Read this before sizing a bid — who shows up, how often, at what dollar range."
         />
+
+        <section className="mt-4 flex flex-wrap items-center gap-2 rounded-md border border-gray-200 bg-white p-3">
+          <span className="text-xs uppercase tracking-wide text-gray-500">Window:</span>
+          {WINDOWS.map((w) => {
+            const active = w.key === window;
+            const href = w.key === 'all' ? '/competitors' : `/competitors?window=${w.key}`;
+            return (
+              <Link
+                key={w.key}
+                href={href}
+                className={`rounded-full px-3 py-1 text-xs font-medium ${
+                  active
+                    ? 'bg-yge-blue-500 text-white'
+                    : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                {w.label}
+              </Link>
+            );
+          })}
+          {window !== 'all' && (
+            <span className="text-[11px] text-gray-500">
+              {tabs.length} of {allTabs.length} tabs in window
+            </span>
+          )}
+        </section>
 
         <section className="mt-4 grid gap-3 sm:grid-cols-3">
           <Tile label="Bid tabs considered" value={String(rollup.tabsConsidered)} />
