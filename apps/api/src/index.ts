@@ -44,6 +44,7 @@ import { bankRecsRouter } from './routes/bank-recs';
 import { customersRouter } from './routes/customers';
 import { mileageRouter } from './routes/mileage';
 import { expensesRouter } from './routes/expenses';
+import { auditRouter } from './routes/audit';
 
 const app = express();
 
@@ -91,6 +92,7 @@ app.use('/api/bank-recs', bankRecsRouter);
 app.use('/api/customers', customersRouter);
 app.use('/api/mileage', mileageRouter);
 app.use('/api/expenses', expensesRouter);
+app.use('/api/audit-events', auditRouter);
 
 // 404
 app.use((_req, res) => {
