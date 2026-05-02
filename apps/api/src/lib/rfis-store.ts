@@ -1,3 +1,6 @@
+// Every mutation here records an audit event via recordAudit() —
+// CLAUDE.md mandates 'every mutation is audit-logged'.
+//
 // File-based store for RFIs.
 
 import * as fs from 'node:fs/promises';
@@ -9,6 +12,7 @@ import {
   type RfiCreate,
   type RfiPatch,
 } from '@yge/shared';
+import { recordAudit, type AuditContext } from './audit-store';
 
 function dataDir(): string {
   return process.env.RFIS_DATA_DIR ?? path.resolve(process.cwd(), 'data', 'rfis');
@@ -45,7 +49,10 @@ async function writeIndex(entries: Rfi[]) {
   await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
 }
 
-export async function createRfi(input: RfiCreate): Promise<Rfi> {
+export async function createRfi(
+  input: RfiCreate,
+  ctx?: AuditContext,
+): Promise<Rfi> {
   await ensureDir();
   const now = new Date().toISOString();
   const id = newRfiId();
@@ -65,6 +72,13 @@ export async function createRfi(input: RfiCreate): Promise<Rfi> {
   const index = await readIndex();
   index.unshift(r);
   await writeIndex(index);
+  await recordAudit({
+    action: 'create',
+    entityType: 'Rfi',
+    entityId: id,
+    after: r,
+    ctx,
+  });
   return r;
 }
 
@@ -92,7 +106,12 @@ export async function getRfi(id: string): Promise<Rfi | null> {
   }
 }
 
-export async function updateRfi(id: string, patch: RfiPatch): Promise<Rfi | null> {
+export async function updateRfi(
+  id: string,
+  patch: RfiPatch,
+  ctx?: AuditContext,
+  auditAction: 'update' | 'submit' | 'answer' = 'update',
+): Promise<Rfi | null> {
   const existing = await getRfi(id);
   if (!existing) return null;
   const updated: Rfi = {
@@ -112,5 +131,13 @@ export async function updateRfi(id: string, patch: RfiPatch): Promise<Rfi | null
     index.unshift(updated);
   }
   await writeIndex(index);
+  await recordAudit({
+    action: auditAction,
+    entityType: 'Rfi',
+    entityId: id,
+    before: existing,
+    after: updated,
+    ctx,
+  });
   return updated;
 }

@@ -1,3 +1,6 @@
+// Every mutation here records an audit event via recordAudit() —
+// CLAUDE.md mandates 'every mutation is audit-logged'.
+//
 // File-based store for punch list items.
 
 import * as fs from 'node:fs/promises';
@@ -9,6 +12,7 @@ import {
   type PunchItemCreate,
   type PunchItemPatch,
 } from '@yge/shared';
+import { recordAudit, type AuditContext } from './audit-store';
 
 function dataDir(): string {
   return process.env.PUNCH_ITEMS_DATA_DIR ?? path.resolve(process.cwd(), 'data', 'punch-items');
@@ -45,7 +49,10 @@ async function writeIndex(entries: PunchItem[]) {
   await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
 }
 
-export async function createPunchItem(input: PunchItemCreate): Promise<PunchItem> {
+export async function createPunchItem(
+  input: PunchItemCreate,
+  ctx?: AuditContext,
+): Promise<PunchItem> {
   await ensureDir();
   const now = new Date().toISOString();
   const id = newPunchItemId();
@@ -62,6 +69,13 @@ export async function createPunchItem(input: PunchItemCreate): Promise<PunchItem
   const index = await readIndex();
   index.unshift(p);
   await writeIndex(index);
+  await recordAudit({
+    action: 'create',
+    entityType: 'PunchItem',
+    entityId: id,
+    after: p,
+    ctx,
+  });
   return p;
 }
 
@@ -99,6 +113,8 @@ export async function getPunchItem(id: string): Promise<PunchItem | null> {
 export async function updatePunchItem(
   id: string,
   patch: PunchItemPatch,
+  ctx?: AuditContext,
+  auditAction: 'update' = 'update',
 ): Promise<PunchItem | null> {
   const existing = await getPunchItem(id);
   if (!existing) return null;
@@ -119,5 +135,13 @@ export async function updatePunchItem(
     index.unshift(updated);
   }
   await writeIndex(index);
+  await recordAudit({
+    action: auditAction,
+    entityType: 'PunchItem',
+    entityId: id,
+    before: existing,
+    after: updated,
+    ctx,
+  });
   return updated;
 }

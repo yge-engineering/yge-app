@@ -1,3 +1,6 @@
+// Every mutation here records an audit event via recordAudit() —
+// CLAUDE.md mandates 'every mutation is audit-logged'.
+//
 // File-based store for SWPPP/BMP inspections.
 
 import * as fs from 'node:fs/promises';
@@ -9,6 +12,7 @@ import {
   type SwpppInspectionCreate,
   type SwpppInspectionPatch,
 } from '@yge/shared';
+import { recordAudit, type AuditContext } from './audit-store';
 
 function dataDir(): string {
   return process.env.SWPPP_INSPECTIONS_DATA_DIR ?? path.resolve(process.cwd(), 'data', 'swppp-inspections');
@@ -47,6 +51,7 @@ async function writeIndex(entries: SwpppInspection[]) {
 
 export async function createSwpppInspection(
   input: SwpppInspectionCreate,
+  ctx?: AuditContext,
 ): Promise<SwpppInspection> {
   await ensureDir();
   const now = new Date().toISOString();
@@ -67,6 +72,13 @@ export async function createSwpppInspection(
   const index = await readIndex();
   index.unshift(s);
   await writeIndex(index);
+  await recordAudit({
+    action: 'create',
+    entityType: 'SwpppInspection',
+    entityId: id,
+    after: s,
+    ctx,
+  });
   return s;
 }
 
@@ -93,6 +105,8 @@ export async function getSwpppInspection(id: string): Promise<SwpppInspection | 
 export async function updateSwpppInspection(
   id: string,
   patch: SwpppInspectionPatch,
+  ctx?: AuditContext,
+  auditAction: 'update' = 'update',
 ): Promise<SwpppInspection | null> {
   const existing = await getSwpppInspection(id);
   if (!existing) return null;
@@ -113,5 +127,13 @@ export async function updateSwpppInspection(
     index.unshift(updated);
   }
   await writeIndex(index);
+  await recordAudit({
+    action: auditAction,
+    entityType: 'SwpppInspection',
+    entityId: id,
+    before: existing,
+    after: updated,
+    ctx,
+  });
   return updated;
 }

@@ -1,3 +1,6 @@
+// Every mutation here records an audit event via recordAudit() —
+// CLAUDE.md mandates 'every mutation is audit-logged'.
+//
 // File-based store for PCOs.
 
 import * as fs from 'node:fs/promises';
@@ -9,6 +12,7 @@ import {
   type PcoCreate,
   type PcoPatch,
 } from '@yge/shared';
+import { recordAudit, type AuditContext } from './audit-store';
 
 function dataDir(): string {
   return process.env.PCOS_DATA_DIR ?? path.resolve(process.cwd(), 'data', 'pcos');
@@ -45,7 +49,10 @@ async function writeIndex(entries: Pco[]) {
   await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
 }
 
-export async function createPco(input: PcoCreate): Promise<Pco> {
+export async function createPco(
+  input: PcoCreate,
+  ctx?: AuditContext,
+): Promise<Pco> {
   await ensureDir();
   const now = new Date().toISOString();
   const id = newPcoId();
@@ -64,6 +71,13 @@ export async function createPco(input: PcoCreate): Promise<Pco> {
   const index = await readIndex();
   index.unshift(p);
   await writeIndex(index);
+  await recordAudit({
+    action: 'create',
+    entityType: 'Pco',
+    entityId: id,
+    after: p,
+    ctx,
+  });
   return p;
 }
 
@@ -89,7 +103,12 @@ export async function getPco(id: string): Promise<Pco | null> {
   }
 }
 
-export async function updatePco(id: string, patch: PcoPatch): Promise<Pco | null> {
+export async function updatePco(
+  id: string,
+  patch: PcoPatch,
+  ctx?: AuditContext,
+  auditAction: 'update' | 'submit' | 'approve' | 'reject' = 'update',
+): Promise<Pco | null> {
   const existing = await getPco(id);
   if (!existing) return null;
   const updated: Pco = {
@@ -109,5 +128,13 @@ export async function updatePco(id: string, patch: PcoPatch): Promise<Pco | null
     index.unshift(updated);
   }
   await writeIndex(index);
+  await recordAudit({
+    action: auditAction,
+    entityType: 'Pco',
+    entityId: id,
+    before: existing,
+    after: updated,
+    ctx,
+  });
   return updated;
 }

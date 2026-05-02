@@ -1,3 +1,6 @@
+// Every mutation here records an audit event via recordAudit() —
+// CLAUDE.md mandates 'every mutation is audit-logged'.
+//
 // File-based store for toolbox talks (Cal/OSHA T8 §1509).
 
 import * as fs from 'node:fs/promises';
@@ -9,6 +12,7 @@ import {
   type ToolboxTalkCreate,
   type ToolboxTalkPatch,
 } from '@yge/shared';
+import { recordAudit, type AuditContext } from './audit-store';
 
 function dataDir(): string {
   return process.env.TOOLBOX_TALKS_DATA_DIR ?? path.resolve(process.cwd(), 'data', 'toolbox-talks');
@@ -45,7 +49,10 @@ async function writeIndex(entries: ToolboxTalk[]) {
   await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
 }
 
-export async function createToolboxTalk(input: ToolboxTalkCreate): Promise<ToolboxTalk> {
+export async function createToolboxTalk(
+  input: ToolboxTalkCreate,
+  ctx?: AuditContext,
+): Promise<ToolboxTalk> {
   await ensureDir();
   const now = new Date().toISOString();
   const id = newToolboxTalkId();
@@ -62,6 +69,13 @@ export async function createToolboxTalk(input: ToolboxTalkCreate): Promise<Toolb
   const index = await readIndex();
   index.unshift(t);
   await writeIndex(index);
+  await recordAudit({
+    action: 'create',
+    entityType: 'ToolboxTalk',
+    entityId: id,
+    after: t,
+    ctx,
+  });
   return t;
 }
 
@@ -90,6 +104,8 @@ export async function getToolboxTalk(id: string): Promise<ToolboxTalk | null> {
 export async function updateToolboxTalk(
   id: string,
   patch: ToolboxTalkPatch,
+  ctx?: AuditContext,
+  auditAction: 'update' = 'update',
 ): Promise<ToolboxTalk | null> {
   const existing = await getToolboxTalk(id);
   if (!existing) return null;
@@ -110,5 +126,13 @@ export async function updateToolboxTalk(
     index.unshift(updated);
   }
   await writeIndex(index);
+  await recordAudit({
+    action: auditAction,
+    entityType: 'ToolboxTalk',
+    entityId: id,
+    before: existing,
+    after: updated,
+    ctx,
+  });
   return updated;
 }

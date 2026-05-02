@@ -1,3 +1,6 @@
+// Every mutation here records an audit event via recordAudit() —
+// CLAUDE.md mandates 'every mutation is audit-logged'.
+//
 // File-based store for OSHA 300/301 incidents.
 
 import * as fs from 'node:fs/promises';
@@ -9,6 +12,7 @@ import {
   type IncidentCreate,
   type IncidentPatch,
 } from '@yge/shared';
+import { recordAudit, type AuditContext } from './audit-store';
 
 function dataDir(): string {
   return process.env.INCIDENTS_DATA_DIR ?? path.resolve(process.cwd(), 'data', 'incidents');
@@ -45,7 +49,10 @@ async function writeIndex(entries: Incident[]) {
   await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
 }
 
-export async function createIncident(input: IncidentCreate): Promise<Incident> {
+export async function createIncident(
+  input: IncidentCreate,
+  ctx?: AuditContext,
+): Promise<Incident> {
   await ensureDir();
   const now = new Date().toISOString();
   const id = newIncidentId();
@@ -68,6 +75,13 @@ export async function createIncident(input: IncidentCreate): Promise<Incident> {
   const index = await readIndex();
   index.unshift(inc);
   await writeIndex(index);
+  await recordAudit({
+    action: 'create',
+    entityType: 'Incident',
+    entityId: id,
+    after: inc,
+    ctx,
+  });
   return inc;
 }
 
@@ -98,6 +112,8 @@ export async function getIncident(id: string): Promise<Incident | null> {
 export async function updateIncident(
   id: string,
   patch: IncidentPatch,
+  ctx?: AuditContext,
+  auditAction: 'update' = 'update',
 ): Promise<Incident | null> {
   const existing = await getIncident(id);
   if (!existing) return null;
@@ -118,5 +134,13 @@ export async function updateIncident(
     index.unshift(updated);
   }
   await writeIndex(index);
+  await recordAudit({
+    action: auditAction,
+    entityType: 'Incident',
+    entityId: id,
+    before: existing,
+    after: updated,
+    ctx,
+  });
   return updated;
 }

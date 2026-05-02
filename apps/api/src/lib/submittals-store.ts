@@ -1,3 +1,6 @@
+// Every mutation here records an audit event via recordAudit() —
+// CLAUDE.md mandates 'every mutation is audit-logged'.
+//
 // File-based store for submittals.
 
 import * as fs from 'node:fs/promises';
@@ -9,6 +12,7 @@ import {
   type SubmittalCreate,
   type SubmittalPatch,
 } from '@yge/shared';
+import { recordAudit, type AuditContext } from './audit-store';
 
 function dataDir(): string {
   return (
@@ -48,7 +52,10 @@ async function writeIndex(entries: Submittal[]) {
   await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
 }
 
-export async function createSubmittal(input: SubmittalCreate): Promise<Submittal> {
+export async function createSubmittal(
+  input: SubmittalCreate,
+  ctx?: AuditContext,
+): Promise<Submittal> {
   await ensureDir();
   const now = new Date().toISOString();
   const id = newSubmittalId();
@@ -65,6 +72,13 @@ export async function createSubmittal(input: SubmittalCreate): Promise<Submittal
   const index = await readIndex();
   index.unshift(s);
   await writeIndex(index);
+  await recordAudit({
+    action: 'create',
+    entityType: 'Submittal',
+    entityId: id,
+    after: s,
+    ctx,
+  });
   return s;
 }
 
@@ -97,6 +111,8 @@ export async function getSubmittal(id: string): Promise<Submittal | null> {
 export async function updateSubmittal(
   id: string,
   patch: SubmittalPatch,
+  ctx?: AuditContext,
+  auditAction: 'update' | 'submit' | 'approve' | 'reject' = 'update',
 ): Promise<Submittal | null> {
   const existing = await getSubmittal(id);
   if (!existing) return null;
@@ -117,5 +133,13 @@ export async function updateSubmittal(
     index.unshift(updated);
   }
   await writeIndex(index);
+  await recordAudit({
+    action: auditAction,
+    entityType: 'Submittal',
+    entityId: id,
+    before: existing,
+    after: updated,
+    ctx,
+  });
   return updated;
 }
