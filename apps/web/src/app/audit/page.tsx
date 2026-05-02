@@ -107,10 +107,20 @@ export default async function AuditPage({
           <Link href="/dashboard" className="text-sm text-yge-blue-500 hover:underline">
             &larr; Dashboard
           </Link>
-          <span className="text-xs text-gray-500">
-            {data.events.length} of {data.total} event{data.total === 1 ? '' : 's'}
-            {data.events.length < data.total && ' (capped — narrow with filters)'}
-          </span>
+          <div className="flex items-center gap-3 text-xs text-gray-500">
+            <span>
+              {data.events.length} of {data.total} event{data.total === 1 ? '' : 's'}
+              {data.events.length < data.total && ' (capped — narrow with filters)'}
+            </span>
+            {data.events.length > 0 && (
+              <a
+                href={`${apiBaseUrl()}/api/audit-events/export.csv?${qs.toString()}`}
+                className="rounded border border-yge-blue-500 px-2 py-0.5 font-medium text-yge-blue-500 hover:bg-yge-blue-50"
+              >
+                Export CSV
+              </a>
+            )}
+          </div>
         </div>
 
         <PageHeader

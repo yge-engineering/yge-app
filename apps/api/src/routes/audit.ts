@@ -12,6 +12,8 @@ import { Router } from 'express';
 import {
   AuditActionSchema,
   AuditEntityTypeSchema,
+  changedFields,
+  type AuditEvent,
 } from '@yge/shared';
 import { z } from 'zod';
 import { getAuditEvent, listAuditEvents } from '../lib/audit-store';
@@ -51,6 +53,73 @@ auditRouter.get('/', async (req, res, next) => {
     next(err);
   }
 });
+
+// GET /api/audit-events/export.csv — same filters as the list,
+// streams a CSV with one row per event. Useful for compliance
+// reviews + occasional data exports for the CPA / bonding agent.
+auditRouter.get('/export.csv', async (req, res, next) => {
+  try {
+    const parsed = ListQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      return res
+        .status(400)
+        .json({ error: 'Validation failed', issues: parsed.error.issues });
+    }
+    const { limit, ...filter } = parsed.data;
+    const all = await listAuditEvents(filter);
+    const rows = all.slice(0, limit ?? 10_000);
+
+    const header = [
+      'id',
+      'createdAt',
+      'companyId',
+      'actorUserId',
+      'action',
+      'entityType',
+      'entityId',
+      'changedFields',
+      'reason',
+      'ipAddress',
+    ];
+    const csvLines: string[] = [header.join(',')];
+    for (const e of rows) {
+      csvLines.push(eventToCsvRow(e));
+    }
+    const body = '﻿' + csvLines.join('\n');
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    const datestamp = new Date().toISOString().slice(0, 10);
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="yge-audit-${datestamp}.csv"`,
+    );
+    return res.send(body);
+  } catch (err) {
+    next(err);
+  }
+});
+
+function csvCell(s: unknown): string {
+  if (s == null) return '';
+  const str = String(s);
+  if (/[",\n\r]/.test(str)) return `"${str.replace(/"/g, '""')}"`;
+  return str;
+}
+
+function eventToCsvRow(e: AuditEvent): string {
+  const fields = changedFields(e.before, e.after);
+  return [
+    csvCell(e.id),
+    csvCell(e.createdAt),
+    csvCell(e.companyId),
+    csvCell(e.actorUserId ?? ''),
+    csvCell(e.action),
+    csvCell(e.entityType),
+    csvCell(e.entityId),
+    csvCell(fields.join(' | ')),
+    csvCell(e.reason ?? ''),
+    csvCell(e.ipAddress ?? ''),
+  ].join(',');
+}
 
 // GET /api/audit-events/:id — one event with full before/after.
 auditRouter.get('/:id', async (req, res, next) => {
