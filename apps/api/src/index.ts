@@ -52,6 +52,7 @@ import { pdfFormMappingsRouter } from './routes/pdf-form-mappings';
 import { otpRouter } from './routes/otp';
 import { legalHoldsRouter } from './routes/legal-holds';
 import { recordsRetentionRouter } from './routes/records-retention';
+import { bidTabsRouter } from './routes/bid-tabs';
 
 const app = express();
 
@@ -107,6 +108,7 @@ app.use('/api/pdf-form-mappings', pdfFormMappingsRouter);
 app.use('/api/otp', otpRouter);
 app.use('/api/legal-holds', legalHoldsRouter);
 app.use('/api/records-retention', recordsRetentionRouter);
+app.use('/api/bid-tabs', bidTabsRouter);
 
 // 404
 app.use((_req, res) => {

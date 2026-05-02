@@ -1,0 +1,178 @@
+// /bid-tabs — public bid-tabulation corpus.
+//
+// The dataset estimates lean on for "what did the rest of the
+// market bid?". Every row here is a public-works bid open the
+// scrapers (or the manual-import form below) lifted off an agency
+// portal. Two reads:
+//   - Browse + search by agency / county / project name
+//   - Open one tab to see ranked bidders + apparent low + delta to
+//     engineers' estimate
+
+import Link from 'next/link';
+import { AppShell, PageHeader, StatusPill } from '../../components';
+import { BidTabImportForm } from '../../components/bid-tab-import-form';
+import type { BidTab } from '@yge/shared';
+
+function apiBaseUrl(): string {
+  return (
+    process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+  );
+}
+
+function publicApiBaseUrl(): string {
+  return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+}
+
+async function fetchTabs(): Promise<BidTab[]> {
+  try {
+    const res = await fetch(`${apiBaseUrl()}/api/bid-tabs`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    return ((await res.json()) as { tabs: BidTab[] }).tabs;
+  } catch { return []; }
+}
+
+function formatMoney(cents: number): string {
+  return `$${(cents / 100).toLocaleString(undefined, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  })}`;
+}
+
+export default async function BidTabsPage() {
+  const tabs = await fetchTabs();
+
+  // Per-source counts for the chip row.
+  const bySource = new Map<string, number>();
+  for (const t of tabs) bySource.set(t.source, (bySource.get(t.source) ?? 0) + 1);
+
+  const totalBidders = tabs.reduce((acc, t) => acc + t.bidders.length, 0);
+
+  return (
+    <AppShell>
+      <main className="mx-auto max-w-6xl p-8">
+        <div className="mb-6 flex items-center justify-between">
+          <Link href="/dashboard" className="text-sm text-yge-blue-500 hover:underline">
+            &larr; Dashboard
+          </Link>
+          <Link href="/bid-results" className="text-sm text-yge-blue-500 hover:underline">
+            YGE bid results &rarr;
+          </Link>
+        </div>
+
+        <PageHeader
+          title="Public bid tabs"
+          subtitle="Agency-posted bid tabulations the estimating team uses to size up the market. Manual import below; per-source scrapers (Caltrans, Cal eProcure, county portals) layer on top later."
+        />
+
+        <section className="mt-6 grid gap-3 sm:grid-cols-3">
+          <Tile label="Tabs imported" value={String(tabs.length)} />
+          <Tile label="Bidders captured" value={String(totalBidders)} />
+          <Tile label="Sources covered" value={String(bySource.size)} />
+        </section>
+
+        {tabs.length === 0 ? (
+          <p className="mt-6 rounded border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
+            No bid tabs imported yet. Use the form below to paste one.
+            Granite, Knife River, Mercer-Fraser, J.F. Shea — every bidder
+            you log here feeds the per-competitor profile.
+          </p>
+        ) : (
+          <section className="mt-6 overflow-hidden rounded-md border border-gray-200 bg-white shadow-sm">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+                <tr>
+                  <th className="px-3 py-2 text-left">Project</th>
+                  <th className="px-3 py-2 text-left">Agency</th>
+                  <th className="px-3 py-2 text-left">Source</th>
+                  <th className="px-3 py-2 text-left">Opened</th>
+                  <th className="px-3 py-2 text-right">Bidders</th>
+                  <th className="px-3 py-2 text-right">Apparent low</th>
+                  <th className="px-3 py-2 text-right">vs. EE</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {tabs.map((t) => {
+                  const apparent = t.bidders.find((b) => b.rank === 1);
+                  const ee = t.engineersEstimateCents;
+                  const overshoot =
+                    apparent && ee ? ((apparent.totalCents - ee) / ee) * 100 : null;
+                  return (
+                    <tr key={t.id}>
+                      <td className="px-3 py-2 align-top">
+                        <Link
+                          href={`/bid-tabs/${t.id}`}
+                          className="font-medium text-yge-blue-500 hover:underline"
+                        >
+                          {t.projectName}
+                        </Link>
+                        {t.projectNumber && (
+                          <div className="font-mono text-[11px] text-gray-500">
+                            {t.projectNumber}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-3 py-2 align-top text-gray-700">
+                        {t.agencyName}
+                        {t.county && (
+                          <div className="text-[11px] text-gray-500">
+                            {t.county} County
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-3 py-2 align-top">
+                        <StatusPill label={t.source} tone="info" size="sm" />
+                      </td>
+                      <td className="px-3 py-2 align-top font-mono text-xs text-gray-700">
+                        {t.bidOpenedAt.slice(0, 10)}
+                      </td>
+                      <td className="px-3 py-2 align-top text-right font-mono">
+                        {t.bidders.length}
+                      </td>
+                      <td className="px-3 py-2 align-top text-right font-mono">
+                        {apparent ? formatMoney(apparent.totalCents) : '—'}
+                        {apparent && (
+                          <div className="text-[10px] text-gray-500 line-clamp-1">
+                            {apparent.name}
+                          </div>
+                        )}
+                      </td>
+                      <td
+                        className={`px-3 py-2 align-top text-right font-mono ${
+                          overshoot === null
+                            ? 'text-gray-400'
+                            : overshoot > 5
+                              ? 'text-red-700'
+                              : overshoot < -5
+                                ? 'text-emerald-700'
+                                : 'text-gray-700'
+                        }`}
+                      >
+                        {overshoot === null ? '—' : `${overshoot >= 0 ? '+' : ''}${overshoot.toFixed(1)}%`}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </section>
+        )}
+
+        <section className="mt-8">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-700">
+            Manual import
+          </h2>
+          <BidTabImportForm apiBaseUrl={publicApiBaseUrl()} />
+        </section>
+      </main>
+    </AppShell>
+  );
+}
+
+function Tile({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border border-gray-200 bg-white p-3 shadow-sm">
+      <div className="text-xs uppercase tracking-wide text-gray-500">{label}</div>
+      <div className="mt-1 text-2xl font-bold text-gray-900">{value}</div>
+    </div>
+  );
+}
