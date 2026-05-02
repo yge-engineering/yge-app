@@ -4,6 +4,7 @@
 // handles the form + cert add/remove + status changes.
 
 import Link from 'next/link';
+import { AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { Employee } from '@yge/shared';
 import { EmployeeEditor } from '@/components/employee-editor';
@@ -64,6 +65,8 @@ export default async function EmployeeDetailPage({
           apiBaseUrl={publicApiBaseUrl()}
         />
       </div>
+
+      <AuditBinderPanel entityType="Employee" entityId={employee.id} />
     </main>
   );
 }

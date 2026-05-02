@@ -1,6 +1,7 @@
 // /bank-recs/[id] — bank rec detail / edit.
 
 import Link from 'next/link';
+import { AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { BankRec } from '@yge/shared';
 import { BankRecEditor } from '../../../components/bank-rec-editor';
@@ -40,6 +41,8 @@ export default async function BankRecDetailPage({
       <div className="mt-6">
         <BankRecEditor mode="edit" rec={rec} />
       </div>
+
+      <AuditBinderPanel entityType="BankRec" entityId={rec.id} />
     </main>
   );
 }

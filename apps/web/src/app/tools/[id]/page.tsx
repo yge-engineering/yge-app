@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 
-import { AppShell } from '../../../components/app-shell';
+import { AppShell, AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { Tool, Employee } from '@yge/shared';
 import { ToolEditor } from '@/components/tool-editor';
@@ -60,6 +60,8 @@ export default async function ToolDetailPage({
           apiBaseUrl={publicApiBaseUrl()}
         />
       </div>
+
+      <AuditBinderPanel entityType="Tool" entityId={tool.id} />
     </main>
     </AppShell>
   );

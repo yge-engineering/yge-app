@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 
-import { AppShell } from '../../../components/app-shell';
+import { AppShell, AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { Job, Material } from '@yge/shared';
 import { MaterialEditor } from '@/components/material-editor';
@@ -50,6 +50,8 @@ export default async function MaterialDetailPage({
       <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <MaterialEditor initial={material} jobs={jobs} apiBaseUrl={publicApiBaseUrl()} />
       </div>
+
+      <AuditBinderPanel entityType="Material" entityId={material.id} />
     </main>
     </AppShell>
   );

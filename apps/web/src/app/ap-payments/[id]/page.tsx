@@ -1,6 +1,7 @@
 // /ap-payments/[id] — payment detail / edit.
 
 import Link from 'next/link';
+import { AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { ApPayment } from '@yge/shared';
 import { ApPaymentEditor } from '../../../components/ap-payment-editor';
@@ -50,6 +51,8 @@ export default async function ApPaymentDetailPage({
       <div className="mt-6">
         <ApPaymentEditor mode="edit" payment={payment} />
       </div>
+
+      <AuditBinderPanel entityType="ApPayment" entityId={payment.id} />
     </main>
   );
 }

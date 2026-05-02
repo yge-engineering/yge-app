@@ -1,6 +1,7 @@
 // /certificates/[id] — full editor.
 
 import Link from 'next/link';
+import { AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { Certificate } from '@yge/shared';
 import { CertificateEditor } from '@/components/certificate-editor';
@@ -44,6 +45,8 @@ export default async function CertificateDetailPage({
       <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <CertificateEditor initial={cert} apiBaseUrl={publicApiBaseUrl()} />
       </div>
+
+      <AuditBinderPanel entityType="Certificate" entityId={cert.id} />
     </main>
   );
 }

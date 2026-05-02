@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 
-import { AppShell } from '../../../components/app-shell';
+import { AppShell, AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { BidResult, Job } from '@yge/shared';
 import { BidResultEditor } from '@/components/bid-result-editor';
@@ -60,6 +60,8 @@ export default async function BidResultDetailPage({
           apiBaseUrl={publicApiBaseUrl()}
         />
       </div>
+
+      <AuditBinderPanel entityType="BidResult" entityId={result.id} />
     </main>
     </AppShell>
   );

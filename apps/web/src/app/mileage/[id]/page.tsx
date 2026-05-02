@@ -1,6 +1,7 @@
 // /mileage/[id] — mileage entry detail / edit.
 
 import Link from 'next/link';
+import { AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { MileageEntry } from '@yge/shared';
 import { MileageEntryEditor } from '../../../components/mileage-entry-editor';
@@ -40,6 +41,8 @@ export default async function MileageDetailPage({
       <div className="mt-6">
         <MileageEntryEditor mode="edit" entry={entry} />
       </div>
+
+      <AuditBinderPanel entityType="Mileage" entityId={entry.id} />
     </main>
   );
 }
