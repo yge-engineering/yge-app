@@ -14,6 +14,7 @@ import {
   PageHeader,
   StatusPill,
 } from '../../components';
+import { DirProposalDecisionButtons } from '@/components/dir-proposal-decision-buttons';
 import {
   type DirRateProposal,
   type DirRateProposalDiff,
@@ -25,6 +26,10 @@ function apiBaseUrl(): string {
   return (
     process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
   );
+}
+
+function publicApiBaseUrl(): string {
+  return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 }
 
 interface ProposalRow extends DirRateProposal {
@@ -123,6 +128,7 @@ export default async function DirRateSyncPage() {
                   <th className="px-3 py-2 text-right">Δ fringe</th>
                   <th className="px-3 py-2 text-right">Δ total</th>
                   <th className="px-3 py-2 text-left">Note</th>
+                  <th className="px-3 py-2 text-right">Review</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -167,6 +173,13 @@ export default async function DirRateSyncPage() {
                       <td className="px-3 py-2 text-xs italic text-gray-600">
                         {p.reviewNote ?? p.rationale ?? ''}
                       </td>
+                      <td className="px-3 py-2 text-right">
+                        <DirProposalDecisionButtons
+                          apiBaseUrl={publicApiBaseUrl()}
+                          proposalId={p.id}
+                          disabled={p.status !== 'PENDING'}
+                        />
+                      </td>
                     </tr>
                   );
                 })}
@@ -209,10 +222,11 @@ export default async function DirRateSyncPage() {
         </section>
 
         <p className="mt-8 text-xs text-gray-500">
-          Phase-1 review surface is read-only here. Accept / reject controls
-          land in the next bundle along with the scheduled-scrape worker.
-          The data model + persistence + diff math is in place; the
-          API at <code>/api/dir-rate-sync</code> handles writes today.
+          Accept rolls a proposal into the live <Link href="/dir-rates" className="text-yge-blue-500 hover:underline">DIR rates</Link>{' '}
+          set in one shot — both the proposal status flip and the live-rate write
+          run inside the same API handler with rollback semantics. Reject keeps
+          the existing live rate untouched. Every decision is audit-logged with
+          the reviewer + reason.
         </p>
       </main>
     </AppShell>
