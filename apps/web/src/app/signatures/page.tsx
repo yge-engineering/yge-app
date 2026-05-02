@@ -11,6 +11,7 @@ import {
   PageHeader,
   StatusPill,
 } from '../../components';
+import { getTranslator } from '../../lib/locale';
 import {
   computeSignatureRollup,
   isLegallyBinding,
@@ -60,6 +61,7 @@ export default async function SignaturesPage({
   }
   const signatures = await fetchSignatures(qs);
   const rollup = computeSignatureRollup(signatures);
+  const t = getTranslator();
 
   return (
     <AppShell>
@@ -74,34 +76,32 @@ export default async function SignaturesPage({
         </div>
 
         <PageHeader
-          title="E-signatures"
-          subtitle="Every document a signer has affirmed via the app. ESIGN/UETA proof bundle (intent + consent + attribution + association + retention) lives on each row."
+          title={t('signatures.title')}
+          subtitle={t('signatures.subtitle')}
         />
 
         <section className="mt-4 grid gap-3 sm:grid-cols-4">
-          <Tile label="Total" value={String(rollup.total)} />
-          <Tile label="Signed" value={String(rollup.byStatus.SIGNED)} tone="success" />
-          <Tile label="Drafts" value={String(rollup.byStatus.DRAFT)} tone="warn" />
-          <Tile label="Legally binding" value={String(rollup.bindingCount)} />
+          <Tile label={t('signatures.tile.total')} value={String(rollup.total)} />
+          <Tile label={t('signatures.tile.signed')} value={String(rollup.byStatus.SIGNED)} tone="success" />
+          <Tile label={t('signatures.tile.drafts')} value={String(rollup.byStatus.DRAFT)} tone="warn" />
+          <Tile label={t('signatures.tile.binding')} value={String(rollup.bindingCount)} />
         </section>
 
         {signatures.length === 0 ? (
           <Alert tone="info" className="mt-6">
-            No signatures recorded yet. Open a draft on a bid acceptance, lien
-            waiver, change order, or any other signable document and the row
-            lands here.
+            {t('signatures.empty')}
           </Alert>
         ) : (
           <section className="mt-6 overflow-hidden rounded-md border border-gray-200 bg-white shadow-sm">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
                 <tr>
-                  <th className="px-3 py-2 text-left">Status</th>
-                  <th className="px-3 py-2 text-left">Document</th>
-                  <th className="px-3 py-2 text-left">Signer</th>
-                  <th className="px-3 py-2 text-left">Method</th>
-                  <th className="px-3 py-2 text-left">Signed</th>
-                  <th className="px-3 py-2 text-right">Action</th>
+                  <th className="px-3 py-2 text-left">{t('signatures.col.status')}</th>
+                  <th className="px-3 py-2 text-left">{t('signatures.col.document')}</th>
+                  <th className="px-3 py-2 text-left">{t('signatures.col.signer')}</th>
+                  <th className="px-3 py-2 text-left">{t('signatures.col.method')}</th>
+                  <th className="px-3 py-2 text-left">{t('signatures.col.signed')}</th>
+                  <th className="px-3 py-2 text-right">{t('signatures.col.action')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -111,7 +111,7 @@ export default async function SignaturesPage({
                       <StatusPill label={s.status} tone={STATUS_TONE[s.status]} size="sm" />
                       {isLegallyBinding(s) && (
                         <span className="ml-2 rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-emerald-800">
-                          binding
+                          {t('signatures.binding')}
                         </span>
                       )}
                     </td>
@@ -135,14 +135,14 @@ export default async function SignaturesPage({
                           href={`/sign/${s.id}`}
                           className="rounded bg-yge-blue-500 px-2 py-1 text-xs font-medium text-white hover:bg-yge-blue-700"
                         >
-                          Open to sign
+                          {t('signatures.openToSign')}
                         </Link>
                       ) : (
                         <Link
                           href={`/audit?entityType=Signature&entityId=${encodeURIComponent(s.id)}`}
                           className="text-xs text-yge-blue-500 hover:underline"
                         >
-                          Audit trail →
+                          {t('signatures.auditTrail')} →
                         </Link>
                       )}
                     </td>
