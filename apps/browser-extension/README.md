@@ -16,7 +16,24 @@ Phase-1 Manifest V3 extension that fills YGE's CSLB / DIR / DOT / NAICS / addres
 pnpm --filter @yge/browser-extension build
 ```
 
-The output lands in `dist/`. Load it as an unpacked extension in Chrome / Edge:
+The build bundles every entry point with esbuild (target Chrome 111 / Firefox 109 / Safari 16.4) into `dist/`:
+
+```
+dist/
+  manifest.json
+  icons/*
+  src/
+    background.js
+    content.js
+    popup.html
+    popup.js
+    options.html
+    options.js
+```
+
+`dist/` is gitignored — re-run `build` after any source change.
+
+Load it as an unpacked extension in Chrome / Edge:
 
 1. `chrome://extensions/`
 2. Toggle **Developer mode**

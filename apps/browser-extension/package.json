@@ -4,7 +4,7 @@
   "private": true,
   "description": "YGE auto form filler — fills CSLB / DIR / DOT identity into matching fields on any web form.",
   "scripts": {
-    "build": "tsc",
+    "build": "node scripts/build.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -12,6 +12,7 @@
   },
   "devDependencies": {
     "@types/chrome": "^0.0.260",
+    "esbuild": "^0.28.0",
     "typescript": "^5.4.0"
   }
 }
