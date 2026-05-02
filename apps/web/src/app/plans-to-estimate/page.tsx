@@ -129,9 +129,14 @@ export default function PlansToEstimatePage() {
           <Link href="/" className="text-sm text-yge-blue-500 hover:underline">
             &larr; Home
           </Link>
-          <Link href="/drafts" className="text-sm text-yge-blue-500 hover:underline">
-            View saved drafts &rarr;
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link href="/plans-to-estimate/multipass" className="text-sm text-yge-blue-500 hover:underline">
+              Multi-pass mode &rarr;
+            </Link>
+            <Link href="/drafts" className="text-sm text-yge-blue-500 hover:underline">
+              View saved drafts &rarr;
+            </Link>
+          </div>
         </div>
         <h1 className="mt-2 text-3xl font-bold text-yge-blue-500">Plans-to-Estimate</h1>
         <p className="mt-2 text-gray-700">
