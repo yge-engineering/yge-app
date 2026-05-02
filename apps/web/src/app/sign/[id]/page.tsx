@@ -19,6 +19,7 @@ import {
 } from '../../../components';
 import { SignFormOtp } from '@/components/sign-form-otp';
 import { SignFormDrawn } from '@/components/sign-form-drawn';
+import { SignatureFlattenButton } from '@/components/signature-flatten-button';
 import {
   isLegallyBinding,
   type Signature,
@@ -150,13 +151,42 @@ function DocumentSummary({ signature }: { signature: Signature }) {
 }
 
 function AlreadyDecided({ signature }: { signature: Signature }) {
+  const apiBase = publicApiBaseUrl();
   if (isLegallyBinding(signature)) {
     return (
-      <Alert tone="success" className="mt-4" title="Signed and binding">
-        This document was signed{' '}
-        {signature.signedAt && <>at <code className="font-mono">{signature.signedAt}</code> </>}
-        by {signature.signer.name}. The signature certificate is archived
-        and the flattened PDF hash is recorded.
+      <>
+        <Alert tone="success" className="mt-4" title="Signed and binding">
+          This document was signed{' '}
+          {signature.signedAt && <>at <code className="font-mono">{signature.signedAt}</code> </>}
+          by {signature.signer.name}. The signature certificate is archived
+          and the flattened PDF hash is recorded.
+        </Alert>
+        {signature.flattenedReference && (
+          <section className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
+            <p className="text-sm text-emerald-900">
+              Flattened PDF available · sha256{' '}
+              <code className="font-mono text-xs">{signature.flattenedSha256?.slice(0, 16)}…</code>
+            </p>
+            <a
+              href={`${apiBase}/api/signatures/${signature.id}/flattened`}
+              className="mt-2 inline-block text-sm font-semibold text-emerald-800 underline"
+            >
+              Download signed PDF →
+            </a>
+          </section>
+        )}
+      </>
+    );
+  }
+  if (signature.status === 'SIGNED' && signature.signatureImage && !signature.flattenedSha256) {
+    return (
+      <Alert tone="info" className="mt-4" title="Signed — flatten next">
+        <p className="mb-3">
+          The signature image and audit context are recorded. Click below to
+          embed the captured signature into the source PDF, write the
+          flattened bytes, and lock the certificate.
+        </p>
+        <SignatureFlattenButton apiBaseUrl={apiBase} signatureId={signature.id} />
       </Alert>
     );
   }

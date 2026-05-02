@@ -29,6 +29,10 @@ import {
   submitSignature,
   voidSignature,
 } from '../lib/signatures-store';
+import {
+  flattenSignedPdf,
+  readFlattenedPdfBytes,
+} from '../lib/pdf-signature-flatten';
 
 export const signaturesRouter = Router();
 
@@ -137,6 +141,47 @@ signaturesRouter.post('/:id/finalize', async (req, res, next) => {
     );
     if (!signature) return res.status(404).json({ error: 'Signature not found' });
     return res.json({ signature });
+  } catch (err) { next(err); }
+});
+
+// ---- Flatten -------------------------------------------------------------
+// Embeds the captured signature image into the source PDF, writes
+// the flattened bytes to data/signed-flattened-pdfs/<sigId>.pdf,
+// and finalizes the signature row in one shot. Returns the
+// updated signature row + the flattened SHA-256.
+
+signaturesRouter.post('/:id/flatten', async (req, res, next) => {
+  try {
+    const sig = await getSignature(req.params.id);
+    if (!sig) return res.status(404).json({ error: 'Signature not found' });
+    const result = await flattenSignedPdf(sig);
+    const finalized = await finalizeSignature(req.params.id, result.sha256, result.reference);
+    return res.json({
+      signature: finalized,
+      flattenedSha256: result.sha256,
+      flattenedReference: result.reference,
+      byteLength: result.bytes.byteLength,
+    });
+  } catch (err) {
+    if (err instanceof Error && /no captured image|no document\.reference|status|outside/.test(err.message)) {
+      return res.status(409).json({ error: err.message });
+    }
+    next(err);
+  }
+});
+
+signaturesRouter.get('/:id/flattened', async (req, res, next) => {
+  try {
+    const sig = await getSignature(req.params.id);
+    if (!sig?.flattenedReference) return res.status(404).json({ error: 'No flattened PDF' });
+    const bytes = await readFlattenedPdfBytes(sig.flattenedReference);
+    if (!bytes) return res.status(404).json({ error: 'Flattened PDF missing on disk' });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${sig.id}-${sig.document.displayName.replace(/[^a-z0-9.-]+/gi, '_').slice(0, 80)}.pdf"`,
+    );
+    return res.end(Buffer.from(bytes));
   } catch (err) { next(err); }
 });
 
