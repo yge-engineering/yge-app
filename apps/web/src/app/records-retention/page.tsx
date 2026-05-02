@@ -13,6 +13,7 @@ import {
   StatusPill,
 } from '../../components';
 import { RetentionPurgeConfirmForm } from '../../components/retention-purge-confirm-form';
+import { getTranslator } from '../../lib/locale';
 import {
   RETENTION_RULES,
   computeRetentionStats,
@@ -90,6 +91,7 @@ export default async function RecordsRetentionPage() {
     if (a.retainYears !== b.retainYears) return b.retainYears - a.retainYears;
     return a.label.localeCompare(b.label);
   });
+  const t = getTranslator();
 
   return (
     <AppShell>
@@ -104,8 +106,8 @@ export default async function RecordsRetentionPage() {
         </div>
 
         <PageHeader
-          title="Records retention"
-          subtitle="Statutory + regulatory rules the records-retention engine enforces. Every record carries a retention clock; legal holds freeze the clock until released."
+          title={t('recordsRetention.title')}
+          subtitle={t('recordsRetention.subtitle')}
         />
 
         <Alert tone="info" className="mt-4">
@@ -117,14 +119,14 @@ export default async function RecordsRetentionPage() {
         </Alert>
 
         <section className="mt-4 grid gap-3 sm:grid-cols-3">
-          <Tile label="Rules in engine" value={String(stats.total)} />
+          <Tile label={t('recordsRetention.tile.rules')} value={String(stats.total)} />
           <Tile
-            label="Longest retention"
+            label={t('recordsRetention.tile.longest')}
             value={`${stats.longestRetainYears} yrs`}
             sub={stats.longestRule?.label}
           />
           <Tile
-            label="Authorities"
+            label={t('recordsRetention.tile.authorities')}
             value={String(
               Object.values(stats.byAuthority).filter((c) => c > 0).length,
             )}
@@ -135,11 +137,11 @@ export default async function RecordsRetentionPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
               <tr>
-                <th className="px-3 py-2 text-left">Authority</th>
-                <th className="px-3 py-2 text-left">Record</th>
-                <th className="px-3 py-2 text-left">Trigger</th>
-                <th className="px-3 py-2 text-right">Retain</th>
-                <th className="px-3 py-2 text-left">Citation</th>
+                <th className="px-3 py-2 text-left">{t('recordsRetention.col.authority')}</th>
+                <th className="px-3 py-2 text-left">{t('recordsRetention.col.record')}</th>
+                <th className="px-3 py-2 text-left">{t('recordsRetention.col.trigger')}</th>
+                <th className="px-3 py-2 text-right">{t('recordsRetention.col.retain')}</th>
+                <th className="px-3 py-2 text-left">{t('recordsRetention.col.citation')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -182,7 +184,7 @@ export default async function RecordsRetentionPage() {
           <section className="mt-8">
             <header className="mb-3 flex items-center justify-between">
               <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-700">
-                Purge eligibility (dry run)
+                {t('recordsRetention.purge.title')}
               </h2>
               <span className="text-xs text-gray-500">
                 Generated {purgeReport.generatedAt.replace('T', ' ').slice(0, 16)} · {purgeReport.rulesEvaluated} rules
@@ -190,8 +192,8 @@ export default async function RecordsRetentionPage() {
             </header>
 
             <div className="grid gap-3 sm:grid-cols-2">
-              <Tile label="Eligible to purge" value={String(purgeReport.eligibleCount)} sub="not frozen by any active hold" />
-              <Tile label="Frozen by legal hold" value={String(purgeReport.frozenCount)} sub="purge blocked while hold is active" />
+              <Tile label={t('recordsRetention.purge.eligible')} value={String(purgeReport.eligibleCount)} sub="not frozen by any active hold" />
+              <Tile label={t('recordsRetention.purge.frozen')} value={String(purgeReport.frozenCount)} sub="purge blocked while hold is active" />
             </div>
 
             {purgeReport.perEntity.length === 0 ? (
@@ -216,10 +218,10 @@ export default async function RecordsRetentionPage() {
                     <table className="w-full text-xs">
                       <thead className="bg-white text-[11px] uppercase tracking-wide text-gray-500">
                         <tr>
-                          <th className="px-3 py-1 text-left">Record</th>
-                          <th className="px-3 py-1 text-left">Trigger</th>
-                          <th className="px-3 py-1 text-left">Eligible on</th>
-                          <th className="px-3 py-1 text-left">State</th>
+                          <th className="px-3 py-1 text-left">{t('recordsRetention.col.record')}</th>
+                          <th className="px-3 py-1 text-left">{t('recordsRetention.col.trigger')}</th>
+                          <th className="px-3 py-1 text-left">{t('recordsRetention.purge.col.eligibleOn')}</th>
+                          <th className="px-3 py-1 text-left">{t('recordsRetention.purge.col.state')}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100">
@@ -277,7 +279,7 @@ export default async function RecordsRetentionPage() {
           <section className="mt-8">
             <header className="mb-3">
               <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-700">
-                Recent purge batches
+                {t('recordsRetention.batches.title')}
               </h2>
               <p className="text-xs text-gray-500">
                 Operator-confirmed retention destruction decisions, newest
@@ -291,12 +293,12 @@ export default async function RecordsRetentionPage() {
               <table className="w-full text-xs">
                 <thead className="bg-gray-50 text-[11px] uppercase tracking-wide text-gray-500">
                   <tr>
-                    <th className="px-3 py-2 text-left">Batch</th>
-                    <th className="px-3 py-2 text-left">Bucket</th>
-                    <th className="px-3 py-2 text-left">Authority</th>
-                    <th className="px-3 py-2 text-right">Rows</th>
-                    <th className="px-3 py-2 text-left">Reason</th>
-                    <th className="px-3 py-2 text-left">When</th>
+                    <th className="px-3 py-2 text-left">{t('recordsRetention.batches.col.batch')}</th>
+                    <th className="px-3 py-2 text-left">{t('recordsRetention.batches.col.bucket')}</th>
+                    <th className="px-3 py-2 text-left">{t('recordsRetention.col.authority')}</th>
+                    <th className="px-3 py-2 text-right">{t('recordsRetention.batches.col.rows')}</th>
+                    <th className="px-3 py-2 text-left">{t('recordsRetention.batches.col.reason')}</th>
+                    <th className="px-3 py-2 text-left">{t('recordsRetention.batches.col.when')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
