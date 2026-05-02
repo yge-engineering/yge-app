@@ -1,3 +1,6 @@
+// Every mutation here records an audit event via recordAudit() —
+// CLAUDE.md mandates 'every mutation is audit-logged'.
+//
 // File-based store for weekly time cards.
 
 import * as fs from 'node:fs/promises';
@@ -9,6 +12,7 @@ import {
   type TimeCardCreate,
   type TimeCardPatch,
 } from '@yge/shared';
+import { recordAudit, type AuditContext } from './audit-store';
 
 function dataDir(): string {
   return (
@@ -48,7 +52,10 @@ async function writeIndex(entries: TimeCard[]) {
   await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
 }
 
-export async function createTimeCard(input: TimeCardCreate): Promise<TimeCard> {
+export async function createTimeCard(
+  input: TimeCardCreate,
+  ctx?: AuditContext,
+): Promise<TimeCard> {
   await ensureDir();
   const now = new Date().toISOString();
   const id = newTimeCardId();
@@ -65,6 +72,13 @@ export async function createTimeCard(input: TimeCardCreate): Promise<TimeCard> {
   const index = await readIndex();
   index.unshift(c);
   await writeIndex(index);
+  await recordAudit({
+    action: 'create',
+    entityType: 'TimeCard',
+    entityId: id,
+    after: c,
+    ctx,
+  });
   return c;
 }
 
@@ -95,6 +109,8 @@ export async function getTimeCard(id: string): Promise<TimeCard | null> {
 export async function updateTimeCard(
   id: string,
   patch: TimeCardPatch,
+  ctx?: AuditContext,
+  auditAction: 'update' | 'submit' | 'approve' | 'reject' | 'post' = 'update',
 ): Promise<TimeCard | null> {
   const existing = await getTimeCard(id);
   if (!existing) return null;
@@ -115,5 +131,13 @@ export async function updateTimeCard(
     index.unshift(updated);
   }
   await writeIndex(index);
+  await recordAudit({
+    action: auditAction,
+    entityType: 'TimeCard',
+    entityId: id,
+    before: existing,
+    after: updated,
+    ctx,
+  });
   return updated;
 }

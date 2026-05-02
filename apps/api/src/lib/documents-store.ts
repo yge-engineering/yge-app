@@ -1,3 +1,6 @@
+// Every mutation here records an audit event via recordAudit() —
+// CLAUDE.md mandates 'every mutation is audit-logged'.
+//
 // File-based store for document metadata.
 //
 // Phase 1 only stores the metadata + a URL/path pointing at where the
@@ -15,6 +18,7 @@ import {
   type DocumentCreate,
   type DocumentPatch,
 } from '@yge/shared';
+import { recordAudit, type AuditContext } from './audit-store';
 
 function dataDir(): string {
   return (
@@ -67,7 +71,10 @@ function sanitizeTags(tags?: string[]): string[] {
   return out;
 }
 
-export async function createDocument(input: DocumentCreate): Promise<Document> {
+export async function createDocument(
+  input: DocumentCreate,
+  ctx?: AuditContext,
+): Promise<Document> {
   await ensureDir();
   const now = new Date().toISOString();
   const id = newDocumentId();
@@ -86,6 +93,13 @@ export async function createDocument(input: DocumentCreate): Promise<Document> {
   const index = await readIndex();
   index.unshift(d);
   await writeIndex(index);
+  await recordAudit({
+    action: 'create',
+    entityType: 'Document',
+    entityId: id,
+    after: d,
+    ctx,
+  });
   return d;
 }
 
@@ -128,6 +142,8 @@ export async function getDocument(id: string): Promise<Document | null> {
 export async function updateDocument(
   id: string,
   patch: DocumentPatch,
+  ctx?: AuditContext,
+  auditAction: 'update' | 'archive' | 'restore' = 'update',
 ): Promise<Document | null> {
   const existing = await getDocument(id);
   if (!existing) return null;
@@ -149,5 +165,13 @@ export async function updateDocument(
     index.unshift(updated);
   }
   await writeIndex(index);
+  await recordAudit({
+    action: auditAction,
+    entityType: 'Document',
+    entityId: id,
+    before: existing,
+    after: updated,
+    ctx,
+  });
   return updated;
 }

@@ -1,3 +1,6 @@
+// Every mutation here records an audit event via recordAudit() —
+// CLAUDE.md mandates 'every mutation is audit-logged'.
+//
 // File-based store for field photo metadata.
 
 import * as fs from 'node:fs/promises';
@@ -9,6 +12,7 @@ import {
   type PhotoCreate,
   type PhotoPatch,
 } from '@yge/shared';
+import { recordAudit, type AuditContext } from './audit-store';
 
 function dataDir(): string {
   return process.env.PHOTOS_DATA_DIR ?? path.resolve(process.cwd(), 'data', 'photos');
@@ -45,7 +49,10 @@ async function writeIndex(entries: Photo[]) {
   await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
 }
 
-export async function createPhoto(input: PhotoCreate): Promise<Photo> {
+export async function createPhoto(
+  input: PhotoCreate,
+  ctx?: AuditContext,
+): Promise<Photo> {
   await ensureDir();
   const now = new Date().toISOString();
   const id = newPhotoId();
@@ -61,6 +68,13 @@ export async function createPhoto(input: PhotoCreate): Promise<Photo> {
   const index = await readIndex();
   index.unshift(p);
   await writeIndex(index);
+  await recordAudit({
+    action: 'create',
+    entityType: 'Photo',
+    entityId: id,
+    after: p,
+    ctx,
+  });
   return p;
 }
 
@@ -89,6 +103,8 @@ export async function getPhoto(id: string): Promise<Photo | null> {
 export async function updatePhoto(
   id: string,
   patch: PhotoPatch,
+  ctx?: AuditContext,
+  auditAction: 'update' = 'update',
 ): Promise<Photo | null> {
   const existing = await getPhoto(id);
   if (!existing) return null;
@@ -109,5 +125,13 @@ export async function updatePhoto(
     index.unshift(updated);
   }
   await writeIndex(index);
+  await recordAudit({
+    action: auditAction,
+    entityType: 'Photo',
+    entityId: id,
+    before: existing,
+    after: updated,
+    ctx,
+  });
   return updated;
 }

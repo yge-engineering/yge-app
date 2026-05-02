@@ -1,3 +1,6 @@
+// Every mutation here records an audit event via recordAudit() —
+// CLAUDE.md mandates 'every mutation is audit-logged'.
+//
 // File-based store for daily reports.
 //
 // Phase 1 stand-in for the future Postgres `DailyReport` table. The id
@@ -14,6 +17,7 @@ import {
   type DailyReportCreate,
   type DailyReportPatch,
 } from '@yge/shared';
+import { recordAudit, type AuditContext } from './audit-store';
 
 function dataDir(): string {
   return (
@@ -53,7 +57,10 @@ async function writeIndex(entries: DailyReport[]) {
   await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
 }
 
-export async function createDailyReport(input: DailyReportCreate): Promise<DailyReport> {
+export async function createDailyReport(
+  input: DailyReportCreate,
+  ctx?: AuditContext,
+): Promise<DailyReport> {
   await ensureDir();
   const now = new Date().toISOString();
   const id = newDailyReportId(input.date);
@@ -71,6 +78,13 @@ export async function createDailyReport(input: DailyReportCreate): Promise<Daily
   const index = await readIndex();
   index.unshift(r);
   await writeIndex(index);
+  await recordAudit({
+    action: 'create',
+    entityType: 'DailyReport',
+    entityId: id,
+    after: r,
+    ctx,
+  });
   return r;
 }
 
@@ -108,6 +122,8 @@ export async function getDailyReport(id: string): Promise<DailyReport | null> {
 export async function updateDailyReport(
   id: string,
   patch: DailyReportPatch,
+  ctx?: AuditContext,
+  auditAction: 'update' | 'submit' = 'update',
 ): Promise<DailyReport | null> {
   const existing = await getDailyReport(id);
   if (!existing) return null;
@@ -128,5 +144,13 @@ export async function updateDailyReport(
     index.unshift(updated);
   }
   await writeIndex(index);
+  await recordAudit({
+    action: auditAction,
+    entityType: 'DailyReport',
+    entityId: id,
+    before: existing,
+    after: updated,
+    ctx,
+  });
   return updated;
 }

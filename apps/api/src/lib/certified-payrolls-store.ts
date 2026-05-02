@@ -1,3 +1,6 @@
+// Every mutation here records an audit event via recordAudit() —
+// CLAUDE.md mandates 'every mutation is audit-logged'.
+//
 // File-based store for certified payroll records.
 
 import * as fs from 'node:fs/promises';
@@ -9,6 +12,7 @@ import {
   type CertifiedPayrollCreate,
   type CertifiedPayrollPatch,
 } from '@yge/shared';
+import { recordAudit, type AuditContext } from './audit-store';
 
 function dataDir(): string {
   return (
@@ -50,6 +54,7 @@ async function writeIndex(entries: CertifiedPayroll[]) {
 
 export async function createCertifiedPayroll(
   input: CertifiedPayrollCreate,
+  ctx?: AuditContext,
 ): Promise<CertifiedPayroll> {
   await ensureDir();
   const now = new Date().toISOString();
@@ -70,6 +75,13 @@ export async function createCertifiedPayroll(
   const index = await readIndex();
   index.unshift(c);
   await writeIndex(index);
+  await recordAudit({
+    action: 'create',
+    entityType: 'CertifiedPayroll',
+    entityId: id,
+    after: c,
+    ctx,
+  });
   return c;
 }
 
@@ -98,6 +110,8 @@ export async function getCertifiedPayroll(id: string): Promise<CertifiedPayroll 
 export async function updateCertifiedPayroll(
   id: string,
   patch: CertifiedPayrollPatch,
+  ctx?: AuditContext,
+  auditAction: 'update' | 'sign' | 'submit' = 'update',
 ): Promise<CertifiedPayroll | null> {
   const existing = await getCertifiedPayroll(id);
   if (!existing) return null;
@@ -118,5 +132,13 @@ export async function updateCertifiedPayroll(
     index.unshift(updated);
   }
   await writeIndex(index);
+  await recordAudit({
+    action: auditAction,
+    entityType: 'CertifiedPayroll',
+    entityId: id,
+    before: existing,
+    after: updated,
+    ctx,
+  });
   return updated;
 }
