@@ -11,6 +11,7 @@
 import Link from 'next/link';
 import { AppShell, PageHeader, StatusPill } from '../../components';
 import { BidTabImportForm } from '../../components/bid-tab-import-form';
+import { BidTabsMonthSparkline } from '../../components/bid-tabs-month-sparkline';
 import { getTranslator } from '../../lib/locale';
 import type { BidTab } from '@yge/shared';
 
@@ -118,6 +119,17 @@ export default async function BidTabsPage({ searchParams }: BidTabsPageProps) {
           <Tile label={t('bidtabs.tile.bidders')} value={String(totalBidders)} />
           <Tile label={t('bidtabs.tile.sources')} value={String(bySource.size)} />
         </section>
+
+        {tabs.length > 0 && (
+          <section className="mt-4 rounded-md border border-gray-200 bg-white p-3 shadow-sm">
+            <h2 className="mb-2 text-[10px] uppercase tracking-wide text-gray-500">
+              Tabs by month (last 12)
+            </h2>
+            <BidTabsMonthSparkline
+              bidOpenedAtIsoDates={tabs.map((t) => t.bidOpenedAt)}
+            />
+          </section>
+        )}
 
         {(bySource.size > 0 || byCounty.size > 0) && (
           <section className="mt-4 space-y-2 rounded-md border border-gray-200 bg-white p-3">
