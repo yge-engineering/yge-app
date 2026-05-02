@@ -17,6 +17,7 @@ import {
   buildCompetitorProfilesFromTabs,
   type BidTab,
 } from '@yge/shared';
+import { getTranslator } from '../../lib/locale';
 
 function apiBaseUrl(): string {
   return (
@@ -43,12 +44,12 @@ function formatMoney(cents: number): string {
 
 type WindowKey = 'all' | '12m' | '6m' | '3m' | '1m';
 
-const WINDOWS: { key: WindowKey; label: string; days: number | null }[] = [
-  { key: 'all', label: 'All time', days: null },
-  { key: '12m', label: 'Last 12 mo', days: 365 },
-  { key: '6m', label: 'Last 6 mo', days: 183 },
-  { key: '3m', label: 'Last 3 mo', days: 91 },
-  { key: '1m', label: 'Last 30 d', days: 30 },
+const WINDOWS: { key: WindowKey; labelKey: string; days: number | null }[] = [
+  { key: 'all', labelKey: 'competitors.window.all', days: null },
+  { key: '12m', labelKey: 'competitors.window.12m', days: 365 },
+  { key: '6m', labelKey: 'competitors.window.6m', days: 183 },
+  { key: '3m', labelKey: 'competitors.window.3m', days: 91 },
+  { key: '1m', labelKey: 'competitors.window.1m', days: 30 },
 ];
 
 function parseWindow(raw: string | undefined): WindowKey {
@@ -76,6 +77,7 @@ export default async function CompetitorsPage({ searchParams }: PageProps) {
   const windowDef = WINDOWS.find((w) => w.key === window) ?? WINDOWS[0]!;
   const tabs = applyWindow(allTabs, windowDef.days);
   const { rollup, rows } = buildCompetitorProfilesFromTabs(tabs);
+  const t = getTranslator();
 
   return (
     <AppShell>
@@ -91,8 +93,8 @@ export default async function CompetitorsPage({ searchParams }: PageProps) {
 
         <div className="flex items-end justify-between">
           <PageHeader
-            title="Competitors"
-            subtitle="Local-market competitor profiles rolled up from the public bid-tab corpus. Read this before sizing a bid — who shows up, how often, at what dollar range."
+            title={t('competitors.title')}
+            subtitle={t('competitors.subtitle')}
           />
           {rows.length > 0 && (
             <a
@@ -107,7 +109,7 @@ export default async function CompetitorsPage({ searchParams }: PageProps) {
         </div>
 
         <section className="mt-4 flex flex-wrap items-center gap-2 rounded-md border border-gray-200 bg-white p-3">
-          <span className="text-xs uppercase tracking-wide text-gray-500">Window:</span>
+          <span className="text-xs uppercase tracking-wide text-gray-500">{t('competitors.window.label')}</span>
           {WINDOWS.map((w) => {
             const active = w.key === window;
             const href = w.key === 'all' ? '/competitors' : `/competitors?window=${w.key}`;
@@ -121,44 +123,43 @@ export default async function CompetitorsPage({ searchParams }: PageProps) {
                     : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-100'
                 }`}
               >
-                {w.label}
+                {t(w.labelKey)}
               </Link>
             );
           })}
           {window !== 'all' && (
             <span className="text-[11px] text-gray-500">
-              {tabs.length} of {allTabs.length} tabs in window
+              {t('competitors.window.tabsInWindow', { tabs: tabs.length, total: allTabs.length })}
             </span>
           )}
         </section>
 
         <section className="mt-4 grid gap-3 sm:grid-cols-3">
-          <Tile label="Bid tabs considered" value={String(rollup.tabsConsidered)} />
-          <Tile label="Unique competitors" value={String(rollup.uniqueCompetitors)} />
-          <Tile label="Total appearances" value={String(rollup.totalAppearances)} />
+          <Tile label={t('competitors.tile.tabs')} value={String(rollup.tabsConsidered)} />
+          <Tile label={t('competitors.tile.unique')} value={String(rollup.uniqueCompetitors)} />
+          <Tile label={t('competitors.tile.appearances')} value={String(rollup.totalAppearances)} />
         </section>
 
         {rows.length === 0 ? (
           <p className="mt-6 rounded border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
-            No competitor data yet. Import a bid tab on{' '}
-            <Link href="/bid-tabs" className="text-yge-blue-500 hover:underline">/bid-tabs</Link>{' '}
-            and the rollup will populate.
+            {t('competitors.empty')}{' '}
+            <Link href="/bid-tabs" className="text-yge-blue-500 hover:underline">/bid-tabs</Link>
           </p>
         ) : (
           <section className="mt-6 overflow-hidden rounded-md border border-gray-200 bg-white shadow-sm">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
                 <tr>
-                  <th className="px-3 py-2 text-left">Competitor</th>
-                  <th className="px-3 py-2 text-right">Tabs</th>
-                  <th className="px-3 py-2 text-right">Apparent low</th>
-                  <th className="px-3 py-2 text-right">Awarded</th>
-                  <th className="px-3 py-2 text-right">Avg bid</th>
-                  <th className="px-3 py-2 text-right">Avg rank</th>
-                  <th className="px-3 py-2 text-left">Top agency</th>
-                  <th className="px-3 py-2 text-left">Counties</th>
-                  <th className="px-3 py-2 text-left">Active</th>
-                  <th className="px-3 py-2 text-left">Flags</th>
+                  <th className="px-3 py-2 text-left">{t('competitors.col.competitor')}</th>
+                  <th className="px-3 py-2 text-right">{t('competitors.col.tabs')}</th>
+                  <th className="px-3 py-2 text-right">{t('competitors.col.apparentLow')}</th>
+                  <th className="px-3 py-2 text-right">{t('competitors.col.awarded')}</th>
+                  <th className="px-3 py-2 text-right">{t('competitors.col.avgBid')}</th>
+                  <th className="px-3 py-2 text-right">{t('competitors.col.avgRank')}</th>
+                  <th className="px-3 py-2 text-left">{t('competitors.col.topAgency')}</th>
+                  <th className="px-3 py-2 text-left">{t('competitors.col.counties')}</th>
+                  <th className="px-3 py-2 text-left">{t('competitors.col.active')}</th>
+                  <th className="px-3 py-2 text-left">{t('competitors.col.flags')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">

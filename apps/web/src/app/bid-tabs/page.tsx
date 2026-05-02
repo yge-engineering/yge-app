@@ -11,6 +11,7 @@
 import Link from 'next/link';
 import { AppShell, PageHeader, StatusPill } from '../../components';
 import { BidTabImportForm } from '../../components/bid-tab-import-form';
+import { getTranslator } from '../../lib/locale';
 import type { BidTab } from '@yge/shared';
 
 function apiBaseUrl(): string {
@@ -81,6 +82,8 @@ export default async function BidTabsPage({ searchParams }: BidTabsPageProps) {
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
     .slice(0, 8);
 
+  const t = getTranslator();
+
   return (
     <AppShell>
       <main className="mx-auto max-w-6xl p-8">
@@ -95,8 +98,8 @@ export default async function BidTabsPage({ searchParams }: BidTabsPageProps) {
 
         <div className="flex items-end justify-between">
           <PageHeader
-            title="Public bid tabs"
-            subtitle="Agency-posted bid tabulations the estimating team uses to size up the market. Manual import below; per-source scrapers (Caltrans, Cal eProcure, county portals) layer on top later."
+            title={t('bidtabs.title')}
+            subtitle={t('bidtabs.subtitle')}
           />
           {tabs.length > 0 && (
             <a
@@ -111,15 +114,15 @@ export default async function BidTabsPage({ searchParams }: BidTabsPageProps) {
         </div>
 
         <section className="mt-6 grid gap-3 sm:grid-cols-3">
-          <Tile label="Tabs imported" value={String(tabs.length)} />
-          <Tile label="Bidders captured" value={String(totalBidders)} />
-          <Tile label="Sources covered" value={String(bySource.size)} />
+          <Tile label={t('bidtabs.tile.imported')} value={String(tabs.length)} />
+          <Tile label={t('bidtabs.tile.bidders')} value={String(totalBidders)} />
+          <Tile label={t('bidtabs.tile.sources')} value={String(bySource.size)} />
         </section>
 
         {(bySource.size > 0 || byCounty.size > 0) && (
           <section className="mt-4 space-y-2 rounded-md border border-gray-200 bg-white p-3">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs uppercase tracking-wide text-gray-500">Source:</span>
+              <span className="text-xs uppercase tracking-wide text-gray-500">{t('bidtabs.filter.source')}</span>
               <Link
                 href={chipHref({ source: '' })}
                 className={`rounded-full px-3 py-1 text-xs font-medium ${
@@ -128,7 +131,7 @@ export default async function BidTabsPage({ searchParams }: BidTabsPageProps) {
                     : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-100'
                 }`}
               >
-                All ({allTabs.length})
+                {t('bidtabs.filter.all')} ({allTabs.length})
               </Link>
               {[...bySource.entries()]
                 .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
@@ -151,7 +154,7 @@ export default async function BidTabsPage({ searchParams }: BidTabsPageProps) {
             </div>
             {topCounties.length > 0 && (
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs uppercase tracking-wide text-gray-500">County:</span>
+                <span className="text-xs uppercase tracking-wide text-gray-500">{t('bidtabs.filter.county')}</span>
                 <Link
                   href={chipHref({ county: '' })}
                   className={`rounded-full px-3 py-1 text-xs font-medium ${
@@ -160,7 +163,7 @@ export default async function BidTabsPage({ searchParams }: BidTabsPageProps) {
                       : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-100'
                   }`}
                 >
-                  All
+                  {t('bidtabs.filter.all')}
                 </Link>
                 {topCounties.map(([county, count]) => {
                   const active = countyFilter === county;
@@ -187,17 +190,13 @@ export default async function BidTabsPage({ searchParams }: BidTabsPageProps) {
           <p className="mt-6 rounded border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
             {sourceFilter || countyFilter ? (
               <>
-                No bid tabs match this filter.{' '}
+                {t('bidtabs.empty.no_match')}{' '}
                 <Link href="/bid-tabs" className="text-yge-blue-500 hover:underline">
-                  Clear filter →
+                  {t('bidtabs.empty.clearFilter')} →
                 </Link>
               </>
             ) : (
-              <>
-                No bid tabs imported yet. Use the form below to paste one.
-                Granite, Knife River, Mercer-Fraser, J.F. Shea — every bidder
-                you log here feeds the per-competitor profile.
-              </>
+              t('bidtabs.empty.no_tabs')
             )}
           </p>
         ) : (
@@ -205,13 +204,13 @@ export default async function BidTabsPage({ searchParams }: BidTabsPageProps) {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
                 <tr>
-                  <th className="px-3 py-2 text-left">Project</th>
-                  <th className="px-3 py-2 text-left">Agency</th>
-                  <th className="px-3 py-2 text-left">Source</th>
-                  <th className="px-3 py-2 text-left">Opened</th>
-                  <th className="px-3 py-2 text-right">Bidders</th>
-                  <th className="px-3 py-2 text-right">Apparent low</th>
-                  <th className="px-3 py-2 text-right">vs. EE</th>
+                  <th className="px-3 py-2 text-left">{t('bidtabs.col.project')}</th>
+                  <th className="px-3 py-2 text-left">{t('bidtabs.col.agency')}</th>
+                  <th className="px-3 py-2 text-left">{t('bidtabs.col.source')}</th>
+                  <th className="px-3 py-2 text-left">{t('bidtabs.col.opened')}</th>
+                  <th className="px-3 py-2 text-right">{t('bidtabs.col.bidders')}</th>
+                  <th className="px-3 py-2 text-right">{t('bidtabs.col.apparentLow')}</th>
+                  <th className="px-3 py-2 text-right">{t('bidtabs.col.vsEE')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -283,7 +282,7 @@ export default async function BidTabsPage({ searchParams }: BidTabsPageProps) {
 
         <section className="mt-8">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-700">
-            Manual import
+            {t('bidtabs.manualImport')}
           </h2>
           <BidTabImportForm apiBaseUrl={publicApiBaseUrl()} />
         </section>
