@@ -186,6 +186,49 @@ export async function createBidTab(
   return tab;
 }
 
+/**
+ * Patch the YGE cross-link fields on an existing tab. Used when
+ * the auto-link in createBidTab didn't fire (typo in project
+ * name, agency-prefix mismatch, etc.) and the operator manually
+ * picks the right BidResult from the UI.
+ *
+ * Pass null to CLEAR a field; undefined leaves it untouched.
+ */
+export async function patchBidTabLink(
+  id: string,
+  patch: { ygeJobId?: string | null; ygeBidResultId?: string | null },
+  ctx?: AuditContext,
+): Promise<BidTab | null> {
+  const existing = await getBidTab(id);
+  if (!existing) return null;
+  const updated = BidTabSchema.parse({
+    ...existing,
+    ygeJobId:
+      patch.ygeJobId === undefined
+        ? existing.ygeJobId
+        : patch.ygeJobId === null
+          ? undefined
+          : patch.ygeJobId,
+    ygeBidResultId:
+      patch.ygeBidResultId === undefined
+        ? existing.ygeBidResultId
+        : patch.ygeBidResultId === null
+          ? undefined
+          : patch.ygeBidResultId,
+    updatedAt: new Date().toISOString(),
+  });
+  await persist(updated);
+  await recordAudit({
+    action: 'update',
+    entityType: 'BidResult',
+    entityId: id,
+    before: existing,
+    after: updated,
+    ctx,
+  });
+  return updated;
+}
+
 export async function deleteBidTab(id: string, ctx?: AuditContext): Promise<boolean> {
   const existing = await getBidTab(id);
   if (!existing) return false;

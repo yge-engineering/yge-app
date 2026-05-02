@@ -3,12 +3,23 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { AppShell, PageHeader, StatusPill } from '../../../components';
-import type { BidTab } from '@yge/shared';
+import { BidTabYgeLinkForm } from '../../../components/bid-tab-yge-link-form';
+import { YGE_NORMALIZED_NAME_DEFAULT, type BidTab, type Job } from '@yge/shared';
+
+interface BidResult {
+  id: string;
+  jobId: string;
+  bidOpenedAt: string;
+}
 
 function apiBaseUrl(): string {
   return (
     process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
   );
+}
+
+function publicApiBaseUrl(): string {
+  return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 }
 
 async function fetchTab(id: string): Promise<BidTab | null> {
@@ -18,6 +29,22 @@ async function fetchTab(id: string): Promise<BidTab | null> {
     if (!res.ok) return null;
     return ((await res.json()) as { tab: BidTab }).tab;
   } catch { return null; }
+}
+
+async function fetchBidResults(): Promise<BidResult[]> {
+  try {
+    const res = await fetch(`${apiBaseUrl()}/api/bid-results`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    return ((await res.json()) as { results: BidResult[] }).results;
+  } catch { return []; }
+}
+
+async function fetchJobs(): Promise<Job[]> {
+  try {
+    const res = await fetch(`${apiBaseUrl()}/api/jobs`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    return ((await res.json()) as { jobs: Job[] }).jobs;
+  } catch { return []; }
 }
 
 function formatMoney(cents: number): string {
@@ -37,6 +64,29 @@ export default async function BidTabPage({
 
   const apparent = tab.bidders.find((b) => b.rank === 1);
   const ee = tab.engineersEstimateCents;
+
+  // YGE was on this tab but the auto-link didn't fire — load the
+  // BidResult corpus so the operator can manually pick.
+  const ygeOnTab = tab.bidders.some((b) => b.nameNormalized === YGE_NORMALIZED_NAME_DEFAULT);
+  const needsManualLink = ygeOnTab && !tab.ygeBidResultId;
+  const [bidResults, jobs] = needsManualLink
+    ? await Promise.all([fetchBidResults(), fetchJobs()])
+    : [[] as BidResult[], [] as Job[]];
+  const jobsById = new Map(jobs.map((j) => [j.id, j]));
+  const candidates = needsManualLink
+    ? bidResults
+        .map((br) => {
+          const job = jobsById.get(br.jobId);
+          return {
+            bidResultId: br.id,
+            jobId: br.jobId,
+            projectName: job?.projectName ?? `(job ${br.jobId})`,
+            bidOpenedAt: br.bidOpenedAt,
+          };
+        })
+        .sort((a, b) => (a.bidOpenedAt < b.bidOpenedAt ? 1 : -1))
+        .slice(0, 50)
+    : [];
 
   return (
     <AppShell>
@@ -82,6 +132,25 @@ export default async function BidTabPage({
                   → BidResult {tab.ygeBidResultId}
                 </Link>
               )}
+            </div>
+          </section>
+        )}
+
+        {needsManualLink && (
+          <section className="mt-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-xs text-gray-800">
+            <strong className="font-semibold text-amber-800">YGE was on this tab — link to a bid result</strong>
+            <p className="mt-1 text-gray-700">
+              The auto-linker didn&rsquo;t find a matching YGE BidResult
+              (project name drift, bid-open date off by &gt;1 day, or no
+              BidResult was logged). Pick the right one below to wire up
+              the cross-link.
+            </p>
+            <div className="mt-2">
+              <BidTabYgeLinkForm
+                apiBaseUrl={publicApiBaseUrl()}
+                tabId={tab.id}
+                candidates={candidates}
+              />
             </div>
           </section>
         )}

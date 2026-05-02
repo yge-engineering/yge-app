@@ -11,6 +11,7 @@ import {
   deleteBidTab,
   getBidTab,
   listBidTabs,
+  patchBidTabLink,
 } from '../lib/bid-tabs-store';
 import { maybeCsv } from '../lib/csv-response';
 
@@ -86,6 +87,23 @@ bidTabsRouter.post('/', async (req, res, next) => {
     }
     const tab = await createBidTab(parsed.data);
     return res.status(201).json({ tab });
+  } catch (err) { next(err); }
+});
+
+const PatchLinkSchema = z.object({
+  ygeJobId: z.string().min(1).max(120).nullable().optional(),
+  ygeBidResultId: z.string().min(1).max(120).nullable().optional(),
+});
+
+bidTabsRouter.patch('/:id/yge-link', async (req, res, next) => {
+  try {
+    const parsed = PatchLinkSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Validation failed', issues: parsed.error.issues });
+    }
+    const tab = await patchBidTabLink(req.params.id, parsed.data);
+    if (!tab) return res.status(404).json({ error: 'Bid tab not found' });
+    return res.json({ tab });
   } catch (err) { next(err); }
 });
 
