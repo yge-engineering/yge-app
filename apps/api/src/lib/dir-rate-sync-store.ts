@@ -78,10 +78,14 @@ async function persistRun(r: DirRateSyncRun) {
   await writeRunIndex(idx);
 }
 
+/**
+ * Inputs the route layer typically supplies. Counts + status default
+ * via the Zod schema so a freshly-queued run is a one-line call.
+ */
+export type CreateSyncRunInput = Pick<DirRateSyncRun, 'source'> & Partial<DirRateSyncRun>;
+
 export async function createSyncRun(
-  input: Omit<DirRateSyncRun, 'id' | 'createdAt' | 'updatedAt' | 'status'> & {
-    status?: DirRateSyncStatus;
-  },
+  input: CreateSyncRunInput,
   ctx?: AuditContext,
 ): Promise<DirRateSyncRun> {
   const now = new Date().toISOString();
@@ -208,10 +212,13 @@ async function persistProposal(p: DirRateProposal) {
   await writePropIndex(idx);
 }
 
+export type CreateProposalInput = Pick<
+  DirRateProposal,
+  'syncRunId' | 'classification' | 'county' | 'existingRateId' | 'proposedRate'
+> & Partial<DirRateProposal>;
+
 export async function createProposal(
-  input: Omit<DirRateProposal, 'id' | 'createdAt' | 'updatedAt' | 'status'> & {
-    status?: DirRateProposalStatus;
-  },
+  input: CreateProposalInput,
   ctx?: AuditContext,
 ): Promise<DirRateProposal> {
   const now = new Date().toISOString();
