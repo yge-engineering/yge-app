@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { AuditBinderPanel } from '../../../components';
 import type { DailyReport, Employee, Job } from '@yge/shared';
 import { DailyReportEditor } from '@/components/daily-report-editor';
 
@@ -66,6 +67,8 @@ export default async function DailyReportDetailPage({
           apiBaseUrl={publicApiBaseUrl()}
         />
       </div>
+
+      <AuditBinderPanel entityType="DailyReport" entityId={report.id} />
     </main>
   );
 }

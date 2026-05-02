@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 
-import { AppShell } from '../../../components/app-shell';
+import { AppShell, AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { CertifiedPayroll, Employee, Job } from '@yge/shared';
 import { CertifiedPayrollEditor } from '@/components/certified-payroll-editor';
@@ -60,6 +60,8 @@ export default async function CprDetailPage({ params }: { params: { id: string }
           apiBaseUrl={publicApiBaseUrl()}
         />
       </div>
+
+      <AuditBinderPanel entityType="CertifiedPayroll" entityId={cpr.id} />
     </main>
     </AppShell>
   );

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 
-import { AppShell } from '../../../components/app-shell';
+import { AppShell, AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import {
   lienWaiverKindLabel,
@@ -54,6 +54,8 @@ export default async function LienWaiverDetailPage({
       <div className="mt-6">
         <LienWaiverEditor mode="edit" waiver={waiver} />
       </div>
+
+      <AuditBinderPanel entityType="LienWaiver" entityId={waiver.id} />
     </main>
     </AppShell>
   );

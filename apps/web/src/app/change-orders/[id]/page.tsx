@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { AuditBinderPanel } from '../../../components';
 import type { ChangeOrder, Job, Rfi } from '@yge/shared';
 import { ChangeOrderEditor } from '@/components/change-order-editor';
 
@@ -60,6 +61,8 @@ export default async function ChangeOrderDetailPage({
           apiBaseUrl={publicApiBaseUrl()}
         />
       </div>
+
+      <AuditBinderPanel entityType="ChangeOrder" entityId={co.id} />
     </main>
   );
 }

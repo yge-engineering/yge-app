@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { AuditBinderPanel } from '../../../components';
 import type { Job, Rfi } from '@yge/shared';
 import { RfiEditor } from '@/components/rfi-editor';
 
@@ -47,6 +48,8 @@ export default async function RfiDetailPage({
       <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <RfiEditor initial={rfi} jobs={jobs} apiBaseUrl={publicApiBaseUrl()} />
       </div>
+
+      <AuditBinderPanel entityType="Rfi" entityId={rfi.id} />
     </main>
   );
 }
