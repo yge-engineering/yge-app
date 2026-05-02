@@ -3,6 +3,7 @@ export * from './bid-coach';
 export * from './bid-tab';
 export * from './dir-rate-sync';
 export * from './master-profile';
+export * from './pdf-form-filler';
 export * from './pdf-form-mapping';
 export * from './signature';
 export * from './money';
