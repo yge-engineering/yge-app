@@ -1,0 +1,30 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>YGE Auto Form Filler — Settings</title>
+    <style>
+      body { font: 14px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; padding: 24px; max-width: 540px; margin: 0 auto; }
+      label { display: block; margin: 12px 0; }
+      label > span { display: block; font-weight: 600; margin-bottom: 4px; }
+      input { width: 100%; padding: 6px; font-size: 14px; box-sizing: border-box; }
+      button { padding: 6px 14px; font-size: 14px; cursor: pointer; margin-top: 8px; }
+      .ok { color: #064e3b; padding: 8px; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 4px; margin-top: 8px; }
+      .err { color: #b91c1c; padding: 8px; background: #fee; border: 1px solid #fcc; border-radius: 4px; margin-top: 8px; }
+      .hint { font-size: 12px; color: #666; margin-top: 4px; }
+    </style>
+  </head>
+  <body>
+    <h1>YGE Auto Form Filler — Settings</h1>
+    <p>Point the extension at the YGE API base URL where the master profile lives.</p>
+    <label>
+      <span>YGE API base URL</span>
+      <input type="url" id="apiBase" placeholder="http://localhost:4000" />
+      <span class="hint">Default: <code>http://localhost:4000</code> for dev. Production lives at <code>https://api.youngge.com</code>.</span>
+    </label>
+    <button id="save">Save</button>
+    <button id="test" style="margin-left: 8px;">Test connection</button>
+    <div id="status"></div>
+    <script src="options.js" type="module"></script>
+  </body>
+</html>

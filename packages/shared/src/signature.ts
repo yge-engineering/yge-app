@@ -266,9 +266,17 @@ export async function sha256Hex(input: string): Promise<string> {
       .join('');
   }
   // Fallback: Node crypto (loaded dynamically so the browser bundle
-  // doesn't trip on the import).
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const nodeCrypto = await import('node:crypto');
+  // doesn't trip on the import). The dynamic specifier is hidden
+  // from TS's static checker so consumers without @types/node
+  // (like the browser extension) still typecheck.
+  const nodeCryptoSpecifier = 'node:' + 'crypto';
+  const nodeCrypto = (await import(/* @vite-ignore */ nodeCryptoSpecifier)) as {
+    createHash: (algorithm: string) => {
+      update: (data: string, encoding?: string) => {
+        digest: (encoding: string) => string;
+      };
+    };
+  };
   return nodeCrypto.createHash('sha256').update(input, 'utf8').digest('hex');
 }
 

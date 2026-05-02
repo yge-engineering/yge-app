@@ -1,0 +1,36 @@
+{
+  "manifest_version": 3,
+  "name": "YGE Auto Form Filler",
+  "version": "0.1.0",
+  "description": "One-tap fills YGE's CSLB / DIR / DOT / NAICS / address into matching fields on any web form. Built for Caltrans BidExpress, Cal eProcure, county portals, vendor credit apps, ACORD COI requests.",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "action": {
+    "default_title": "YGE Auto Form Filler",
+    "default_popup": "src/popup.html"
+  },
+  "background": {
+    "service_worker": "src/background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
+  "host_permissions": [
+    "http://localhost:4000/*",
+    "https://api.youngge.com/*"
+  ],
+  "options_page": "src/options.html"
+}

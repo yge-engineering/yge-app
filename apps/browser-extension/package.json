@@ -1,0 +1,17 @@
+{
+  "name": "@yge/browser-extension",
+  "version": "0.1.0",
+  "private": true,
+  "description": "YGE auto form filler — fills CSLB / DIR / DOT identity into matching fields on any web form.",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@yge/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.260",
+    "typescript": "^5.4.0"
+  }
+}
