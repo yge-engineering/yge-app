@@ -1,4 +1,5 @@
 export * from './audit';
+export * from './bid-coach';
 export * from './signature';
 export * from './money';
 export * from './rates';
