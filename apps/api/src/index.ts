@@ -49,6 +49,7 @@ import { dirRateSyncRouter } from './routes/dir-rate-sync';
 import { signaturesRouter } from './routes/signatures';
 import { masterProfileRouter } from './routes/master-profile';
 import { pdfFormMappingsRouter } from './routes/pdf-form-mappings';
+import { otpRouter } from './routes/otp';
 
 const app = express();
 
@@ -101,6 +102,7 @@ app.use('/api/dir-rate-sync', dirRateSyncRouter);
 app.use('/api/signatures', signaturesRouter);
 app.use('/api/master-profile', masterProfileRouter);
 app.use('/api/pdf-form-mappings', pdfFormMappingsRouter);
+app.use('/api/otp', otpRouter);
 
 // 404
 app.use((_req, res) => {

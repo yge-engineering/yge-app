@@ -17,7 +17,7 @@ import {
   AppShell,
   PageHeader,
 } from '../../../components';
-import { SignFormTyped } from '@/components/sign-form-typed';
+import { SignFormOtp } from '@/components/sign-form-otp';
 import {
   isLegallyBinding,
   type Signature,
@@ -93,10 +93,11 @@ export default async function SignPage({
               </pre>
             </section>
 
-            <SignFormTyped
+            <SignFormOtp
               apiBaseUrl={publicApiBaseUrl()}
               signatureId={signature.id}
               expectedSignerName={signature.signer.name}
+              signerEmail={signature.signer.email}
               disclosureText={DISCLOSURE_TEXT}
               affirmationText={AFFIRMATION_TEXT}
             />
@@ -104,10 +105,10 @@ export default async function SignPage({
         )}
 
         <p className="mt-8 text-xs text-gray-500">
-          Phase-1 signing surface supports TYPED — your typed name plus an
-          affirmative checkbox, with IP + user-agent + timestamp captured
-          server-side. DRAWN canvas + magic-link OTP land in follow-up
-          commits.
+          Phase-1 signing supports TYPED + email-OTP. The OTP confirms
+          control of the signer's email at signing time — the attribution
+          element of the ESIGN/UETA proof. The DRAWN canvas + the PDF
+          flatten/embed pipeline ship in follow-up commits.
         </p>
       </main>
     </AppShell>
