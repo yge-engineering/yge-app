@@ -48,6 +48,7 @@ import { auditRouter } from './routes/audit';
 import { dirRateSyncRouter } from './routes/dir-rate-sync';
 import { signaturesRouter } from './routes/signatures';
 import { masterProfileRouter } from './routes/master-profile';
+import { pdfFormMappingsRouter } from './routes/pdf-form-mappings';
 
 const app = express();
 
@@ -99,6 +100,7 @@ app.use('/api/audit-events', auditRouter);
 app.use('/api/dir-rate-sync', dirRateSyncRouter);
 app.use('/api/signatures', signaturesRouter);
 app.use('/api/master-profile', masterProfileRouter);
+app.use('/api/pdf-form-mappings', pdfFormMappingsRouter);
 
 // 404
 app.use((_req, res) => {
