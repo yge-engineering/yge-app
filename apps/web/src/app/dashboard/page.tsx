@@ -13,6 +13,7 @@ import { GettingStartedBanner } from '../../components/getting-started-banner';
 import { Money } from '../../components/money';
 import { RecentActivity } from '../../components/recent-activity';
 import { getCurrentUser } from '../../lib/auth';
+import { getTranslator } from '../../lib/locale';
 import {
   computeArPaymentRollup,
   computeArRollup,
@@ -133,6 +134,13 @@ export default async function DashboardPage() {
   const firstName = user ? user.name.split(' ')[0] : '';
   const hour = new Date().getHours();
   const partOfDay = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
+  const t = getTranslator();
+  const greetingKey =
+    partOfDay === 'morning'
+      ? 'dashboard.greeting.morning'
+      : partOfDay === 'afternoon'
+        ? 'dashboard.greeting.afternoon'
+        : 'dashboard.greeting.evening';
 
   return (
     <AppShell>
@@ -140,7 +148,7 @@ export default async function DashboardPage() {
       <header className="mb-6 flex flex-wrap items-baseline justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-yge-blue-500">
-            Good {partOfDay}{firstName ? `, ${firstName}` : ''}
+            {t(greetingKey)}{firstName ? `, ${firstName}` : ''}
           </h1>
           <p className="text-sm text-gray-600">
             {new Date().toLocaleDateString(undefined, {
@@ -149,16 +157,16 @@ export default async function DashboardPage() {
               month: 'long',
               day: 'numeric',
             })}{' '}
-            · {activeJobs} active jobs
+            · {t('dashboard.activeJobs', { count: activeJobs })}
           </p>
         </div>
         <Link href="/all-modules" className="text-sm text-yge-blue-500 hover:underline">
-          All modules &rarr;
+          {t('dashboard.allModules')} &rarr;
         </Link>
       </header>
 
       {apiUnreachable && (
-        <Alert tone="warn" title="API not reachable" className="mb-6">
+        <Alert tone="warn" title={t('dashboard.apiUnreachable.title')} className="mb-6">
           The dashboard tiles below show zeros because the API server isn&apos;t running. Locally, run{' '}
           <code className="rounded bg-amber-100 px-1 font-mono text-xs">pnpm dev</code> in{' '}
           <code className="rounded bg-amber-100 px-1 font-mono text-xs">apps/api</code>. In production,
@@ -175,53 +183,53 @@ export default async function DashboardPage() {
 
       {/* QUICK ACTIONS — the 4 things you do most */}
       <div className="mb-6 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        <QuickAction href="/jobs/new" label="New job" sub="Start a bid pursuit" />
-        <QuickAction href="/daily-reports/new" label="New daily report" sub="Log today's crew + scope" />
-        <QuickAction href="/ar-invoices/new" label="New AR invoice" sub="Bill a customer" />
-        <QuickAction href="/time-cards/new" label="New time card" sub="Submit your week" />
+        <QuickAction href="/jobs/new" label={t('dashboard.quickAction.newJob.label')} sub={t('dashboard.quickAction.newJob.sub')} />
+        <QuickAction href="/daily-reports/new" label={t('dashboard.quickAction.newDailyReport.label')} sub={t('dashboard.quickAction.newDailyReport.sub')} />
+        <QuickAction href="/ar-invoices/new" label={t('dashboard.quickAction.newArInvoice.label')} sub={t('dashboard.quickAction.newArInvoice.sub')} />
+        <QuickAction href="/time-cards/new" label={t('dashboard.quickAction.newTimeCard.label')} sub={t('dashboard.quickAction.newTimeCard.sub')} />
       </div>
 
       {/* COMPLIANCE BAR — anything that's actively a problem */}
       <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <ComplianceTile
-          label="§3395 heat gaps"
+          label={t('dashboard.compliance.heatGaps')}
           value={wxRollup.heatComplianceGaps}
           severity={wxRollup.heatComplianceGaps > 0 ? 'bad' : 'ok'}
           href="/weather"
-          ok="No gaps"
+          ok={t('dashboard.compliance.heatGaps.ok')}
         />
         <ComplianceTile
-          label="SWPPP open deficiencies"
+          label={t('dashboard.compliance.swpppDef')}
           value={swpppRollup.openDeficiencies}
           severity={swpppRollup.openDeficiencies > 0 ? 'bad' : 'ok'}
           href="/swppp"
-          ok="No open BMP issues"
+          ok={t('dashboard.compliance.swpppDef.ok')}
         />
         <ComplianceTile
-          label="Punch — open safety"
+          label={t('dashboard.compliance.punchSafety')}
           value={punchRollup.openSafety}
           severity={punchRollup.openSafety > 0 ? 'bad' : 'ok'}
           href="/punch-list"
-          ok="No safety items open"
+          ok={t('dashboard.compliance.punchSafety.ok')}
         />
         <ComplianceTile
-          label="Today's dispatch conflicts"
+          label={t('dashboard.compliance.dispatchConflicts')}
           value={todayDoubleBookings.length}
           severity={todayDoubleBookings.length > 0 ? 'bad' : 'ok'}
           href={`/dispatch?scheduledFor=${today}`}
-          ok="No double-bookings"
+          ok={t('dashboard.compliance.dispatchConflicts.ok')}
         />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
         {/* TODAY'S DISPATCH */}
         <section className="lg:col-span-2 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-          <CardHeader title="Today's dispatch" href={`/dispatch?scheduledFor=${today}`} />
+          <CardHeader title={t('dashboard.card.todayDispatch')} href={`/dispatch?scheduledFor=${today}`} />
           {todayDispatches.length === 0 ? (
             <p className="text-sm text-gray-500">
-              Nothing on the board for today.{' '}
+              {t('dashboard.card.todayDispatch.empty')}{' '}
               <Link href="/dispatch/new" className="text-yge-blue-500 hover:underline">
-                Add a dispatch &rarr;
+                {t('dashboard.addDispatch')} &rarr;
               </Link>
             </p>
           ) : (
@@ -248,45 +256,45 @@ export default async function DashboardPage() {
 
         {/* CASH POSITION */}
         <section className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-          <CardHeader title="Cash position" href="/wip" />
-          <KvRow label="AR outstanding" value={<Money cents={arRollup.outstandingCents} />} />
+          <CardHeader title={t('dashboard.card.cashPosition')} href="/wip" />
+          <KvRow label={t('dashboard.kv.arOutstanding')} value={<Money cents={arRollup.outstandingCents} />} />
           <KvRow
-            label="Collected (lifetime)"
+            label={t('dashboard.kv.collectedLifetime')}
             value={<Money cents={arPaymentRollup.totalCents} />}
           />
           <KvRow
-            label="AP unpaid"
+            label={t('dashboard.kv.apUnpaid')}
             value={<>{apUnpaidCount} · <Money cents={apUnpaidCents} /></>}
             warn={apUnpaidCents > 0}
           />
           <KvRow
-            label="Retention released"
+            label={t('dashboard.kv.retentionReleased')}
             value={<Money cents={arPaymentRollup.retentionReleaseCents} />}
           />
         </section>
 
         {/* OPEN ITEMS */}
         <section className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-          <CardHeader title="Open items" />
-          <KvRow label="Open RFIs" value={openRfis} link="/rfis" />
-          <KvRow label="Open submittals" value={openSubmittals} link="/submittals" />
+          <CardHeader title={t('dashboard.card.openItems')} />
+          <KvRow label={t('dashboard.kv.openRfis')} value={openRfis} link="/rfis" />
+          <KvRow label={t('dashboard.kv.openSubmittals')} value={openSubmittals} link="/submittals" />
           <KvRow
-            label="Open punch items"
+            label={t('dashboard.kv.openPunchItems')}
             value={punchRollup.open + punchRollup.inProgress}
             link="/punch-list"
             warn={punchRollup.overdue > 0}
             warnText={
-              punchRollup.overdue > 0 ? `${punchRollup.overdue} overdue` : undefined
+              punchRollup.overdue > 0 ? t('dashboard.warn.overdue', { count: punchRollup.overdue }) : undefined
             }
           />
           <KvRow
-            label="Unsigned uncond. waivers"
+            label={t('dashboard.kv.unsignedUncondWaivers')}
             value={lwRollup.unsignedUnconditional}
             link="/lien-waivers"
             warn={lwRollup.unsignedUnconditional > 0}
             warnText={
               lwRollup.unsignedUnconditional > 0
-                ? "don't sign uncond. before funds clear"
+                ? t('dashboard.warn.uncondCaution')
                 : undefined
             }
           />
@@ -294,10 +302,10 @@ export default async function DashboardPage() {
 
         {/* CREWS TODAY */}
         <section className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-          <CardHeader title="Crews on today" />
-          <KvRow label="Today jobs" value={dispatchRollup.todayCount} />
-          <KvRow label="Crew headcount" value={dispatchRollup.todayCrewHeadcount} />
-          <KvRow label="Equipment out" value={dispatchRollup.todayEquipmentCount} />
+          <CardHeader title={t('dashboard.card.crewsToday')} />
+          <KvRow label={t('dashboard.kv.todayJobs')} value={dispatchRollup.todayCount} />
+          <KvRow label={t('dashboard.kv.crewHeadcount')} value={dispatchRollup.todayCrewHeadcount} />
+          <KvRow label={t('dashboard.kv.equipmentOut')} value={dispatchRollup.todayEquipmentCount} />
         </section>
 
         {/* RECENT ACTIVITY */}
@@ -314,17 +322,17 @@ export default async function DashboardPage() {
 
         {/* QUICK ACTIONS */}
         <section className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm lg:col-span-2">
-          <CardHeader title="Quick actions" />
+          <CardHeader title={t('dashboard.card.quickActions')} />
           <div className="grid gap-2 sm:grid-cols-3">
-            <QuickLink href="/dispatch/new" label="New dispatch" />
-            <QuickLink href="/daily-reports/new" label="Daily report" />
-            <QuickLink href="/toolbox-talks/new" label="Toolbox talk" />
-            <QuickLink href="/swppp/new" label="SWPPP inspection" />
-            <QuickLink href="/weather/new" label="Log weather" />
-            <QuickLink href="/incidents/new" label="Log incident" />
-            <QuickLink href="/ar-payments/new" label="Record payment" />
-            <QuickLink href="/pcos/new" label="New PCO" />
-            <QuickLink href="/rfis/new" label="New RFI" />
+            <QuickLink href="/dispatch/new" label={t('dashboard.quickLink.newDispatch')} />
+            <QuickLink href="/daily-reports/new" label={t('dashboard.quickLink.dailyReport')} />
+            <QuickLink href="/toolbox-talks/new" label={t('dashboard.quickLink.toolboxTalk')} />
+            <QuickLink href="/swppp/new" label={t('dashboard.quickLink.swpppInspection')} />
+            <QuickLink href="/weather/new" label={t('dashboard.quickLink.logWeather')} />
+            <QuickLink href="/incidents/new" label={t('dashboard.quickLink.logIncident')} />
+            <QuickLink href="/ar-payments/new" label={t('dashboard.quickLink.recordPayment')} />
+            <QuickLink href="/pcos/new" label={t('dashboard.quickLink.newPco')} />
+            <QuickLink href="/rfis/new" label={t('dashboard.quickLink.newRfi')} />
           </div>
         </section>
       </div>
