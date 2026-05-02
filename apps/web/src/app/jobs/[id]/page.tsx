@@ -16,6 +16,7 @@ import {
 import { JobStatusEditor } from '@/components/job-status-editor';
 import { BidDueBanner } from '@/components/bid-due-banner';
 import { JobAgencyCompetitors } from '@/components/job-agency-competitors';
+import { JobLinkedBidTabs } from '@/components/job-linked-bid-tabs';
 
 interface DraftSummary {
   id: string;
@@ -288,6 +289,8 @@ export default async function JobDetailPage({
       {job.ownerAgency && (
         <JobAgencyCompetitors apiBaseUrl={apiBaseUrl()} ownerAgency={job.ownerAgency} />
       )}
+
+      <JobLinkedBidTabs apiBaseUrl={apiBaseUrl()} jobId={job.id} />
 
       {/* Plans-to-Estimate drafts for this job */}
       <section className="mt-10">
