@@ -14,6 +14,7 @@ import { notFound } from 'next/navigation';
 import { AppShell, PageHeader, StatusPill } from '../../../components';
 import {
   buildCompetitorProfilesFromTabs,
+  computeHeadToHead,
   type BidTab,
 } from '@yge/shared';
 
@@ -75,6 +76,8 @@ export default async function CompetitorDetailPage({
   const me = rows.find((r) => r.nameNormalized === nameNormalized);
   if (!me) notFound();
 
+  const h2h = computeHeadToHead({ tabs, competitorNameNormalized: nameNormalized });
+
   // Per-appearance rows.
   const appearances: AppearanceRow[] = [];
   for (const t of relevant) {
@@ -130,6 +133,56 @@ export default async function CompetitorDetailPage({
             empty="No county data captured."
           />
         </section>
+
+        {h2h.events > 0 && (
+          <section className="mt-4 rounded-md border border-yge-blue-500 bg-yge-blue-50 p-4 shadow-sm">
+            <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-yge-blue-500">
+              Head-to-head with YGE
+            </h2>
+            <p className="mb-3 text-xs text-gray-700">
+              Tabs where both YGE and {me.displayName} bid:{' '}
+              {h2h.firstSeenAt} → {h2h.lastSeenAt}
+            </p>
+            <dl className="grid gap-3 text-xs sm:grid-cols-4">
+              <div>
+                <dt className="text-[10px] uppercase tracking-wide text-gray-500">Events</dt>
+                <dd className="mt-0.5 text-2xl font-bold text-gray-900">{h2h.events}</dd>
+              </div>
+              <div>
+                <dt className="text-[10px] uppercase tracking-wide text-gray-500">YGE lower</dt>
+                <dd className="mt-0.5 text-2xl font-bold text-emerald-700">
+                  {h2h.ygeLowerCount}
+                </dd>
+                <dd className="text-[10px] text-gray-600">
+                  {h2h.events > 0 ? `${((h2h.ygeLowerCount / h2h.events) * 100).toFixed(0)}%` : '—'}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-[10px] uppercase tracking-wide text-gray-500">{me.displayName} lower</dt>
+                <dd className="mt-0.5 text-2xl font-bold text-red-700">
+                  {h2h.competitorLowerCount}
+                </dd>
+                <dd className="text-[10px] text-gray-600">
+                  {h2h.events > 0 ? `${((h2h.competitorLowerCount / h2h.events) * 100).toFixed(0)}%` : '—'}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-[10px] uppercase tracking-wide text-gray-500">Avg YGE Δ</dt>
+                <dd className="mt-0.5 font-mono text-base text-gray-900">
+                  {h2h.avgYgeMinusCompetitorCents >= 0 ? '+' : ''}
+                  {(h2h.avgYgeMinusCompetitorCents / 100).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                </dd>
+                <dd className="text-[10px] text-gray-600">
+                  {(h2h.avgYgeMinusCompetitorPct * 100).toFixed(1)}% vs. their bid
+                </dd>
+              </div>
+            </dl>
+            <p className="mt-3 text-[11px] text-gray-600">
+              Awards: YGE took {h2h.ygeAwardedCount}, {me.displayName} took {h2h.competitorAwardedCount}.
+              Apparent low: YGE {h2h.ygeApparentLowCount}, {me.displayName} {h2h.competitorApparentLowCount}.
+            </p>
+          </section>
+        )}
 
         {(me.everDbe || me.everSbe || me.everWithdrawn || me.everRejected || me.cslbLicense || me.dirRegistration) && (
           <section className="mt-4 rounded-md border border-gray-200 bg-white p-3 shadow-sm">
