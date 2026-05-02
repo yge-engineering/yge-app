@@ -6,7 +6,7 @@
 import Link from 'next/link';
 
 import { Alert, AppShell, Money } from '../../components';
-import { getTranslator } from '../../lib/locale';
+import { getLocale, getTranslator } from '../../lib/locale';
 import {
   contractTypeLabel,
   statusLabel,
@@ -85,6 +85,7 @@ export default async function JobsPage({ searchParams }: PageProps) {
   const preset = FILTER_PRESETS.find((p) => p.value === filterValue) ?? FILTER_PRESETS[1];
   const filteredJobs = preset ? jobs.filter((j) => preset.matches(j.status)) : jobs;
   const t = getTranslator();
+  const locale = getLocale();
   const presetLabel = preset ? t(preset.labelKey) : '';
 
   return (
@@ -177,7 +178,7 @@ export default async function JobsPage({ searchParams }: PageProps) {
                         j.status,
                       )}`}
                     >
-                      {statusLabel(j.status)}
+                      {statusLabel(j.status, locale)}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-700">

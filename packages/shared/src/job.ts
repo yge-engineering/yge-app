@@ -13,6 +13,7 @@
 
 import { z } from 'zod';
 import { PtoEProjectTypeSchema } from './plans-to-estimate-output';
+import { translate, SEED_DICTIONARY, type Locale } from './i18n';
 
 /** What kind of contract are we bidding? Drives downstream rules:
  *  - PUBLIC_WORKS triggers DIR / certified payroll requirements
@@ -104,21 +105,9 @@ export function contractTypeLabel(t: JobContractType): string {
   }
 }
 
-export function statusLabel(s: JobStatus): string {
-  switch (s) {
-    case 'PROSPECT':
-      return 'Prospect';
-    case 'PURSUING':
-      return 'Pursuing';
-    case 'BID_SUBMITTED':
-      return 'Bid submitted';
-    case 'AWARDED':
-      return 'Awarded';
-    case 'LOST':
-      return 'Lost';
-    case 'NO_BID':
-      return 'No bid';
-    case 'ARCHIVED':
-      return 'Archived';
-  }
+export function statusLabel(s: JobStatus, locale: Locale = 'en'): string {
+  // Reads the per-locale label from the seed dictionary; the
+  // dictionary fallback lands back in English if a key's missing
+  // for the locale, so the helper never returns the bare enum.
+  return translate(SEED_DICTIONARY, locale, `job.status.${s}`);
 }

@@ -14,6 +14,7 @@
 // per-customer flavor.
 
 import { z } from 'zod';
+import { translate, SEED_DICTIONARY, type Locale } from './i18n';
 
 export const ArInvoiceStatusSchema = z.enum([
   'DRAFT',
@@ -151,15 +152,8 @@ export type ArInvoiceBuildFromReports = z.infer<typeof ArInvoiceBuildFromReports
 
 // ---- Pure helpers --------------------------------------------------------
 
-export function arInvoiceStatusLabel(s: ArInvoiceStatus): string {
-  switch (s) {
-    case 'DRAFT': return 'Draft';
-    case 'SENT': return 'Sent';
-    case 'PARTIALLY_PAID': return 'Partially paid';
-    case 'PAID': return 'Paid';
-    case 'DISPUTED': return 'Disputed';
-    case 'WRITTEN_OFF': return 'Written off';
-  }
+export function arInvoiceStatusLabel(s: ArInvoiceStatus, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `arInvoice.status.${s}`);
 }
 
 export function arInvoiceSourceLabel(s: ArInvoiceSource): string {

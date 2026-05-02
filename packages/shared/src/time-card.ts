@@ -11,6 +11,7 @@
 // per-employee weekly rollup that goes to payroll.
 
 import { z } from 'zod';
+import { translate, SEED_DICTIONARY, type Locale } from './i18n';
 
 export const TimeCardStatusSchema = z.enum([
   'DRAFT',
@@ -161,14 +162,8 @@ export function overtimeHoursThisWeek(card: Pick<TimeCard, 'entries'>): {
   };
 }
 
-export function timeCardStatusLabel(s: TimeCardStatus): string {
-  switch (s) {
-    case 'DRAFT': return 'Draft';
-    case 'SUBMITTED': return 'Submitted';
-    case 'APPROVED': return 'Approved';
-    case 'POSTED': return 'Posted to payroll';
-    case 'REJECTED': return 'Rejected';
-  }
+export function timeCardStatusLabel(s: TimeCardStatus, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `timeCard.status.${s}`);
 }
 
 export function newTimeCardId(): string {

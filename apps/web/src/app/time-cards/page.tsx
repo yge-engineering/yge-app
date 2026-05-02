@@ -3,7 +3,7 @@
 import Link from 'next/link';
 
 import { AppShell } from '../../components/app-shell';
-import { getTranslator } from '../../lib/locale';
+import { getLocale, getTranslator } from '../../lib/locale';
 import {
   fullName,
   timeCardStatusLabel,
@@ -46,6 +46,7 @@ export default async function TimeCardsPage({
   ]);
   const empById = new Map(employees.map((e) => [e.id, e]));
   const t = getTranslator();
+  const locale = getLocale();
 
   function buildHref(overrides: Partial<{ status?: string; employeeId?: string }>): string {
     const params = new URLSearchParams();
@@ -88,7 +89,7 @@ export default async function TimeCardsPage({
             href={buildHref({ status: s })}
             className={`rounded px-2 py-1 text-xs ${searchParams.status === s ? 'bg-yge-blue-500 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
           >
-            {timeCardStatusLabel(s)}
+            {timeCardStatusLabel(s, locale)}
           </Link>
         ))}
       </section>
@@ -136,7 +137,7 @@ export default async function TimeCardsPage({
                                 : 'bg-gray-100 text-gray-700'
                         }`}
                       >
-                        {timeCardStatusLabel(c.status)}
+                        {timeCardStatusLabel(c.status, locale)}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right text-sm">

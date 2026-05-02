@@ -17,7 +17,7 @@ import {
   StatusPill,
   Tile,
 } from '../../components';
-import { getTranslator } from '../../lib/locale';
+import { getLocale, getTranslator } from '../../lib/locale';
 import {
   arInvoiceStatusLabel,
   arUnpaidBalanceCents,
@@ -100,6 +100,7 @@ export default async function ArInvoicesPage({
     searchParams.status ? '&status=' + encodeURIComponent(searchParams.status) : ''
   }${searchParams.jobId ? '&jobId=' + encodeURIComponent(searchParams.jobId) : ''}`;
   const t = getTranslator();
+  const locale = getLocale();
 
   return (
     <AppShell>
@@ -147,7 +148,7 @@ export default async function ArInvoicesPage({
               href={buildHref({ status: s })}
               className={`rounded px-2 py-1 text-xs ${searchParams.status === s ? 'bg-blue-700 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
             >
-              {arInvoiceStatusLabel(s)}
+              {arInvoiceStatusLabel(s, locale)}
             </Link>
           ))}
         </section>
@@ -201,7 +202,7 @@ export default async function ArInvoicesPage({
                   return balance > 0 ? <Money cents={balance} className="font-semibold" /> : <span className="text-sm text-gray-400">{t('ar.balance.paid')}</span>;
                 },
               },
-              { key: 'status', header: t('ar.col.status'), cell: (inv) => <StatusPill label={arInvoiceStatusLabel(inv.status)} tone={statusTone(inv.status)} /> },
+              { key: 'status', header: t('ar.col.status'), cell: (inv) => <StatusPill label={arInvoiceStatusLabel(inv.status, locale)} tone={statusTone(inv.status)} /> },
             ]}
           />
         )}
