@@ -70,9 +70,10 @@ describe('SignatureSchema', () => {
   });
 
   it('rejects non-PNG signature image data URLs', () => {
+    // The schema's runtime regex catches this; TS sees the dataUrl
+    // string as a plain `string`, so no @ts-expect-error needed.
     expect(() =>
       sig({
-        // @ts-expect-error — testing schema rejection
         signatureImage: { dataUrl: 'data:image/jpeg;base64,xxx', widthPx: 100, heightPx: 50 },
       }),
     ).toThrow();
@@ -176,8 +177,8 @@ describe('computeSignatureRollup', () => {
     expect(r.byStatus.DRAFT).toBe(1);
     expect(r.bindingCount).toBe(2);
     expect(r.lastSignedAt).toBe('2026-04-15T00:00:00Z');
-    expect(r.byDocumentType[0].type).toBe('BID_ACCEPTANCE');
-    expect(r.byDocumentType[0].count).toBe(2);
+    expect(r.byDocumentType[0]!.type).toBe('BID_ACCEPTANCE');
+    expect(r.byDocumentType[0]!.count).toBe(2);
   });
 
   it('handles empty input', () => {

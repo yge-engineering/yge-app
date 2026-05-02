@@ -146,8 +146,8 @@ describe('ruleMissingBidSecurity', () => {
     const e = est({
       bidSecurity: {
         type: 'BID_BOND',
-        amountCents: 14950_00,
-        suretyCompany: 'Liberty Mutual',
+        percent: 0.1,
+        suretyName: 'Liberty Mutual',
       },
     });
     expect(ruleMissingBidSecurity({ estimate: e, totals: totals() })).toEqual([]);
