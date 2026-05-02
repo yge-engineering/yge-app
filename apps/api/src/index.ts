@@ -46,6 +46,7 @@ import { mileageRouter } from './routes/mileage';
 import { expensesRouter } from './routes/expenses';
 import { auditRouter } from './routes/audit';
 import { dirRateSyncRouter } from './routes/dir-rate-sync';
+import { signaturesRouter } from './routes/signatures';
 
 const app = express();
 
@@ -95,6 +96,7 @@ app.use('/api/mileage', mileageRouter);
 app.use('/api/expenses', expensesRouter);
 app.use('/api/audit-events', auditRouter);
 app.use('/api/dir-rate-sync', dirRateSyncRouter);
+app.use('/api/signatures', signaturesRouter);
 
 // 404
 app.use((_req, res) => {

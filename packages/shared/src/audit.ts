@@ -94,6 +94,7 @@ export const AuditEntityTypeSchema = z.enum([
   'Photo',
   'PunchItem',
   'Rfi',
+  'Signature',
   'Subcontractor',
   'Submittal',
   'SwpppInspection',
