@@ -15,6 +15,7 @@ import {
   StatusPill,
 } from '../../components';
 import { DirProposalDecisionButtons } from '@/components/dir-proposal-decision-buttons';
+import { DirRateManualImportForm } from '@/components/dir-rate-manual-import-form';
 import {
   type DirRateProposal,
   type DirRateProposalDiff,
@@ -224,6 +225,8 @@ export default async function DirRateSyncPage() {
             </ul>
           )}
         </section>
+
+        <DirRateManualImportForm apiBaseUrl={publicApiBaseUrl()} />
 
         <p className="mt-8 text-xs text-gray-500">
           Accept rolls a proposal into the live <Link href="/dir-rates" className="text-yge-blue-500 hover:underline">DIR rates</Link>{' '}
