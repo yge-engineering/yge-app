@@ -1,6 +1,7 @@
 // /incidents/[id] — incident detail / edit page.
 
 import Link from 'next/link';
+import { AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { Incident } from '@yge/shared';
 import { IncidentEditor } from '../../../components/incident-editor';
@@ -49,6 +50,8 @@ export default async function IncidentDetailPage({
       <div className="mt-6">
         <IncidentEditor mode="edit" incident={incident} />
       </div>
+
+      <AuditBinderPanel entityType="Incident" entityId={incident.id} />
     </main>
   );
 }

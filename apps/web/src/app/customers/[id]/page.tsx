@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 
-import { AppShell } from '../../../components/app-shell';
+import { AppShell, AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import { customerDisplayName, type Customer } from '@yge/shared';
 import { CustomerEditor } from '../../../components/customer-editor';
@@ -45,6 +45,8 @@ export default async function CustomerDetailPage({
       <div className="mt-6">
         <CustomerEditor mode="edit" customer={customer} />
       </div>
+
+      <AuditBinderPanel entityType="Customer" entityId={customer.id} />
     </main>
     </AppShell>
   );

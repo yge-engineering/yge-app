@@ -1,6 +1,7 @@
 // /submittals/[id] — full submittal editor.
 
 import Link from 'next/link';
+import { AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { Job, Submittal } from '@yge/shared';
 import { SubmittalEditor } from '@/components/submittal-editor';
@@ -47,6 +48,8 @@ export default async function SubmittalDetailPage({
       <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <SubmittalEditor initial={submittal} jobs={jobs} apiBaseUrl={publicApiBaseUrl()} />
       </div>
+
+      <AuditBinderPanel entityType="Submittal" entityId={submittal.id} />
     </main>
   );
 }

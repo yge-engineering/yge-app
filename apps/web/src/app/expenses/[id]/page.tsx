@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 
-import { AppShell } from '../../../components/app-shell';
+import { AppShell, AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { Expense } from '@yge/shared';
 import { ExpenseEditor } from '../../../components/expense-editor';
@@ -43,6 +43,8 @@ export default async function ExpenseDetailPage({
       <div className="mt-6">
         <ExpenseEditor mode="edit" expense={expense} />
       </div>
+
+      <AuditBinderPanel entityType="Expense" entityId={expense.id} />
     </main>
     </AppShell>
   );

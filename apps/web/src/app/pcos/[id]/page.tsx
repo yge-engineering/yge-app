@@ -1,6 +1,7 @@
 // /pcos/[id] — PCO detail / edit page.
 
 import Link from 'next/link';
+import { AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { Pco } from '@yge/shared';
 import { PcoEditor } from '../../../components/pco-editor';
@@ -40,6 +41,8 @@ export default async function PcoDetailPage({
       <div className="mt-6">
         <PcoEditor mode="edit" pco={pco} />
       </div>
+
+      <AuditBinderPanel entityType="Pco" entityId={pco.id} />
     </main>
   );
 }

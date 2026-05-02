@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 
-import { AppShell } from '../../../components/app-shell';
+import { AppShell, AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { Employee, Job, TimeCard } from '@yge/shared';
 import { TimeCardEditor } from '@/components/time-card-editor';
@@ -64,6 +64,8 @@ export default async function TimeCardDetailPage({
           apiBaseUrl={publicApiBaseUrl()}
         />
       </div>
+
+      <AuditBinderPanel entityType="TimeCard" entityId={card.id} />
     </main>
     </AppShell>
   );

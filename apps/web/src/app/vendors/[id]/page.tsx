@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 
-import { AppShell } from '../../../components/app-shell';
+import { AppShell, AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { Vendor } from '@yge/shared';
 import { VendorEditor } from '../../../components/vendor-editor';
@@ -54,6 +54,8 @@ export default async function VendorDetailPage({
       <div className="mt-6">
         <VendorEditor mode="edit" vendor={vendor} />
       </div>
+
+      <AuditBinderPanel entityType="Vendor" entityId={vendor.id} />
     </main>
     </AppShell>
   );

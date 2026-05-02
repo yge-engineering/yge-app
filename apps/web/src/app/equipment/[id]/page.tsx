@@ -1,6 +1,7 @@
 // /equipment/[id] — full detail + edit + maintenance log + dispatch.
 
 import Link from 'next/link';
+import { AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { Employee, Equipment, Job } from '@yge/shared';
 import { EquipmentEditor } from '@/components/equipment-editor';
@@ -63,6 +64,8 @@ export default async function EquipmentDetailPage({
           apiBaseUrl={publicApiBaseUrl()}
         />
       </div>
+
+      <AuditBinderPanel entityType="Equipment" entityId={unit.id} />
     </main>
   );
 }
