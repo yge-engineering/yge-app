@@ -15,6 +15,7 @@ import {
   type PdfFormMapping,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
+import { buildSeedMapping, listSeedMappings } from './pdf-form-mappings-seeds';
 
 function dataDir(): string {
   return (
@@ -65,9 +66,37 @@ export interface ListPdfFormMappingsFilter {
   search?: string;
 }
 
+/**
+ * Seed the curated agency forms (IRS W-9, DAS-140, ACORD 25, ...)
+ * the first time the library is read. Idempotent — only writes rows
+ * whose ids aren't already on disk so re-running on top of an
+ * existing library doesn't clobber operator-edited mappings.
+ */
+async function seedIfEmpty(): Promise<void> {
+  const existing = await readIndex();
+  const existingIds = new Set(existing.map((m) => m.id));
+  const seeds = listSeedMappings();
+  const now = new Date();
+  let wrote = false;
+  for (const s of seeds) {
+    if (existingIds.has(s.id)) continue;
+    const mapping = PdfFormMappingSchema.parse(buildSeedMapping(s, now));
+    await persist(mapping);
+    wrote = true;
+  }
+  // If we wrote anything new, callers reading right after will pick
+  // it up via the next readIndex().
+  if (wrote) {
+    // No audit record on seed — this is library bootstrap, not a
+    // user mutation. Operator review (which DOES audit) happens
+    // when the reviewed flag flips.
+  }
+}
+
 export async function listPdfFormMappings(
   filter: ListPdfFormMappingsFilter = {},
 ): Promise<PdfFormMapping[]> {
+  await seedIfEmpty();
   let rows = await readIndex();
   if (filter.agency) rows = rows.filter((m) => m.agency === filter.agency);
   if (filter.reviewed !== undefined) rows = rows.filter((m) => m.reviewed === filter.reviewed);
