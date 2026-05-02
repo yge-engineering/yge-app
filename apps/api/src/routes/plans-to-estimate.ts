@@ -10,6 +10,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { bidItemsToCsv } from '@yge/shared';
 import { runPlansToEstimate, PlansToEstimateError } from '../services/plans-to-estimate';
+import { runScopeGap, ScopeGapError } from '../services/plans-to-estimate-scope-gap';
 import { saveDraft, listDrafts, getDraft } from '../lib/drafts-store';
 
 export const plansToEstimateRouter = Router();
@@ -103,6 +104,46 @@ plansToEstimateRouter.get('/drafts/:id', async (req, res, next) => {
 
 // GET /api/plans-to-estimate/drafts/:id/export.csv — bid items as a CSV
 // download. Same bytes as the in-page Download CSV button (both use
+// POST /api/plans-to-estimate/scope-gap — AI pre-bid review.
+// Reads the spec text + a draft estimate JSON, returns a ScopeGapReport.
+const ScopeGapInputSchema = z.object({
+  /** Stringified draft estimate JSON. The endpoint accepts the full
+   *  PtoEOutput body, the saved-draft body, or any other JSON the
+   *  estimator wants the model to compare against the spec text. */
+  draftJson: z.string().min(2).max(500_000),
+  /** Spec text (RFP, technical specifications). The endpoint expects
+   *  text already extracted from the agency document; OCR / page-
+   *  chunking lives upstream. */
+  specText: z.string().min(20).max(800_000),
+});
+
+plansToEstimateRouter.post('/scope-gap', async (req, res, next) => {
+  try {
+    const parsed = ScopeGapInputSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Validation failed', issues: parsed.error.issues });
+    }
+    const start = Date.now();
+    const result = await runScopeGap({
+      draftJson: parsed.data.draftJson,
+      specText: parsed.data.specText,
+    });
+    const durationMs = Date.now() - start;
+    return res.json({
+      report: result.report,
+      modelUsed: result.modelUsed,
+      promptVersion: result.promptVersion,
+      usage: result.usage,
+      durationMs,
+    });
+  } catch (err) {
+    if (err instanceof ScopeGapError) {
+      return res.status(502).json({ error: err.message });
+    }
+    next(err);
+  }
+});
+
 // `bidItemsToCsv` from @yge/shared) — useful for direct links, scripted
 // pulls, or attaching to an email.
 plansToEstimateRouter.get('/drafts/:id/export.csv', async (req, res, next) => {
