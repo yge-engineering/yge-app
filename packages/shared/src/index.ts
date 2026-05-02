@@ -1,6 +1,7 @@
 export * from './audit';
 export * from './bid-coach';
 export * from './bid-tab';
+export * from './bid-tab-link';
 export * from './competitor-from-tabs';
 export * from './dir-rate-sync';
 export * from './i18n';

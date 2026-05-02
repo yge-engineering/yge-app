@@ -10,6 +10,7 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import {
   BidTabSchema,
+  linkYgeOnImport,
   newBidTabId,
   normalizeCompanyName,
   type BidTab,
@@ -17,6 +18,8 @@ import {
   type BidTabSource,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
+import { listBidResults } from './bid-results-store';
+import { listJobs } from './jobs-store';
 
 function dataDir(): string {
   return process.env.BID_TABS_DATA_DIR ?? path.resolve(process.cwd(), 'data', 'bid-tabs');
@@ -134,7 +137,7 @@ export async function createBidTab(
     }));
   }
 
-  const tab: BidTab = BidTabSchema.parse({
+  let tab: BidTab = BidTabSchema.parse({
     ...input,
     bidders,
     state: input.state ?? 'CA',
@@ -142,6 +145,34 @@ export async function createBidTab(
     createdAt: now,
     updatedAt: now,
   });
+
+  // Auto-link to a YGE BidResult when YGE was on the bidder list
+  // and the operator didn't already supply ygeJobId / ygeBidResultId.
+  // The matcher needs the BidResult collection joined with the Job
+  // so it can read projectName / projectNumber for the match.
+  if (!tab.ygeBidResultId) {
+    const [bidResults, jobs] = await Promise.all([listBidResults(), listJobs()]);
+    const jobsById = new Map(jobs.map((j) => [j.id, j]));
+    const enrichedResults = bidResults.map((br) => {
+      const j = jobsById.get(br.jobId);
+      // Job currently has projectName but not projectNumber; the
+      // matcher reads both via duck-typing so the absence of one
+      // just makes that match strategy a no-op.
+      const extra: { projectName?: string; projectNumber?: string } = {};
+      if (j?.projectName) extra.projectName = j.projectName;
+      const maybeNumber = (j as unknown as { projectNumber?: string } | undefined)?.projectNumber;
+      if (maybeNumber) extra.projectNumber = maybeNumber;
+      return { ...br, ...extra };
+    });
+    const linked = linkYgeOnImport({ tab, bidResults: enrichedResults });
+    if (linked.matchedBidResultId && linked.matchedJobId) {
+      tab = BidTabSchema.parse({
+        ...tab,
+        ygeJobId: tab.ygeJobId ?? linked.matchedJobId,
+        ygeBidResultId: linked.matchedBidResultId,
+      });
+    }
+  }
 
   await persist(tab);
   await recordAudit({

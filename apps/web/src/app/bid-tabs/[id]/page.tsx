@@ -68,6 +68,24 @@ export default async function BidTabPage({
           />
         </section>
 
+        {(tab.ygeJobId || tab.ygeBidResultId) && (
+          <section className="mt-4 rounded-md border border-yge-blue-500 bg-yge-blue-50 p-3 text-xs text-gray-800">
+            <strong className="font-semibold text-yge-blue-500">YGE was a bidder</strong>
+            <div className="mt-1 flex flex-wrap gap-3">
+              {tab.ygeJobId && (
+                <Link href={`/jobs/${tab.ygeJobId}`} className="text-yge-blue-500 hover:underline">
+                  → YGE Job {tab.ygeJobId}
+                </Link>
+              )}
+              {tab.ygeBidResultId && (
+                <Link href={`/bid-results/${tab.ygeBidResultId}`} className="text-yge-blue-500 hover:underline">
+                  → BidResult {tab.ygeBidResultId}
+                </Link>
+              )}
+            </div>
+          </section>
+        )}
+
         {tab.notes && (
           <section className="mt-4 rounded-md border border-gray-200 bg-gray-50 p-3 text-xs text-gray-700">
             <strong className="font-semibold text-gray-900">Notes</strong>
