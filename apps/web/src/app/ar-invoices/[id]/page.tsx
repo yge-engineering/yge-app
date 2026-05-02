@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { AuditBinderPanel } from '../../../components';
 import type { ArInvoice, Job } from '@yge/shared';
 import { ArInvoiceEditor } from '@/components/ar-invoice-editor';
 
@@ -48,6 +49,8 @@ export default async function ArInvoiceDetailPage({
       <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <ArInvoiceEditor initial={invoice} jobs={jobs} apiBaseUrl={publicApiBaseUrl()} />
       </div>
+
+      <AuditBinderPanel entityType="ArInvoice" entityId={invoice.id} />
     </main>
   );
 }

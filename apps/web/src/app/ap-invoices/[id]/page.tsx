@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 
-import { AppShell } from '../../../components/app-shell';
+import { AppShell, AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { ApInvoice, Job } from '@yge/shared';
 import { ApInvoiceEditor } from '@/components/ap-invoice-editor';
@@ -51,6 +51,8 @@ export default async function ApInvoiceDetailPage({
       <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <ApInvoiceEditor initial={invoice} jobs={jobs} apiBaseUrl={publicApiBaseUrl()} />
       </div>
+
+      <AuditBinderPanel entityType="ApInvoice" entityId={invoice.id} />
     </main>
     </AppShell>
   );

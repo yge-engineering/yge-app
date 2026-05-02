@@ -6,7 +6,7 @@
 
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Money } from '@/components/money';
+import { AuditBinderPanel, Money } from '../../../components';
 import {
   contractTypeLabel,
   nextBidAction,
@@ -389,6 +389,8 @@ export default async function JobDetailPage({
           </ul>
         )}
       </section>
+
+      <AuditBinderPanel entityType="Job" entityId={job.id} />
     </main>
   );
 }
