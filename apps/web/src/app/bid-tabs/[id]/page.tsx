@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { AppShell, PageHeader, StatusPill } from '../../../components';
 import { BidTabYgeLinkForm } from '../../../components/bid-tab-yge-link-form';
+import { BidTabYgeUnlinkButton } from '../../../components/bid-tab-yge-unlink-button';
 import { YGE_NORMALIZED_NAME_DEFAULT, type BidTab, type Job } from '@yge/shared';
 
 interface BidResult {
@@ -120,7 +121,10 @@ export default async function BidTabPage({
 
         {(tab.ygeJobId || tab.ygeBidResultId) && (
           <section className="mt-4 rounded-md border border-yge-blue-500 bg-yge-blue-50 p-3 text-xs text-gray-800">
-            <strong className="font-semibold text-yge-blue-500">YGE was a bidder</strong>
+            <div className="flex items-center justify-between gap-3">
+              <strong className="font-semibold text-yge-blue-500">YGE was a bidder</strong>
+              <BidTabYgeUnlinkButton apiBaseUrl={publicApiBaseUrl()} tabId={tab.id} />
+            </div>
             <div className="mt-1 flex flex-wrap gap-3">
               {tab.ygeJobId && (
                 <Link href={`/jobs/${tab.ygeJobId}`} className="text-yge-blue-500 hover:underline">
