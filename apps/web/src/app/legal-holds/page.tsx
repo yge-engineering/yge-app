@@ -10,6 +10,7 @@ import {
   PageHeader,
   StatusPill,
 } from '../../components';
+import { getTranslator } from '../../lib/locale';
 import { LegalHoldCreateForm } from '@/components/legal-hold-create-form';
 import { LegalHoldReleaseButton } from '@/components/legal-hold-release-button';
 import {
@@ -47,6 +48,7 @@ const STATUS_TONE: Record<LegalHoldStatus, 'success' | 'warn' | 'danger' | 'mute
 export default async function LegalHoldsPage() {
   const holds = await fetchHolds();
   const rollup = computeLegalHoldRollup(holds);
+  const t = getTranslator();
 
   return (
     <AppShell>
@@ -61,14 +63,14 @@ export default async function LegalHoldsPage() {
         </div>
 
         <PageHeader
-          title="Legal holds"
-          subtitle="Freeze records on a job (or other entity) when an audit / claim / dispute hits. The records-retention purge job refuses to delete anything frozen by an active hold."
+          title={t('legalHolds.title')}
+          subtitle={t('legalHolds.subtitle')}
         />
 
         <section className="mt-4 grid gap-3 sm:grid-cols-3">
-          <Tile label="Active" value={String(rollup.byStatus.ACTIVE)} tone="danger" />
-          <Tile label="Released" value={String(rollup.byStatus.RELEASED)} tone="success" />
-          <Tile label="Stale active (>1 yr)" value={String(rollup.staleActiveCount)} tone="warn" />
+          <Tile label={t('legalHolds.tile.active')} value={String(rollup.byStatus.ACTIVE)} tone="danger" />
+          <Tile label={t('legalHolds.tile.released')} value={String(rollup.byStatus.RELEASED)} tone="success" />
+          <Tile label={t('legalHolds.tile.staleActive')} value={String(rollup.staleActiveCount)} tone="warn" />
         </section>
 
         {rollup.staleActiveCount > 0 && (
@@ -77,28 +79,24 @@ export default async function LegalHoldsPage() {
             className="mt-4"
             title={`${rollup.staleActiveCount} active hold${rollup.staleActiveCount === 1 ? '' : 's'} >1 year old`}
           >
-            Long-running holds keep records frozen indefinitely. Confirm with
-            outside counsel whether each is still needed; release once the
-            matter resolves.
+            {t('legalHolds.staleAlert.body')}
           </Alert>
         )}
 
         {holds.length === 0 ? (
           <Alert tone="info" className="mt-6">
-            No holds recorded. Create one below when an audit, claim, or
-            dispute hits — every record on the listed entities will be
-            frozen against the records-retention purge job.
+            {t('legalHolds.empty')}
           </Alert>
         ) : (
           <section className="mt-6 overflow-hidden rounded-md border border-gray-200 bg-white shadow-sm">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
                 <tr>
-                  <th className="px-3 py-2 text-left">Status</th>
-                  <th className="px-3 py-2 text-left">Title / reason</th>
-                  <th className="px-3 py-2 text-left">Entities</th>
-                  <th className="px-3 py-2 text-left">Matter date</th>
-                  <th className="px-3 py-2 text-right">Action</th>
+                  <th className="px-3 py-2 text-left">{t('legalHolds.col.status')}</th>
+                  <th className="px-3 py-2 text-left">{t('legalHolds.col.titleReason')}</th>
+                  <th className="px-3 py-2 text-left">{t('legalHolds.col.entities')}</th>
+                  <th className="px-3 py-2 text-left">{t('legalHolds.col.matterDate')}</th>
+                  <th className="px-3 py-2 text-right">{t('legalHolds.col.action')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
