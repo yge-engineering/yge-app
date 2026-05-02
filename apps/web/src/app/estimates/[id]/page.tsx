@@ -66,6 +66,12 @@ export default async function EstimateDetailPage({
           Pre-submit check
         </Link>
         <Link
+          href={`/estimates/${data.estimate.id}/scope-gap`}
+          className="rounded border border-blue-500 bg-blue-50 px-3 py-1 font-medium text-blue-800 hover:bg-blue-100"
+        >
+          Scope-gap check
+        </Link>
+        <Link
           href={`/estimates/${data.estimate.id}/print`}
           className="rounded border border-yge-blue-500 px-3 py-1 font-medium text-yge-blue-500 hover:bg-yge-blue-50"
         >
