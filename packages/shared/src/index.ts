@@ -2,6 +2,7 @@ export * from './audit';
 export * from './bid-coach';
 export * from './bid-tab';
 export * from './dir-rate-sync';
+export * from './i18n';
 export * from './master-profile';
 export * from './pdf-form-filler';
 export * from './otp-challenge';
