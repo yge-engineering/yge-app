@@ -7,6 +7,7 @@
 import Link from 'next/link';
 
 import { Alert, AppShell } from '../../components';
+import { getTranslator } from '../../lib/locale';
 
 interface DraftSummary {
   id: string;
@@ -75,6 +76,7 @@ export default async function DraftsPage() {
   } catch (err) {
     fetchError = err instanceof Error ? err.message : 'Unknown error';
   }
+  const t = getTranslator();
 
   return (
     <AppShell>
@@ -87,29 +89,22 @@ export default async function DraftsPage() {
           href="/plans-to-estimate"
           className="text-sm text-yge-blue-500 hover:underline"
         >
-          New draft &rarr;
+          {t('drafts.newDraft')} &rarr;
         </Link>
       </div>
 
-      <h1 className="text-3xl font-bold text-yge-blue-500">Saved drafts</h1>
-      <p className="mt-2 text-gray-700">
-        Every Plans-to-Estimate run is saved here automatically. Open any draft to review the
-        bid items, copy them to CSV, or compare against a different prompt version later.
-      </p>
+      <h1 className="text-3xl font-bold text-yge-blue-500">{t('drafts.title')}</h1>
+      <p className="mt-2 text-gray-700">{t('drafts.subtitle')}</p>
 
       {fetchError && (
-        <Alert tone="danger" className="mt-6" title="Couldn&rsquo;t load drafts from the API">
+        <Alert tone="danger" className="mt-6" title={t('drafts.fetchError.title')}>
           {fetchError}. Make sure the API server is running on port 4000.
         </Alert>
       )}
 
       {!fetchError && drafts.length === 0 && (
         <div className="mt-6 rounded border border-gray-200 bg-gray-50 p-6 text-sm text-gray-600">
-          No drafts yet. Generate your first one on the{' '}
-          <Link href="/plans-to-estimate" className="text-yge-blue-500 hover:underline">
-            Plans-to-Estimate page
-          </Link>
-          .
+          {t('drafts.empty')}
         </div>
       )}
 
@@ -118,11 +113,11 @@ export default async function DraftsPage() {
           <table className="w-full text-left text-sm">
             <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
               <tr>
-                <th className="px-4 py-2">Project</th>
-                <th className="px-4 py-2">Type</th>
-                <th className="px-4 py-2">Items</th>
-                <th className="px-4 py-2">Confidence</th>
-                <th className="px-4 py-2">Saved</th>
+                <th className="px-4 py-2">{t('drafts.col.project')}</th>
+                <th className="px-4 py-2">{t('drafts.col.type')}</th>
+                <th className="px-4 py-2">{t('drafts.col.items')}</th>
+                <th className="px-4 py-2">{t('drafts.col.confidence')}</th>
+                <th className="px-4 py-2">{t('drafts.col.saved')}</th>
                 <th className="px-4 py-2"></th>
               </tr>
             </thead>
@@ -154,13 +149,13 @@ export default async function DraftsPage() {
                       href={`/drafts/${d.id}`}
                       className="mr-3 text-yge-blue-500 hover:underline"
                     >
-                      Open
+                      {t('drafts.action.open')}
                     </Link>
                     <a
                       href={`${publicApiBaseUrl()}/api/plans-to-estimate/drafts/${d.id}/export.csv`}
                       className="text-yge-blue-500 hover:underline"
                     >
-                      CSV
+                      {t('drafts.action.csv')}
                     </a>
                   </td>
                 </tr>
