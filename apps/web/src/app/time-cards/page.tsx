@@ -3,6 +3,7 @@
 import Link from 'next/link';
 
 import { AppShell } from '../../components/app-shell';
+import { getTranslator } from '../../lib/locale';
 import {
   fullName,
   timeCardStatusLabel,
@@ -44,6 +45,7 @@ export default async function TimeCardsPage({
     fetchEmployees(),
   ]);
   const empById = new Map(employees.map((e) => [e.id, e]));
+  const t = getTranslator();
 
   function buildHref(overrides: Partial<{ status?: string; employeeId?: string }>): string {
     const params = new URLSearchParams();
@@ -65,24 +67,20 @@ export default async function TimeCardsPage({
           href="/time-cards/new"
           className="rounded bg-yge-blue-500 px-3 py-1 text-sm font-medium text-white hover:bg-yge-blue-700"
         >
-          + New time card
+          {t('timecards.newTimeCard')}
         </Link>
       </div>
 
-      <h1 className="text-3xl font-bold text-yge-blue-500">Time cards</h1>
-      <p className="mt-2 text-gray-700">
-        Weekly per-employee time cards. Hours can be auto-pulled from
-        submitted daily reports or entered directly. Foundation for the
-        Phase 5 certified payroll feed.
-      </p>
+      <h1 className="text-3xl font-bold text-yge-blue-500">{t('timecards.title')}</h1>
+      <p className="mt-2 text-gray-700">{t('timecards.subtitle')}</p>
 
       <section className="mt-6 flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 bg-white p-3 shadow-sm">
-        <span className="text-xs uppercase tracking-wide text-gray-500">Status:</span>
+        <span className="text-xs uppercase tracking-wide text-gray-500">{t('timecards.filter.status')}</span>
         <Link
           href={buildHref({ status: undefined })}
           className={`rounded px-2 py-1 text-xs ${!searchParams.status ? 'bg-yge-blue-500 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
         >
-          All
+          {t('timecards.filter.all')}
         </Link>
         {STATUSES.map((s) => (
           <Link
@@ -97,18 +95,18 @@ export default async function TimeCardsPage({
 
       {cards.length === 0 ? (
         <div className="mt-6 rounded border border-gray-200 bg-gray-50 p-6 text-sm text-gray-600">
-          No time cards yet. Click <em>New time card</em> to start one.
+          {t('timecards.empty')}
         </div>
       ) : (
         <div className="mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
           <table className="w-full text-left text-sm">
             <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
               <tr>
-                <th className="px-4 py-2">Week of</th>
-                <th className="px-4 py-2">Employee</th>
-                <th className="px-4 py-2">Entries</th>
-                <th className="px-4 py-2">Total hrs</th>
-                <th className="px-4 py-2">Status</th>
+                <th className="px-4 py-2">{t('timecards.col.weekOf')}</th>
+                <th className="px-4 py-2">{t('timecards.col.employee')}</th>
+                <th className="px-4 py-2">{t('timecards.col.entries')}</th>
+                <th className="px-4 py-2">{t('timecards.col.totalHrs')}</th>
+                <th className="px-4 py-2">{t('timecards.col.status')}</th>
                 <th className="px-4 py-2"></th>
               </tr>
             </thead>
@@ -143,7 +141,7 @@ export default async function TimeCardsPage({
                     </td>
                     <td className="px-4 py-3 text-right text-sm">
                       <Link href={`/time-cards/${c.id}`} className="text-yge-blue-500 hover:underline">
-                        Open
+                        {t('timecards.open')}
                       </Link>
                     </td>
                   </tr>
