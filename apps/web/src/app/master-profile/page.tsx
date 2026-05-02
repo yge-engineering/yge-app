@@ -12,6 +12,7 @@ import {
   AuditBinderPanel,
   PageHeader,
 } from '../../components';
+import { getTranslator } from '../../lib/locale';
 import { MasterProfileEditor } from '@/components/master-profile-editor';
 import { MasterProfileOfficersEditor } from '@/components/master-profile-officers-editor';
 import { MasterProfileInsuranceEditor } from '@/components/master-profile-insurance-editor';
@@ -38,6 +39,7 @@ async function fetchProfile(): Promise<MasterProfile | null> {
 
 export default async function MasterProfilePage() {
   const profile = await fetchProfile();
+  const t = getTranslator();
 
   return (
     <AppShell>
@@ -52,18 +54,17 @@ export default async function MasterProfilePage() {
         </div>
 
         <PageHeader
-          title="Master business profile"
-          subtitle="Single source of truth for every CSLB / DIR / DOT / NAICS field on every agency form. Edit below to update."
+          title={t('master.profile.title')}
+          subtitle={t('master.profile.subtitle')}
         />
 
         {!profile ? (
-          <Alert tone="danger" className="mt-6" title="Could not load profile">
-            API at /api/master-profile returned an error. Check that the API
-            server is running on port 4000.
+          <Alert tone="danger" className="mt-6" title={t('master.profile.fetchError.title')}>
+            {t('master.profile.fetchError.body')}
           </Alert>
         ) : (
           <>
-            <Section title="Identity">
+            <Section title={t('master.profile.identity')}>
               <Row label="Legal name" value={profile.legalName} />
               <Row label="Short name" value={profile.shortName} />
               <Row label="CSLB license" value={profile.cslbLicense} />
@@ -83,7 +84,7 @@ export default async function MasterProfilePage() {
               <Row label="PSC" value={profile.pscCodes.join(', ')} />
             </Section>
 
-            <Section title="Address">
+            <Section title={t('master.profile.address')}>
               <Row label="Street" value={profile.address.street} />
               {profile.address.street2 && <Row label="Suite / unit" value={profile.address.street2} />}
               <Row label="City" value={profile.address.city} />
@@ -96,7 +97,7 @@ export default async function MasterProfilePage() {
               {profile.websiteUrl && <Row label="Website" value={profile.websiteUrl} />}
             </Section>
 
-            <Section title={`Officers (${profile.officers.length})`}>
+            <Section title={`${t('master.profile.officers')} (${profile.officers.length})`}>
               {profile.officers.length === 0 ? (
                 <p className="text-sm text-gray-500">No officers recorded.</p>
               ) : (
@@ -123,7 +124,7 @@ export default async function MasterProfilePage() {
               )}
             </Section>
 
-            <Section title="Bonding">
+            <Section title={t('master.profile.bonding')}>
               {!profile.bonding ? (
                 <p className="text-sm text-gray-500">
                   No bonding profile recorded. Add one to enable bonding-capacity
@@ -145,7 +146,7 @@ export default async function MasterProfilePage() {
               )}
             </Section>
 
-            <Section title={`Insurance (${profile.insurance.length})`}>
+            <Section title={`${t('master.profile.insurance')} (${profile.insurance.length})`}>
               {profile.insurance.length === 0 ? (
                 <p className="text-sm text-gray-500">No insurance policies recorded.</p>
               ) : (
@@ -180,7 +181,7 @@ export default async function MasterProfilePage() {
               )}
             </Section>
 
-            <Section title="Diversity certifications">
+            <Section title={t('master.profile.diversity')}>
               <Row label="DBE" value={profile.isDbe ? 'Yes' : 'No'} />
               <Row label="SBE" value={profile.isSbe ? 'Yes' : 'No'} />
               <Row label="DVBE" value={profile.isDvbe ? 'Yes' : 'No'} />
