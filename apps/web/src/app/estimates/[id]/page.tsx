@@ -60,6 +60,12 @@ export default async function EstimateDetailPage({
 
       <div className="mb-4 flex flex-wrap gap-2 text-xs">
         <Link
+          href={`/estimates/${data.estimate.id}/coach`}
+          className="rounded border border-amber-500 bg-amber-50 px-3 py-1 font-medium text-amber-800 hover:bg-amber-100"
+        >
+          Pre-submit check
+        </Link>
+        <Link
           href={`/estimates/${data.estimate.id}/print`}
           className="rounded border border-yge-blue-500 px-3 py-1 font-medium text-yge-blue-500 hover:bg-yge-blue-50"
         >
