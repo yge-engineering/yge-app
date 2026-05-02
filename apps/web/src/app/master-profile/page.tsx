@@ -14,6 +14,8 @@ import {
 } from '../../components';
 import { MasterProfileEditor } from '@/components/master-profile-editor';
 import { MasterProfileOfficersEditor } from '@/components/master-profile-officers-editor';
+import { MasterProfileInsuranceEditor } from '@/components/master-profile-insurance-editor';
+import { MasterProfileBondingEditor } from '@/components/master-profile-bonding-editor';
 import type { MasterProfile } from '@yge/shared';
 
 function apiBaseUrl(): string {
@@ -191,6 +193,14 @@ export default async function MasterProfilePage() {
 
             <div className="mt-6">
               <MasterProfileOfficersEditor apiBaseUrl={publicApiBaseUrl()} initial={profile.officers} />
+            </div>
+
+            <div className="mt-6">
+              <MasterProfileBondingEditor apiBaseUrl={publicApiBaseUrl()} initial={profile.bonding} />
+            </div>
+
+            <div className="mt-6">
+              <MasterProfileInsuranceEditor apiBaseUrl={publicApiBaseUrl()} initial={profile.insurance} />
             </div>
 
             <AuditBinderPanel entityType="Company" entityId={profile.id} />
