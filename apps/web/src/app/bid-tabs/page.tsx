@@ -38,14 +38,48 @@ function formatMoney(cents: number): string {
   })}`;
 }
 
-export default async function BidTabsPage() {
-  const tabs = await fetchTabs();
+interface BidTabsPageProps {
+  searchParams?: { source?: string; county?: string };
+}
 
-  // Per-source counts for the chip row.
+export default async function BidTabsPage({ searchParams }: BidTabsPageProps) {
+  const allTabs = await fetchTabs();
+
+  // Per-source + per-county counts for the chip rows. Computed
+  // on the unfiltered set so the operator sees how many tabs
+  // each chip would surface.
   const bySource = new Map<string, number>();
-  for (const t of tabs) bySource.set(t.source, (bySource.get(t.source) ?? 0) + 1);
+  const byCounty = new Map<string, number>();
+  for (const t of allTabs) {
+    bySource.set(t.source, (bySource.get(t.source) ?? 0) + 1);
+    if (t.county) byCounty.set(t.county, (byCounty.get(t.county) ?? 0) + 1);
+  }
+  const sourceFilter = searchParams?.source?.trim() || undefined;
+  const countyFilter = searchParams?.county?.trim() || undefined;
+
+  const tabs = allTabs.filter((t) => {
+    if (sourceFilter && t.source !== sourceFilter) return false;
+    if (countyFilter && t.county !== countyFilter) return false;
+    return true;
+  });
 
   const totalBidders = tabs.reduce((acc, t) => acc + t.bidders.length, 0);
+
+  function chipHref(over: { source?: string; county?: string }): string {
+    const params = new URLSearchParams();
+    const merged = {
+      source: over.source !== undefined ? over.source : sourceFilter,
+      county: over.county !== undefined ? over.county : countyFilter,
+    };
+    if (merged.source) params.set('source', merged.source);
+    if (merged.county) params.set('county', merged.county);
+    const q = params.toString();
+    return q ? `/bid-tabs?${q}` : '/bid-tabs';
+  }
+
+  const topCounties = [...byCounty.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, 8);
 
   return (
     <AppShell>
@@ -66,7 +100,9 @@ export default async function BidTabsPage() {
           />
           {tabs.length > 0 && (
             <a
-              href={`${publicApiBaseUrl()}/api/bid-tabs?format=csv`}
+              href={`${publicApiBaseUrl()}/api/bid-tabs?format=csv${
+                sourceFilter ? `&source=${encodeURIComponent(sourceFilter)}` : ''
+              }${countyFilter ? `&county=${encodeURIComponent(countyFilter)}` : ''}`}
               className="ml-4 mb-2 inline-flex shrink-0 items-center rounded-md border border-yge-blue-500 px-3 py-1.5 text-sm font-medium text-yge-blue-500 hover:bg-yge-blue-50"
             >
               Download CSV
@@ -80,11 +116,89 @@ export default async function BidTabsPage() {
           <Tile label="Sources covered" value={String(bySource.size)} />
         </section>
 
+        {(bySource.size > 0 || byCounty.size > 0) && (
+          <section className="mt-4 space-y-2 rounded-md border border-gray-200 bg-white p-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs uppercase tracking-wide text-gray-500">Source:</span>
+              <Link
+                href={chipHref({ source: '' })}
+                className={`rounded-full px-3 py-1 text-xs font-medium ${
+                  !sourceFilter
+                    ? 'bg-yge-blue-500 text-white'
+                    : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                All ({allTabs.length})
+              </Link>
+              {[...bySource.entries()]
+                .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+                .map(([source, count]) => {
+                  const active = sourceFilter === source;
+                  return (
+                    <Link
+                      key={source}
+                      href={chipHref({ source })}
+                      className={`rounded-full px-3 py-1 text-xs font-medium ${
+                        active
+                          ? 'bg-yge-blue-500 text-white'
+                          : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      {source} ({count})
+                    </Link>
+                  );
+                })}
+            </div>
+            {topCounties.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs uppercase tracking-wide text-gray-500">County:</span>
+                <Link
+                  href={chipHref({ county: '' })}
+                  className={`rounded-full px-3 py-1 text-xs font-medium ${
+                    !countyFilter
+                      ? 'bg-yge-blue-500 text-white'
+                      : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  All
+                </Link>
+                {topCounties.map(([county, count]) => {
+                  const active = countyFilter === county;
+                  return (
+                    <Link
+                      key={county}
+                      href={chipHref({ county })}
+                      className={`rounded-full px-3 py-1 text-xs font-medium ${
+                        active
+                          ? 'bg-yge-blue-500 text-white'
+                          : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      {county} ({count})
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        )}
+
         {tabs.length === 0 ? (
           <p className="mt-6 rounded border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
-            No bid tabs imported yet. Use the form below to paste one.
-            Granite, Knife River, Mercer-Fraser, J.F. Shea — every bidder
-            you log here feeds the per-competitor profile.
+            {sourceFilter || countyFilter ? (
+              <>
+                No bid tabs match this filter.{' '}
+                <Link href="/bid-tabs" className="text-yge-blue-500 hover:underline">
+                  Clear filter →
+                </Link>
+              </>
+            ) : (
+              <>
+                No bid tabs imported yet. Use the form below to paste one.
+                Granite, Knife River, Mercer-Fraser, J.F. Shea — every bidder
+                you log here feeds the per-competitor profile.
+              </>
+            )}
           </p>
         ) : (
           <section className="mt-6 overflow-hidden rounded-md border border-gray-200 bg-white shadow-sm">
