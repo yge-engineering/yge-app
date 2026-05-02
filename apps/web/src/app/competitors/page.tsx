@@ -24,6 +24,10 @@ function apiBaseUrl(): string {
   );
 }
 
+function publicApiBaseUrl(): string {
+  return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+}
+
 async function fetchTabs(): Promise<BidTab[]> {
   try {
     const res = await fetch(`${apiBaseUrl()}/api/bid-tabs`, { cache: 'no-store' });
@@ -85,10 +89,22 @@ export default async function CompetitorsPage({ searchParams }: PageProps) {
           </Link>
         </div>
 
-        <PageHeader
-          title="Competitors"
-          subtitle="Local-market competitor profiles rolled up from the public bid-tab corpus. Read this before sizing a bid — who shows up, how often, at what dollar range."
-        />
+        <div className="flex items-end justify-between">
+          <PageHeader
+            title="Competitors"
+            subtitle="Local-market competitor profiles rolled up from the public bid-tab corpus. Read this before sizing a bid — who shows up, how often, at what dollar range."
+          />
+          {rows.length > 0 && (
+            <a
+              href={`${publicApiBaseUrl()}/api/competitors?format=csv${
+                windowDef.days ? `&days=${windowDef.days}` : ''
+              }`}
+              className="ml-4 mb-2 inline-flex shrink-0 items-center rounded-md border border-yge-blue-500 px-3 py-1.5 text-sm font-medium text-yge-blue-500 hover:bg-yge-blue-50"
+            >
+              Download CSV
+            </a>
+          )}
+        </div>
 
         <section className="mt-4 flex flex-wrap items-center gap-2 rounded-md border border-gray-200 bg-white p-3">
           <span className="text-xs uppercase tracking-wide text-gray-500">Window:</span>

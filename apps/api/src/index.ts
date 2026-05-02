@@ -53,6 +53,7 @@ import { otpRouter } from './routes/otp';
 import { legalHoldsRouter } from './routes/legal-holds';
 import { recordsRetentionRouter } from './routes/records-retention';
 import { bidTabsRouter } from './routes/bid-tabs';
+import { competitorsRouter } from './routes/competitors';
 
 const app = express();
 
@@ -109,6 +110,7 @@ app.use('/api/otp', otpRouter);
 app.use('/api/legal-holds', legalHoldsRouter);
 app.use('/api/records-retention', recordsRetentionRouter);
 app.use('/api/bid-tabs', bidTabsRouter);
+app.use('/api/competitors', competitorsRouter);
 
 // 404
 app.use((_req, res) => {
