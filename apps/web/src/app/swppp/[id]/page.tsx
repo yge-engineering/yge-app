@@ -1,6 +1,7 @@
 // /swppp/[id] — SWPPP inspection detail / edit page.
 
 import Link from 'next/link';
+import { AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { SwpppInspection } from '@yge/shared';
 import { SwpppInspectionEditor } from '../../../components/swppp-inspection-editor';
@@ -40,6 +41,8 @@ export default async function SwpppInspectionDetailPage({
       <div className="mt-6">
         <SwpppInspectionEditor mode="edit" inspection={inspection} />
       </div>
+
+      <AuditBinderPanel entityType="SwpppInspection" entityId={inspection.id} />
     </main>
   );
 }

@@ -1,6 +1,7 @@
 // /photos/[id] — photo detail / edit.
 
 import Link from 'next/link';
+import { AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { Photo } from '@yge/shared';
 import { PhotoEditor } from '../../../components/photo-editor';
@@ -40,6 +41,8 @@ export default async function PhotoDetailPage({
       <div className="mt-6">
         <PhotoEditor mode="edit" photo={photo} />
       </div>
+
+      <AuditBinderPanel entityType="Photo" entityId={photo.id} />
     </main>
   );
 }

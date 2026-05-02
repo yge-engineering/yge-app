@@ -1,6 +1,7 @@
 // /dir-rates/[id] — DIR rate detail / edit.
 
 import Link from 'next/link';
+import { AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import { classificationLabel, type DirRate } from '@yge/shared';
 import { DirRateEditor } from '../../../components/dir-rate-editor';
@@ -42,6 +43,8 @@ export default async function DirRateDetailPage({
       <div className="mt-6">
         <DirRateEditor mode="edit" rate={rate} />
       </div>
+
+      <AuditBinderPanel entityType="DirRateSchedule" entityId={rate.id} />
     </main>
   );
 }

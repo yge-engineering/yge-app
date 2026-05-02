@@ -1,6 +1,7 @@
 // /toolbox-talks/[id] — toolbox talk detail / edit page.
 
 import Link from 'next/link';
+import { AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { ToolboxTalk } from '@yge/shared';
 import { ToolboxTalkEditor } from '../../../components/toolbox-talk-editor';
@@ -46,6 +47,8 @@ export default async function ToolboxTalkDetailPage({
       <div className="mt-6">
         <ToolboxTalkEditor mode="edit" talk={talk} />
       </div>
+
+      <AuditBinderPanel entityType="ToolboxTalk" entityId={talk.id} />
     </main>
   );
 }

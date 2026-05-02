@@ -1,6 +1,7 @@
 // /punch-list/[id] — punch item detail / edit page.
 
 import Link from 'next/link';
+import { AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { PunchItem } from '@yge/shared';
 import { PunchItemEditor } from '../../../components/punch-item-editor';
@@ -38,6 +39,8 @@ export default async function PunchItemDetailPage({
       <div className="mt-6">
         <PunchItemEditor mode="edit" item={item} />
       </div>
+
+      <AuditBinderPanel entityType="PunchItem" entityId={item.id} />
     </main>
   );
 }

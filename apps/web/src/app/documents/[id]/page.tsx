@@ -1,6 +1,7 @@
 // /documents/[id] — edit a document.
 
 import Link from 'next/link';
+import { AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { Document, Job } from '@yge/shared';
 import { DocumentEditor } from '@/components/document-editor';
@@ -47,6 +48,8 @@ export default async function DocumentDetailPage({
       <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <DocumentEditor initial={doc} jobs={jobs} apiBaseUrl={publicApiBaseUrl()} />
       </div>
+
+      <AuditBinderPanel entityType="Document" entityId={doc.id} />
     </main>
   );
 }

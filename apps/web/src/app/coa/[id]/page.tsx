@@ -1,6 +1,7 @@
 // /coa/[id] — account detail / edit.
 
 import Link from 'next/link';
+import { AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import { accountTypeLabel, type Account } from '@yge/shared';
 import { AccountEditor } from '../../../components/account-editor';
@@ -40,6 +41,8 @@ export default async function AccountDetailPage({
       <div className="mt-6">
         <AccountEditor mode="edit" account={account} />
       </div>
+
+      <AuditBinderPanel entityType="Account" entityId={account.id} />
     </main>
   );
 }
