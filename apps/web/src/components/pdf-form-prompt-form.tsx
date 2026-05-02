@@ -9,8 +9,8 @@
 // elegant client-side state).
 //
 // The 'Download filled PDF' button gates here on every required
-// prompt being answered + every sensitive prompt being filled.
-// The actual download endpoint ships in the next bundle.
+// prompt being answered. POSTs /api/pdf-form-mappings/:id/fill
+// and saves the response Blob via a temporary anchor.
 
 'use client';
 
@@ -76,6 +76,45 @@ export function PdfFormPromptForm({ apiBaseUrl, mappingId, promptFields }: Props
     }
   }
 
+  async function downloadFilled() {
+    if (busy || !requiredAnswered) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(
+        `${apiBaseUrl}/api/pdf-form-mappings/${mappingId}/fill`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ promptAnswers: answers }),
+        },
+      );
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        setError(body.error ?? `Fill failed (${res.status})`);
+        return;
+      }
+      const warnCount = Number(res.headers.get('x-pdf-warning-count') ?? '0');
+      if (warnCount > 0) {
+        // eslint-disable-next-line no-console
+        console.warn(`PDF fill produced ${warnCount} per-field warning(s) — check the API logs.`);
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${mappingId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <section className="mt-6 rounded-md border border-gray-200 bg-white p-4 shadow-sm">
       <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-700">
@@ -134,11 +173,12 @@ export function PdfFormPromptForm({ apiBaseUrl, mappingId, promptFields }: Props
         </button>
         <button
           type="button"
-          disabled
-          title="Byte rewriting (pdf-lib) ships in the next bundle"
-          className="rounded bg-yge-blue-500 px-4 py-1 text-sm font-semibold text-white opacity-50"
+          onClick={downloadFilled}
+          disabled={busy || !requiredAnswered}
+          title={requiredAnswered ? 'Download the filled + flattened PDF' : 'Answer the required prompts first'}
+          className="rounded bg-yge-blue-500 px-4 py-1 text-sm font-semibold text-white hover:bg-yge-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Download filled PDF
+          {busy ? 'Filling…' : 'Download filled PDF'}
         </button>
         <span className="text-xs text-gray-500">
           {requiredAnswered

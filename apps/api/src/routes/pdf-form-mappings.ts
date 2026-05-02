@@ -20,6 +20,7 @@ import {
   listPdfFormMappings,
   updatePdfFormMapping,
 } from '../lib/pdf-form-mappings-store';
+import { fillPdf } from '../lib/pdf-form-fill-runtime';
 
 export const pdfFormMappingsRouter = Router();
 
@@ -105,5 +106,47 @@ pdfFormMappingsRouter.post('/:id/preview', async (req, res, next) => {
       bidValidityDays: parsed.data.bidValidityDays,
     });
     return res.json({ report });
+  } catch (err) { next(err); }
+});
+
+const FillBodySchema = z.object({
+  promptAnswers: z.record(z.string()).optional(),
+  bidValidityDays: z.number().int().positive().max(365).optional(),
+  /** Optional: skip the AcroForm flatten so reviewers can edit the
+   *  filled PDF in Acrobat before sealing. Default true (matches the
+   *  agency expectation that the submitted PDF is non-editable). */
+  flatten: z.boolean().optional(),
+});
+
+/**
+ * Run the byte-rewriting fill and stream the resulting PDF back as
+ * application/pdf. Warnings (missing fields, type mismatches) ride
+ * along on response headers so a client that wants them can show
+ * them inline; the body is just the PDF bytes.
+ */
+pdfFormMappingsRouter.post('/:id/fill', async (req, res, next) => {
+  try {
+    const parsed = FillBodySchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Validation failed', issues: parsed.error.issues });
+    }
+    const mapping = await getPdfFormMapping(req.params.id);
+    if (!mapping) return res.status(404).json({ error: 'Form mapping not found' });
+    const profile = await getMasterProfile();
+    const result = await fillPdf(
+      mapping,
+      {
+        profile,
+        promptAnswers: parsed.data.promptAnswers,
+        bidValidityDays: parsed.data.bidValidityDays,
+      },
+      { flatten: parsed.data.flatten ?? true },
+    );
+    res.setHeader('Content-Type', 'application/pdf');
+    const filename = (mapping.formCode ?? 'filled').replace(/[^A-Za-z0-9._-]/g, '-');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}.pdf"`);
+    res.setHeader('X-PDF-Sha256', result.sha256);
+    res.setHeader('X-PDF-Warning-Count', String(result.warnings.length));
+    return res.status(200).end(Buffer.from(result.bytes));
   } catch (err) { next(err); }
 });

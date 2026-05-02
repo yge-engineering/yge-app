@@ -10,8 +10,11 @@
 //     preview through the client island
 //   - Audit binder panel for this mapping (entityType=Document)
 //
-// The actual byte rewriting (download a filled PDF) ships in the
-// next bundle on top of pdf-lib.
+// The Download button POSTs to /api/pdf-form-mappings/:id/fill,
+// which runs pdf-lib against the source PDF + computed values and
+// streams back the filled + flattened bytes. The byte sha256 lands
+// in the X-PDF-Sha256 response header so the signing flow can
+// finalize against it.
 
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -126,10 +129,13 @@ export default async function PdfFormFillPage({
         <AuditBinderPanel entityType="Document" entityId={mapping.id} className="mt-8" />
 
         <p className="mt-8 text-xs text-gray-500">
-          Today this surface previews the fill values + flags
-          required-but-empty / pattern-violations / sensitive prompts. The
-          'Download filled PDF' button — pdf-lib byte rewriting + flatten +
-          embed signature — ships in the next bundle.
+          Download streams a filled + flattened PDF (pdf-lib runtime). The
+          source PDF must exist under{' '}
+          <code className="font-mono">apps/api/data/pdf-forms/</code> at the
+          path on the mapping&rsquo;s <code className="font-mono">pdfReference</code>.
+          The byte sha256 lands in the response&rsquo;s{' '}
+          <code className="font-mono">X-PDF-Sha256</code> header so the
+          signing flow can finalize against it.
         </p>
       </main>
     </AppShell>
