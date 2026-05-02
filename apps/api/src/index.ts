@@ -50,6 +50,7 @@ import { signaturesRouter } from './routes/signatures';
 import { masterProfileRouter } from './routes/master-profile';
 import { pdfFormMappingsRouter } from './routes/pdf-form-mappings';
 import { otpRouter } from './routes/otp';
+import { legalHoldsRouter } from './routes/legal-holds';
 
 const app = express();
 
@@ -103,6 +104,7 @@ app.use('/api/signatures', signaturesRouter);
 app.use('/api/master-profile', masterProfileRouter);
 app.use('/api/pdf-form-mappings', pdfFormMappingsRouter);
 app.use('/api/otp', otpRouter);
+app.use('/api/legal-holds', legalHoldsRouter);
 
 // 404
 app.use((_req, res) => {
