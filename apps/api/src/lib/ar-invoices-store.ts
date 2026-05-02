@@ -1,4 +1,7 @@
 // File-based store for AR invoices.
+//
+// Every mutation here records an audit event via recordAudit() —
+// CLAUDE.md mandates 'every mutation is audit-logged'.
 
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
@@ -9,6 +12,7 @@ import {
   type ArInvoiceCreate,
   type ArInvoicePatch,
 } from '@yge/shared';
+import { recordAudit, type AuditContext } from './audit-store';
 
 function dataDir(): string {
   return (
@@ -48,7 +52,10 @@ async function writeIndex(entries: ArInvoice[]) {
   await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
 }
 
-export async function createArInvoice(input: ArInvoiceCreate): Promise<ArInvoice> {
+export async function createArInvoice(
+  input: ArInvoiceCreate,
+  ctx?: AuditContext,
+): Promise<ArInvoice> {
   await ensureDir();
   const now = new Date().toISOString();
   const id = newArInvoiceId();
@@ -69,6 +76,13 @@ export async function createArInvoice(input: ArInvoiceCreate): Promise<ArInvoice
   const index = await readIndex();
   index.unshift(i);
   await writeIndex(index);
+  await recordAudit({
+    action: 'create',
+    entityType: 'ArInvoice',
+    entityId: id,
+    after: i,
+    ctx,
+  });
   return i;
 }
 
@@ -97,6 +111,10 @@ export async function getArInvoice(id: string): Promise<ArInvoice | null> {
 export async function updateArInvoice(
   id: string,
   patch: ArInvoicePatch,
+  ctx?: AuditContext,
+  /** Override when the patch represents a domain action (approve /
+   *  void / pay) rather than a generic field edit. */
+  auditAction: 'update' | 'approve' | 'void' | 'pay' = 'update',
 ): Promise<ArInvoice | null> {
   const existing = await getArInvoice(id);
   if (!existing) return null;
@@ -117,5 +135,13 @@ export async function updateArInvoice(
     index.unshift(updated);
   }
   await writeIndex(index);
+  await recordAudit({
+    action: auditAction,
+    entityType: 'ArInvoice',
+    entityId: id,
+    before: existing,
+    after: updated,
+    ctx,
+  });
   return updated;
 }

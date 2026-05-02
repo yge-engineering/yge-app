@@ -1,4 +1,7 @@
 // File-based store for AR payments.
+//
+// Every mutation here records an audit event via recordAudit() —
+// CLAUDE.md mandates 'every mutation is audit-logged'.
 
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
@@ -10,6 +13,7 @@ import {
   type ArPaymentCreate,
   type ArPaymentPatch,
 } from '@yge/shared';
+import { recordAudit, type AuditContext } from './audit-store';
 
 function dataDir(): string {
   return process.env.AR_PAYMENTS_DATA_DIR ?? path.resolve(process.cwd(), 'data', 'ar-payments');
@@ -46,7 +50,10 @@ async function writeIndex(entries: ArPayment[]) {
   await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
 }
 
-export async function createArPayment(input: ArPaymentCreate): Promise<ArPayment> {
+export async function createArPayment(
+  input: ArPaymentCreate,
+  ctx?: AuditContext,
+): Promise<ArPayment> {
   await ensureDir();
   const now = new Date().toISOString();
   const id = newArPaymentId();
@@ -63,6 +70,13 @@ export async function createArPayment(input: ArPaymentCreate): Promise<ArPayment
   const index = await readIndex();
   index.unshift(p);
   await writeIndex(index);
+  await recordAudit({
+    action: 'create',
+    entityType: 'ArPayment',
+    entityId: id,
+    after: p,
+    ctx,
+  });
   return p;
 }
 
@@ -91,6 +105,10 @@ export async function getArPayment(id: string): Promise<ArPayment | null> {
 export async function updateArPayment(
   id: string,
   patch: ArPaymentPatch,
+  ctx?: AuditContext,
+  /** Override when the patch is a domain action (void) rather
+   *  than a generic field edit. */
+  auditAction: 'update' | 'void' = 'update',
 ): Promise<ArPayment | null> {
   const existing = await getArPayment(id);
   if (!existing) return null;
@@ -111,6 +129,14 @@ export async function updateArPayment(
     index.unshift(updated);
   }
   await writeIndex(index);
+  await recordAudit({
+    action: auditAction,
+    entityType: 'ArPayment',
+    entityId: id,
+    before: existing,
+    after: updated,
+    ctx,
+  });
   return updated;
 }
 

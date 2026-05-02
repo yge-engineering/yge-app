@@ -1,4 +1,7 @@
 // File-based store for bank reconciliations.
+//
+// Every mutation here records an audit event via recordAudit() —
+// CLAUDE.md mandates 'every mutation is audit-logged'.
 
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
@@ -9,6 +12,7 @@ import {
   type BankRecCreate,
   type BankRecPatch,
 } from '@yge/shared';
+import { recordAudit, type AuditContext } from './audit-store';
 
 function dataDir(): string {
   return process.env.BANK_RECS_DATA_DIR ?? path.resolve(process.cwd(), 'data', 'bank-recs');
@@ -45,7 +49,10 @@ async function writeIndex(entries: BankRec[]) {
   await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
 }
 
-export async function createBankRec(input: BankRecCreate): Promise<BankRec> {
+export async function createBankRec(
+  input: BankRecCreate,
+  ctx?: AuditContext,
+): Promise<BankRec> {
   await ensureDir();
   const now = new Date().toISOString();
   const id = newBankRecId();
@@ -64,6 +71,13 @@ export async function createBankRec(input: BankRecCreate): Promise<BankRec> {
   const index = await readIndex();
   index.unshift(r);
   await writeIndex(index);
+  await recordAudit({
+    action: 'create',
+    entityType: 'BankRec',
+    entityId: id,
+    after: r,
+    ctx,
+  });
   return r;
 }
 
@@ -93,6 +107,11 @@ export async function getBankRec(id: string): Promise<BankRec | null> {
 export async function updateBankRec(
   id: string,
   patch: BankRecPatch,
+  ctx?: AuditContext,
+  /** Override when the patch represents a domain action (post a
+   *  reconciled rec, void a draft) rather than a generic field
+   *  edit. */
+  auditAction: 'update' | 'post' | 'void' = 'update',
 ): Promise<BankRec | null> {
   const existing = await getBankRec(id);
   if (!existing) return null;
@@ -113,5 +132,13 @@ export async function updateBankRec(
     index.unshift(updated);
   }
   await writeIndex(index);
+  await recordAudit({
+    action: auditAction,
+    entityType: 'BankRec',
+    entityId: id,
+    before: existing,
+    after: updated,
+    ctx,
+  });
   return updated;
 }

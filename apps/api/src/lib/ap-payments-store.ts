@@ -1,4 +1,7 @@
 // File-based store for AP payments (the check register).
+//
+// Every mutation here records an audit event via recordAudit() —
+// CLAUDE.md mandates 'every mutation is audit-logged'.
 
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
@@ -10,6 +13,7 @@ import {
   type ApPaymentCreate,
   type ApPaymentPatch,
 } from '@yge/shared';
+import { recordAudit, type AuditContext } from './audit-store';
 
 function dataDir(): string {
   return process.env.AP_PAYMENTS_DATA_DIR ?? path.resolve(process.cwd(), 'data', 'ap-payments');
@@ -46,7 +50,10 @@ async function writeIndex(entries: ApPayment[]) {
   await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
 }
 
-export async function createApPayment(input: ApPaymentCreate): Promise<ApPayment> {
+export async function createApPayment(
+  input: ApPaymentCreate,
+  ctx?: AuditContext,
+): Promise<ApPayment> {
   await ensureDir();
   const now = new Date().toISOString();
   const id = newApPaymentId();
@@ -64,6 +71,13 @@ export async function createApPayment(input: ApPaymentCreate): Promise<ApPayment
   const index = await readIndex();
   index.unshift(p);
   await writeIndex(index);
+  await recordAudit({
+    action: 'create',
+    entityType: 'ApPayment',
+    entityId: id,
+    after: p,
+    ctx,
+  });
   return p;
 }
 
@@ -92,6 +106,10 @@ export async function getApPayment(id: string): Promise<ApPayment | null> {
 export async function updateApPayment(
   id: string,
   patch: ApPaymentPatch,
+  ctx?: AuditContext,
+  /** Override when the patch represents a domain action (void / pay /
+   *  reject) rather than a generic field edit. */
+  auditAction: 'update' | 'void' | 'pay' = 'update',
 ): Promise<ApPayment | null> {
   const existing = await getApPayment(id);
   if (!existing) return null;
@@ -112,6 +130,14 @@ export async function updateApPayment(
     index.unshift(updated);
   }
   await writeIndex(index);
+  await recordAudit({
+    action: auditAction,
+    entityType: 'ApPayment',
+    entityId: id,
+    before: existing,
+    after: updated,
+    ctx,
+  });
   return updated;
 }
 
