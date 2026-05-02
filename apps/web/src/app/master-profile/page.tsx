@@ -1,10 +1,9 @@
 // /master-profile — single-source-of-truth identity record.
 //
-// Read-only view for now. PDF form filler, browser auto-form-fill
+// Read view shows every field; the inline editor below it PATCHes
+// /api/master-profile. The PDF form filler, browser auto-form-fill
 // extension, ACORD 25 generator, and every agency form template
-// resolve fields against this record. The editable form ships in
-// a follow-up commit; today the values seed from the static
-// company-info constant on first read.
+// resolve fields against this record.
 
 import Link from 'next/link';
 import {
@@ -13,12 +12,17 @@ import {
   AuditBinderPanel,
   PageHeader,
 } from '../../components';
+import { MasterProfileEditor } from '@/components/master-profile-editor';
 import type { MasterProfile } from '@yge/shared';
 
 function apiBaseUrl(): string {
   return (
     process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
   );
+}
+
+function publicApiBaseUrl(): string {
+  return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 }
 
 async function fetchProfile(): Promise<MasterProfile | null> {
@@ -46,7 +50,7 @@ export default async function MasterProfilePage() {
 
         <PageHeader
           title="Master business profile"
-          subtitle="Single source of truth for every CSLB / DIR / DOT / NAICS field on every agency form. Editing happens through the API today; the inline editor ships next."
+          subtitle="Single source of truth for every CSLB / DIR / DOT / NAICS field on every agency form. Edit below to update."
         />
 
         {!profile ? (
@@ -179,6 +183,10 @@ export default async function MasterProfilePage() {
               <Row label="DVBE" value={profile.isDvbe ? 'Yes' : 'No'} />
               <Row label="WBE" value={profile.isWbe ? 'Yes' : 'No'} />
             </Section>
+
+            <div className="mt-8">
+              <MasterProfileEditor apiBaseUrl={publicApiBaseUrl()} initial={profile} />
+            </div>
 
             <AuditBinderPanel entityType="Company" entityId={profile.id} />
           </>
