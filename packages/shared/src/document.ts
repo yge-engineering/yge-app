@@ -19,6 +19,7 @@
 //   - 'What addenda came in on this job?' → kind=ADDENDUM + jobId
 
 import { z } from 'zod';
+import { translate, SEED_DICTIONARY, type Locale } from './i18n';
 
 /** What kind of document? Drives default tags + grouping in the list
  *  view. The set covers the documents YGE actually accumulates around
@@ -120,27 +121,8 @@ export type DocumentCreate = z.infer<typeof DocumentCreateSchema>;
 export const DocumentPatchSchema = DocumentCreateSchema.partial();
 export type DocumentPatch = z.infer<typeof DocumentPatchSchema>;
 
-export function documentKindLabel(k: DocumentKind): string {
-  switch (k) {
-    case 'RFP': return 'RFP';
-    case 'PLAN_SET': return 'Plan set';
-    case 'SPEC': return 'Spec';
-    case 'ADDENDUM': return 'Addendum';
-    case 'BID_FORM_BLANK': return 'Bid form (blank)';
-    case 'BID_FORM_SIGNED': return 'Bid form (signed)';
-    case 'COVER_LETTER': return 'Cover letter';
-    case 'BID_BOND': return 'Bid bond';
-    case 'CSLB_CERT': return 'CSLB cert';
-    case 'DIR_CERT': return 'DIR cert';
-    case 'INSURANCE_CERT': return 'Insurance cert';
-    case 'BUSINESS_LICENSE': return 'Business license';
-    case 'SITE_PHOTO': return 'Site photo';
-    case 'CORRESPONDENCE': return 'Correspondence';
-    case 'CONTRACT': return 'Contract';
-    case 'CHANGE_ORDER': return 'Change order';
-    case 'INVOICE': return 'Invoice';
-    case 'OTHER': return 'Other';
-  }
+export function documentKindLabel(k: DocumentKind, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `document.kind.${k}`);
 }
 
 /** Normalize a free-form tag input to lowercase + trimmed + dedup

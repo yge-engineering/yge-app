@@ -185,7 +185,7 @@ export default async function JobsPage({ searchParams }: PageProps) {
                     {j.projectType.replace(/_/g, ' ')}
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-700">
-                    {contractTypeLabel(j.contractType)}
+                    {contractTypeLabel(j.contractType, locale)}
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-700">
                     {j.bidDueDate ? formatWhen(j.bidDueDate) : <span className="text-gray-400">—</span>}

@@ -90,19 +90,8 @@ export type JobPatch = z.infer<typeof JobPatchSchema>;
 
 // ---- Display helpers -----------------------------------------------------
 
-export function contractTypeLabel(t: JobContractType): string {
-  switch (t) {
-    case 'PUBLIC_WORKS':
-      return 'Public works';
-    case 'PRIVATE':
-      return 'Private';
-    case 'TASK_ORDER':
-      return 'Task order';
-    case 'NEGOTIATED':
-      return 'Negotiated';
-    case 'OTHER':
-      return 'Other';
-  }
+export function contractTypeLabel(t: JobContractType, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `job.contractType.${t}`);
 }
 
 export function statusLabel(s: JobStatus, locale: Locale = 'en'): string {
