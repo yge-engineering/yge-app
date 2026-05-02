@@ -18,6 +18,7 @@ import {
   PageHeader,
 } from '../../../components';
 import { SignFormOtp } from '@/components/sign-form-otp';
+import { SignFormDrawn } from '@/components/sign-form-drawn';
 import {
   isLegallyBinding,
   type Signature,
@@ -93,22 +94,33 @@ export default async function SignPage({
               </pre>
             </section>
 
-            <SignFormOtp
-              apiBaseUrl={publicApiBaseUrl()}
-              signatureId={signature.id}
-              expectedSignerName={signature.signer.name}
-              signerEmail={signature.signer.email}
-              disclosureText={DISCLOSURE_TEXT}
-              affirmationText={AFFIRMATION_TEXT}
-            />
+            {signature.method === 'DRAWN' ? (
+              <SignFormDrawn
+                apiBaseUrl={publicApiBaseUrl()}
+                signatureId={signature.id}
+                expectedSignerName={signature.signer.name}
+                disclosureText={DISCLOSURE_TEXT}
+                affirmationText={AFFIRMATION_TEXT}
+              />
+            ) : (
+              <SignFormOtp
+                apiBaseUrl={publicApiBaseUrl()}
+                signatureId={signature.id}
+                expectedSignerName={signature.signer.name}
+                signerEmail={signature.signer.email}
+                disclosureText={DISCLOSURE_TEXT}
+                affirmationText={AFFIRMATION_TEXT}
+              />
+            )}
           </>
         )}
 
         <p className="mt-8 text-xs text-gray-500">
-          Phase-1 signing supports TYPED + email-OTP. The OTP confirms
-          control of the signer's email at signing time — the attribution
-          element of the ESIGN/UETA proof. The DRAWN canvas + the PDF
-          flatten/embed pipeline ship in follow-up commits.
+          Phase-1 signing methods: TYPED with email-OTP attribution
+          (default for remote signers) and DRAWN with IN_PERSON attribution
+          (for the bid binder workflow). The signature row's <code>method</code>
+          decides which form renders. DRAWN images flatten into the
+          underlying PDF in the finalize step.
         </p>
       </main>
     </AppShell>
