@@ -51,6 +51,7 @@ import { masterProfileRouter } from './routes/master-profile';
 import { pdfFormMappingsRouter } from './routes/pdf-form-mappings';
 import { otpRouter } from './routes/otp';
 import { legalHoldsRouter } from './routes/legal-holds';
+import { recordsRetentionRouter } from './routes/records-retention';
 
 const app = express();
 
@@ -105,6 +106,7 @@ app.use('/api/master-profile', masterProfileRouter);
 app.use('/api/pdf-form-mappings', pdfFormMappingsRouter);
 app.use('/api/otp', otpRouter);
 app.use('/api/legal-holds', legalHoldsRouter);
+app.use('/api/records-retention', recordsRetentionRouter);
 
 // 404
 app.use((_req, res) => {
