@@ -35,7 +35,7 @@ import { listLienWaivers } from './lien-waivers-store';
 
 // ---- Per-store record-shape extractor -----------------------------------
 
-interface RetentionCandidate {
+export interface RetentionCandidate {
   entityType: AuditEntityType;
   entityId: string;
   /** Plain-English display the report renders. */
@@ -48,7 +48,7 @@ interface RetentionCandidate {
   contextNote?: string;
 }
 
-async function collectCandidates(rule: RecordRetentionRule): Promise<RetentionCandidate[]> {
+export async function collectRetentionCandidates(rule: RecordRetentionRule): Promise<RetentionCandidate[]> {
   // Phase 1: only stores whose entityType the rule actually covers
   // contribute candidates. CompanyDocument rules (I-9, insurance
   // certs) need the documents store + per-row tag matching, which
@@ -241,7 +241,7 @@ export async function buildRetentionPurgeReport(
   for (const rule of RETENTION_RULES) {
     if (rule.entityType === 'CompanyDocument') continue; // tagged-docs path lands later
     rulesEvaluated += 1;
-    const candidates = await collectCandidates(rule);
+    const candidates = await collectRetentionCandidates(rule);
     const rows: RetentionPurgeRow[] = [];
     for (const c of candidates) {
       if (!isPurgeEligible(rule, c.triggerDateIso, asOfIso)) continue;
@@ -303,7 +303,7 @@ function holdsFreezing(
   return ids;
 }
 
-function computePurgeDate(rule: RecordRetentionRule, triggerDateIso: string): string {
+export function computePurgeDate(rule: RecordRetentionRule, triggerDateIso: string): string {
   const d = new Date(triggerDateIso + (triggerDateIso.includes('T') ? '' : 'T00:00:00Z'));
   if (!Number.isFinite(d.getTime())) return '';
   d.setUTCFullYear(d.getUTCFullYear() + rule.retainYears);

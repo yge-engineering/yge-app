@@ -47,6 +47,7 @@ export const AuditActionSchema = z.enum([
   'export',
   'import',
   'view', // restricted-content access only — don't log every page view
+  'purge', // records-retention destruction; only after operator confirm
 ]);
 export type AuditAction = z.infer<typeof AuditActionSchema>;
 

@@ -12,10 +12,12 @@ import {
   PageHeader,
   StatusPill,
 } from '../../components';
+import { RetentionPurgeConfirmForm } from '../../components/retention-purge-confirm-form';
 import {
   RETENTION_RULES,
   computeRetentionStats,
   type RecordRetentionAuthority,
+  type RetentionPurgeBatch,
 } from '@yge/shared';
 
 function apiBaseUrl(): string {
@@ -54,6 +56,14 @@ async function fetchPurgeReport(): Promise<PurgeReport | null> {
   } catch { return null; }
 }
 
+async function fetchPurgeBatches(): Promise<RetentionPurgeBatch[]> {
+  try {
+    const res = await fetch(`${apiBaseUrl()}/api/records-retention/purge-batches`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    return ((await res.json()) as { batches: RetentionPurgeBatch[] }).batches;
+  } catch { return []; }
+}
+
 const AUTHORITY_TONE: Record<
   RecordRetentionAuthority,
   'success' | 'warn' | 'danger' | 'info' | 'neutral' | 'muted'
@@ -72,6 +82,8 @@ const AUTHORITY_TONE: Record<
 export default async function RecordsRetentionPage() {
   const stats = computeRetentionStats();
   const purgeReport = await fetchPurgeReport();
+  const purgeBatches = await fetchPurgeBatches();
+  const apiBase = apiBaseUrl();
   // Group by authority for the rules table.
   const sortedRules = [...RETENTION_RULES].sort((a, b) => {
     if (a.authority !== b.authority) return a.authority.localeCompare(b.authority);
@@ -241,10 +253,81 @@ export default async function RecordsRetentionPage() {
                         ))}
                       </tbody>
                     </table>
+                    <RetentionPurgeConfirmForm
+                      apiBaseUrl={apiBase}
+                      entityType={bucket.entityType}
+                      bucketLabel={bucket.rule.label}
+                      ruleAuthority={bucket.rule.authority}
+                      retainYears={bucket.rule.retainYears}
+                      rows={bucket.rows.map((r) => ({
+                        entityId: r.entityId,
+                        label: r.label,
+                        purgeEligibleOn: r.purgeEligibleOn,
+                        frozen: r.frozen,
+                      }))}
+                    />
                   </section>
                 ))}
               </div>
             )}
+          </section>
+        )}
+
+        {purgeBatches.length > 0 && (
+          <section className="mt-8">
+            <header className="mb-3">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-700">
+                Recent purge batches
+              </h2>
+              <p className="text-xs text-gray-500">
+                Operator-confirmed retention destruction decisions, newest
+                first. Each batch links to per-row audit entries (one
+                <code className="mx-1 rounded bg-gray-100 px-1 font-mono text-[10px]">purge</code>
+                event per record). Phase 1 records the decision; per-store
+                byte-deletion ships next.
+              </p>
+            </header>
+            <div className="overflow-hidden rounded-md border border-gray-200 bg-white shadow-sm">
+              <table className="w-full text-xs">
+                <thead className="bg-gray-50 text-[11px] uppercase tracking-wide text-gray-500">
+                  <tr>
+                    <th className="px-3 py-2 text-left">Batch</th>
+                    <th className="px-3 py-2 text-left">Bucket</th>
+                    <th className="px-3 py-2 text-left">Authority</th>
+                    <th className="px-3 py-2 text-right">Rows</th>
+                    <th className="px-3 py-2 text-left">Reason</th>
+                    <th className="px-3 py-2 text-left">When</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {purgeBatches.slice(0, 25).map((b) => (
+                    <tr key={b.id}>
+                      <td className="px-3 py-2 align-top font-mono text-[11px] text-gray-700">
+                        {b.id}
+                        {!b.bytesDeleted && (
+                          <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] uppercase text-amber-800">
+                            decision-only
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2 align-top">
+                        <div className="text-gray-900">{b.ruleLabel}</div>
+                        <div className="font-mono text-[10px] text-gray-500">{b.entityType}</div>
+                      </td>
+                      <td className="px-3 py-2 align-top">
+                        <StatusPill label={b.ruleAuthority} tone="info" size="sm" />
+                        <div className="mt-0.5 text-[10px] text-gray-500">{b.retainYears}-yr</div>
+                      </td>
+                      <td className="px-3 py-2 align-top text-right font-mono">{b.rows.length}</td>
+                      <td className="px-3 py-2 align-top text-gray-700">{b.operatorReason}</td>
+                      <td className="px-3 py-2 align-top font-mono text-[11px] text-gray-600">
+                        {b.createdAt.replace('T', ' ').slice(0, 16)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </section>
         )}
 

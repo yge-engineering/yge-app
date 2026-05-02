@@ -9,6 +9,7 @@ export * from './pdf-form-filler';
 export * from './otp-challenge';
 export * from './pdf-form-mapping';
 export * from './records-retention';
+export * from './records-retention-purge';
 export * from './scope-gap-report';
 export * from './signature';
 export * from './money';
