@@ -1,4 +1,9 @@
 // File-based store for AP invoices.
+//
+// Every mutation here records an audit event via recordAudit() —
+// CLAUDE.md mandates 'every mutation is audit-logged'. The audit
+// write is fail-soft (a disk error in the audit store does not
+// roll back the underlying mutation; see audit-store.ts).
 
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
@@ -10,6 +15,7 @@ import {
   type ApInvoicePatch,
   type ApPaymentMethod,
 } from '@yge/shared';
+import { recordAudit, type AuditContext } from './audit-store';
 
 function dataDir(): string {
   return (
@@ -49,7 +55,10 @@ async function writeIndex(entries: ApInvoice[]) {
   await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
 }
 
-export async function createApInvoice(input: ApInvoiceCreate): Promise<ApInvoice> {
+export async function createApInvoice(
+  input: ApInvoiceCreate,
+  ctx?: AuditContext,
+): Promise<ApInvoice> {
   await ensureDir();
   const now = new Date().toISOString();
   const id = newApInvoiceId();
@@ -68,6 +77,13 @@ export async function createApInvoice(input: ApInvoiceCreate): Promise<ApInvoice
   const index = await readIndex();
   index.unshift(i);
   await writeIndex(index);
+  await recordAudit({
+    action: 'create',
+    entityType: 'ApInvoice',
+    entityId: id,
+    after: i,
+    ctx,
+  });
   return i;
 }
 
@@ -97,6 +113,11 @@ export async function getApInvoice(id: string): Promise<ApInvoice | null> {
 export async function updateApInvoice(
   id: string,
   patch: ApInvoicePatch,
+  ctx?: AuditContext,
+  /** Optional override of the audit action when the caller knows
+   *  this is a domain-meaningful state change (approve / pay /
+   *  reject) rather than a generic field edit. */
+  auditAction: 'update' | 'approve' | 'pay' | 'reject' = 'update',
 ): Promise<ApInvoice | null> {
   const existing = await getApInvoice(id);
   if (!existing) return null;
@@ -117,6 +138,14 @@ export async function updateApInvoice(
     index.unshift(updated);
   }
   await writeIndex(index);
+  await recordAudit({
+    action: auditAction,
+    entityType: 'ApInvoice',
+    entityId: id,
+    before: existing,
+    after: updated,
+    ctx,
+  });
   return updated;
 }
 
@@ -124,12 +153,18 @@ export async function updateApInvoice(
 export async function approveApInvoice(
   id: string,
   approvedByEmployeeId?: string,
+  ctx?: AuditContext,
 ): Promise<ApInvoice | null> {
-  return updateApInvoice(id, {
-    status: 'APPROVED',
-    approvedAt: new Date().toISOString(),
-    approvedByEmployeeId,
-  });
+  return updateApInvoice(
+    id,
+    {
+      status: 'APPROVED',
+      approvedAt: new Date().toISOString(),
+      approvedByEmployeeId,
+    },
+    ctx,
+    'approve',
+  );
 }
 
 /** Apply a payment. Server-side state machine: paidCents adds the
@@ -140,27 +175,39 @@ export async function payApInvoice(
   paymentMethod: ApPaymentMethod,
   paymentReference: string | undefined,
   amountCents: number,
+  ctx?: AuditContext,
 ): Promise<ApInvoice | null> {
   const existing = await getApInvoice(id);
   if (!existing) return null;
   const newPaid = existing.paidCents + amountCents;
   const fullyPaid = newPaid >= existing.totalCents;
-  return updateApInvoice(id, {
-    paidCents: newPaid,
-    paidAt,
-    paymentMethod,
-    paymentReference,
-    status: fullyPaid ? 'PAID' : existing.status === 'DRAFT' ? 'APPROVED' : existing.status,
-  });
+  return updateApInvoice(
+    id,
+    {
+      paidCents: newPaid,
+      paidAt,
+      paymentMethod,
+      paymentReference,
+      status: fullyPaid ? 'PAID' : existing.status === 'DRAFT' ? 'APPROVED' : existing.status,
+    },
+    ctx,
+    'pay',
+  );
 }
 
 /** Reject an invoice with a reason. Terminal state. */
 export async function rejectApInvoice(
   id: string,
   reason: string,
+  ctx?: AuditContext,
 ): Promise<ApInvoice | null> {
-  return updateApInvoice(id, {
-    status: 'REJECTED',
-    rejectedReason: reason,
-  });
+  return updateApInvoice(
+    id,
+    {
+      status: 'REJECTED',
+      rejectedReason: reason,
+    },
+    { ...ctx, reason },
+    'reject',
+  );
 }
