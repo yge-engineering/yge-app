@@ -59,10 +59,20 @@ export default async function BidTabsPage() {
           </Link>
         </div>
 
-        <PageHeader
-          title="Public bid tabs"
-          subtitle="Agency-posted bid tabulations the estimating team uses to size up the market. Manual import below; per-source scrapers (Caltrans, Cal eProcure, county portals) layer on top later."
-        />
+        <div className="flex items-end justify-between">
+          <PageHeader
+            title="Public bid tabs"
+            subtitle="Agency-posted bid tabulations the estimating team uses to size up the market. Manual import below; per-source scrapers (Caltrans, Cal eProcure, county portals) layer on top later."
+          />
+          {tabs.length > 0 && (
+            <a
+              href={`${publicApiBaseUrl()}/api/bid-tabs?format=csv`}
+              className="ml-4 mb-2 inline-flex shrink-0 items-center rounded-md border border-yge-blue-500 px-3 py-1.5 text-sm font-medium text-yge-blue-500 hover:bg-yge-blue-50"
+            >
+              Download CSV
+            </a>
+          )}
+        </div>
 
         <section className="mt-6 grid gap-3 sm:grid-cols-3">
           <Tile label="Tabs imported" value={String(tabs.length)} />
