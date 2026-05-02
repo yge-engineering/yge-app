@@ -1,3 +1,6 @@
+// Every mutation here records an audit event via recordAudit() —
+// CLAUDE.md mandates 'every mutation is audit-logged'.
+//
 // File-based store for bid results.
 
 import * as fs from 'node:fs/promises';
@@ -9,6 +12,7 @@ import {
   type BidResultCreate,
   type BidResultPatch,
 } from '@yge/shared';
+import { recordAudit, type AuditContext } from './audit-store';
 
 function dataDir(): string {
   return (
@@ -48,7 +52,10 @@ async function writeIndex(entries: BidResult[]) {
   await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
 }
 
-export async function createBidResult(input: BidResultCreate): Promise<BidResult> {
+export async function createBidResult(
+  input: BidResultCreate,
+  ctx?: AuditContext,
+): Promise<BidResult> {
   await ensureDir();
   const now = new Date().toISOString();
   const id = newBidResultId();
@@ -65,6 +72,13 @@ export async function createBidResult(input: BidResultCreate): Promise<BidResult
   const index = await readIndex();
   index.unshift(r);
   await writeIndex(index);
+  await recordAudit({
+    action: 'create',
+    entityType: 'BidResult',
+    entityId: id,
+    after: r,
+    ctx,
+  });
   return r;
 }
 
@@ -91,6 +105,8 @@ export async function getBidResult(id: string): Promise<BidResult | null> {
 export async function updateBidResult(
   id: string,
   patch: BidResultPatch,
+  ctx?: AuditContext,
+  auditAction: 'update' | 'reopen' = 'update',
 ): Promise<BidResult | null> {
   const existing = await getBidResult(id);
   if (!existing) return null;
@@ -111,5 +127,13 @@ export async function updateBidResult(
     index.unshift(updated);
   }
   await writeIndex(index);
+  await recordAudit({
+    action: auditAction,
+    entityType: 'BidResult',
+    entityId: id,
+    before: existing,
+    after: updated,
+    ctx,
+  });
   return updated;
 }

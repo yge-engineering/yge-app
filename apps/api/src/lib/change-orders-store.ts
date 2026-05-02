@@ -1,3 +1,6 @@
+// Every mutation here records an audit event via recordAudit() —
+// CLAUDE.md mandates 'every mutation is audit-logged'.
+//
 // File-based store for change orders.
 
 import * as fs from 'node:fs/promises';
@@ -10,6 +13,7 @@ import {
   type ChangeOrderCreate,
   type ChangeOrderPatch,
 } from '@yge/shared';
+import { recordAudit, type AuditContext } from './audit-store';
 
 function dataDir(): string {
   return (
@@ -49,7 +53,10 @@ async function writeIndex(entries: ChangeOrder[]) {
   await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
 }
 
-export async function createChangeOrder(input: ChangeOrderCreate): Promise<ChangeOrder> {
+export async function createChangeOrder(
+  input: ChangeOrderCreate,
+  ctx?: AuditContext,
+): Promise<ChangeOrder> {
   await ensureDir();
   const now = new Date().toISOString();
   const id = newChangeOrderId();
@@ -72,6 +79,13 @@ export async function createChangeOrder(input: ChangeOrderCreate): Promise<Chang
   const index = await readIndex();
   index.unshift(c);
   await writeIndex(index);
+  await recordAudit({
+    action: 'create',
+    entityType: 'ChangeOrder',
+    entityId: id,
+    after: c,
+    ctx,
+  });
   return c;
 }
 
@@ -100,6 +114,8 @@ export async function getChangeOrder(id: string): Promise<ChangeOrder | null> {
 export async function updateChangeOrder(
   id: string,
   patch: ChangeOrderPatch,
+  ctx?: AuditContext,
+  auditAction: 'update' | 'submit' | 'approve' | 'reject' | 'void' = 'update',
 ): Promise<ChangeOrder | null> {
   const existing = await getChangeOrder(id);
   if (!existing) return null;
@@ -126,5 +142,13 @@ export async function updateChangeOrder(
     index.unshift(updated);
   }
   await writeIndex(index);
+  await recordAudit({
+    action: auditAction,
+    entityType: 'ChangeOrder',
+    entityId: id,
+    before: existing,
+    after: updated,
+    ctx,
+  });
   return updated;
 }

@@ -1,3 +1,6 @@
+// Every mutation here records an audit event via recordAudit() —
+// CLAUDE.md mandates 'every mutation is audit-logged'.
+//
 // File-based store for lien waivers.
 
 import * as fs from 'node:fs/promises';
@@ -9,6 +12,7 @@ import {
   type LienWaiverCreate,
   type LienWaiverPatch,
 } from '@yge/shared';
+import { recordAudit, type AuditContext } from './audit-store';
 
 function dataDir(): string {
   return process.env.LIEN_WAIVERS_DATA_DIR ?? path.resolve(process.cwd(), 'data', 'lien-waivers');
@@ -45,7 +49,10 @@ async function writeIndex(entries: LienWaiver[]) {
   await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
 }
 
-export async function createLienWaiver(input: LienWaiverCreate): Promise<LienWaiver> {
+export async function createLienWaiver(
+  input: LienWaiverCreate,
+  ctx?: AuditContext,
+): Promise<LienWaiver> {
   await ensureDir();
   const now = new Date().toISOString();
   const id = newLienWaiverId();
@@ -61,6 +68,13 @@ export async function createLienWaiver(input: LienWaiverCreate): Promise<LienWai
   const index = await readIndex();
   index.unshift(w);
   await writeIndex(index);
+  await recordAudit({
+    action: 'create',
+    entityType: 'LienWaiver',
+    entityId: id,
+    after: w,
+    ctx,
+  });
   return w;
 }
 
@@ -89,6 +103,8 @@ export async function getLienWaiver(id: string): Promise<LienWaiver | null> {
 export async function updateLienWaiver(
   id: string,
   patch: LienWaiverPatch,
+  ctx?: AuditContext,
+  auditAction: 'update' | 'sign' | 'void' = 'update',
 ): Promise<LienWaiver | null> {
   const existing = await getLienWaiver(id);
   if (!existing) return null;
@@ -109,5 +125,13 @@ export async function updateLienWaiver(
     index.unshift(updated);
   }
   await writeIndex(index);
+  await recordAudit({
+    action: auditAction,
+    entityType: 'LienWaiver',
+    entityId: id,
+    before: existing,
+    after: updated,
+    ctx,
+  });
   return updated;
 }
