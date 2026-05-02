@@ -1,3 +1,6 @@
+// Every mutation here records an audit event via recordAudit() —
+// CLAUDE.md mandates 'every mutation is audit-logged'.
+//
 // File-based store for priced estimates.
 //
 // An estimate is what a Plans-to-Estimate draft becomes once a human starts
@@ -18,6 +21,7 @@ import {
   type PtoEOutput,
   type SubBid,
 } from '@yge/shared';
+import { recordAudit, type AuditContext } from './audit-store';
 
 // Resolve the data dir lazily on every call so tests can override it via
 // ESTIMATES_DATA_DIR after the module has loaded.
@@ -146,6 +150,7 @@ function estimatePath(id: string): string {
  */
 export async function createFromDraft(
   input: CreateFromDraftInput,
+  ctx?: AuditContext,
 ): Promise<PricedEstimate> {
   await ensureDir();
   const now = new Date();
@@ -173,6 +178,13 @@ export async function createFromDraft(
   const index = await readIndex();
   index.unshift(summarize(est));
   await writeIndex(index);
+  await recordAudit({
+    action: 'create',
+    entityType: 'Estimate',
+    entityId: id,
+    after: est,
+    ctx,
+  });
   return est;
 }
 
@@ -215,6 +227,11 @@ export interface EstimatePatch {
 export async function updateEstimate(
   id: string,
   patch: EstimatePatch,
+  ctx?: AuditContext,
+  /** Override when the patch is a domain action ('sign' the bid
+   *  acceptance, 'submit' the bid, 'archive' a stale draft) rather
+   *  than a generic field edit. */
+  auditAction: 'update' | 'submit' | 'sign' | 'archive' = 'update',
 ): Promise<PricedEstimate | null> {
   const existing = await getEstimate(id);
   if (!existing) return null;
@@ -243,6 +260,14 @@ export async function updateEstimate(
     index.unshift(summarize(updated));
   }
   await writeIndex(index);
+  await recordAudit({
+    action: auditAction,
+    entityType: 'Estimate',
+    entityId: id,
+    before: existing,
+    after: updated,
+    ctx,
+  });
   return updated;
 }
 

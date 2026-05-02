@@ -1,3 +1,6 @@
+// Every mutation here records an audit event via recordAudit() —
+// CLAUDE.md mandates 'every mutation is audit-logged'.
+//
 // File-based store for mileage entries.
 
 import * as fs from 'node:fs/promises';
@@ -9,6 +12,7 @@ import {
   type MileageEntryCreate,
   type MileageEntryPatch,
 } from '@yge/shared';
+import { recordAudit, type AuditContext } from './audit-store';
 
 function dataDir(): string {
   return process.env.MILEAGE_DATA_DIR ?? path.resolve(process.cwd(), 'data', 'mileage');
@@ -45,7 +49,10 @@ async function writeIndex(entries: MileageEntry[]) {
   await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
 }
 
-export async function createMileageEntry(input: MileageEntryCreate): Promise<MileageEntry> {
+export async function createMileageEntry(
+  input: MileageEntryCreate,
+  ctx?: AuditContext,
+): Promise<MileageEntry> {
   await ensureDir();
   const now = new Date().toISOString();
   const id = newMileageEntryId();
@@ -63,6 +70,13 @@ export async function createMileageEntry(input: MileageEntryCreate): Promise<Mil
   const index = await readIndex();
   index.unshift(e);
   await writeIndex(index);
+  await recordAudit({
+    action: 'create',
+    entityType: 'Mileage',
+    entityId: id,
+    after: e,
+    ctx,
+  });
   return e;
 }
 
@@ -93,6 +107,8 @@ export async function getMileageEntry(id: string): Promise<MileageEntry | null> 
 export async function updateMileageEntry(
   id: string,
   patch: MileageEntryPatch,
+  ctx?: AuditContext,
+  auditAction: 'update' | 'submit' | 'approve' | 'reject' = 'update',
 ): Promise<MileageEntry | null> {
   const existing = await getMileageEntry(id);
   if (!existing) return null;
@@ -113,5 +129,13 @@ export async function updateMileageEntry(
     index.unshift(updated);
   }
   await writeIndex(index);
+  await recordAudit({
+    action: auditAction,
+    entityType: 'Mileage',
+    entityId: id,
+    before: existing,
+    after: updated,
+    ctx,
+  });
   return updated;
 }

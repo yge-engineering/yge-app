@@ -56,6 +56,7 @@ export type AuditAction = z.infer<typeof AuditActionSchema>;
  * stable file-store key when there is no Prisma model yet).
  */
 export const AuditEntityTypeSchema = z.enum([
+  'Account',
   'ApInvoice',
   'ApPayment',
   'ArInvoice',

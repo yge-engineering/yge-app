@@ -1,3 +1,6 @@
+// Every mutation here records an audit event via recordAudit() —
+// CLAUDE.md mandates 'every mutation is audit-logged'.
+//
 // File-based store for the chart of accounts.
 
 import * as fs from 'node:fs/promises';
@@ -10,6 +13,7 @@ import {
   type AccountCreate,
   type AccountPatch,
 } from '@yge/shared';
+import { recordAudit, type AuditContext } from './audit-store';
 
 function dataDir(): string {
   return process.env.COA_DATA_DIR ?? path.resolve(process.cwd(), 'data', 'coa');
@@ -46,7 +50,10 @@ async function writeIndex(entries: Account[]) {
   await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
 }
 
-export async function createAccount(input: AccountCreate): Promise<Account> {
+export async function createAccount(
+  input: AccountCreate,
+  ctx?: AuditContext,
+): Promise<Account> {
   await ensureDir();
   const now = new Date().toISOString();
   const id = newAccountId();
@@ -62,6 +69,13 @@ export async function createAccount(input: AccountCreate): Promise<Account> {
   const index = await readIndex();
   index.unshift(a);
   await writeIndex(index);
+  await recordAudit({
+    action: 'create',
+    entityType: 'Account',
+    entityId: id,
+    after: a,
+    ctx,
+  });
   return a;
 }
 
@@ -90,6 +104,8 @@ export async function getAccount(id: string): Promise<Account | null> {
 export async function updateAccount(
   id: string,
   patch: AccountPatch,
+  ctx?: AuditContext,
+  auditAction: 'update' | 'archive' = 'update',
 ): Promise<Account | null> {
   const existing = await getAccount(id);
   if (!existing) return null;
@@ -110,6 +126,14 @@ export async function updateAccount(
     index.unshift(updated);
   }
   await writeIndex(index);
+  await recordAudit({
+    action: auditAction,
+    entityType: 'Account',
+    entityId: id,
+    before: existing,
+    after: updated,
+    ctx,
+  });
   return updated;
 }
 

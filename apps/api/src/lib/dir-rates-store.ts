@@ -1,3 +1,6 @@
+// Every mutation here records an audit event via recordAudit() —
+// CLAUDE.md mandates 'every mutation is audit-logged'.
+//
 // File-based store for DIR prevailing wage rates.
 
 import * as fs from 'node:fs/promises';
@@ -9,6 +12,7 @@ import {
   type DirRateCreate,
   type DirRatePatch,
 } from '@yge/shared';
+import { recordAudit, type AuditContext } from './audit-store';
 
 function dataDir(): string {
   return process.env.DIR_RATES_DATA_DIR ?? path.resolve(process.cwd(), 'data', 'dir-rates');
@@ -45,7 +49,10 @@ async function writeIndex(entries: DirRate[]) {
   await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
 }
 
-export async function createDirRate(input: DirRateCreate): Promise<DirRate> {
+export async function createDirRate(
+  input: DirRateCreate,
+  ctx?: AuditContext,
+): Promise<DirRate> {
   await ensureDir();
   const now = new Date().toISOString();
   const id = newDirRateId();
@@ -65,6 +72,13 @@ export async function createDirRate(input: DirRateCreate): Promise<DirRate> {
   const index = await readIndex();
   index.unshift(r);
   await writeIndex(index);
+  await recordAudit({
+    action: 'create',
+    entityType: 'DirRateSchedule',
+    entityId: id,
+    after: r,
+    ctx,
+  });
   return r;
 }
 
@@ -100,6 +114,8 @@ export async function getDirRate(id: string): Promise<DirRate | null> {
 export async function updateDirRate(
   id: string,
   patch: DirRatePatch,
+  ctx?: AuditContext,
+  auditAction: 'update' | 'import' = 'update',
 ): Promise<DirRate | null> {
   const existing = await getDirRate(id);
   if (!existing) return null;
@@ -120,5 +136,13 @@ export async function updateDirRate(
     index.unshift(updated);
   }
   await writeIndex(index);
+  await recordAudit({
+    action: auditAction,
+    entityType: 'DirRateSchedule',
+    entityId: id,
+    before: existing,
+    after: updated,
+    ctx,
+  });
   return updated;
 }
