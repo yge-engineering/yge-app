@@ -8,8 +8,10 @@ import Link from 'next/link';
 
 import { AccountChip } from './account-chip';
 import { KeyboardShortcuts } from './keyboard-shortcuts';
+import { LocaleSwitcher } from './locale-switcher';
 import { MobileNav } from './mobile-nav';
 import { Toaster } from './toast';
+import { getLocale } from '../lib/locale';
 
 interface NavLink {
   label: string;
@@ -132,7 +134,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </kbd>
           </div>
         </form>
-        <div className="ml-auto sm:ml-0">
+        <div className="ml-auto flex items-center gap-3 sm:ml-0">
+          <LocaleSwitcher current={getLocale()} />
           <AccountChip />
         </div>
       </header>
