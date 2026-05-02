@@ -1,0 +1,11 @@
+node_modules/
+.expo/
+dist/
+web-build/
+*.log
+.DS_Store
+
+# Native build outputs (when EAS Build runs locally)
+ios/
+android/
+.expo-shared/

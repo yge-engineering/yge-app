@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "YGE",
+    "slug": "yge",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#0a3a6b"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.youngge.app"
+    },
+    "android": {
+      "package": "com.youngge.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0a3a6b"
+      }
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "extra": {
+      "apiUrl": "http://localhost:4000"
+    }
+  }
+}
