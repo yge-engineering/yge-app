@@ -6,6 +6,7 @@
 import Link from 'next/link';
 
 import { AppShell } from '../../components/app-shell';
+import { getTranslator } from '../../lib/locale';
 import {
   fullName,
   reportViolations,
@@ -48,6 +49,7 @@ export default async function DailyReportsPage() {
   ]);
   const empById = new Map(employees.map((e) => [e.id, e]));
   const jobById = new Map(jobs.map((j) => [j.id, j]));
+  const t = getTranslator();
 
   return (
     <AppShell>
@@ -60,31 +62,28 @@ export default async function DailyReportsPage() {
           href="/daily-reports/new"
           className="rounded bg-yge-blue-500 px-3 py-1 text-sm font-medium text-white hover:bg-yge-blue-700"
         >
-          + New report
+          {t('dailyReports.newReport')}
         </Link>
       </div>
 
-      <h1 className="text-3xl font-bold text-yge-blue-500">Daily reports</h1>
-      <p className="mt-2 text-gray-700">
-        End-of-day summaries from the field. Submitted reports feed time-card
-        and certified-payroll reporting (when those modules ship).
-      </p>
+      <h1 className="text-3xl font-bold text-yge-blue-500">{t('dailyReports.title')}</h1>
+      <p className="mt-2 text-gray-700">{t('dailyReports.subtitle')}</p>
 
       {reports.length === 0 ? (
         <div className="mt-6 rounded border border-gray-200 bg-gray-50 p-6 text-sm text-gray-600">
-          No daily reports yet. Click <em>New report</em> to start.
+          {t('dailyReports.empty')}
         </div>
       ) : (
         <div className="mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
           <table className="w-full text-left text-sm">
             <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
               <tr>
-                <th className="px-4 py-2">Date</th>
-                <th className="px-4 py-2">Job</th>
-                <th className="px-4 py-2">Foreman</th>
-                <th className="px-4 py-2">Crew</th>
-                <th className="px-4 py-2">Total hrs</th>
-                <th className="px-4 py-2">Status</th>
+                <th className="px-4 py-2">{t('dailyReports.col.date')}</th>
+                <th className="px-4 py-2">{t('dailyReports.col.job')}</th>
+                <th className="px-4 py-2">{t('dailyReports.col.foreman')}</th>
+                <th className="px-4 py-2">{t('dailyReports.col.crew')}</th>
+                <th className="px-4 py-2">{t('dailyReports.col.totalHrs')}</th>
+                <th className="px-4 py-2">{t('dailyReports.col.status')}</th>
                 <th className="px-4 py-2"></th>
               </tr>
             </thead>
@@ -123,16 +122,15 @@ export default async function DailyReportsPage() {
                     <td className="px-4 py-3 text-xs">
                       {r.submitted ? (
                         <span className="rounded bg-green-100 px-2 py-0.5 font-semibold uppercase tracking-wide text-green-800">
-                          Submitted
+                          {t('dailyReports.status.submitted')}
                         </span>
                       ) : violationCount > 0 ? (
                         <span className="rounded bg-red-100 px-2 py-0.5 font-semibold uppercase tracking-wide text-red-800">
-                          {violationCount} violation
-                          {violationCount === 1 ? '' : 's'}
+                          {t('dailyReports.status.violations', { count: violationCount, plural: violationCount === 1 ? '' : 's' })}
                         </span>
                       ) : (
                         <span className="rounded bg-gray-100 px-2 py-0.5 font-semibold uppercase tracking-wide text-gray-700">
-                          Draft
+                          {t('dailyReports.status.draft')}
                         </span>
                       )}
                     </td>
@@ -141,7 +139,7 @@ export default async function DailyReportsPage() {
                         href={`/daily-reports/${r.id}`}
                         className="text-yge-blue-500 hover:underline"
                       >
-                        Open
+                        {t('dailyReports.open')}
                       </Link>
                     </td>
                   </tr>
