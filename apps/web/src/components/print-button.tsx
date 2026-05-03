@@ -4,12 +4,15 @@
 // (it does its own data fetch). The print button is the only interactive
 // element on that page.
 
+import { useTranslator } from '../lib/use-translator';
+
 interface Props {
   className?: string;
   label?: string;
 }
 
-export function PrintButton({ className, label = 'Print / Save as PDF' }: Props) {
+export function PrintButton({ className, label }: Props) {
+  const t = useTranslator();
   return (
     <button
       onClick={() => window.print()}
@@ -18,7 +21,7 @@ export function PrintButton({ className, label = 'Print / Save as PDF' }: Props)
         'rounded bg-yge-blue-500 px-3 py-1 text-xs font-medium text-white hover:bg-yge-blue-700'
       }
     >
-      {label}
+      {label ?? t('printButton.default')}
     </button>
   );
 }

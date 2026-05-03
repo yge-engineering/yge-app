@@ -4,6 +4,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 
 interface Props {
   apiBaseUrl: string;
@@ -14,15 +15,14 @@ export function LegalHoldReleaseButton({ apiBaseUrl, holdId }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const t = useTranslator();
 
   async function release() {
     if (busy) return;
-    const reason = window.prompt(
-      'Reason for releasing this hold? Required — lands in the audit log.',
-    );
+    const reason = window.prompt(t('legalHold.prompt'));
     if (reason === null) return;
     if (reason.trim().length === 0) {
-      window.alert('Reason is required.');
+      window.alert(t('legalHold.required'));
       return;
     }
     setBusy(true);
@@ -35,7 +35,7 @@ export function LegalHoldReleaseButton({ apiBaseUrl, holdId }: Props) {
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? `Release failed (${res.status})`);
+        setError(body.error ?? t('legalHold.error', { status: res.status }));
         return;
       }
       router.refresh();
@@ -54,7 +54,7 @@ export function LegalHoldReleaseButton({ apiBaseUrl, holdId }: Props) {
         disabled={busy}
         className="rounded border border-emerald-600 px-2 py-0.5 text-xs font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
       >
-        {busy ? 'Releasing…' : 'Release'}
+        {busy ? t('legalHold.busy') : t('legalHold.action')}
       </button>
       {error && (
         <span className="text-xs text-red-700" title={error}>

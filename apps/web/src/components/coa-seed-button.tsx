@@ -5,14 +5,16 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 
 export function CoaSeedButton({ apiBaseUrl }: { apiBaseUrl: string }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const t = useTranslator();
 
   async function applySeed() {
-    if (!confirm('Apply the default ~50-account starter COA? Any account number that already exists is skipped.')) {
+    if (!confirm(t('coaSeed.confirm'))) {
       return;
     }
     setBusy(true);
@@ -36,7 +38,7 @@ export function CoaSeedButton({ apiBaseUrl }: { apiBaseUrl: string }) {
         disabled={busy}
         className="rounded border border-yge-blue-500 px-3 py-1 text-sm font-medium text-yge-blue-500 hover:bg-yge-blue-50 disabled:opacity-50"
       >
-        {busy ? 'Seeding…' : 'Apply default seed'}
+        {busy ? t('coaSeed.busy') : t('coaSeed.apply')}
       </button>
       {error && <span className="mt-1 text-xs text-red-700">{error}</span>}
     </div>

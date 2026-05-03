@@ -8,6 +8,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslator } from '../lib/use-translator';
 
 interface Props {
   draftId: string;
@@ -19,6 +20,7 @@ export function ConvertDraftButton({ draftId, apiBaseUrl }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const t = useTranslator();
 
   async function handleClick() {
     setError(null);
@@ -36,7 +38,7 @@ export function ConvertDraftButton({ draftId, apiBaseUrl }: Props) {
       const json = (await res.json()) as { estimate: { id: string } };
       router.push(`/estimates/${json.estimate.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      setError(err instanceof Error ? err.message : t('convertDraft.unknown'));
       setLoading(false);
     }
   }
@@ -47,12 +49,12 @@ export function ConvertDraftButton({ draftId, apiBaseUrl }: Props) {
         onClick={handleClick}
         disabled={loading}
         className="rounded-lg bg-yge-blue-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-yge-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-        title="Clone this draft into an editable priced estimate"
+        title={t('convertDraft.title')}
       >
-        {loading ? 'Creating estimate…' : 'Convert to priced estimate →'}
+        {loading ? t('convertDraft.busy') : t('convertDraft.action')}
       </button>
       {error && (
-        <p className="mt-2 text-xs text-red-700">Couldn&rsquo;t create the estimate: {error}</p>
+        <p className="mt-2 text-xs text-red-700">{t('convertDraft.error', { message: error })}</p>
       )}
     </div>
   );
