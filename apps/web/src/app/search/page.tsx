@@ -8,6 +8,7 @@
 import Link from 'next/link';
 
 import { AppShell, Card, FORM_INPUT_CLASS, PageHeader } from '../../components';
+import { getTranslator } from '../../lib/locale';
 import type { Customer, Employee, Job, Vendor } from '@yge/shared';
 
 function apiBaseUrl(): string {
@@ -60,20 +61,17 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
   const totalMatches =
     jobMatches.length + customerMatches.length + vendorMatches.length + employeeMatches.length;
+  const t = getTranslator();
 
   return (
     <AppShell>
       <main className="mx-auto max-w-4xl">
         <PageHeader
-          title="Search"
+          title={t('search.title')}
           subtitle={
-            q ? (
-              <>
-                {totalMatches} result{totalMatches === 1 ? '' : 's'} for &ldquo;{q}&rdquo;
-              </>
-            ) : (
-              'Type something below to search jobs, customers, vendors, and employees.'
-            )
+            q
+              ? t('search.results', { count: totalMatches, plural: totalMatches === 1 ? '' : 's', query: q })
+              : t('search.placeholderSubtitle')
           }
         />
         <form action="/search" method="get" className="mb-6">
@@ -81,20 +79,20 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             name="q"
             type="search"
             defaultValue={q}
-            placeholder="Search jobs, customers, vendors, employees…"
+            placeholder={t('search.inputPlaceholder')}
             className={FORM_INPUT_CLASS}
             autoFocus
           />
         </form>
 
         {!q ? (
-          <p className="text-sm text-gray-500">Type something above to search.</p>
+          <p className="text-sm text-gray-500">{t('search.startTyping')}</p>
         ) : totalMatches === 0 ? (
-          <p className="text-sm text-gray-500">No matches.</p>
+          <p className="text-sm text-gray-500">{t('search.noMatches')}</p>
         ) : (
           <div className="space-y-6">
             {jobMatches.length > 0 && (
-              <Section title={`Jobs (${jobMatches.length})`}>
+              <Section title={t('search.section.jobs', { count: jobMatches.length })}>
                 {jobMatches.map((j) => (
                   <ResultRow
                     key={j.id}
@@ -106,21 +104,21 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
               </Section>
             )}
             {customerMatches.length > 0 && (
-              <Section title={`Customers (${customerMatches.length})`}>
+              <Section title={t('search.section.customers', { count: customerMatches.length })}>
                 {customerMatches.map((c) => (
-                  <ResultRow key={c.id} href={`/customers/${c.id}`} title={customerDisplay(c)} subtitle="Customer" />
+                  <ResultRow key={c.id} href={`/customers/${c.id}`} title={customerDisplay(c)} subtitle={t('search.customerSubtitle')} />
                 ))}
               </Section>
             )}
             {vendorMatches.length > 0 && (
-              <Section title={`Vendors (${vendorMatches.length})`}>
+              <Section title={t('search.section.vendors', { count: vendorMatches.length })}>
                 {vendorMatches.map((v) => (
                   <ResultRow key={v.id} href={`/vendors/${v.id}`} title={v.legalName} subtitle={v.kind} />
                 ))}
               </Section>
             )}
             {employeeMatches.length > 0 && (
-              <Section title={`Employees (${employeeMatches.length})`}>
+              <Section title={t('search.section.employees', { count: employeeMatches.length })}>
                 {employeeMatches.map((e) => (
                   <ResultRow
                     key={e.id}
