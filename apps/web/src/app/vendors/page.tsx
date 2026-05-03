@@ -15,6 +15,7 @@ import {
   StatusPill,
   Tile,
 } from '../../components';
+import { getTranslator } from '../../lib/locale';
 import {
   computeVendorRollup,
   maskTaxId,
@@ -82,42 +83,43 @@ export default async function VendorsPage({
   const csvHref = `${publicApiBaseUrl()}/api/vendors?format=csv${
     searchParams.kind ? '&kind=' + encodeURIComponent(searchParams.kind) : ''
   }`;
+  const t = getTranslator();
 
   return (
     <AppShell>
       <main className="mx-auto max-w-6xl">
         <PageHeader
-          title="Vendors"
-          subtitle="Suppliers, subcontractors, and service providers. W-9 status and COI expiration tracked for 1099 reporting + insurance compliance."
+          title={t('vendors.title')}
+          subtitle={t('vendors.subtitle')}
           actions={
             <span className="flex gap-2">
               <a
                 href={csvHref}
                 className="inline-flex items-center rounded-md border border-blue-700 px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-50"
               >
-                Download CSV
+                {t('vendors.downloadCsv')}
               </a>
               <LinkButton href="/vendors/new" variant="primary" size="md">
-                + Add vendor
+                {t('vendors.add')}
               </LinkButton>
             </span>
           }
         />
 
         <section className="mb-4 grid gap-3 sm:grid-cols-4">
-          <Tile label="Total" value={rollup.total} />
-          <Tile label="On hold" value={rollup.onHold} tone={rollup.onHold > 0 ? 'warn' : 'success'} />
-          <Tile label="Missing W-9" value={rollup.missingW9} tone={rollup.missingW9 > 0 ? 'danger' : 'success'} />
-          <Tile label="Subs missing COI" value={rollup.missingCoi} tone={rollup.missingCoi > 0 ? 'danger' : 'success'} />
+          <Tile label={t('vendors.tile.total')} value={rollup.total} />
+          <Tile label={t('vendors.tile.onHold')} value={rollup.onHold} tone={rollup.onHold > 0 ? 'warn' : 'success'} />
+          <Tile label={t('vendors.tile.missingW9')} value={rollup.missingW9} tone={rollup.missingW9 > 0 ? 'danger' : 'success'} />
+          <Tile label={t('vendors.tile.missingCoi')} value={rollup.missingCoi} tone={rollup.missingCoi > 0 ? 'danger' : 'success'} />
         </section>
 
         <section className="mb-4 flex flex-wrap items-center gap-2 rounded-md border border-gray-200 bg-white p-3">
-          <span className="text-xs uppercase tracking-wide text-gray-500">Kind:</span>
+          <span className="text-xs uppercase tracking-wide text-gray-500">{t('vendors.filter.kind')}</span>
           <Link
             href={buildHref({ kind: undefined })}
             className={`rounded px-2 py-1 text-xs ${!searchParams.kind ? 'bg-blue-700 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
           >
-            All
+            {t('vendors.filter.all')}
           </Link>
           {KINDS.map((k) => (
             <Link
@@ -132,21 +134,21 @@ export default async function VendorsPage({
 
         {vendors.length === 0 ? (
           <EmptyState
-            title="No vendors yet"
-            body="Add suppliers, subs, and service providers as you work with them. The page surfaces missing W-9s + expired COIs so the morning scan catches them."
-            actions={[{ href: '/vendors/new', label: 'Add vendor', primary: true }]}
+            title={t('vendors.empty.title')}
+            body={t('vendors.empty.body')}
+            actions={[{ href: '/vendors/new', label: t('vendors.empty.action'), primary: true }]}
           />
         ) : (
           <div className="overflow-x-auto rounded-md border border-gray-200 bg-white">
             <table className="w-full text-left text-sm">
               <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
                 <tr>
-                  <th className="px-4 py-2">Vendor</th>
-                  <th className="px-4 py-2">Kind</th>
-                  <th className="px-4 py-2">Tax ID</th>
-                  <th className="px-4 py-2">W-9</th>
-                  <th className="px-4 py-2">COI</th>
-                  <th className="px-4 py-2">Terms</th>
+                  <th className="px-4 py-2">{t('vendors.col.vendor')}</th>
+                  <th className="px-4 py-2">{t('vendors.col.kind')}</th>
+                  <th className="px-4 py-2">{t('vendors.col.taxId')}</th>
+                  <th className="px-4 py-2">{t('vendors.col.w9')}</th>
+                  <th className="px-4 py-2">{t('vendors.col.coi')}</th>
+                  <th className="px-4 py-2">{t('vendors.col.terms')}</th>
                   <th className="px-4 py-2"></th>
                 </tr>
               </thead>
@@ -166,7 +168,7 @@ export default async function VendorsPage({
                         {v.dbaName ? <div className="text-xs text-gray-500">{v.legalName}</div> : null}
                         {v.onHold ? (
                           <span className="mt-0.5 inline-block rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-800">
-                            on hold
+                            {t('vendors.tag.onHold')}
                           </span>
                         ) : null}
                       </td>
@@ -176,13 +178,13 @@ export default async function VendorsPage({
                       </td>
                       <td className="px-4 py-3">
                         {v.is1099Reportable
-                          ? <StatusPill label={w9Current ? 'on file' : 'needed'} tone={w9Current ? 'success' : 'danger'} />
-                          : <span className="text-xs text-gray-400">N/A</span>}
+                          ? <StatusPill label={w9Current ? t('vendors.w9.onFile') : t('vendors.w9.needed')} tone={w9Current ? 'success' : 'danger'} />
+                          : <span className="text-xs text-gray-400">{t('vendors.na')}</span>}
                       </td>
                       <td className="px-4 py-3">
                         {v.kind === 'SUBCONTRACTOR'
-                          ? <StatusPill label={coiCurrent ? `to ${v.coiExpiresOn ?? '?'}` : 'expired'} tone={coiCurrent ? 'success' : 'danger'} />
-                          : <span className="text-xs text-gray-400">N/A</span>}
+                          ? <StatusPill label={coiCurrent ? t('vendors.coi.to', { date: v.coiExpiresOn ?? '?' }) : t('vendors.coi.expired')} tone={coiCurrent ? 'success' : 'danger'} />
+                          : <span className="text-xs text-gray-400">{t('vendors.na')}</span>}
                       </td>
                       <td className="px-4 py-3 text-xs text-gray-700">{vendorPaymentTermsLabel(v.paymentTerms)}</td>
                       <td className="px-4 py-3"></td>
