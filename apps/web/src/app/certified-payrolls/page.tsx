@@ -17,6 +17,7 @@ import {
   StatusPill,
   Tile,
 } from '../../components';
+import { getTranslator } from '../../lib/locale';
 import {
   computeCprRollup,
   cprStatusLabel,
@@ -96,34 +97,35 @@ export default async function CertifiedPayrollsPage({
     const q = params.toString();
     return q ? `/certified-payrolls?${q}` : '/certified-payrolls';
   }
+  const t = getTranslator();
 
   return (
     <AppShell>
       <main className="mx-auto max-w-6xl">
         <PageHeader
-          title="Certified payroll records"
-          subtitle="California DIR weekly certified payroll. Required during prevailing-wage work. Submit-blockers ensure every row has hours, rates, and a signed statement of compliance."
+          title={t('cpr.title')}
+          subtitle={t('cpr.subtitle')}
           actions={
             <LinkButton href="/certified-payrolls/new" variant="primary" size="md">
-              + New CPR
+              {t('cpr.newCpr')}
             </LinkButton>
           }
         />
 
         <section className="mb-4 grid gap-3 sm:grid-cols-4">
-          <Tile label="Total" value={rollup.total} />
-          <Tile label="Draft" value={rollup.draft} tone={rollup.draft > 0 ? 'warn' : 'success'} />
-          <Tile label="Accepted" value={rollup.accepted} tone="success" />
-          <Tile label="Total gross paid" value={<Money cents={rollup.totalGrossPayCents} />} />
+          <Tile label={t('cpr.tile.total')} value={rollup.total} />
+          <Tile label={t('cpr.tile.draft')} value={rollup.draft} tone={rollup.draft > 0 ? 'warn' : 'success'} />
+          <Tile label={t('cpr.tile.accepted')} value={rollup.accepted} tone="success" />
+          <Tile label={t('cpr.tile.totalGross')} value={<Money cents={rollup.totalGrossPayCents} />} />
         </section>
 
         <section className="mb-4 flex flex-wrap items-center gap-2 rounded-md border border-gray-200 bg-white p-3">
-          <span className="text-xs uppercase tracking-wide text-gray-500">Status:</span>
+          <span className="text-xs uppercase tracking-wide text-gray-500">{t('cpr.filter.status')}</span>
           <Link
             href={buildHref({ status: undefined })}
             className={`rounded px-2 py-1 text-xs ${!searchParams.status ? 'bg-blue-700 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
           >
-            All
+            {t('cpr.filter.all')}
           </Link>
           {STATUSES.map((s) => (
             <Link
@@ -138,9 +140,9 @@ export default async function CertifiedPayrollsPage({
 
         {cprs.length === 0 ? (
           <EmptyState
-            title="No CPRs yet"
-            body="Each prevailing-wage week needs a CPR filing. The form's pre-baked — fill in hours, classifications, and sign the statement of compliance."
-            actions={[{ href: '/certified-payrolls/new', label: 'Start a weekly filing', primary: true }]}
+            title={t('cpr.empty.title')}
+            body={t('cpr.empty.body')}
+            actions={[{ href: '/certified-payrolls/new', label: t('cpr.empty.action'), primary: true }]}
           />
         ) : (
           <DataTable
@@ -149,18 +151,18 @@ export default async function CertifiedPayrollsPage({
             columns={[
               {
                 key: 'payrollNumber',
-                header: 'Payroll #',
+                header: t('cpr.col.payrollNumber'),
                 cell: (c) => (
                   <Link href={`/certified-payrolls/${c.id}`} className="font-mono font-bold text-gray-900 hover:underline">
                     {c.payrollNumber}
-                    {c.isFinalPayroll ? <span className="ml-1 text-xs text-orange-700">FINAL</span> : null}
+                    {c.isFinalPayroll ? <span className="ml-1 text-xs text-orange-700">{t('cpr.final')}</span> : null}
                   </Link>
                 ),
               },
-              { key: 'week', header: 'Week', cell: (c) => <span className="text-sm text-gray-700">{c.weekStarting} → {c.weekEnding}</span> },
+              { key: 'week', header: t('cpr.col.week'), cell: (c) => <span className="text-sm text-gray-700">{c.weekStarting} → {c.weekEnding}</span> },
               {
                 key: 'job',
-                header: 'Job',
+                header: t('cpr.col.job'),
                 cell: (c) => {
                   const job = jobById.get(c.jobId);
                   return job ? (
@@ -172,13 +174,13 @@ export default async function CertifiedPayrollsPage({
               },
               {
                 key: 'projectNumber',
-                header: 'Project #',
+                header: t('cpr.col.projectNumber'),
                 cell: (c) => c.projectNumber ? <span className="font-mono text-sm text-gray-700">{c.projectNumber}</span> : <span className="text-sm text-gray-400">—</span>,
               },
-              { key: 'rows', header: 'Rows', numeric: true, cell: (c) => <span className="text-sm text-gray-700">{c.rows.length}</span> },
+              { key: 'rows', header: t('cpr.col.rows'), numeric: true, cell: (c) => <span className="text-sm text-gray-700">{c.rows.length}</span> },
               {
                 key: 'status',
-                header: 'Status',
+                header: t('cpr.col.status'),
                 cell: (c) => <StatusPill label={cprStatusLabel(c.status)} tone={statusTone(c.status)} />,
               },
             ]}
