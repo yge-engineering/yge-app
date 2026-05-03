@@ -9,6 +9,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 
 interface Props {
   apiBaseUrl: string;
@@ -19,6 +20,7 @@ export function SignatureFlattenButton({ apiBaseUrl, signatureId }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const t = useTranslator();
 
   async function flatten() {
     if (busy) return;
@@ -30,7 +32,7 @@ export function SignatureFlattenButton({ apiBaseUrl, signatureId }: Props) {
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? `Flatten failed (${res.status})`);
+        setError(body.error ?? t('sigFlatten.error', { status: res.status }));
         return;
       }
       router.refresh();
@@ -49,7 +51,7 @@ export function SignatureFlattenButton({ apiBaseUrl, signatureId }: Props) {
         disabled={busy}
         className="rounded bg-yge-blue-500 px-3 py-1 text-xs font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50"
       >
-        {busy ? 'Flattening…' : 'Flatten + finalize PDF'}
+        {busy ? t('sigFlatten.busy') : t('sigFlatten.action')}
       </button>
       {error && <span className="text-xs text-red-700">⚠ {error}</span>}
     </span>
