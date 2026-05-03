@@ -7,6 +7,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { AuditBinderPanel, Money } from '../../../components';
+import { getTranslator } from '../../../lib/locale';
 import {
   contractTypeLabel,
   nextBidAction,
@@ -141,25 +142,26 @@ export default async function JobDetailPage({
       bidTotalCents: e.bidTotalCents,
     })),
   });
+  const t = getTranslator();
 
   return (
     <main className="mx-auto max-w-6xl p-8">
       <div className="mb-6 flex items-center justify-between">
         <Link href="/jobs" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Jobs
+          {t('jobDetail.backLink')}
         </Link>
         <div className="flex items-center gap-2">
           <Link
             href={`/jobs/${job.id}/cost-breakdown`}
             className="rounded border border-yge-blue-500 px-3 py-1 text-sm font-medium text-yge-blue-500 hover:bg-yge-blue-50"
           >
-            Cost breakdown
+            {t('jobDetail.costBreakdown')}
           </Link>
           <Link
             href={`/jobs/${job.id}/binder`}
             className="rounded border border-yge-blue-500 px-3 py-1 text-sm font-medium text-yge-blue-500 hover:bg-yge-blue-50"
           >
-            Open binder
+            {t('jobDetail.openBinder')}
           </Link>
         </div>
       </div>
@@ -198,7 +200,7 @@ export default async function JobDetailPage({
                 action.done ? 'text-green-700' : 'text-yge-blue-700'
               }`}
             >
-              Next step
+              {t('jobDetail.nextStep')}
             </div>
             <div className="mt-1 text-lg font-semibold text-gray-900">
               {action.label}
@@ -214,7 +216,7 @@ export default async function JobDetailPage({
                   : 'bg-yge-blue-500 hover:bg-yge-blue-700'
               }`}
             >
-              Do it &rarr;
+              {t('jobDetail.doIt')}
             </Link>
           )}
         </div>
@@ -224,21 +226,21 @@ export default async function JobDetailPage({
         {job.ownerAgency && (
           <div>
             <dt className="text-xs uppercase tracking-wide text-gray-500">
-              Owner / agency
+              {t('jobDetail.field.ownerAgency')}
             </dt>
             <dd className="mt-1 text-gray-900">{job.ownerAgency}</dd>
           </div>
         )}
         {job.location && (
           <div>
-            <dt className="text-xs uppercase tracking-wide text-gray-500">Location</dt>
+            <dt className="text-xs uppercase tracking-wide text-gray-500">{t('jobDetail.field.location')}</dt>
             <dd className="mt-1 text-gray-900">{job.location}</dd>
           </div>
         )}
         {job.bidDueDate && (
           <div>
             <dt className="text-xs uppercase tracking-wide text-gray-500">
-              Bid due
+              {t('jobDetail.field.bidDue')}
             </dt>
             <dd className="mt-1 text-gray-900">{job.bidDueDate}</dd>
           </div>
@@ -246,7 +248,7 @@ export default async function JobDetailPage({
         {job.engineersEstimateCents !== undefined && (
           <div>
             <dt className="text-xs uppercase tracking-wide text-gray-500">
-              Engineer&rsquo;s estimate
+              {t('jobDetail.field.engineersEstimate')}
             </dt>
             <dd className="mt-1 text-gray-900">
               <Money cents={job.engineersEstimateCents} />
@@ -256,22 +258,22 @@ export default async function JobDetailPage({
         {job.pursuitOwner && (
           <div>
             <dt className="text-xs uppercase tracking-wide text-gray-500">
-              Pursuit owner
+              {t('jobDetail.field.pursuitOwner')}
             </dt>
             <dd className="mt-1 text-gray-900">{job.pursuitOwner}</dd>
           </div>
         )}
         <div>
-          <dt className="text-xs uppercase tracking-wide text-gray-500">Status</dt>
+          <dt className="text-xs uppercase tracking-wide text-gray-500">{t('jobDetail.field.status')}</dt>
           <dd className="mt-1 text-gray-900">{statusLabel(job.status)}</dd>
         </div>
         <div>
-          <dt className="text-xs uppercase tracking-wide text-gray-500">Created</dt>
+          <dt className="text-xs uppercase tracking-wide text-gray-500">{t('jobDetail.field.created')}</dt>
           <dd className="mt-1 text-gray-900">{formatDate(job.createdAt)}</dd>
         </div>
         <div>
           <dt className="text-xs uppercase tracking-wide text-gray-500">
-            Last updated
+            {t('jobDetail.field.lastUpdated')}
           </dt>
           <dd className="mt-1 text-gray-900">{formatWhen(job.updatedAt)}</dd>
         </div>
@@ -280,7 +282,7 @@ export default async function JobDetailPage({
       {job.notes && (
         <div className="mt-6 rounded-lg border border-gray-200 bg-yellow-50 p-4 text-sm text-gray-800">
           <div className="text-xs uppercase tracking-wide text-gray-500">
-            Pursuit notes
+            {t('jobDetail.h.pursuitNotes')}
           </div>
           <p className="mt-2 whitespace-pre-wrap">{job.notes}</p>
         </div>
@@ -296,18 +298,18 @@ export default async function JobDetailPage({
       <section className="mt-10">
         <div className="flex items-end justify-between">
           <h2 className="text-xl font-semibold text-gray-900">
-            Plans-to-Estimate drafts
+            {t('jobDetail.h.drafts')}
           </h2>
           <Link
             href={`/plans-to-estimate?jobId=${encodeURIComponent(job.id)}`}
             className="text-sm text-yge-blue-500 hover:underline"
           >
-            + New draft
+            {t('jobDetail.newDraft')}
           </Link>
         </div>
         {drafts.length === 0 ? (
           <p className="mt-2 text-sm text-gray-500">
-            No drafts yet for this job.
+            {t('jobDetail.drafts.empty')}
           </p>
         ) : (
           <ul className="mt-3 divide-y divide-gray-100 rounded-lg border border-gray-200 bg-white shadow-sm">
@@ -318,14 +320,14 @@ export default async function JobDetailPage({
                     {d.projectName}
                   </div>
                   <div className="text-xs text-gray-500">
-                    {d.bidItemCount} items &middot; {formatWhen(d.createdAt)}
+                    {t('jobDetail.drafts.itemCount', { count: d.bidItemCount, when: formatWhen(d.createdAt) })}
                   </div>
                 </div>
                 <Link
                   href={`/drafts/${d.id}`}
                   className="text-sm text-yge-blue-500 hover:underline"
                 >
-                  Open
+                  {t('jobDetail.action.open')}
                 </Link>
               </li>
             ))}
@@ -335,65 +337,74 @@ export default async function JobDetailPage({
 
       {/* Priced estimates for this job */}
       <section className="mt-10">
-        <h2 className="text-xl font-semibold text-gray-900">Priced estimates</h2>
+        <h2 className="text-xl font-semibold text-gray-900">{t('jobDetail.h.estimates')}</h2>
         {estimates.length === 0 ? (
           <p className="mt-2 text-sm text-gray-500">
-            No priced estimates yet for this job. Convert a draft above to start one.
+            {t('jobDetail.estimates.empty')}
           </p>
         ) : (
           <ul className="mt-3 divide-y divide-gray-100 rounded-lg border border-gray-200 bg-white shadow-sm">
-            {estimates.map((e) => (
-              <li key={e.id} className="flex items-center justify-between px-4 py-3">
-                <div>
-                  <div className="text-sm font-medium text-gray-900">
-                    {e.projectName}
+            {estimates.map((e) => {
+              // Split-and-fill: keep the inline <Money/> in the localized
+              // 'priced of total · dollars · when' summary template.
+              const summaryTpl = t('jobDetail.estimates.summary', {
+                priced: e.pricedLineCount,
+                total: e.bidItemCount,
+                dollars: '__DOLLARS__',
+                when: formatWhen(e.updatedAt),
+              });
+              const [pre, post] = summaryTpl.split('__DOLLARS__');
+              return (
+                <li key={e.id} className="flex items-center justify-between px-4 py-3">
+                  <div>
+                    <div className="text-sm font-medium text-gray-900">
+                      {e.projectName}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {pre}<Money cents={e.bidTotalCents} />{post}
+                    </div>
                   </div>
-                  <div className="text-xs text-gray-500">
-                    {e.pricedLineCount} of {e.bidItemCount} priced ·{' '}
-                    <Money cents={e.bidTotalCents} /> bid total ·{' '}
-                    {formatWhen(e.updatedAt)}
+                  <div className="flex items-center gap-3 text-sm">
+                    <Link
+                      href={`/estimates/${e.id}`}
+                      className="text-yge-blue-500 hover:underline"
+                    >
+                      {t('jobDetail.action.open')}
+                    </Link>
+                    <Link
+                      href={`/estimates/${e.id}/print`}
+                      className="text-yge-blue-500 hover:underline"
+                    >
+                      {t('jobDetail.action.print')}
+                    </Link>
+                    <Link
+                      href={`/estimates/${e.id}/transmittal`}
+                      className="text-yge-blue-500 hover:underline"
+                    >
+                      {t('jobDetail.action.cover')}
+                    </Link>
+                    <Link
+                      href={`/estimates/${e.id}/envelope`}
+                      className="text-yge-blue-500 hover:underline"
+                    >
+                      {t('jobDetail.action.envelope')}
+                    </Link>
+                    <Link
+                      href={`/estimates/${e.id}/sub-list`}
+                      className="text-yge-blue-500 hover:underline"
+                    >
+                      {t('jobDetail.action.subs')}
+                    </Link>
+                    <Link
+                      href={`/estimates/${e.id}/addenda`}
+                      className="text-yge-blue-500 hover:underline"
+                    >
+                      {t('jobDetail.action.addenda')}
+                    </Link>
                   </div>
-                </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <Link
-                    href={`/estimates/${e.id}`}
-                    className="text-yge-blue-500 hover:underline"
-                  >
-                    Open
-                  </Link>
-                  <Link
-                    href={`/estimates/${e.id}/print`}
-                    className="text-yge-blue-500 hover:underline"
-                  >
-                    Print
-                  </Link>
-                  <Link
-                    href={`/estimates/${e.id}/transmittal`}
-                    className="text-yge-blue-500 hover:underline"
-                  >
-                    Cover
-                  </Link>
-                  <Link
-                    href={`/estimates/${e.id}/envelope`}
-                    className="text-yge-blue-500 hover:underline"
-                  >
-                    Envelope
-                  </Link>
-                  <Link
-                    href={`/estimates/${e.id}/sub-list`}
-                    className="text-yge-blue-500 hover:underline"
-                  >
-                    §4104 Subs
-                  </Link>
-                  <Link
-                    href={`/estimates/${e.id}/addenda`}
-                    className="text-yge-blue-500 hover:underline"
-                  >
-                    Addenda
-                  </Link>
-                </div>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>
