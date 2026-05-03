@@ -14,6 +14,7 @@ import {
   PageHeader,
   Tile,
 } from '../../components';
+import { getTranslator } from '../../lib/locale';
 import {
   buildPromptPayReport,
   type ArInvoice,
@@ -53,13 +54,14 @@ export default async function PromptPayPage({
   ]);
 
   const report = buildPromptPayReport({ asOf, arInvoices, arPayments });
+  const t = getTranslator();
 
   return (
     <AppShell>
       <main className="mx-auto max-w-7xl">
         <PageHeader
-          title="Prompt-pay interest"
-          subtitle="CA Public Contract Code §20104.50 (local) and §10261.5 (state) require public agencies to pay an undisputed progress payment within 30 days. Otherwise: 10% per annum penalty interest (CCP §685.010(a))."
+          title={t('pp.title')}
+          subtitle={t('pp.subtitle')}
         />
 
         <form
@@ -67,7 +69,7 @@ export default async function PromptPayPage({
           className="mb-4 flex flex-wrap items-end gap-3 rounded-md border border-gray-200 bg-white p-3"
         >
           <label className="block text-xs">
-            <span className="mb-1 block font-medium text-gray-700">As-of date</span>
+            <span className="mb-1 block font-medium text-gray-700">{t('pp.asOfLabel')}</span>
             <input
               name="asOf"
               type="date"
@@ -79,47 +81,47 @@ export default async function PromptPayPage({
             type="submit"
             className="rounded-md bg-blue-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-800"
           >
-            Reload
+            {t('pp.reload')}
           </button>
-          <span className="text-xs text-gray-500">As of {asOf}.</span>
+          <span className="text-xs text-gray-500">{t('pp.asOfNote', { date: asOf })}</span>
         </form>
 
         <section className="mb-4 grid gap-3 sm:grid-cols-3">
           <Tile
-            label="Open invoices"
+            label={t('pp.tile.openInvoices')}
             value={report.rows.length}
-            sublabel={`${report.overdueRows.length} past due`}
+            sublabel={t('pp.tile.openSub', { count: report.overdueRows.length })}
           />
           <Tile
-            label="Penalty interest accrued"
+            label={t('pp.tile.interest')}
             value={<Money cents={report.totalInterestCents} />}
-            sublabel="What public agencies owe in late fees"
+            sublabel={t('pp.tile.interestSub')}
             tone={report.totalInterestCents > 0 ? 'warn' : 'success'}
           />
           <Tile
-            label="Total demand"
+            label={t('pp.tile.demand')}
             value={<Money cents={report.totalDemandCents} />}
-            sublabel="Unpaid principal + accrued interest"
+            sublabel={t('pp.tile.demandSub')}
           />
         </section>
 
         {report.rows.length === 0 ? (
           <div className="rounded-md border border-gray-200 bg-gray-50 p-6 text-sm text-gray-600">
-            No open AR invoices.
+            {t('pp.empty')}
           </div>
         ) : (
           <div className="overflow-x-auto rounded-md border border-gray-200 bg-white">
             <table className="w-full text-left text-xs">
               <thead className="bg-gray-50 uppercase tracking-wide text-gray-500">
                 <tr>
-                  <th className="px-3 py-2">Customer</th>
-                  <th className="px-3 py-2">Invoice</th>
-                  <th className="px-3 py-2">Submitted</th>
-                  <th className="px-3 py-2">Due</th>
-                  <th className="px-3 py-2 text-right">Days late</th>
-                  <th className="px-3 py-2 text-right">Unpaid</th>
-                  <th className="px-3 py-2 text-right">Penalty interest</th>
-                  <th className="px-3 py-2 text-right">Total demand</th>
+                  <th className="px-3 py-2">{t('pp.col.customer')}</th>
+                  <th className="px-3 py-2">{t('pp.col.invoice')}</th>
+                  <th className="px-3 py-2">{t('pp.col.submitted')}</th>
+                  <th className="px-3 py-2">{t('pp.col.due')}</th>
+                  <th className="px-3 py-2 text-right">{t('pp.col.daysLate')}</th>
+                  <th className="px-3 py-2 text-right">{t('pp.col.unpaid')}</th>
+                  <th className="px-3 py-2 text-right">{t('pp.col.interest')}</th>
+                  <th className="px-3 py-2 text-right">{t('pp.col.demand')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -172,7 +174,7 @@ export default async function PromptPayPage({
                   );
                 })}
                 <tr className="border-t-2 border-black bg-gray-50 font-semibold">
-                  <td className="px-3 py-3 uppercase tracking-wide" colSpan={5}>Totals</td>
+                  <td className="px-3 py-3 uppercase tracking-wide" colSpan={5}>{t('pp.totals')}</td>
                   <td className="px-3 py-3 text-right">
                     <Money cents={report.totalUnpaidCents} />
                   </td>
@@ -188,13 +190,7 @@ export default async function PromptPayPage({
           </div>
         )}
 
-        <p className="mt-4 max-w-3xl text-xs text-gray-500">
-          * = sentAt missing from the invoice — submittedOn was synthesized from invoiceDate.
-          Set sentAt on the invoice (the date the agency actually received it) for the accurate clock.
-          <br />
-          Retention release follows a different rule (PCC §7107: 60 days from completion notice,
-          2% per month). The Retention page tracks that math separately.
-        </p>
+        <p className="mt-4 max-w-3xl text-xs text-gray-500">{t('pp.note')}</p>
       </main>
     </AppShell>
   );
