@@ -21,6 +21,7 @@
 // from the latest CA statute language.
 
 import { z } from 'zod';
+import { translate, SEED_DICTIONARY, type Locale } from './i18n';
 
 export const LienWaiverKindSchema = z.enum([
   'CONDITIONAL_PROGRESS',   // §8132
@@ -117,13 +118,8 @@ export function lienWaiverKindLabel(k: LienWaiverKind): string {
   }
 }
 
-export function lienWaiverShortKindLabel(k: LienWaiverKind): string {
-  switch (k) {
-    case 'CONDITIONAL_PROGRESS': return 'Cond. Progress';
-    case 'UNCONDITIONAL_PROGRESS': return 'Uncond. Progress';
-    case 'CONDITIONAL_FINAL': return 'Cond. Final';
-    case 'UNCONDITIONAL_FINAL': return 'Uncond. Final';
-  }
+export function lienWaiverShortKindLabel(k: LienWaiverKind, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `lienWaiver.shortKind.${k}`);
 }
 
 export function lienWaiverStatuteLabel(k: LienWaiverKind): string {
@@ -135,13 +131,8 @@ export function lienWaiverStatuteLabel(k: LienWaiverKind): string {
   }
 }
 
-export function lienWaiverStatusLabel(s: LienWaiverStatus): string {
-  switch (s) {
-    case 'DRAFT': return 'Draft';
-    case 'SIGNED': return 'Signed';
-    case 'DELIVERED': return 'Delivered';
-    case 'VOIDED': return 'Voided';
-  }
+export function lienWaiverStatusLabel(s: LienWaiverStatus, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `lienWaiver.status.${s}`);
 }
 
 /** True iff the waiver is one of the conditional forms. Conditional

@@ -17,7 +17,7 @@ import {
   StatusPill,
   Tile,
 } from '../../components';
-import { getTranslator } from '../../lib/locale';
+import { getLocale, getTranslator } from '../../lib/locale';
 import {
   computeLienWaiverRollup,
   isConditional,
@@ -75,6 +75,7 @@ export default async function LienWaiversPage({
     return q ? `/lien-waivers?${q}` : '/lien-waivers';
   }
   const t = getTranslator();
+  const locale = getLocale();
 
   return (
     <AppShell>
@@ -115,7 +116,7 @@ export default async function LienWaiversPage({
               href={buildHref({ status: s })}
               className={`rounded px-2 py-1 text-xs ${searchParams.status === s ? 'bg-blue-700 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
             >
-              {lienWaiverStatusLabel(s)}
+              {lienWaiverStatusLabel(s, locale)}
             </Link>
           ))}
         </section>
@@ -150,7 +151,7 @@ export default async function LienWaiversPage({
                         isConditional(w.kind) ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
                       }`}
                     >
-                      {lienWaiverShortKindLabel(w.kind)}
+                      {lienWaiverShortKindLabel(w.kind, locale)}
                     </span>
                     <span className="ml-1 text-[10px] text-gray-500">{lienWaiverStatuteLabel(w.kind)}</span>
                   </span>
@@ -167,7 +168,7 @@ export default async function LienWaiversPage({
               {
                 key: 'status',
                 header: t('lw.col.status'),
-                cell: (w) => <StatusPill label={lienWaiverStatusLabel(w.status)} tone="neutral" />,
+                cell: (w) => <StatusPill label={lienWaiverStatusLabel(w.status, locale)} tone="neutral" />,
               },
               {
                 key: 'actions',

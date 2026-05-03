@@ -17,7 +17,7 @@ import {
   StatusPill,
   Tile,
 } from '../../components';
-import { getTranslator } from '../../lib/locale';
+import { getLocale, getTranslator } from '../../lib/locale';
 import {
   changeOrderReasonLabel,
   changeOrderStatusLabel,
@@ -102,6 +102,7 @@ export default async function ChangeOrdersPage({
 
   const netApprovedCents = rollup.totalApprovedAddCents - rollup.totalApprovedDeductCents;
   const t = getTranslator();
+  const locale = getLocale();
 
   return (
     <AppShell>
@@ -148,7 +149,7 @@ export default async function ChangeOrdersPage({
               href={buildHref({ status: s })}
               className={`rounded px-2 py-1 text-xs ${searchParams.status === s ? 'bg-blue-700 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
             >
-              {changeOrderStatusLabel(s)}
+              {changeOrderStatusLabel(s, locale)}
             </Link>
           ))}
         </section>
@@ -184,7 +185,7 @@ export default async function ChangeOrdersPage({
                     : <span className="text-sm text-gray-400">{co.jobId}</span>;
                 },
               },
-              { key: 'reason', header: t('co.col.reason'), cell: (co) => <span className="text-xs text-gray-600">{changeOrderReasonLabel(co.reason)}</span> },
+              { key: 'reason', header: t('co.col.reason'), cell: (co) => <span className="text-xs text-gray-600">{changeOrderReasonLabel(co.reason, locale)}</span> },
               {
                 key: 'cost',
                 header: t('co.col.cost'),
@@ -208,7 +209,7 @@ export default async function ChangeOrdersPage({
                   ? <span className="font-mono text-gray-400">—</span>
                   : <span className="font-mono">{co.totalScheduleImpactDays > 0 ? `+${co.totalScheduleImpactDays}` : `${co.totalScheduleImpactDays}`}</span>,
               },
-              { key: 'status', header: t('co.col.status'), cell: (co) => <StatusPill label={changeOrderStatusLabel(co.status)} tone={statusTone(co.status)} /> },
+              { key: 'status', header: t('co.col.status'), cell: (co) => <StatusPill label={changeOrderStatusLabel(co.status, locale)} tone={statusTone(co.status)} /> },
             ]}
           />
         )}

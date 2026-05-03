@@ -14,6 +14,7 @@
 // that costs more" → "this CO captures the cost".
 
 import { z } from 'zod';
+import { translate, SEED_DICTIONARY, type Locale } from './i18n';
 
 export const ChangeOrderStatusSchema = z.enum([
   'PROPOSED',
@@ -120,28 +121,12 @@ export type ChangeOrderPatch = z.infer<typeof ChangeOrderPatchSchema>;
 
 // ---- Pure helpers --------------------------------------------------------
 
-export function changeOrderStatusLabel(s: ChangeOrderStatus): string {
-  switch (s) {
-    case 'PROPOSED': return 'Proposed';
-    case 'AGENCY_REVIEW': return 'Agency review';
-    case 'APPROVED': return 'Approved';
-    case 'REJECTED': return 'Rejected';
-    case 'EXECUTED': return 'Executed';
-    case 'WITHDRAWN': return 'Withdrawn';
-  }
+export function changeOrderStatusLabel(s: ChangeOrderStatus, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `changeOrder.status.${s}`);
 }
 
-export function changeOrderReasonLabel(r: ChangeOrderReason): string {
-  switch (r) {
-    case 'OWNER_DIRECTED': return 'Owner-directed';
-    case 'DIFFERING_SITE_CONDITION': return 'Differing site condition';
-    case 'DESIGN_REVISION': return 'Design revision';
-    case 'RFI_RESPONSE': return 'RFI response';
-    case 'CODE_REVISION': return 'Code revision';
-    case 'WEATHER_OR_DELAY': return 'Weather / delay';
-    case 'SCOPE_CLARIFICATION': return 'Scope clarification';
-    case 'OTHER': return 'Other';
-  }
+export function changeOrderReasonLabel(r: ChangeOrderReason, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `changeOrder.reason.${r}`);
 }
 
 /** Recompute totals from line items. */
