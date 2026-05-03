@@ -14,6 +14,7 @@ import {
   StatusPill,
   Tile,
 } from '../../components';
+import { getTranslator, type Translator } from '../../lib/locale';
 import {
   buildCostForecast,
   buildWipRow,
@@ -83,12 +84,12 @@ function forecastTone(flag: CostForecastFlag): 'success' | 'warn' | 'danger' | '
     case 'COMPLETE': return 'muted';
   }
 }
-function forecastLabel(flag: CostForecastFlag): string {
+function forecastLabel(flag: CostForecastFlag, t: Translator): string {
   switch (flag) {
-    case 'ON_TRACK': return 'On track';
-    case 'AT_RISK': return 'At risk';
-    case 'OVER_BUDGET': return 'Over';
-    case 'COMPLETE': return 'Done';
+    case 'ON_TRACK': return t('wip.forecast.flag.onTrack');
+    case 'AT_RISK': return t('wip.forecast.flag.atRisk');
+    case 'OVER_BUDGET': return t('wip.forecast.flag.over');
+    case 'COMPLETE': return t('wip.forecast.flag.done');
   }
 }
 
@@ -139,32 +140,33 @@ export default async function WipPage({
   rows.sort((a, b) => b.adjustedContractCents - a.adjustedContractCents);
   const rollup = computeWipRollup(rows);
   const forecast = buildCostForecast(rows);
+  const t = getTranslator();
 
   return (
     <AppShell>
       <main className="mx-auto max-w-7xl">
         <PageHeader
-          title="Work-In-Progress"
-          subtitle="Per-job WIP — contract, billed, paid, costs, %-complete, and over/under billing. The standard surety + CPA quarterly snapshot."
+          title={t('wip.title')}
+          subtitle={t('wip.subtitle')}
         />
 
         <section className="mb-3 grid gap-3 sm:grid-cols-4">
-          <Tile label="Jobs" value={rollup.jobs} />
-          <Tile label="Adjusted contract" value={<Money cents={rollup.totalAdjustedContractCents} />} />
-          <Tile label="Earned revenue" value={<Money cents={rollup.totalEarnedRevenueCents} />} />
-          <Tile label="Costs incurred" value={<Money cents={rollup.totalCostsIncurredCents} />} />
+          <Tile label={t('wip.tile.jobs')} value={rollup.jobs} />
+          <Tile label={t('wip.tile.adjustedContract')} value={<Money cents={rollup.totalAdjustedContractCents} />} />
+          <Tile label={t('wip.tile.earnedRevenue')} value={<Money cents={rollup.totalEarnedRevenueCents} />} />
+          <Tile label={t('wip.tile.costsIncurred')} value={<Money cents={rollup.totalCostsIncurredCents} />} />
         </section>
 
         <section className="mb-4 grid gap-3 sm:grid-cols-4">
-          <Tile label="Billed to date" value={<Money cents={rollup.totalBilledCents} />} />
-          <Tile label="Collected to date" value={<Money cents={rollup.totalCollectedCents} />} />
+          <Tile label={t('wip.tile.billed')} value={<Money cents={rollup.totalBilledCents} />} />
+          <Tile label={t('wip.tile.collected')} value={<Money cents={rollup.totalCollectedCents} />} />
           <Tile
-            label="Over-billed"
+            label={t('wip.tile.overBilled')}
             value={<Money cents={rollup.totalOverBilledCents} />}
             tone={rollup.totalOverBilledCents > 0 ? 'warn' : 'success'}
           />
           <Tile
-            label="Under-billed"
+            label={t('wip.tile.underBilled')}
             value={<Money cents={rollup.totalUnderBilledCents} />}
             tone={rollup.totalUnderBilledCents > 0 ? 'danger' : 'success'}
           />
@@ -172,25 +174,25 @@ export default async function WipPage({
 
         {rows.length === 0 ? (
           <div className="rounded-md border border-gray-200 bg-gray-50 p-6 text-sm text-gray-600">
-            No active jobs with AR/AP/CO activity. Once you bill or post invoices to a job, it appears here.
+            {t('wip.empty')}
           </div>
         ) : (
           <div className="overflow-x-auto rounded-md border border-gray-200 bg-white">
             <table className="w-full text-left text-xs">
               <thead className="bg-gray-50 uppercase tracking-wide text-gray-500">
                 <tr>
-                  <th className="px-3 py-2">Job</th>
-                  <th className="px-3 py-2 text-right">Contract</th>
-                  <th className="px-3 py-2 text-right">CO</th>
-                  <th className="px-3 py-2 text-right">Adjusted</th>
-                  <th className="px-3 py-2 text-right">Cost @ Compl.</th>
-                  <th className="px-3 py-2 text-right">Cost To Date</th>
-                  <th className="px-3 py-2 text-right">% Compl.</th>
-                  <th className="px-3 py-2 text-right">Earned</th>
-                  <th className="px-3 py-2 text-right">Billed</th>
-                  <th className="px-3 py-2 text-right">Collected</th>
-                  <th className="px-3 py-2 text-right">Retention</th>
-                  <th className="px-3 py-2 text-right">Over/Under</th>
+                  <th className="px-3 py-2">{t('wip.col.job')}</th>
+                  <th className="px-3 py-2 text-right">{t('wip.col.contract')}</th>
+                  <th className="px-3 py-2 text-right">{t('wip.col.co')}</th>
+                  <th className="px-3 py-2 text-right">{t('wip.col.adjusted')}</th>
+                  <th className="px-3 py-2 text-right">{t('wip.col.costAtComplete')}</th>
+                  <th className="px-3 py-2 text-right">{t('wip.col.costToDate')}</th>
+                  <th className="px-3 py-2 text-right">{t('wip.col.percentComplete')}</th>
+                  <th className="px-3 py-2 text-right">{t('wip.col.earned')}</th>
+                  <th className="px-3 py-2 text-right">{t('wip.col.billed')}</th>
+                  <th className="px-3 py-2 text-right">{t('wip.col.collected')}</th>
+                  <th className="px-3 py-2 text-right">{t('wip.col.retention')}</th>
+                  <th className="px-3 py-2 text-right">{t('wip.col.overUnder')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -245,16 +247,12 @@ export default async function WipPage({
 
         {forecast.rows.length > 0 ? (
           <section className="mt-12">
-            <h2 className="text-xl font-bold text-gray-900">Cost forecast</h2>
-            <p className="mt-1 max-w-3xl text-sm text-gray-600">
-              Earned-value projection per job. CPI &lt; 1 means costs are running ahead of progress —
-              FEAC is what the job will actually cost if performance keeps trending the same way.
-              Worst CPI first; finished jobs pinned to the bottom.
-            </p>
+            <h2 className="text-xl font-bold text-gray-900">{t('wip.forecast.heading')}</h2>
+            <p className="mt-1 max-w-3xl text-sm text-gray-600">{t('wip.forecast.body')}</p>
 
             <div className="mt-4 grid gap-3 sm:grid-cols-4">
               <Tile
-                label="Blended CPI"
+                label={t('wip.forecast.tile.cpi')}
                 value={forecast.rollup.blendedCostPerformanceIndex.toFixed(2)}
                 tone={
                   forecast.rollup.blendedCostPerformanceIndex < 0.85
@@ -264,10 +262,10 @@ export default async function WipPage({
                       : 'success'
                 }
               />
-              <Tile label="Forecast EAC" value={<Money cents={forecast.rollup.totalForecastEacCents} />} />
-              <Tile label="Cost to complete" value={<Money cents={forecast.rollup.totalCostToCompleteCents} />} />
+              <Tile label={t('wip.forecast.tile.eac')} value={<Money cents={forecast.rollup.totalForecastEacCents} />} />
+              <Tile label={t('wip.forecast.tile.etc')} value={<Money cents={forecast.rollup.totalCostToCompleteCents} />} />
               <Tile
-                label="Variance at completion"
+                label={t('wip.forecast.tile.vac')}
                 value={<Money cents={forecast.rollup.totalVarianceAtCompletionCents} />}
                 tone={forecast.rollup.totalVarianceAtCompletionCents < 0 ? 'danger' : 'success'}
               />
@@ -277,15 +275,15 @@ export default async function WipPage({
               <table className="w-full text-left text-xs">
                 <thead className="bg-gray-50 uppercase tracking-wide text-gray-500">
                   <tr>
-                    <th className="px-3 py-2">Job</th>
-                    <th className="px-3 py-2 text-right">BAC</th>
-                    <th className="px-3 py-2 text-right">AC</th>
-                    <th className="px-3 py-2 text-right">EV</th>
-                    <th className="px-3 py-2 text-right">CPI</th>
-                    <th className="px-3 py-2 text-right">FEAC</th>
-                    <th className="px-3 py-2 text-right">ETC</th>
-                    <th className="px-3 py-2 text-right">VAC</th>
-                    <th className="px-3 py-2">Status</th>
+                    <th className="px-3 py-2">{t('wip.col.job')}</th>
+                    <th className="px-3 py-2 text-right">{t('wip.forecast.col.bac')}</th>
+                    <th className="px-3 py-2 text-right">{t('wip.forecast.col.ac')}</th>
+                    <th className="px-3 py-2 text-right">{t('wip.forecast.col.ev')}</th>
+                    <th className="px-3 py-2 text-right">{t('wip.forecast.col.cpi')}</th>
+                    <th className="px-3 py-2 text-right">{t('wip.forecast.col.feac')}</th>
+                    <th className="px-3 py-2 text-right">{t('wip.forecast.col.etc')}</th>
+                    <th className="px-3 py-2 text-right">{t('wip.forecast.col.vac')}</th>
+                    <th className="px-3 py-2">{t('wip.forecast.col.status')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -315,7 +313,7 @@ export default async function WipPage({
                         />
                       </td>
                       <td className="px-3 py-2">
-                        <StatusPill label={forecastLabel(r.flag)} tone={forecastTone(r.flag)} />
+                        <StatusPill label={forecastLabel(r.flag, t)} tone={forecastTone(r.flag)} />
                       </td>
                     </tr>
                   ))}
@@ -325,11 +323,7 @@ export default async function WipPage({
           </section>
         ) : null}
 
-        <p className="mt-4 text-xs text-gray-500">
-          Tip: until job records carry contract + cost-at-completion fields, append{' '}
-          <code className="rounded bg-gray-100 px-1 font-mono">?contract.{'{'}jobId{'}'}=N&amp;cost.{'{'}jobId{'}'}=N</code>{' '}
-          to project earned revenue + over/under billing per job. Numbers in dollars (e.g. <code>250000.00</code>).
-        </p>
+        <p className="mt-4 text-xs text-gray-500">{t('wip.tip')}</p>
       </main>
     </AppShell>
   );
