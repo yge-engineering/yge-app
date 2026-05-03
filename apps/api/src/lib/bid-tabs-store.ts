@@ -187,6 +187,39 @@ export async function createBidTab(
 }
 
 /**
+ * Patch a tab's free-form notes. Operators tend to add post-import
+ * context here ('Caltrans rejected Mercer's bid for missing sub
+ * list — apparent low advanced to Knife River'), so the field gets
+ * its own tiny endpoint instead of a kitchen-sink update form.
+ *
+ * Pass empty string to CLEAR the notes.
+ */
+export async function patchBidTabNotes(
+  id: string,
+  notes: string,
+  ctx?: AuditContext,
+): Promise<BidTab | null> {
+  const existing = await getBidTab(id);
+  if (!existing) return null;
+  const trimmed = notes.trim();
+  const updated = BidTabSchema.parse({
+    ...existing,
+    notes: trimmed.length === 0 ? undefined : trimmed,
+    updatedAt: new Date().toISOString(),
+  });
+  await persist(updated);
+  await recordAudit({
+    action: 'update',
+    entityType: 'BidResult',
+    entityId: id,
+    before: existing,
+    after: updated,
+    ctx,
+  });
+  return updated;
+}
+
+/**
  * Patch the YGE cross-link fields on an existing tab. Used when
  * the auto-link in createBidTab didn't fire (typo in project
  * name, agency-prefix mismatch, etc.) and the operator manually

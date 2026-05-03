@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { AppShell, PageHeader, StatusPill } from '../../../components';
+import { BidTabNotesEdit } from '../../../components/bid-tab-notes-edit';
 import { BidTabYgeLinkForm } from '../../../components/bid-tab-yge-link-form';
 import { BidTabYgeUnlinkButton } from '../../../components/bid-tab-yge-unlink-button';
 import { YGE_NORMALIZED_NAME_DEFAULT, type BidTab, type Job } from '@yge/shared';
@@ -159,12 +160,14 @@ export default async function BidTabPage({
           </section>
         )}
 
-        {tab.notes && (
-          <section className="mt-4 rounded-md border border-gray-200 bg-gray-50 p-3 text-xs text-gray-700">
-            <strong className="font-semibold text-gray-900">Notes</strong>
-            <div className="mt-1 whitespace-pre-wrap">{tab.notes}</div>
-          </section>
-        )}
+        <section className="mt-4 rounded-md border border-gray-200 bg-gray-50 p-3 text-xs text-gray-700">
+          <strong className="font-semibold text-gray-900">Notes</strong>
+          <BidTabNotesEdit
+            apiBaseUrl={publicApiBaseUrl()}
+            tabId={tab.id}
+            initialNotes={tab.notes ?? ''}
+          />
+        </section>
 
         <section className="mt-6 overflow-hidden rounded-md border border-gray-200 bg-white shadow-sm">
           <table className="w-full text-sm">
