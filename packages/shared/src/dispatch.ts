@@ -12,6 +12,7 @@
 // jobs.
 
 import { z } from 'zod';
+import { translate, SEED_DICTIONARY, type Locale } from './i18n';
 
 export const DispatchStatusSchema = z.enum([
   'DRAFT',
@@ -98,13 +99,8 @@ export type DispatchPatch = z.infer<typeof DispatchPatchSchema>;
 
 // ---- Helpers -------------------------------------------------------------
 
-export function dispatchStatusLabel(s: DispatchStatus): string {
-  switch (s) {
-    case 'DRAFT': return 'Draft';
-    case 'POSTED': return 'Posted';
-    case 'COMPLETED': return 'Completed';
-    case 'CANCELLED': return 'Cancelled';
-  }
+export function dispatchStatusLabel(s: DispatchStatus, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `dispatch.status.${s}`);
 }
 
 export interface DoubleBooking {

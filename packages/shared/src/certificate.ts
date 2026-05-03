@@ -17,6 +17,7 @@
 //   - per-job cert linkage (which certs were submitted with which bid)
 
 import { z } from 'zod';
+import { translate, SEED_DICTIONARY, type Locale } from './i18n';
 
 /** What kind of credential? Drives the field set surfaced in the editor
  *  and the grouping in the list view. */
@@ -133,12 +134,8 @@ export function certificateKindLabel(k: CertificateKind): string {
   }
 }
 
-export function certificateStatusLabel(s: CertificateStatus): string {
-  switch (s) {
-    case 'ACTIVE': return 'Active';
-    case 'SUPERSEDED': return 'Superseded';
-    case 'REVOKED': return 'Revoked';
-  }
+export function certificateStatusLabel(s: CertificateStatus, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `certificate.status.${s}`);
 }
 
 export type CertExpiryLevel = 'lifetime' | 'expired' | 'expiringSoon' | 'current';

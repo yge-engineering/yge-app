@@ -16,6 +16,7 @@
 
 import { z } from 'zod';
 import { DirClassificationSchema } from './employee';
+import { translate, SEED_DICTIONARY, type Locale } from './i18n';
 
 export const CprStatusSchema = z.enum([
   'DRAFT',
@@ -118,14 +119,8 @@ export type CertifiedPayrollPatch = z.infer<typeof CertifiedPayrollPatchSchema>;
 
 // ---- Pure helpers --------------------------------------------------------
 
-export function cprStatusLabel(s: CprStatus): string {
-  switch (s) {
-    case 'DRAFT': return 'Draft';
-    case 'SUBMITTED': return 'Submitted';
-    case 'ACCEPTED': return 'Accepted by DIR';
-    case 'AMENDED': return 'Amended';
-    case 'NON_PERFORMANCE': return 'No work performed';
-  }
+export function cprStatusLabel(s: CprStatus, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `cpr.status.${s}`);
 }
 
 /** Sum a row's daily hours array. */

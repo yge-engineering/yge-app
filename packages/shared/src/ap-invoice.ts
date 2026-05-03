@@ -20,6 +20,7 @@
 // and discounts that don't always reconcile to a simple sum.
 
 import { z } from 'zod';
+import { translate, SEED_DICTIONARY, type Locale } from './i18n';
 
 export const ApInvoiceStatusSchema = z.enum([
   'DRAFT',
@@ -155,14 +156,8 @@ export type ApInvoiceReject = z.infer<typeof ApInvoiceRejectSchema>;
 
 // ---- Pure helpers --------------------------------------------------------
 
-export function apStatusLabel(s: ApInvoiceStatus): string {
-  switch (s) {
-    case 'DRAFT': return 'Draft';
-    case 'PENDING': return 'Pending approval';
-    case 'APPROVED': return 'Approved';
-    case 'PAID': return 'Paid';
-    case 'REJECTED': return 'Rejected';
-  }
+export function apStatusLabel(s: ApInvoiceStatus, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `apInvoice.status.${s}`);
 }
 
 export function paymentMethodLabel(m: ApPaymentMethod): string {

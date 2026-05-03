@@ -22,6 +22,7 @@
 // AP payments where `cleared=false` and `paidOn <= statementDate`.
 
 import { z } from 'zod';
+import { translate, SEED_DICTIONARY, type Locale } from './i18n';
 
 export const BankRecStatusSchema = z.enum([
   'DRAFT',
@@ -103,12 +104,8 @@ export type BankRecPatch = z.infer<typeof BankRecPatchSchema>;
 
 // ---- Helpers -------------------------------------------------------------
 
-export function bankRecStatusLabel(s: BankRecStatus): string {
-  switch (s) {
-    case 'DRAFT': return 'Draft';
-    case 'RECONCILED': return 'Reconciled';
-    case 'VOIDED': return 'Voided';
-  }
+export function bankRecStatusLabel(s: BankRecStatus, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `bankRec.status.${s}`);
 }
 
 export function adjustmentKindLabel(k: BankRecAdjustmentKind): string {

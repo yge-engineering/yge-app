@@ -18,7 +18,8 @@ import {
   StatusPill,
   Tile,
 } from '../../components';
-import { getTranslator, type Translator } from '../../lib/locale';
+import { getLocale, getTranslator, type Translator } from '../../lib/locale';
+import type { Locale } from '@yge/shared';
 import {
   computeDispatchRollup,
   detectDoubleBookings,
@@ -87,6 +88,7 @@ export default async function DispatchPage({
     filter.jobId ? '&jobId=' + encodeURIComponent(filter.jobId) : ''
   }`;
   const t = getTranslator();
+  const locale = getLocale();
 
   return (
     <AppShell>
@@ -163,7 +165,7 @@ export default async function DispatchPage({
         ) : (
           <div className="grid gap-4 lg:grid-cols-2">
             {dispatches.map((d) => (
-              <DispatchCard key={d.id} d={d} t={t} />
+              <DispatchCard key={d.id} d={d} t={t} locale={locale} />
             ))}
           </div>
         )}
@@ -172,7 +174,7 @@ export default async function DispatchPage({
   );
 }
 
-function DispatchCard({ d, t }: { d: Dispatch; t: Translator }) {
+function DispatchCard({ d, t, locale }: { d: Dispatch; t: Translator; locale: Locale }) {
   return (
     <Card>
       <div className="flex items-start justify-between gap-3">
@@ -190,7 +192,7 @@ function DispatchCard({ d, t }: { d: Dispatch; t: Translator }) {
           </p>
         </div>
         <div className="flex flex-col items-end gap-1">
-          <StatusPill label={dispatchStatusLabel(d.status)} tone={statusTone(d.status)} />
+          <StatusPill label={dispatchStatusLabel(d.status, locale)} tone={statusTone(d.status)} />
           <Link href={`/dispatch/${d.id}/handout`} className="text-xs text-blue-700 hover:underline">
             {t('dispatch.card.printHandout')}
           </Link>
