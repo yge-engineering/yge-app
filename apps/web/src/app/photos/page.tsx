@@ -16,6 +16,7 @@ import {
   StatusPill,
   Tile,
 } from '../../components';
+import { getTranslator } from '../../lib/locale';
 import {
   computePhotoRollup,
   photoCategoryLabel,
@@ -79,42 +80,43 @@ export default async function PhotosPage({
     const q = params.toString();
     return q ? `/photos?${q}` : '/photos';
   }
+  const t = getTranslator();
 
   return (
     <AppShell>
       <main className="mx-auto max-w-6xl">
         <PageHeader
-          title="Photo log"
-          subtitle="Field photo metadata. Backs delay claims, change orders, SWPPP audits, OSHA incident reports, and disputed punch items."
+          title={t('photos.title')}
+          subtitle={t('photos.subtitle')}
           actions={
             <LinkButton href="/photos/new" variant="primary" size="md">
-              + Log photo
+              {t('photos.logPhoto')}
             </LinkButton>
           }
         />
 
         <section className="mb-4 grid gap-3 sm:grid-cols-4">
-          <Tile label="Total photos" value={rollup.total} />
-          <Tile label="Last logged" value={rollup.lastTakenOn ?? '—'} />
+          <Tile label={t('photos.tile.total')} value={rollup.total} />
+          <Tile label={t('photos.tile.lastLogged')} value={rollup.lastTakenOn ?? '—'} />
           <Tile
-            label="Missing GPS"
+            label={t('photos.tile.missingGps')}
             value={rollup.missingGps}
             tone={rollup.missingGps > 0 ? 'warn' : 'success'}
-            warnText={rollup.missingGps > 0 ? 'Geo-tag is the audit win' : undefined}
+            warnText={rollup.missingGps > 0 ? t('photos.tile.warn') : undefined}
           />
           <Tile
-            label="Top category"
+            label={t('photos.tile.topCategory')}
             value={rollup.byCategory[0] ? photoCategoryLabel(rollup.byCategory[0].category) : '—'}
           />
         </section>
 
         <section className="mb-4 flex flex-wrap items-center gap-2 rounded-md border border-gray-200 bg-white p-3">
-          <span className="text-xs uppercase tracking-wide text-gray-500">Category:</span>
+          <span className="text-xs uppercase tracking-wide text-gray-500">{t('photos.filter.category')}</span>
           <Link
             href={buildHref({ category: undefined })}
             className={`rounded px-2 py-1 text-xs ${!searchParams.category ? 'bg-blue-700 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
           >
-            All
+            {t('photos.filter.all')}
           </Link>
           {CATEGORIES.map((c) => (
             <Link
@@ -129,9 +131,9 @@ export default async function PhotosPage({
 
         {photos.length === 0 ? (
           <EmptyState
-            title="No photos in this filter"
-            body="Phone-camera photos with location stamps + captions are gold for delay claims. Log them as soon as the crew takes them."
-            actions={[{ href: '/photos/new', label: 'Log photo', primary: true }]}
+            title={t('photos.empty.title')}
+            body={t('photos.empty.body')}
+            actions={[{ href: '/photos/new', label: t('photos.empty.action'), primary: true }]}
           />
         ) : (
           <DataTable
@@ -140,7 +142,7 @@ export default async function PhotosPage({
             columns={[
               {
                 key: 'date',
-                header: 'Date',
+                header: t('photos.col.date'),
                 cell: (p) => (
                   <Link href={`/photos/${p.id}`} className="font-mono text-xs font-medium text-blue-700 hover:underline">
                     {p.takenOn}
@@ -150,35 +152,35 @@ export default async function PhotosPage({
               },
               {
                 key: 'job',
-                header: 'Job',
+                header: t('photos.col.job'),
                 cell: (p) => (
                   <Link href={`/jobs/${p.jobId}`} className="font-mono text-xs text-blue-700 hover:underline">
                     {p.jobId}
                   </Link>
                 ),
               },
-              { key: 'location', header: 'Location', cell: (p) => <span className="text-xs text-gray-700">{p.location}</span> },
+              { key: 'location', header: t('photos.col.location'), cell: (p) => <span className="text-xs text-gray-700">{p.location}</span> },
               {
                 key: 'caption',
-                header: 'Caption',
+                header: t('photos.col.caption'),
                 cell: (p) => (
                   <div className="text-sm text-gray-900">
                     <div className="line-clamp-2">{p.caption}</div>
-                    {p.photographerName ? <div className="text-[10px] text-gray-500">by {p.photographerName}</div> : null}
+                    {p.photographerName ? <div className="text-[10px] text-gray-500">{t('photos.byPhotographer', { name: p.photographerName })}</div> : null}
                   </div>
                 ),
               },
-              { key: 'category', header: 'Category', cell: (p) => <StatusPill label={photoCategoryLabel(p.category)} tone="neutral" /> },
+              { key: 'category', header: t('photos.col.category'), cell: (p) => <StatusPill label={photoCategoryLabel(p.category)} tone="neutral" /> },
               {
                 key: 'reference',
-                header: 'Reference',
+                header: t('photos.col.reference'),
                 cell: (p) => (
                   <div className="max-w-xs truncate font-mono text-[10px] text-gray-700">{p.reference}</div>
                 ),
               },
               {
                 key: 'gps',
-                header: 'GPS',
+                header: t('photos.col.gps'),
                 cell: (p) =>
                   p.latitude != null && p.longitude != null ? (
                     <span className="text-xs text-emerald-700">{p.latitude.toFixed(4)}, {p.longitude.toFixed(4)}</span>
