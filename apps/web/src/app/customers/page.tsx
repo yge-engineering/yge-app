@@ -15,6 +15,7 @@ import {
   StatusPill,
   Tile,
 } from '../../components';
+import { getTranslator } from '../../lib/locale';
 import {
   computeCustomerRollup,
   customerDisplayName,
@@ -80,42 +81,43 @@ export default async function CustomersPage({
   const csvHref = `${publicApiBaseUrl()}/api/customers?format=csv${
     searchParams.kind ? '&kind=' + encodeURIComponent(searchParams.kind) : ''
   }`;
+  const t = getTranslator();
 
   return (
     <AppShell>
       <main className="mx-auto max-w-6xl">
         <PageHeader
-          title="Customers"
-          subtitle="Agencies, owners, and primes that YGE bills. Public agencies trigger DIR + certified-payroll requirements on every job."
+          title={t('customers.title')}
+          subtitle={t('customers.subtitle')}
           actions={
             <span className="flex gap-2">
               <a
                 href={csvHref}
                 className="inline-flex items-center rounded-md border border-blue-700 px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-50"
               >
-                Download CSV
+                {t('customers.downloadCsv')}
               </a>
               <LinkButton href="/customers/new" variant="primary" size="md">
-                + Add customer
+                {t('customers.add')}
               </LinkButton>
             </span>
           }
         />
 
         <section className="mb-4 grid gap-3 sm:grid-cols-4">
-          <Tile label="Total" value={rollup.total} />
-          <Tile label="Active" value={rollup.active} />
-          <Tile label="On hold" value={rollup.onHold} tone={rollup.onHold > 0 ? 'warn' : 'success'} />
-          <Tile label="Public agencies" value={rollup.publicAgencies} />
+          <Tile label={t('customers.tile.total')} value={rollup.total} />
+          <Tile label={t('customers.tile.active')} value={rollup.active} />
+          <Tile label={t('customers.tile.onHold')} value={rollup.onHold} tone={rollup.onHold > 0 ? 'warn' : 'success'} />
+          <Tile label={t('customers.tile.publicAgencies')} value={rollup.publicAgencies} />
         </section>
 
         <section className="mb-4 flex flex-wrap items-center gap-2 rounded-md border border-gray-200 bg-white p-3">
-          <span className="text-xs uppercase tracking-wide text-gray-500">Kind:</span>
+          <span className="text-xs uppercase tracking-wide text-gray-500">{t('customers.filter.kind')}</span>
           <Link
             href={buildHref({ kind: undefined })}
             className={`rounded px-2 py-1 text-xs ${!searchParams.kind ? 'bg-blue-700 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
           >
-            All
+            {t('customers.filter.all')}
           </Link>
           {KINDS.map((k) => (
             <Link
@@ -130,20 +132,20 @@ export default async function CustomersPage({
 
         {customers.length === 0 ? (
           <EmptyState
-            title="No customers in this filter"
-            body="Add agencies and primes here as you onboard them. The Public-works flag drives DIR + CPR enforcement on jobs they create."
-            actions={[{ href: '/customers/new', label: 'Add customer', primary: true }]}
+            title={t('customers.empty.title')}
+            body={t('customers.empty.body')}
+            actions={[{ href: '/customers/new', label: t('customers.empty.action'), primary: true }]}
           />
         ) : (
           <div className="overflow-x-auto rounded-md border border-gray-200 bg-white">
             <table className="w-full text-left text-sm">
               <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
                 <tr>
-                  <th className="px-4 py-2">Customer</th>
-                  <th className="px-4 py-2">Kind</th>
-                  <th className="px-4 py-2">Contact</th>
-                  <th className="px-4 py-2">Terms</th>
-                  <th className="px-4 py-2">Status</th>
+                  <th className="px-4 py-2">{t('customers.col.customer')}</th>
+                  <th className="px-4 py-2">{t('customers.col.kind')}</th>
+                  <th className="px-4 py-2">{t('customers.col.contact')}</th>
+                  <th className="px-4 py-2">{t('customers.col.terms')}</th>
+                  <th className="px-4 py-2">{t('customers.col.status')}</th>
                   <th className="px-4 py-2"></th>
                 </tr>
               </thead>
@@ -160,7 +162,7 @@ export default async function CustomersPage({
                       {customerKindLabel(c.kind)}
                       {isPublicAgency(c) ? (
                         <div className="mt-0.5 inline-block rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-800">
-                          Public works
+                          {t('customers.tag.publicWorks')}
                         </div>
                       ) : null}
                     </td>
@@ -172,8 +174,8 @@ export default async function CustomersPage({
                     <td className="px-4 py-3 text-xs text-gray-700">{c.paymentTerms ?? '—'}</td>
                     <td className="px-4 py-3">
                       {c.onHold
-                        ? <StatusPill label="On hold" tone="danger" />
-                        : <StatusPill label="Active" tone="success" />}
+                        ? <StatusPill label={t('customers.status.onHold')} tone="danger" />
+                        : <StatusPill label={t('customers.status.active')} tone="success" />}
                     </td>
                     <td className="px-4 py-3"></td>
                   </tr>
