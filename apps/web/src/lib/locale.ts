@@ -20,13 +20,16 @@ export function getLocale(): Locale {
   return coerceLocale(cookies().get(COOKIE_NAME)?.value);
 }
 
+/** Pre-bound translator type — what `getTranslator()` returns. */
+export type Translator = (key: string, vars?: Record<string, string | number>) => string;
+
 /**
  * Convenience used by server components: pre-bound translator for
  * the current request's locale + the seeded dictionary. Pages can
  * still build their own translator against page-specific
  * dictionaries when the seed is too thin.
  */
-export function getTranslator() {
+export function getTranslator(): Translator {
   return makeTranslator(SEED_DICTIONARY, getLocale());
 }
 

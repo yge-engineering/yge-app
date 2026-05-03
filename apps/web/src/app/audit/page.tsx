@@ -17,6 +17,7 @@ import {
   PageHeader,
   StatusPill,
 } from '../../components';
+import { getTranslator, type Translator } from '../../lib/locale';
 import {
   auditActionKey,
   changedFields,
@@ -90,6 +91,7 @@ export default async function AuditPage({
   qs.set('limit', '500');
   const data = await fetchEvents(qs);
   const rollup = computeAuditRollup(data.events);
+  const t = getTranslator();
 
   const hasFilter = Boolean(
     searchParams.entityType ||
@@ -124,11 +126,11 @@ export default async function AuditPage({
         </div>
 
         <PageHeader
-          title="Audit log"
-          subtitle="Who did what, when. Every meaningful change in the app drops a row here."
+          title={t('auditPage.title')}
+          subtitle={t('auditPage.subtitle')}
         />
 
-        <FilterForm initial={searchParams} />
+        <FilterForm initial={searchParams} t={t} />
 
         {data.events.length === 0 && hasFilter && (
           <Alert tone="info" className="mt-6">
@@ -145,7 +147,7 @@ export default async function AuditPage({
 
         {data.events.length > 0 && (
           <>
-            <Rollup rollup={rollup} />
+            <Rollup rollup={rollup} t={t} />
             <div className="mt-6">
               <DataTable
                 rows={data.events}
@@ -222,26 +224,26 @@ export default async function AuditPage({
   );
 }
 
-function Rollup({ rollup }: { rollup: ReturnType<typeof computeAuditRollup> }) {
+function Rollup({ rollup, t }: { rollup: ReturnType<typeof computeAuditRollup>; t: Translator }) {
   return (
     <section className="mt-6 grid gap-3 sm:grid-cols-3">
       <div className="rounded-md border border-gray-200 bg-white p-3 shadow-sm">
-        <div className="text-xs uppercase tracking-wide text-gray-500">Events</div>
+        <div className="text-xs uppercase tracking-wide text-gray-500">{t('auditPage.tile.events')}</div>
         <div className="mt-1 text-2xl font-bold text-gray-900">{rollup.total}</div>
       </div>
       <div className="rounded-md border border-gray-200 bg-white p-3 shadow-sm">
-        <div className="text-xs uppercase tracking-wide text-gray-500">Distinct actors</div>
+        <div className="text-xs uppercase tracking-wide text-gray-500">{t('auditPage.tile.actors')}</div>
         <div className="mt-1 text-2xl font-bold text-gray-900">{rollup.distinctActors}</div>
       </div>
       <div className="rounded-md border border-gray-200 bg-white p-3 shadow-sm">
-        <div className="text-xs uppercase tracking-wide text-gray-500">Last activity</div>
+        <div className="text-xs uppercase tracking-wide text-gray-500">{t('auditPage.tile.lastActivity')}</div>
         <div className="mt-1 text-sm text-gray-900 font-mono">
           {rollup.lastAt ? rollup.lastAt.replace('T', ' ').slice(0, 16) : '—'}
         </div>
       </div>
       {rollup.byActionKey.length > 0 && (
         <div className="rounded-md border border-gray-200 bg-white p-3 shadow-sm sm:col-span-3">
-          <div className="text-xs uppercase tracking-wide text-gray-500">Top actions</div>
+          <div className="text-xs uppercase tracking-wide text-gray-500">{t('auditPage.tile.topActions')}</div>
           <div className="mt-2 flex flex-wrap gap-2">
             {rollup.byActionKey.slice(0, 8).map((row) => (
               <span
@@ -258,14 +260,14 @@ function Rollup({ rollup }: { rollup: ReturnType<typeof computeAuditRollup> }) {
   );
 }
 
-function FilterForm({ initial }: { initial: SearchParams }) {
+function FilterForm({ initial, t }: { initial: SearchParams; t: Translator }) {
   return (
     <form
       method="get"
       className="mt-4 grid gap-2 rounded-md border border-gray-200 bg-gray-50 p-3 text-sm sm:grid-cols-3"
     >
       <label className="block">
-        <span className="mb-1 block text-xs font-medium text-gray-700">Entity type</span>
+        <span className="mb-1 block text-xs font-medium text-gray-700">{t('auditPage.filter.entityType')}</span>
         <input
           type="text"
           name="entityType"
@@ -275,7 +277,7 @@ function FilterForm({ initial }: { initial: SearchParams }) {
         />
       </label>
       <label className="block">
-        <span className="mb-1 block text-xs font-medium text-gray-700">Entity id</span>
+        <span className="mb-1 block text-xs font-medium text-gray-700">{t('auditPage.filter.entityId')}</span>
         <input
           type="text"
           name="entityId"
@@ -285,7 +287,7 @@ function FilterForm({ initial }: { initial: SearchParams }) {
         />
       </label>
       <label className="block">
-        <span className="mb-1 block text-xs font-medium text-gray-700">Actor user id</span>
+        <span className="mb-1 block text-xs font-medium text-gray-700">{t('auditPage.filter.actorUserId')}</span>
         <input
           type="text"
           name="actorUserId"
@@ -295,7 +297,7 @@ function FilterForm({ initial }: { initial: SearchParams }) {
         />
       </label>
       <label className="block">
-        <span className="mb-1 block text-xs font-medium text-gray-700">Action</span>
+        <span className="mb-1 block text-xs font-medium text-gray-700">{t('auditPage.filter.action')}</span>
         <input
           type="text"
           name="action"
@@ -305,7 +307,7 @@ function FilterForm({ initial }: { initial: SearchParams }) {
         />
       </label>
       <label className="block">
-        <span className="mb-1 block text-xs font-medium text-gray-700">From</span>
+        <span className="mb-1 block text-xs font-medium text-gray-700">{t('auditPage.filter.from')}</span>
         <input
           type="date"
           name="fromDate"
@@ -314,7 +316,7 @@ function FilterForm({ initial }: { initial: SearchParams }) {
         />
       </label>
       <label className="block">
-        <span className="mb-1 block text-xs font-medium text-gray-700">To</span>
+        <span className="mb-1 block text-xs font-medium text-gray-700">{t('auditPage.filter.to')}</span>
         <input
           type="date"
           name="toDate"
@@ -327,13 +329,13 @@ function FilterForm({ initial }: { initial: SearchParams }) {
           type="submit"
           className="rounded bg-yge-blue-500 px-3 py-1 text-sm font-medium text-white hover:bg-yge-blue-700"
         >
-          Filter
+          {t('auditPage.filter.submit')}
         </button>
         <Link
           href="/audit"
           className="rounded border border-gray-300 px-3 py-1 text-sm text-gray-700 hover:bg-white"
         >
-          Clear
+          {t('auditPage.filter.clear')}
         </Link>
       </div>
     </form>
