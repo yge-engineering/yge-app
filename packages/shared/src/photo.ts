@@ -26,6 +26,7 @@
 // loading. The court-admissibility helper below checks completeness.
 
 import { z } from 'zod';
+import { translate, SEED_DICTIONARY, type Locale } from './i18n';
 
 export const PhotoCategorySchema = z.enum([
   'PROGRESS',          // routine documentation
@@ -141,18 +142,8 @@ export type PhotoPatch = z.infer<typeof PhotoPatchSchema>;
 
 // ---- Helpers -------------------------------------------------------------
 
-export function photoCategoryLabel(c: PhotoCategory): string {
-  switch (c) {
-    case 'PROGRESS': return 'Progress';
-    case 'PRE_CONSTRUCTION': return 'Pre-construction';
-    case 'DELAY': return 'Delay';
-    case 'CHANGE_ORDER': return 'Change order';
-    case 'SWPPP': return 'SWPPP';
-    case 'INCIDENT': return 'Incident';
-    case 'PUNCH': return 'Punch';
-    case 'COMPLETION': return 'Completion';
-    case 'OTHER': return 'Other';
-  }
+export function photoCategoryLabel(c: PhotoCategory, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `photoCategory.${c}`);
 }
 
 export interface PhotoRollup {

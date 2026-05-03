@@ -16,6 +16,7 @@
 // retroactively re-rated when the IRS bumps the rate.
 
 import { z } from 'zod';
+import { translate, SEED_DICTIONARY, type Locale } from './i18n';
 
 export const MileagePurposeSchema = z.enum([
   'JOBSITE_TRAVEL',     // home/yard ↔ jobsite
@@ -123,18 +124,8 @@ export type MileageEntryPatch = z.infer<typeof MileageEntryPatchSchema>;
 
 // ---- Helpers -------------------------------------------------------------
 
-export function mileagePurposeLabel(p: MileagePurpose): string {
-  switch (p) {
-    case 'JOBSITE_TRAVEL': return 'Jobsite travel';
-    case 'INTER_JOBSITE': return 'Between jobsites';
-    case 'BID_WALK': return 'Bid walk';
-    case 'AGENCY_MEETING': return 'Agency meeting';
-    case 'SUPPLY_RUN': return 'Supply run';
-    case 'EQUIPMENT_TRANSPORT': return 'Equipment transport';
-    case 'OFFICE_ERRAND': return 'Office errand';
-    case 'TRAINING': return 'Training';
-    case 'OTHER': return 'Other';
-  }
+export function mileagePurposeLabel(p: MileagePurpose, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `mileagePurpose.${p}`);
 }
 
 /** Reimbursement amount in cents for a single entry. Returns 0 when

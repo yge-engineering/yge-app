@@ -15,6 +15,7 @@ import {
   type EmployeeCertification,
 } from './employee';
 import type { Vendor } from './vendor';
+import { translate, SEED_DICTIONARY, type Locale } from './i18n';
 
 export type WatchlistKind = 'EMPLOYEE_CERT' | 'SUB_COI';
 
@@ -59,14 +60,8 @@ function bucketFor(days: number): WatchlistBucket {
   return 'BEYOND';
 }
 
-export function bucketLabel(b: WatchlistBucket): string {
-  switch (b) {
-    case 'EXPIRED': return 'Expired';
-    case 'WITHIN_30': return 'Within 30 days';
-    case 'WITHIN_60': return 'Within 60 days';
-    case 'WITHIN_90': return 'Within 90 days';
-    case 'BEYOND': return 'Beyond 90 days';
-  }
+export function bucketLabel(b: WatchlistBucket, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `watchlistBucket.${b}`);
 }
 
 /** Build watchlist rows from a list of employees + their certifications. */

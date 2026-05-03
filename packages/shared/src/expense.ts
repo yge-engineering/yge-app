@@ -11,6 +11,7 @@
 //   - Pay through the next payroll cycle
 
 import { z } from 'zod';
+import { translate, SEED_DICTIONARY, type Locale } from './i18n';
 
 export const ExpenseCategorySchema = z.enum([
   'MEAL',           // crew meal on travel
@@ -85,22 +86,8 @@ export type ExpensePatch = z.infer<typeof ExpensePatchSchema>;
 
 // ---- Helpers -------------------------------------------------------------
 
-export function expenseCategoryLabel(c: ExpenseCategory): string {
-  switch (c) {
-    case 'MEAL': return 'Meal';
-    case 'PER_DIEM': return 'Per diem';
-    case 'LODGING': return 'Lodging';
-    case 'FUEL': return 'Fuel';
-    case 'PARKING': return 'Parking';
-    case 'TOLLS': return 'Tolls';
-    case 'MATERIAL': return 'Material';
-    case 'TOOL_PURCHASE': return 'Tool purchase';
-    case 'PERMIT_FEE': return 'Permit fee';
-    case 'TRAINING_FEE': return 'Training fee';
-    case 'AGENCY_FEE': return 'Agency fee';
-    case 'OFFICE_SUPPLIES': return 'Office supplies';
-    case 'OTHER': return 'Other';
-  }
+export function expenseCategoryLabel(c: ExpenseCategory, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `expenseCategory.${c}`);
 }
 
 /** Default GL account number per category. Brook can override on the
