@@ -17,6 +17,7 @@ import {
   StatusPill,
   Tile,
 } from '../../components';
+import { getTranslator } from '../../lib/locale';
 import {
   computeJournalEntryRollup,
   isBalanced,
@@ -80,38 +81,39 @@ export default async function JournalEntriesPage({
     const q = params.toString();
     return q ? `/journal-entries?${q}` : '/journal-entries';
   }
+  const t = getTranslator();
 
   return (
     <AppShell>
       <main className="mx-auto max-w-6xl">
         <PageHeader
-          title="Journal entries"
-          subtitle="General ledger postings. Every AR / AP / payroll / receipt eventually auto-posts a JE here. Every entry must balance — debits = credits to the cent."
+          title={t('je.title')}
+          subtitle={t('je.subtitle')}
           actions={
             <LinkButton href="/trial-balance" variant="secondary" size="md">
-              Trial balance
+              {t('je.trialBalance')}
             </LinkButton>
           }
         />
 
         <section className="mb-4 grid gap-3 sm:grid-cols-4">
-          <Tile label="Total entries" value={rollup.total} />
-          <Tile label="Posted" value={rollup.posted} />
+          <Tile label={t('je.tile.total')} value={rollup.total} />
+          <Tile label={t('je.tile.posted')} value={rollup.posted} />
           <Tile
-            label="Draft"
+            label={t('je.tile.draft')}
             value={rollup.draft}
             tone={rollup.draft > 0 ? 'warn' : 'success'}
           />
-          <Tile label="Posted $" value={<Money cents={rollup.postedDebitCents} />} />
+          <Tile label={t('je.tile.postedDollars')} value={<Money cents={rollup.postedDebitCents} />} />
         </section>
 
         <section className="mb-4 flex flex-wrap items-center gap-2 rounded-md border border-gray-200 bg-white p-3">
-          <span className="text-xs uppercase tracking-wide text-gray-500">Status:</span>
+          <span className="text-xs uppercase tracking-wide text-gray-500">{t('je.filter.status')}</span>
           <Link
             href={buildHref({ status: undefined })}
             className={`rounded px-2 py-1 text-xs ${!searchParams.status ? 'bg-blue-700 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
           >
-            All
+            {t('je.filter.all')}
           </Link>
           {STATUSES.map((s) => (
             <Link
@@ -126,18 +128,18 @@ export default async function JournalEntriesPage({
 
         {entries.length === 0 ? (
           <EmptyState
-            title="No journal entries yet"
-            body="Phase 2 will auto-post these from AR / AP / payroll. The API accepts manual JEs at POST /api/journal-entries in the meantime."
+            title={t('je.empty.title')}
+            body={t('je.empty.body')}
           />
         ) : (
           <DataTable
             rows={entries}
             keyFn={(j) => j.id}
             columns={[
-              { key: 'date', header: 'Date', cell: (j) => <span className="font-mono text-xs text-gray-700">{j.entryDate}</span> },
+              { key: 'date', header: t('je.col.date'), cell: (j) => <span className="font-mono text-xs text-gray-700">{j.entryDate}</span> },
               {
                 key: 'memo',
-                header: 'Memo',
+                header: t('je.col.memo'),
                 cell: (j) => (
                   <div className="text-sm text-gray-900">
                     <div className="line-clamp-1">{j.memo}</div>
@@ -145,17 +147,17 @@ export default async function JournalEntriesPage({
                   </div>
                 ),
               },
-              { key: 'source', header: 'Source', cell: (j) => <span className="text-xs text-gray-700">{journalEntrySourceLabel(j.source)}</span> },
-              { key: 'lines', header: 'Lines', numeric: true, cell: (j) => <span className="text-xs">{j.lines.length}</span> },
-              { key: 'total', header: 'Total $', numeric: true, cell: (j) => <Money cents={totalDebitCents(j)} /> },
+              { key: 'source', header: t('je.col.source'), cell: (j) => <span className="text-xs text-gray-700">{journalEntrySourceLabel(j.source)}</span> },
+              { key: 'lines', header: t('je.col.lines'), numeric: true, cell: (j) => <span className="text-xs">{j.lines.length}</span> },
+              { key: 'total', header: t('je.col.total'), numeric: true, cell: (j) => <Money cents={totalDebitCents(j)} /> },
               {
                 key: 'balanced',
-                header: 'Balanced?',
+                header: t('je.col.balanced'),
                 cell: (j) => isBalanced(j)
                   ? <span className="text-emerald-700">✓</span>
-                  : <span className="text-xs font-bold text-red-700">OUT OF BALANCE</span>,
+                  : <span className="text-xs font-bold text-red-700">{t('je.outOfBalance')}</span>,
               },
-              { key: 'status', header: 'Status', cell: (j) => <StatusPill label={journalEntryStatusLabel(j.status)} tone={statusTone(j.status)} /> },
+              { key: 'status', header: t('je.col.status'), cell: (j) => <StatusPill label={journalEntryStatusLabel(j.status)} tone={statusTone(j.status)} /> },
             ]}
           />
         )}
