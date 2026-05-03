@@ -114,24 +114,8 @@ export type CertificatePatch = z.infer<typeof CertificatePatchSchema>;
 
 // ---- Display + expiry helpers -------------------------------------------
 
-export function certificateKindLabel(k: CertificateKind): string {
-  switch (k) {
-    case 'CSLB_LICENSE': return 'CSLB license';
-    case 'DIR_REGISTRATION': return 'DIR registration';
-    case 'BUSINESS_LICENSE': return 'Business license';
-    case 'CONTRACTOR_LICENSE': return 'Contractor license';
-    case 'GENERAL_LIABILITY': return 'General liability';
-    case 'AUTO_INSURANCE': return 'Auto insurance';
-    case 'WORKERS_COMP': return 'Workers\u2019 comp';
-    case 'UMBRELLA': return 'Umbrella';
-    case 'POLLUTION': return 'Pollution';
-    case 'PROFESSIONAL': return 'Professional';
-    case 'BOND_PROFILE': return 'Bonding profile';
-    case 'DOT_REGISTRATION': return 'DOT registration';
-    case 'TAX_CLEARANCE': return 'Tax clearance';
-    case 'DBE_CERT': return 'DBE certification';
-    case 'OTHER': return 'Other';
-  }
+export function certificateKindLabel(k: CertificateKind, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `certificateKind.${k}`);
 }
 
 export function certificateStatusLabel(s: CertificateStatus, locale: Locale = 'en'): string {
