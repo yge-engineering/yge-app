@@ -10,6 +10,7 @@ import { Alert, AppShell } from '../../../components';
 import { useRouter } from 'next/navigation';
 import type { ApInvoice, Job } from '@yge/shared';
 import { ApiError, postJson } from '@/lib/api';
+import { useTranslator } from '../../../lib/use-translator';
 
 export default function NewApInvoicePage() {
   const router = useRouter();
@@ -24,6 +25,7 @@ export default function NewApInvoicePage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const t = useTranslator();
 
   useEffect(() => {
     const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
@@ -37,14 +39,14 @@ export default function NewApInvoicePage() {
     e.preventDefault();
     setError(null);
     if (vendorName.trim().length === 0) {
-      setError('Vendor name is required.');
+      setError(t('apInvoiceNew.error.vendorRequired'));
       return;
     }
     let totalCents = 0;
     if (totalDollars.trim().length > 0) {
       const n = Number(totalDollars);
       if (!Number.isFinite(n) || n < 0) {
-        setError('Total must be a non-negative number.');
+        setError(t('apInvoiceNew.error.totalNonNegative'));
         return;
       }
       totalCents = Math.round(n * 100);
@@ -66,7 +68,7 @@ export default function NewApInvoicePage() {
       } else if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError('Unknown error');
+        setError(t('apInvoiceNew.error.unknown'));
       }
       setSaving(false);
     }
@@ -77,42 +79,39 @@ export default function NewApInvoicePage() {
     <main className="mx-auto max-w-2xl p-8">
       <div className="mb-6">
         <Link href="/ap-invoices" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Back to invoices
+          {t('apInvoiceDetail.backLink')}
         </Link>
       </div>
 
-      <h1 className="text-3xl font-bold text-yge-blue-500">New invoice</h1>
-      <p className="mt-2 text-gray-700">
-        Capture vendor + amount + dates. Add line items and run the
-        approval / payment workflow on the edit page after saving.
-      </p>
+      <h1 className="text-3xl font-bold text-yge-blue-500">{t('apInvoiceNew.title')}</h1>
+      <p className="mt-2 text-gray-700">{t('apInvoiceNew.subtitle')}</p>
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-4">
-        <Field label="Vendor *">
+        <Field label={t('apInvoiceNew.field.vendor')}>
           <input
             required
             value={vendorName}
             onChange={(e) => setVendorName(e.target.value)}
-            placeholder="Acme Supply Inc."
+            placeholder={t('apInvoiceNew.placeholder.vendor')}
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Vendor invoice number">
+          <Field label={t('apInvoiceNew.field.invoiceNumber')}>
             <input
               value={invoiceNumber}
               onChange={(e) => setInvoiceNumber(e.target.value)}
-              placeholder="INV-12345"
+              placeholder={t('apInvoiceNew.placeholder.invoiceNumber')}
               className="w-full rounded border border-gray-300 px-3 py-2 text-sm font-mono"
             />
           </Field>
-          <Field label="Job (optional)">
+          <Field label={t('apInvoiceNew.field.job')}>
             <select
               value={jobId}
               onChange={(e) => setJobId(e.target.value)}
               className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
             >
-              <option value="">— Not job-specific —</option>
+              <option value="">{t('apInvoiceNew.option.notJobSpecific')}</option>
               {jobs.map((j) => (
                 <option key={j.id} value={j.id}>
                   {j.projectName}
@@ -120,7 +119,7 @@ export default function NewApInvoicePage() {
               ))}
             </select>
           </Field>
-          <Field label="Invoice date *">
+          <Field label={t('apInvoiceNew.field.invoiceDate')}>
             <input
               required
               type="date"
@@ -129,7 +128,7 @@ export default function NewApInvoicePage() {
               className="rounded border border-gray-300 px-3 py-2 text-sm"
             />
           </Field>
-          <Field label="Due date">
+          <Field label={t('apInvoiceNew.field.dueDate')}>
             <input
               type="date"
               value={dueDate}
@@ -137,7 +136,7 @@ export default function NewApInvoicePage() {
               className="rounded border border-gray-300 px-3 py-2 text-sm"
             />
           </Field>
-          <Field label="Total ($)">
+          <Field label={t('apInvoiceNew.field.total')}>
             <input
               type="number"
               min="0"
@@ -159,10 +158,10 @@ export default function NewApInvoicePage() {
             disabled={saving}
             className="rounded bg-yge-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50"
           >
-            {saving ? 'Saving…' : 'Save invoice'}
+            {saving ? t('apInvoiceNew.btn.saving') : t('apInvoiceNew.btn.save')}
           </button>
           <Link href="/ap-invoices" className="text-sm text-gray-600 hover:underline">
-            Cancel
+            {t('apInvoiceNew.btn.cancel')}
           </Link>
         </div>
       </form>

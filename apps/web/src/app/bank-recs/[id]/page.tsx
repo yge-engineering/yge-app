@@ -5,6 +5,7 @@ import { AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { BankRec } from '@yge/shared';
 import { BankRecEditor } from '../../../components/bank-rec-editor';
+import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
   return (
@@ -25,19 +26,20 @@ export default async function BankRecDetailPage({
 }) {
   const rec = await fetchRec(params.id);
   if (!rec) notFound();
+  const t = getTranslator();
 
   return (
     <main className="mx-auto max-w-3xl p-8">
       <div className="mb-6">
         <Link href="/bank-recs" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Bank Reconciliations
+          {t('bankRecDetail.backLink')}
         </Link>
       </div>
       <h1 className="text-3xl font-bold text-yge-blue-500">
         {rec.bankAccountLabel}
       </h1>
-      <p className="mt-1 text-sm text-gray-600">Statement {rec.statementDate}</p>
-      <p className="mt-1 text-xs text-gray-500">ID: {rec.id}</p>
+      <p className="mt-1 text-sm text-gray-600">{t('bankRecDetail.statementLine', { date: rec.statementDate })}</p>
+      <p className="mt-1 text-xs text-gray-500">{t('bankRecDetail.idLine', { id: rec.id })}</p>
       <div className="mt-6">
         <BankRecEditor mode="edit" rec={rec} />
       </div>
