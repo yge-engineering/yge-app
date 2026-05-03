@@ -1709,6 +1709,8 @@ export const SEED_DICTIONARY: DictionaryByLocale = {
     'feedback.bodyPlaceholder': "Was filing today's daily report on Sulphur Springs and it flagged a meal break violation even though Pat clocked out at 11:30 and back in at 12:00. That's a valid 30-minute meal break, right?",
     'feedback.openInEmail': 'Open in email',
     'feedback.callFooter': 'Want to call instead? Ryan: 707-599-9921 · Brook: 707-499-7065',
+    'changelog.title': "What's new",
+    'changelog.subtitle': 'Plain-English notes on recent changes. Newest first.',
   },
   es: {
     'app.title': 'YGE',
@@ -3336,6 +3338,8 @@ export const SEED_DICTIONARY: DictionaryByLocale = {
     'feedback.bodyPlaceholder': 'Estaba registrando el reporte diario de Sulphur Springs hoy y marcó una violación de descanso de comida aunque Pat salió a las 11:30 y regresó a las 12:00. Ese es un descanso de comida válido de 30 minutos, ¿verdad?',
     'feedback.openInEmail': 'Abrir en correo',
     'feedback.callFooter': '¿Prefieres llamar? Ryan: 707-599-9921 · Brook: 707-499-7065',
+    'changelog.title': 'Novedades',
+    'changelog.subtitle': 'Notas en español sencillo sobre cambios recientes. Lo más nuevo primero.',
   },
 };
 

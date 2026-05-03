@@ -5,6 +5,7 @@
 // something users should know about, add a row to RELEASE_NOTES below.
 
 import { AppShell, Card, PageHeader } from '../../components';
+import { getTranslator } from '../../lib/locale';
 
 interface ReleaseNote {
   date: string; // yyyy-mm-dd
@@ -81,12 +82,13 @@ const RELEASE_NOTES: ReleaseNote[] = [
 ];
 
 export default function ChangelogPage() {
+  const t = getTranslator();
   return (
     <AppShell>
       <main className="mx-auto max-w-3xl">
         <PageHeader
-          title="What's new"
-          subtitle="Plain-English notes on recent changes. Newest first."
+          title={t('changelog.title')}
+          subtitle={t('changelog.subtitle')}
         />
 
         <ol className="space-y-3">
