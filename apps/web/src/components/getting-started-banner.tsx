@@ -5,6 +5,7 @@
 // new users from staring at a wall of zeros and feeling lost.
 
 import Link from 'next/link';
+import { getTranslator } from '../lib/locale';
 
 interface Props {
   customers: number;
@@ -15,22 +16,21 @@ interface Props {
 export function GettingStartedBanner({ customers, jobs, employees }: Props) {
   // Only show if everything is empty.
   if (customers > 0 || jobs > 0 || employees > 0) return null;
+  const t = getTranslator();
 
   return (
     <div className="mb-6 rounded-md border border-blue-300 bg-blue-50 p-5">
-      <h2 className="text-base font-semibold text-blue-900">Welcome — let&apos;s get the basics in.</h2>
-      <p className="mt-1 text-sm text-blue-900/90">
-        The dashboard fills in once you have a few records. Knock these out in any order:
-      </p>
+      <h2 className="text-base font-semibold text-blue-900">{t('gsb.title')}</h2>
+      <p className="mt-1 text-sm text-blue-900/90">{t('gsb.intro')}</p>
       <ol className="mt-3 space-y-2 text-sm text-blue-900">
         <li className="flex items-start gap-2">
           <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-700 text-xs font-bold text-white">1</span>
           <div>
             <Link href="/customers/new" className="font-semibold underline hover:no-underline">
-              Add your first customer
+              {t('gsb.step1.title')}
             </Link>
             <span className="block text-xs text-blue-900/70">
-              Caltrans, your county, the agencies you bid on — and any private clients.
+              {t('gsb.step1.body')}
             </span>
           </div>
         </li>
@@ -38,10 +38,10 @@ export function GettingStartedBanner({ customers, jobs, employees }: Props) {
           <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-700 text-xs font-bold text-white">2</span>
           <div>
             <Link href="/employees/new" className="font-semibold underline hover:no-underline">
-              Add your crew
+              {t('gsb.step2.title')}
             </Link>
             <span className="block text-xs text-blue-900/70">
-              Foremen, operators, laborers. Picks the DIR classification used for prevailing wage.
+              {t('gsb.step2.body')}
             </span>
           </div>
         </li>
@@ -49,10 +49,10 @@ export function GettingStartedBanner({ customers, jobs, employees }: Props) {
           <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-700 text-xs font-bold text-white">3</span>
           <div>
             <Link href="/jobs/new" className="font-semibold underline hover:no-underline">
-              Create your first job
+              {t('gsb.step3.title')}
             </Link>
             <span className="block text-xs text-blue-900/70">
-              A pursuit (something you&apos;re bidding on) or an active job. Start here for the Sulphur Springs bid.
+              {t('gsb.step3.body')}
             </span>
           </div>
         </li>
@@ -60,10 +60,10 @@ export function GettingStartedBanner({ customers, jobs, employees }: Props) {
           <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-700 text-xs font-bold text-white">4</span>
           <div>
             <Link href="/help" className="font-semibold underline hover:no-underline">
-              Skim the help page
+              {t('gsb.step4.title')}
             </Link>
             <span className="block text-xs text-blue-900/70">
-              4 how-tos for the most common workflows. Bookmark it for the first month.
+              {t('gsb.step4.body')}
             </span>
           </div>
         </li>
