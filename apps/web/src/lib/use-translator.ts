@@ -40,4 +40,14 @@ export function useTranslator(): Translator {
   return makeTranslator(SEED_DICTIONARY, locale);
 }
 
+/**
+ * Client-side hook that returns just the active Locale. Use this when
+ * a component needs to pass the locale into a helper that itself takes
+ * a locale arg (e.g. `statusLabel(s, locale)` for enum labels). Reading
+ * the same cookie that useTranslator uses keeps the page in sync.
+ */
+export function useLocale(): Locale {
+  return readLocaleCookie();
+}
+
 export type { Translator };

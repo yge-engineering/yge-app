@@ -9,6 +9,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { statusLabel, type Job, type JobStatus } from '@yge/shared';
 import { ApiError, patchJson } from '@/lib/api';
+import { useTranslator, useLocale } from '../lib/use-translator';
 
 const STATUSES: JobStatus[] = [
   'PROSPECT',
@@ -47,6 +48,8 @@ export function JobStatusEditor({
   initialStatus: JobStatus;
 }) {
   const router = useRouter();
+  const t = useTranslator();
+  const locale = useLocale();
   const [status, setStatus] = useState<JobStatus>(initialStatus);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,11 +68,11 @@ export function JobStatusEditor({
     } catch (err) {
       setStatus(prev); // rollback
       if (err instanceof ApiError) {
-        setError(`${err.message} (HTTP ${err.status})`);
+        setError(t('jobStatusEditor.httpError', { message: err.message, status: err.status }));
       } else if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError('Unknown error');
+        setError(t('jobStatusEditor.unknownError'));
       }
     } finally {
       setSaving(false);
@@ -82,18 +85,18 @@ export function JobStatusEditor({
         <span
           className={`rounded px-3 py-1 text-xs font-semibold uppercase tracking-wide ${pillClass(status)}`}
         >
-          {statusLabel(status)}
+          {statusLabel(status, locale)}
         </span>
         <select
           value={status}
           onChange={(e) => handleChange(e.target.value as JobStatus)}
           className="rounded border border-gray-300 px-2 py-1 text-xs"
           disabled={saving}
-          aria-label="Change job status"
+          aria-label={t('jobStatusEditor.changeAria')}
         >
           {STATUSES.map((s) => (
             <option key={s} value={s}>
-              {statusLabel(s)}
+              {statusLabel(s, locale)}
             </option>
           ))}
         </select>
