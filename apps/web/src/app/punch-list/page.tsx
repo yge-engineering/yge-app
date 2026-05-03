@@ -16,6 +16,7 @@ import {
   StatusPill,
   Tile,
 } from '../../components';
+import { getTranslator } from '../../lib/locale';
 import {
   computePunchListRollup,
   isOverdue,
@@ -94,43 +95,44 @@ export default async function PunchListPage({
     const q = params.toString();
     return q ? `/punch-list?${q}` : '/punch-list';
   }
+  const t = getTranslator();
 
   return (
     <AppShell>
       <main className="mx-auto max-w-6xl">
         <PageHeader
-          title="Punch list"
-          subtitle="Closeout walkthrough items. Major + safety items must be cleared before final payment can be released."
+          title={t('punch.title')}
+          subtitle={t('punch.subtitle')}
           actions={
             <LinkButton href="/punch-list/new" variant="primary" size="md">
-              + New punch item
+              {t('punch.newItem')}
             </LinkButton>
           }
         />
 
         <section className="mb-4 grid gap-3 sm:grid-cols-4">
-          <Tile label="Total" value={rollup.total} />
-          <Tile label="Open" value={rollup.open + rollup.inProgress} />
+          <Tile label={t('punch.tile.total')} value={rollup.total} />
+          <Tile label={t('punch.tile.open')} value={rollup.open + rollup.inProgress} />
           <Tile
-            label="Open safety"
+            label={t('punch.tile.openSafety')}
             value={rollup.openSafety}
             tone={rollup.openSafety > 0 ? 'danger' : 'success'}
-            warnText={rollup.openSafety > 0 ? 'Blocks final payment' : undefined}
+            warnText={rollup.openSafety > 0 ? t('punch.tile.openSafety.warn') : undefined}
           />
           <Tile
-            label="Overdue"
+            label={t('punch.tile.overdue')}
             value={rollup.overdue}
             tone={rollup.overdue > 0 ? 'warn' : 'success'}
           />
         </section>
 
         <section className="mb-4 flex flex-wrap items-center gap-2 rounded-md border border-gray-200 bg-white p-3">
-          <span className="text-xs uppercase tracking-wide text-gray-500">Status:</span>
+          <span className="text-xs uppercase tracking-wide text-gray-500">{t('punch.filter.status')}</span>
           <Link
             href={buildHref({ status: undefined })}
             className={`rounded px-2 py-1 text-xs ${!searchParams.status ? 'bg-blue-700 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
           >
-            All
+            {t('punch.filter.all')}
           </Link>
           {STATUSES.map((s) => (
             <Link
@@ -145,9 +147,9 @@ export default async function PunchListPage({
 
         {items.length === 0 ? (
           <EmptyState
-            title="No punch items yet"
-            body="During the closeout walkthrough, log every fix the owner spots. Safety + major items show in red so they can't get lost in the noise."
-            actions={[{ href: '/punch-list/new', label: 'New punch item', primary: true }]}
+            title={t('punch.empty.title')}
+            body={t('punch.empty.body')}
+            actions={[{ href: '/punch-list/new', label: t('punch.empty.action'), primary: true }]}
           />
         ) : (
           <DataTable
@@ -156,13 +158,13 @@ export default async function PunchListPage({
             columns={[
               {
                 key: 'severity',
-                header: 'Severity',
+                header: t('punch.col.severity'),
                 cell: (it) => <StatusPill label={punchItemSeverityLabel(it.severity)} tone={severityTone(it.severity)} />,
               },
-              { key: 'location', header: 'Location', cell: (it) => <span className="text-xs text-gray-700">{it.location}</span> },
+              { key: 'location', header: t('punch.col.location'), cell: (it) => <span className="text-xs text-gray-700">{it.location}</span> },
               {
                 key: 'description',
-                header: 'Description',
+                header: t('punch.col.description'),
                 cell: (it) => (
                   <Link href={`/punch-list/${it.id}`} className="line-clamp-2 text-sm font-medium text-blue-700 hover:underline">
                     {it.description}
@@ -171,12 +173,12 @@ export default async function PunchListPage({
               },
               {
                 key: 'responsible',
-                header: 'Responsible',
+                header: t('punch.col.responsible'),
                 cell: (it) => it.responsibleParty ? <span className="text-xs text-gray-700">{it.responsibleParty}</span> : <span className="text-xs text-gray-400">—</span>,
               },
               {
                 key: 'due',
-                header: 'Due',
+                header: t('punch.col.due'),
                 cell: (it) => {
                   if (!it.dueOn) return <span className="font-mono text-xs text-gray-400">—</span>;
                   const overdue = isOverdue(it);
@@ -185,7 +187,7 @@ export default async function PunchListPage({
               },
               {
                 key: 'status',
-                header: 'Status',
+                header: t('punch.col.status'),
                 cell: (it) => <StatusPill label={punchItemStatusLabel(it.status)} tone={statusTone(it.status)} />,
               },
             ]}
