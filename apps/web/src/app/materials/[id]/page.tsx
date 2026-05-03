@@ -6,6 +6,7 @@ import { AppShell, AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { Job, Material } from '@yge/shared';
 import { MaterialEditor } from '@/components/material-editor';
+import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
   return (
@@ -37,13 +38,14 @@ export default async function MaterialDetailPage({
 }) {
   const [material, jobs] = await Promise.all([fetchMaterial(params.id), fetchJobs()]);
   if (!material) notFound();
+  const t = getTranslator();
 
   return (
     <AppShell>
     <main className="mx-auto max-w-4xl p-8">
       <div className="mb-6">
         <Link href="/materials" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Back to materials
+          {t('materialDetail.backLink')}
         </Link>
       </div>
 

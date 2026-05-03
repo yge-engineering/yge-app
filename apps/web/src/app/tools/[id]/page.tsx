@@ -6,6 +6,7 @@ import { AppShell, AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { Tool, Employee } from '@yge/shared';
 import { ToolEditor } from '@/components/tool-editor';
+import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
   return (
@@ -43,13 +44,14 @@ export default async function ToolDetailPage({
     fetchEmployees(),
   ]);
   if (!tool) notFound();
+  const t = getTranslator();
 
   return (
     <AppShell>
     <main className="mx-auto max-w-3xl p-8">
       <div className="mb-6">
         <Link href="/tools" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Back to tools
+          {t('toolDetail.backLink')}
         </Link>
       </div>
 

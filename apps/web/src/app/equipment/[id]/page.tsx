@@ -5,6 +5,7 @@ import { AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { Employee, Equipment, Job } from '@yge/shared';
 import { EquipmentEditor } from '@/components/equipment-editor';
+import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
   return (
@@ -47,12 +48,13 @@ export default async function EquipmentDetailPage({
     fetchJobs(),
   ]);
   if (!unit) notFound();
+  const t = getTranslator();
 
   return (
     <main className="mx-auto max-w-4xl p-8">
       <div className="mb-6">
         <Link href="/equipment" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Back to equipment
+          {t('equipmentDetail.backLink')}
         </Link>
       </div>
 
