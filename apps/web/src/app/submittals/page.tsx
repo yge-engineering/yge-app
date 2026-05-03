@@ -15,6 +15,7 @@ import {
   StatusPill,
   Tile,
 } from '../../components';
+import { getTranslator } from '../../lib/locale';
 import {
   computeSubmittalRollup,
   submittalDaysOutstanding,
@@ -100,42 +101,43 @@ export default async function SubmittalsPage({
     const q = params.toString();
     return q ? `/submittals?${q}` : '/submittals';
   }
+  const t = getTranslator();
 
   return (
     <AppShell>
       <main className="mx-auto max-w-6xl">
         <PageHeader
-          title="Submittals"
-          subtitle="Shop drawings, product data, samples, certs sent to the engineer for review. Block-ordering flags surface materials that can't ship until the submittal's back."
+          title={t('submittals.title')}
+          subtitle={t('submittals.subtitle')}
           actions={
             <LinkButton href="/submittals/new" variant="primary" size="md">
-              + New submittal
+              {t('submittals.newSubmittal')}
             </LinkButton>
           }
         />
 
         <section className="mb-4 grid gap-3 sm:grid-cols-4">
-          <Tile label="Open" value={rollup.open} tone={rollup.open > 0 ? 'warn' : 'success'} />
-          <Tile label="Overdue" value={rollup.overdue} tone={rollup.overdue > 0 ? 'danger' : 'success'} />
+          <Tile label={t('submittals.tile.open')} value={rollup.open} tone={rollup.open > 0 ? 'warn' : 'success'} />
+          <Tile label={t('submittals.tile.overdue')} value={rollup.overdue} tone={rollup.overdue > 0 ? 'danger' : 'success'} />
           <Tile
-            label="Blocks ordering"
+            label={t('submittals.tile.blocksOrdering')}
             value={rollup.blocksOrderingOpen}
             tone={rollup.blocksOrderingOpen > 0 ? 'danger' : 'success'}
-            warnText={rollup.blocksOrderingOpen > 0 ? "Material can't ship yet" : undefined}
+            warnText={rollup.blocksOrderingOpen > 0 ? t('submittals.tile.blocksOrdering.warn') : undefined}
           />
           <Tile
-            label="Avg return (days)"
+            label={t('submittals.tile.avgReturn')}
             value={rollup.averageReturnDays > 0 ? rollup.averageReturnDays.toFixed(1) : '—'}
           />
         </section>
 
         <section className="mb-4 flex flex-wrap items-center gap-2 rounded-md border border-gray-200 bg-white p-3">
-          <span className="text-xs uppercase tracking-wide text-gray-500">Status:</span>
+          <span className="text-xs uppercase tracking-wide text-gray-500">{t('submittals.filter.status')}</span>
           <Link
             href={buildHref({ status: undefined })}
             className={`rounded px-2 py-1 text-xs ${!searchParams.status ? 'bg-blue-700 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
           >
-            All
+            {t('submittals.filter.all')}
           </Link>
           {STATUSES.map((s) => (
             <Link
@@ -150,21 +152,21 @@ export default async function SubmittalsPage({
 
         {submittals.length === 0 ? (
           <EmptyState
-            title="No submittals match"
-            body="Submittals are how the engineer signs off on what we're going to install. Logging them here keeps the schedule honest about what we're waiting on."
-            actions={[{ href: '/submittals/new', label: 'New submittal', primary: true }]}
+            title={t('submittals.empty.title')}
+            body={t('submittals.empty.body')}
+            actions={[{ href: '/submittals/new', label: t('submittals.empty.action'), primary: true }]}
           />
         ) : (
           <div className="overflow-x-auto rounded-md border border-gray-200 bg-white">
             <table className="w-full text-left text-sm">
               <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
                 <tr>
-                  <th className="px-4 py-2">#</th>
-                  <th className="px-4 py-2">Subject</th>
-                  <th className="px-4 py-2">Job</th>
-                  <th className="px-4 py-2">Submitted</th>
-                  <th className="px-4 py-2">Days out</th>
-                  <th className="px-4 py-2">Status</th>
+                  <th className="px-4 py-2">{t('submittals.col.number')}</th>
+                  <th className="px-4 py-2">{t('submittals.col.subject')}</th>
+                  <th className="px-4 py-2">{t('submittals.col.job')}</th>
+                  <th className="px-4 py-2">{t('submittals.col.submitted')}</th>
+                  <th className="px-4 py-2">{t('submittals.col.daysOut')}</th>
+                  <th className="px-4 py-2">{t('submittals.col.status')}</th>
                   <th className="px-4 py-2"></th>
                 </tr>
               </thead>
