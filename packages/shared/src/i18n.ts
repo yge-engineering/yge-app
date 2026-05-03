@@ -2060,6 +2060,12 @@ export const SEED_DICTIONARY: DictionaryByLocale = {
     'brand.address.intro': 'Pulled from YGE_COMPANY_INFO in @yge/shared. Update the constant once, every printable updates.',
     'brand.h.letterhead': 'Full letterhead',
     'brand.letterhead.intro': 'Used at the top of cover letters and bid summaries.',
+    'login.companyName': 'Young General Engineering',
+    'login.subtitle': 'Sign in with your work email.',
+    'login.emailLabel': 'Work email',
+    'login.signingIn': 'Signing in…',
+    'login.signIn': 'Sign in',
+    'login.footer': 'For YGE staff. Trouble signing in? Call Ryan at 707-599-9921.',
   },
   es: {
     'app.title': 'YGE',
@@ -4038,6 +4044,12 @@ export const SEED_DICTIONARY: DictionaryByLocale = {
     'brand.address.intro': 'Sacado de YGE_COMPANY_INFO en @yge/shared. Actualiza la constante una vez y cada imprimible se actualiza.',
     'brand.h.letterhead': 'Membrete completo',
     'brand.letterhead.intro': 'Se usa al inicio de cartas de presentación y resúmenes de licitación.',
+    'login.companyName': 'Young General Engineering',
+    'login.subtitle': 'Inicia sesión con tu correo de trabajo.',
+    'login.emailLabel': 'Correo de trabajo',
+    'login.signingIn': 'Iniciando sesión…',
+    'login.signIn': 'Iniciar sesión',
+    'login.footer': 'Para personal de YGE. ¿Problemas para iniciar sesión? Llama a Ryan al 707-599-9921.',
   },
 };
 
