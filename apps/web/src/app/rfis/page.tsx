@@ -15,6 +15,7 @@ import {
   StatusPill,
   Tile,
 } from '../../components';
+import { getTranslator } from '../../lib/locale';
 import {
   computeRfiRollup,
   rfiDaysOutstanding,
@@ -98,37 +99,38 @@ export default async function RfisPage({
     const q = params.toString();
     return q ? `/rfis?${q}` : '/rfis';
   }
+  const t = getTranslator();
 
   return (
     <AppShell>
       <main className="mx-auto max-w-6xl">
         <PageHeader
-          title="Requests for information"
-          subtitle="Questions for the agency / engineer / owner with their written responses. Status pipeline DRAFT → SENT → ANSWERED → CLOSED."
+          title={t('rfi.title')}
+          subtitle={t('rfi.subtitle')}
           actions={
             <LinkButton href="/rfis/new" variant="primary" size="md">
-              + New RFI
+              {t('rfi.newRfi')}
             </LinkButton>
           }
         />
 
         <section className="mb-4 grid gap-3 sm:grid-cols-4">
-          <Tile label="Open" value={rollup.open} tone={rollup.open > 0 ? 'warn' : 'success'} />
-          <Tile label="Overdue" value={rollup.overdue} tone={rollup.overdue > 0 ? 'danger' : 'success'} />
-          <Tile label="Answered" value={rollup.answered} tone="success" />
+          <Tile label={t('rfi.tile.open')} value={rollup.open} tone={rollup.open > 0 ? 'warn' : 'success'} />
+          <Tile label={t('rfi.tile.overdue')} value={rollup.overdue} tone={rollup.overdue > 0 ? 'danger' : 'success'} />
+          <Tile label={t('rfi.tile.answered')} value={rollup.answered} tone="success" />
           <Tile
-            label="Avg response (days)"
+            label={t('rfi.tile.avgResponse')}
             value={rollup.averageResponseDays > 0 ? rollup.averageResponseDays.toFixed(1) : '—'}
           />
         </section>
 
         <section className="mb-4 flex flex-wrap items-center gap-2 rounded-md border border-gray-200 bg-white p-3">
-          <span className="text-xs uppercase tracking-wide text-gray-500">Status:</span>
+          <span className="text-xs uppercase tracking-wide text-gray-500">{t('rfi.filter.status')}</span>
           <Link
             href={buildHref({ status: undefined })}
             className={`rounded px-2 py-1 text-xs ${!searchParams.status ? 'bg-blue-700 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
           >
-            All
+            {t('rfi.filter.all')}
           </Link>
           {STATUSES.map((s) => (
             <Link
@@ -143,22 +145,22 @@ export default async function RfisPage({
 
         {rfis.length === 0 ? (
           <EmptyState
-            title="No RFIs match"
-            body="An RFI is the formal way to ask the agency to clarify scope. Documenting the question + answer in writing is what protects the schedule + budget when the answer changes things."
-            actions={[{ href: '/rfis/new', label: 'New RFI', primary: true }]}
+            title={t('rfi.empty.title')}
+            body={t('rfi.empty.body')}
+            actions={[{ href: '/rfis/new', label: t('rfi.empty.action'), primary: true }]}
           />
         ) : (
           <div className="overflow-x-auto rounded-md border border-gray-200 bg-white">
             <table className="w-full text-left text-sm">
               <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
                 <tr>
-                  <th className="px-4 py-2">#</th>
-                  <th className="px-4 py-2">Subject</th>
-                  <th className="px-4 py-2">Job</th>
-                  <th className="px-4 py-2">Sent</th>
-                  <th className="px-4 py-2">Days out</th>
-                  <th className="px-4 py-2">Priority</th>
-                  <th className="px-4 py-2">Status</th>
+                  <th className="px-4 py-2">{t('rfi.col.number')}</th>
+                  <th className="px-4 py-2">{t('rfi.col.subject')}</th>
+                  <th className="px-4 py-2">{t('rfi.col.job')}</th>
+                  <th className="px-4 py-2">{t('rfi.col.sent')}</th>
+                  <th className="px-4 py-2">{t('rfi.col.daysOut')}</th>
+                  <th className="px-4 py-2">{t('rfi.col.priority')}</th>
+                  <th className="px-4 py-2">{t('rfi.col.status')}</th>
                   <th className="px-4 py-2"></th>
                 </tr>
               </thead>
@@ -177,8 +179,8 @@ export default async function RfisPage({
                         <div className="font-medium text-gray-900">{r.subject}</div>
                         {r.costImpact || r.scheduleImpact ? (
                           <div className="mt-0.5 flex gap-1 text-xs">
-                            {r.costImpact ? <span className="inline-block rounded bg-orange-100 px-1.5 py-0.5 text-[10px] font-semibold text-orange-800">cost</span> : null}
-                            {r.scheduleImpact ? <span className="inline-block rounded bg-purple-100 px-1.5 py-0.5 text-[10px] font-semibold text-purple-800">schedule</span> : null}
+                            {r.costImpact ? <span className="inline-block rounded bg-orange-100 px-1.5 py-0.5 text-[10px] font-semibold text-orange-800">{t('rfi.tag.cost')}</span> : null}
+                            {r.scheduleImpact ? <span className="inline-block rounded bg-purple-100 px-1.5 py-0.5 text-[10px] font-semibold text-purple-800">{t('rfi.tag.schedule')}</span> : null}
                           </div>
                         ) : null}
                       </td>
