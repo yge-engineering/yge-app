@@ -686,6 +686,13 @@ export const SEED_DICTIONARY: DictionaryByLocale = {
     'incidents.summary.otherRecordable': 'Other recordable',
     'incidents.summary.totalDaysAway': 'Total days away',
     'incidents.summary.totalDaysRestricted': 'Total days restricted',
+    'mobile.phase2.title': 'Phase 2 — coming soon',
+    'mobile.phase2.body': 'The mobile app is the foreman + crew surface: clock in/out, daily reports, material orders, photos, PTO requests. Phase 1 (web + API + browser extension) ships first; this app builds on the same shared schemas and audit trail.',
+    'mobile.connection': 'Connection',
+    'mobile.connection.note': 'Override per-build via expo config’s `extra.apiUrl` or an EXPO_PUBLIC_API_URL env on the build.',
+    'mobile.locale.label': 'Language',
+    'mobile.locale.en': 'English',
+    'mobile.locale.es': 'Español',
   },
   es: {
     'app.title': 'YGE',
@@ -1290,6 +1297,13 @@ export const SEED_DICTIONARY: DictionaryByLocale = {
     'incidents.summary.otherRecordable': 'Otros registrables',
     'incidents.summary.totalDaysAway': 'Total días ausente',
     'incidents.summary.totalDaysRestricted': 'Total días restringidos',
+    'mobile.phase2.title': 'Fase 2 — próximamente',
+    'mobile.phase2.body': 'La app móvil es la superficie de capataces y cuadrilla: entrada/salida, reportes diarios, pedidos de material, fotos, solicitudes de PTO. La Fase 1 (web + API + extensión de navegador) sale primero; esta app construye sobre los mismos esquemas compartidos y registro de auditoría.',
+    'mobile.connection': 'Conexión',
+    'mobile.connection.note': 'Sobreescribe por build vía `extra.apiUrl` en la config de expo o un env EXPO_PUBLIC_API_URL en el build.',
+    'mobile.locale.label': 'Idioma',
+    'mobile.locale.en': 'English',
+    'mobile.locale.es': 'Español',
   },
 };
 

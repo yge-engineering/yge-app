@@ -5,7 +5,9 @@
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
     "noFallthroughCasesInSwitch": true,
+    "module": "esnext",
     "moduleResolution": "bundler",
+    "target": "es2022",
     "jsx": "react-native",
     "baseUrl": ".",
     "paths": {

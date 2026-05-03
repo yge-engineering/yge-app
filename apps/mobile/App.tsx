@@ -6,11 +6,24 @@
 // scaffold so `expo start` runs end-to-end. The real screens land
 // once Phase 1 stabilizes and the auth + tenant model is wired
 // to Supabase.
+//
+// i18n: the shared @yge/shared dictionary drives the strings,
+// matching what the web app uses. The locale picker below is
+// in-memory only — the next bundle wires AsyncStorage-backed
+// persistence + react-native-localize for system-detection.
 
+import { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import Constants from 'expo-constants';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import {
+  DEFAULT_LOCALE,
+  SEED_DICTIONARY,
+  SUPPORTED_LOCALES,
+  makeTranslator,
+  type Locale,
+} from '@yge/shared';
 
 function apiUrl(): string {
   const fromExtra = Constants.expoConfig?.extra?.apiUrl;
@@ -18,31 +31,44 @@ function apiUrl(): string {
 }
 
 export default function App() {
+  const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE);
+  const t = makeTranslator(SEED_DICTIONARY, locale);
+
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.shell}>
         <View style={styles.hero}>
-          <Text style={styles.brand}>YGE</Text>
-          <Text style={styles.tagline}>Heavy civil contractors</Text>
+          <Text style={styles.brand}>{t('app.title')}</Text>
+          <Text style={styles.tagline}>{t('app.tagline')}</Text>
+        </View>
+
+        <View style={styles.localeRow}>
+          <Text style={styles.localeLabel}>{t('mobile.locale.label')}:</Text>
+          {SUPPORTED_LOCALES.map((loc) => {
+            const active = loc === locale;
+            return (
+              <Pressable
+                key={loc}
+                onPress={() => setLocale(loc)}
+                style={[styles.localeChip, active && styles.localeChipActive]}
+              >
+                <Text style={[styles.localeChipText, active && styles.localeChipTextActive]}>
+                  {t(`mobile.locale.${loc}`)}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.h2}>Phase 2 — coming soon</Text>
-          <Text style={styles.body}>
-            The mobile app is the foreman + crew surface: clock in/out,
-            daily reports, material orders, photos, PTO requests. Phase 1
-            (web + API + browser extension) ships first; this app builds
-            on the same shared schemas and audit trail.
-          </Text>
+          <Text style={styles.h2}>{t('mobile.phase2.title')}</Text>
+          <Text style={styles.body}>{t('mobile.phase2.body')}</Text>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.h3}>Connection</Text>
+          <Text style={styles.h3}>{t('mobile.connection')}</Text>
           <Text style={styles.mono}>API → {apiUrl()}</Text>
-          <Text style={styles.note}>
-            Override per-build via expo config&apos;s `extra.apiUrl` or an
-            EXPO_PUBLIC_API_URL env on the build.
-          </Text>
+          <Text style={styles.note}>{t('mobile.connection.note')}</Text>
         </View>
 
         <StatusBar style="auto" />
@@ -72,6 +98,38 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#475569',
     marginTop: 4,
+  },
+  localeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 12,
+  },
+  localeLabel: {
+    fontSize: 12,
+    color: '#475569',
+    marginRight: 4,
+  },
+  localeChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    backgroundColor: '#ffffff',
+  },
+  localeChipActive: {
+    backgroundColor: '#0a3a6b',
+    borderColor: '#0a3a6b',
+  },
+  localeChipText: {
+    fontSize: 12,
+    color: '#334155',
+  },
+  localeChipTextActive: {
+    color: '#ffffff',
+    fontWeight: '600',
   },
   card: {
     backgroundColor: '#ffffff',
