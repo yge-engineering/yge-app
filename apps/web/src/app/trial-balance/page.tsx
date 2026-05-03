@@ -11,6 +11,7 @@ import {
   Money,
   PageHeader,
 } from '../../components';
+import { getTranslator } from '../../lib/locale';
 import {
   accountTypeLabel,
   computeAccountBalances,
@@ -51,39 +52,49 @@ export default async function TrialBalancePage() {
     totalCredit += b.creditCents;
   }
   const balanced = totalDebit === totalCredit;
+  const t = getTranslator();
 
   return (
     <AppShell>
       <main className="mx-auto max-w-5xl">
         <PageHeader
-          title="Trial balance"
-          subtitle="Sum of debits and credits per account from every POSTED journal entry. Books are square when total debits equal total credits to the cent."
-          back={{ href: '/journal-entries', label: '← Journal Entries' }}
+          title={t('tb.title')}
+          subtitle={t('tb.subtitle')}
+          back={{ href: '/journal-entries', label: t('tb.back') }}
         />
 
         <Alert
           tone={balanced ? 'success' : 'danger'}
-          title={balanced ? '✓ Books in balance' : '✗ OUT OF BALANCE'}
+          title={balanced ? t('tb.balanced') : t('tb.outOfBalance')}
           className="mb-4"
         >
-          Total debits <Money cents={totalDebit} /> · total credits <Money cents={totalCredit} />
+          {/* totalsLine pre-renders Money in the placeholders, so we keep it as a JSX fragment. */}
+          {(() => {
+            const tpl = t('tb.totalsLine', { debit: '__DEBIT__', credit: '__CREDIT__' });
+            const [pre, mid, post] = tpl.split(/__DEBIT__|__CREDIT__/);
+            return (
+              <>
+                {pre}<Money cents={totalDebit} />{mid}<Money cents={totalCredit} />{post}
+              </>
+            );
+          })()}
         </Alert>
 
         {balances.length === 0 ? (
           <div className="rounded-md border border-gray-200 bg-gray-50 p-6 text-sm text-gray-600">
-            No posted entries yet. Trial balance fills in once journal entries start posting.
+            {t('tb.empty')}
           </div>
         ) : (
           <div className="overflow-x-auto rounded-md border border-gray-200 bg-white">
             <table className="w-full text-left text-sm">
               <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
                 <tr>
-                  <th className="px-4 py-2">#</th>
-                  <th className="px-4 py-2">Name</th>
-                  <th className="px-4 py-2">Type</th>
-                  <th className="px-4 py-2 text-right">Debit</th>
-                  <th className="px-4 py-2 text-right">Credit</th>
-                  <th className="px-4 py-2 text-right">Balance</th>
+                  <th className="px-4 py-2">{t('tb.col.number')}</th>
+                  <th className="px-4 py-2">{t('tb.col.name')}</th>
+                  <th className="px-4 py-2">{t('tb.col.type')}</th>
+                  <th className="px-4 py-2 text-right">{t('tb.col.debit')}</th>
+                  <th className="px-4 py-2 text-right">{t('tb.col.credit')}</th>
+                  <th className="px-4 py-2 text-right">{t('tb.col.balance')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -93,7 +104,7 @@ export default async function TrialBalancePage() {
                     <tr key={b.accountNumber}>
                       <td className="px-4 py-3 font-mono text-sm">{b.accountNumber}</td>
                       <td className="px-4 py-3 text-sm">
-                        {acc?.name ?? <span className="text-red-700">Unknown account</span>}
+                        {acc?.name ?? <span className="text-red-700">{t('tb.unknownAccount')}</span>}
                       </td>
                       <td className="px-4 py-3 text-xs text-gray-700">
                         {acc ? accountTypeLabel(acc.type) : '—'}
@@ -114,7 +125,7 @@ export default async function TrialBalancePage() {
                   );
                 })}
                 <tr className="border-t-2 border-black bg-gray-50 font-semibold">
-                  <td colSpan={3} className="px-4 py-3 text-right uppercase tracking-wide">Totals</td>
+                  <td colSpan={3} className="px-4 py-3 text-right uppercase tracking-wide">{t('tb.totals')}</td>
                   <td className="px-4 py-3 text-right"><Money cents={totalDebit} /></td>
                   <td className="px-4 py-3 text-right"><Money cents={totalCredit} /></td>
                   <td className="px-4 py-3 text-right"><Money cents={totalDebit - totalCredit} /></td>
