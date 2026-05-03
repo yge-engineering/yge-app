@@ -10,6 +10,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 
 interface BidderRow {
   /** Stable react key */
@@ -72,6 +73,7 @@ function parseDollars(raw: string): number | null {
 
 export function BidTabBiddersEdit({ apiBaseUrl, tabId, initial }: Props) {
   const router = useRouter();
+  const t = useTranslator();
   const [editing, setEditing] = useState(false);
   const [rows, setRows] = useState<BidderRow[]>(() => initial.map(toRow));
   const [busy, setBusy] = useState(false);
@@ -114,19 +116,19 @@ export function BidTabBiddersEdit({ apiBaseUrl, tabId, initial }: Props) {
     setError(null);
 
     if (rows.length === 0) {
-      setError('Need at least one bidder.');
+      setError(t('bidTabBiddersEdit.errMin'));
       return;
     }
 
     const payload: Array<{ name: string; totalCents: number; cslbLicense?: string; dirRegistration?: string; dbe?: boolean; sbe?: boolean; withdrawn?: boolean; rejected?: boolean; rejectionReason?: string; notes?: string }> = [];
     for (const r of rows) {
       if (r.name.trim().length === 0) {
-        setError('Every bidder needs a name.');
+        setError(t('bidTabBiddersEdit.errName'));
         return;
       }
       const cents = parseDollars(r.totalDollars);
       if (cents === null) {
-        setError(`Invalid dollar amount for "${r.name || '(unnamed)'}".`);
+        setError(t('bidTabBiddersEdit.errDollars', { name: r.name || t('bidTabBiddersEdit.unnamed') }));
         return;
       }
       const item: typeof payload[number] = {
@@ -153,7 +155,7 @@ export function BidTabBiddersEdit({ apiBaseUrl, tabId, initial }: Props) {
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? `Save failed (${res.status})`);
+        setError(body.error ?? t('bidTabBiddersEdit.errSave', { status: res.status }));
         return;
       }
       setEditing(false);
@@ -172,7 +174,7 @@ export function BidTabBiddersEdit({ apiBaseUrl, tabId, initial }: Props) {
         onClick={() => setEditing(true)}
         className="text-[11px] text-yge-blue-500 hover:underline"
       >
-        Edit bidders →
+        {t('bidTabBiddersEdit.editAction')}
       </button>
     );
   }
@@ -180,7 +182,7 @@ export function BidTabBiddersEdit({ apiBaseUrl, tabId, initial }: Props) {
   return (
     <div className="mt-3 rounded-md border border-yge-blue-500 bg-yge-blue-50 p-3">
       <div className="mb-2 text-[10px] uppercase tracking-wide text-gray-600">
-        Edit bidder list — auto-reranks by total on save
+        {t('bidTabBiddersEdit.heading')}
       </div>
 
       <div className="space-y-2">
@@ -192,28 +194,28 @@ export function BidTabBiddersEdit({ apiBaseUrl, tabId, initial }: Props) {
               </div>
               <input
                 type="text"
-                placeholder="Bidder name *"
+                placeholder={t('bidTabBiddersEdit.namePh')}
                 value={r.name}
                 onChange={(e) => update(r.key, { name: e.target.value })}
                 className="sm:col-span-5 rounded border border-gray-300 px-2 py-1 text-xs"
               />
               <input
                 type="text"
-                placeholder="$ total *"
+                placeholder={t('bidTabBiddersEdit.totalPh')}
                 value={r.totalDollars}
                 onChange={(e) => update(r.key, { totalDollars: e.target.value })}
                 className="sm:col-span-2 rounded border border-gray-300 px-2 py-1 font-mono text-xs"
               />
               <input
                 type="text"
-                placeholder="CSLB"
+                placeholder={t('bidTabBiddersEdit.cslbPh')}
                 value={r.cslbLicense}
                 onChange={(e) => update(r.key, { cslbLicense: e.target.value })}
                 className="sm:col-span-2 rounded border border-gray-300 px-2 py-1 font-mono text-xs"
               />
               <input
                 type="text"
-                placeholder="DIR"
+                placeholder={t('bidTabBiddersEdit.dirPh')}
                 value={r.dirRegistration}
                 onChange={(e) => update(r.key, { dirRegistration: e.target.value })}
                 className="sm:col-span-1 rounded border border-gray-300 px-2 py-1 font-mono text-xs"
@@ -223,30 +225,30 @@ export function BidTabBiddersEdit({ apiBaseUrl, tabId, initial }: Props) {
                 onClick={() => remove(r.key)}
                 className="sm:col-span-1 rounded border border-amber-500 bg-white px-2 py-1 text-[10px] text-amber-700 hover:bg-amber-50"
               >
-                Remove
+                {t('bidTabBiddersEdit.remove')}
               </button>
             </div>
             <div className="mt-1 flex flex-wrap gap-3 text-[10px] text-gray-700">
               <label className="inline-flex items-center gap-1">
                 <input type="checkbox" checked={r.dbe} onChange={(e) => update(r.key, { dbe: e.target.checked })} />
-                DBE
+                {t('bidTabBiddersEdit.dbe')}
               </label>
               <label className="inline-flex items-center gap-1">
                 <input type="checkbox" checked={r.sbe} onChange={(e) => update(r.key, { sbe: e.target.checked })} />
-                SBE
+                {t('bidTabBiddersEdit.sbe')}
               </label>
               <label className="inline-flex items-center gap-1">
                 <input type="checkbox" checked={r.withdrawn} onChange={(e) => update(r.key, { withdrawn: e.target.checked })} />
-                Withdrew
+                {t('bidTabBiddersEdit.withdrew')}
               </label>
               <label className="inline-flex items-center gap-1">
                 <input type="checkbox" checked={r.rejected} onChange={(e) => update(r.key, { rejected: e.target.checked })} />
-                Rejected
+                {t('bidTabBiddersEdit.rejected')}
               </label>
               {r.rejected && (
                 <input
                   type="text"
-                  placeholder="Why rejected? (e.g. missing sub list)"
+                  placeholder={t('bidTabBiddersEdit.rejectReasonPh')}
                   value={r.rejectionReason}
                   onChange={(e) => update(r.key, { rejectionReason: e.target.value })}
                   className="flex-1 min-w-[160px] rounded border border-gray-300 px-2 py-0.5 text-[10px]"
@@ -264,7 +266,7 @@ export function BidTabBiddersEdit({ apiBaseUrl, tabId, initial }: Props) {
           disabled={busy}
           className="rounded border border-gray-300 bg-white px-3 py-1 text-xs text-gray-700 hover:bg-gray-100 disabled:opacity-50"
         >
-          + Add bidder
+          {t('bidTabBiddersEdit.addBidder')}
         </button>
         <button
           type="button"
@@ -272,7 +274,11 @@ export function BidTabBiddersEdit({ apiBaseUrl, tabId, initial }: Props) {
           disabled={busy}
           className="rounded bg-yge-blue-500 px-3 py-1 text-xs font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50"
         >
-          {busy ? 'Saving…' : `Save (${rows.length} bidder${rows.length === 1 ? '' : 's'})`}
+          {busy
+            ? t('bidTabBiddersEdit.busy')
+            : rows.length === 1
+              ? t('bidTabBiddersEdit.saveOne')
+              : t('bidTabBiddersEdit.saveMany', { count: rows.length })}
         </button>
         <button
           type="button"
@@ -283,14 +289,12 @@ export function BidTabBiddersEdit({ apiBaseUrl, tabId, initial }: Props) {
           disabled={busy}
           className="rounded border border-gray-300 bg-white px-3 py-1 text-xs text-gray-700 hover:bg-gray-100 disabled:opacity-50"
         >
-          Cancel
+          {t('bidTabBiddersEdit.cancel')}
         </button>
         {error && <span className="text-[11px] text-red-700">⚠ {error}</span>}
       </div>
       <p className="mt-2 text-[10px] text-gray-600">
-        On save, the store re-ranks by total ascending, normalizes the name for
-        the competitor rollup, and re-applies the awarded-to mirror so the
-        ‘awarded’ chip stays aligned with the top-level field.
+        {t('bidTabBiddersEdit.help')}
       </p>
     </div>
   );

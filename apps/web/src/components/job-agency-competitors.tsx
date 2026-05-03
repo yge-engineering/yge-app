@@ -5,6 +5,7 @@
 
 import Link from 'next/link';
 import { buildCompetitorProfilesFromTabs, type BidTab } from '@yge/shared';
+import { getTranslator } from '../lib/locale';
 
 interface Props {
   apiBaseUrl: string;
@@ -37,16 +38,20 @@ function formatMoney(cents: number): string {
 
 export async function JobAgencyCompetitors({ apiBaseUrl, ownerAgency, topN = 6 }: Props) {
   const tabs = await fetchTabsForAgency(apiBaseUrl, ownerAgency);
+  const t = getTranslator();
   if (tabs.length === 0) {
+    // Empty-state has an inline /bid-tabs link — split-and-fill via __LINK__.
+    const emptyTpl = t('jobAgencyCompetitors.empty', { link: '__LINK__' });
+    const [emptyPre, emptyPost] = emptyTpl.split('__LINK__');
     return (
       <section className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4 shadow-sm">
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-700">
-          Competitor history at {ownerAgency}
+          {t('jobAgencyCompetitors.title', { agency: ownerAgency })}
         </h2>
         <p className="text-xs text-gray-600">
-          No bid tabs imported for this agency yet. Add one on{' '}
-          <Link href="/bid-tabs" className="text-yge-blue-500 hover:underline">/bid-tabs</Link>{' '}
-          and the panel will populate.
+          {emptyPre}
+          <Link href="/bid-tabs" className="text-yge-blue-500 hover:underline">/bid-tabs</Link>
+          {emptyPost}
         </p>
       </section>
     );
@@ -55,27 +60,38 @@ export async function JobAgencyCompetitors({ apiBaseUrl, ownerAgency, topN = 6 }
   const { rows, rollup } = buildCompetitorProfilesFromTabs(tabs);
   const top = rows.slice(0, topN);
 
+  const tabsLabel =
+    rollup.tabsConsidered === 1
+      ? t('jobAgencyCompetitors.tabOne')
+      : t('jobAgencyCompetitors.tabMany', { count: rollup.tabsConsidered });
+  const compsLabel =
+    rollup.uniqueCompetitors === 1
+      ? t('jobAgencyCompetitors.compOne')
+      : t('jobAgencyCompetitors.compMany', { count: rollup.uniqueCompetitors });
+  const appsLabel =
+    rollup.totalAppearances === 1
+      ? t('jobAgencyCompetitors.appOne')
+      : t('jobAgencyCompetitors.appMany', { count: rollup.totalAppearances });
+
   return (
     <section className="mt-6 rounded-lg border border-gray-200 bg-white shadow-sm">
       <header className="border-b border-gray-200 bg-gray-50 px-4 py-2">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-700">
-          Competitor history at {ownerAgency}
+          {t('jobAgencyCompetitors.title', { agency: ownerAgency })}
         </h2>
         <p className="text-[11px] text-gray-500">
-          {rollup.tabsConsidered} bid tab{rollup.tabsConsidered === 1 ? '' : 's'} ·{' '}
-          {rollup.uniqueCompetitors} competitor{rollup.uniqueCompetitors === 1 ? '' : 's'} ·{' '}
-          {rollup.totalAppearances} appearance{rollup.totalAppearances === 1 ? '' : 's'}
+          {tabsLabel} · {compsLabel} · {appsLabel}
         </p>
       </header>
       <table className="w-full text-xs">
         <thead className="bg-white text-[10px] uppercase tracking-wide text-gray-500">
           <tr>
-            <th className="px-4 py-2 text-left">Competitor</th>
-            <th className="px-4 py-2 text-right">Tabs</th>
-            <th className="px-4 py-2 text-right">Apparent low</th>
-            <th className="px-4 py-2 text-right">Avg bid</th>
-            <th className="px-4 py-2 text-right">Avg rank</th>
-            <th className="px-4 py-2 text-left">Last seen</th>
+            <th className="px-4 py-2 text-left">{t('jobAgencyCompetitors.thCompetitor')}</th>
+            <th className="px-4 py-2 text-right">{t('jobAgencyCompetitors.thTabs')}</th>
+            <th className="px-4 py-2 text-right">{t('jobAgencyCompetitors.thApparentLow')}</th>
+            <th className="px-4 py-2 text-right">{t('jobAgencyCompetitors.thAvgBid')}</th>
+            <th className="px-4 py-2 text-right">{t('jobAgencyCompetitors.thAvgRank')}</th>
+            <th className="px-4 py-2 text-left">{t('jobAgencyCompetitors.thLastSeen')}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
@@ -106,14 +122,24 @@ export async function JobAgencyCompetitors({ apiBaseUrl, ownerAgency, topN = 6 }
           })}
         </tbody>
       </table>
-      {rows.length > topN && (
-        <div className="border-t border-gray-100 bg-gray-50 px-4 py-2 text-[11px] text-gray-600">
-          Showing top {topN} of {rows.length} ·{' '}
-          <Link href="/competitors" className="text-yge-blue-500 hover:underline">
-            full table →
-          </Link>
-        </div>
-      )}
+      {rows.length > topN && (() => {
+        // Footer template has an inline link — split-and-fill via __LINK__.
+        const footerTpl = t('jobAgencyCompetitors.footer', {
+          topN,
+          rows: rows.length,
+          link: '__LINK__',
+        });
+        const [footerPre, footerPost] = footerTpl.split('__LINK__');
+        return (
+          <div className="border-t border-gray-100 bg-gray-50 px-4 py-2 text-[11px] text-gray-600">
+            {footerPre}
+            <Link href="/competitors" className="text-yge-blue-500 hover:underline">
+              {t('jobAgencyCompetitors.fullTable')}
+            </Link>
+            {footerPost}
+          </div>
+        );
+      })()}
     </section>
   );
 }
