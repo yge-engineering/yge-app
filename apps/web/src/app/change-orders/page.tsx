@@ -17,6 +17,7 @@ import {
   StatusPill,
   Tile,
 } from '../../components';
+import { getTranslator } from '../../lib/locale';
 import {
   changeOrderReasonLabel,
   changeOrderStatusLabel,
@@ -100,45 +101,46 @@ export default async function ChangeOrdersPage({
   }
 
   const netApprovedCents = rollup.totalApprovedAddCents - rollup.totalApprovedDeductCents;
+  const t = getTranslator();
 
   return (
     <AppShell>
       <main className="mx-auto max-w-6xl">
         <PageHeader
-          title="Change orders"
-          subtitle="Modifications to the awarded contract. Tracks scope, cost, and schedule impact through the agency review pipeline."
+          title={t('co.title')}
+          subtitle={t('co.subtitle')}
           actions={
             <LinkButton href="/change-orders/new" variant="primary" size="md">
-              + New change order
+              {t('co.newCo')}
             </LinkButton>
           }
         />
 
         <section className="mb-4 grid gap-3 sm:grid-cols-4">
           <Tile
-            label="In flight"
+            label={t('co.tile.inFlight')}
             value={rollup.proposed + rollup.underReview}
             tone={rollup.proposed + rollup.underReview > 0 ? 'warn' : 'success'}
           />
           <Tile
-            label="Approved net"
+            label={t('co.tile.approvedNet')}
             value={<Money cents={netApprovedCents} />}
             tone={netApprovedCents > 0 ? 'success' : 'neutral'}
           />
           <Tile
-            label="Schedule (days)"
+            label={t('co.tile.scheduleDays')}
             value={rollup.totalApprovedDays > 0 ? `+${rollup.totalApprovedDays}` : `${rollup.totalApprovedDays}`}
           />
-          <Tile label="Executed" value={rollup.executed} tone="success" />
+          <Tile label={t('co.tile.executed')} value={rollup.executed} tone="success" />
         </section>
 
         <section className="mb-4 flex flex-wrap items-center gap-2 rounded-md border border-gray-200 bg-white p-3">
-          <span className="text-xs uppercase tracking-wide text-gray-500">Status:</span>
+          <span className="text-xs uppercase tracking-wide text-gray-500">{t('co.filter.status')}</span>
           <Link
             href={buildHref({ status: undefined })}
             className={`rounded px-2 py-1 text-xs ${!searchParams.status ? 'bg-blue-700 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
           >
-            All
+            {t('co.filter.all')}
           </Link>
           {STATUSES.map((s) => (
             <Link
@@ -153,9 +155,9 @@ export default async function ChangeOrdersPage({
 
         {changeOrders.length === 0 ? (
           <EmptyState
-            title="No change orders yet"
-            body="Capture every directive, RFI-driven scope shift, and field change here. The dollars on approved COs feed straight into job profitability."
-            actions={[{ href: '/change-orders/new', label: 'New change order', primary: true }]}
+            title={t('co.empty.title')}
+            body={t('co.empty.body')}
+            actions={[{ href: '/change-orders/new', label: t('co.empty.action'), primary: true }]}
           />
         ) : (
           <DataTable
@@ -164,17 +166,17 @@ export default async function ChangeOrdersPage({
             columns={[
               {
                 key: 'number',
-                header: '#',
+                header: t('co.col.number'),
                 cell: (co) => (
                   <Link href={`/change-orders/${co.id}`} className="font-mono text-sm font-bold text-blue-700 hover:underline">
                     {co.changeOrderNumber}
                   </Link>
                 ),
               },
-              { key: 'subject', header: 'Subject', cell: (co) => <div className="font-medium text-gray-900">{co.subject}</div> },
+              { key: 'subject', header: t('co.col.subject'), cell: (co) => <div className="font-medium text-gray-900">{co.subject}</div> },
               {
                 key: 'job',
-                header: 'Job',
+                header: t('co.col.job'),
                 cell: (co) => {
                   const job = jobById.get(co.jobId);
                   return job
@@ -182,10 +184,10 @@ export default async function ChangeOrdersPage({
                     : <span className="text-sm text-gray-400">{co.jobId}</span>;
                 },
               },
-              { key: 'reason', header: 'Reason', cell: (co) => <span className="text-xs text-gray-600">{changeOrderReasonLabel(co.reason)}</span> },
+              { key: 'reason', header: t('co.col.reason'), cell: (co) => <span className="text-xs text-gray-600">{changeOrderReasonLabel(co.reason)}</span> },
               {
                 key: 'cost',
-                header: 'Cost',
+                header: t('co.col.cost'),
                 numeric: true,
                 cell: (co) => {
                   const cost = co.totalCostImpactCents;
@@ -200,13 +202,13 @@ export default async function ChangeOrdersPage({
               },
               {
                 key: 'days',
-                header: 'Days',
+                header: t('co.col.days'),
                 numeric: true,
                 cell: (co) => co.totalScheduleImpactDays === 0
                   ? <span className="font-mono text-gray-400">—</span>
                   : <span className="font-mono">{co.totalScheduleImpactDays > 0 ? `+${co.totalScheduleImpactDays}` : `${co.totalScheduleImpactDays}`}</span>,
               },
-              { key: 'status', header: 'Status', cell: (co) => <StatusPill label={changeOrderStatusLabel(co.status)} tone={statusTone(co.status)} /> },
+              { key: 'status', header: t('co.col.status'), cell: (co) => <StatusPill label={changeOrderStatusLabel(co.status)} tone={statusTone(co.status)} /> },
             ]}
           />
         )}
