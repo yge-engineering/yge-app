@@ -13,6 +13,7 @@
 //   - oldest unanswered PCO
 
 import { z } from 'zod';
+import { translate, SEED_DICTIONARY, type Locale } from './i18n';
 
 export const PcoStatusSchema = z.enum([
   'DRAFT',                 // we haven't sent it to the agency
@@ -99,28 +100,12 @@ export type PcoPatch = z.infer<typeof PcoPatchSchema>;
 
 // ---- Helpers -------------------------------------------------------------
 
-export function pcoStatusLabel(s: PcoStatus): string {
-  switch (s) {
-    case 'DRAFT': return 'Draft';
-    case 'SUBMITTED': return 'Submitted';
-    case 'UNDER_REVIEW': return 'Under review';
-    case 'APPROVED_PENDING_CO': return 'Approved (pending CO)';
-    case 'REJECTED': return 'Rejected';
-    case 'WITHDRAWN': return 'Withdrawn';
-    case 'CONVERTED_TO_CO': return 'Converted to CO';
-  }
+export function pcoStatusLabel(s: PcoStatus, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `pcoStatus.${s}`);
 }
 
-export function pcoOriginLabel(o: PcoOrigin): string {
-  switch (o) {
-    case 'OWNER_DIRECTED': return 'Owner-directed';
-    case 'DESIGN_CHANGE': return 'Design change';
-    case 'UNFORESEEN_CONDITION': return 'Unforeseen condition';
-    case 'RFI_RESPONSE': return 'RFI response';
-    case 'SPEC_CONFLICT': return 'Spec conflict';
-    case 'WEATHER_DELAY': return 'Weather delay';
-    case 'OTHER': return 'Other';
-  }
+export function pcoOriginLabel(o: PcoOrigin, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `pcoOrigin.${o}`);
 }
 
 /** True iff the PCO is open exposure — submitted/in-review/approved
