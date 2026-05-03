@@ -11,6 +11,7 @@
 // dispatch UI stays one-screen-per-action.
 
 import { z } from 'zod';
+import { translate, SEED_DICTIONARY, type Locale } from './i18n';
 
 /** Free-form-ish tool category — drives how the inventory page groups
  *  rows and lets the foreman search "all the chop saws". */
@@ -96,36 +97,12 @@ export type ToolDispatch = z.infer<typeof ToolDispatchSchema>;
 
 // ---- Display helpers -----------------------------------------------------
 
-export function categoryLabel(c: ToolCategory): string {
-  switch (c) {
-    case 'IMPACT_DRIVER': return 'Impact driver';
-    case 'DRILL': return 'Drill';
-    case 'SAW': return 'Saw';
-    case 'GRINDER': return 'Grinder';
-    case 'JACKHAMMER': return 'Jackhammer';
-    case 'COMPACTOR': return 'Compactor';
-    case 'PRESSURE_WASHER': return 'Pressure washer';
-    case 'GENERATOR': return 'Generator';
-    case 'PUMP': return 'Pump';
-    case 'SURVEY': return 'Survey';
-    case 'METER': return 'Meter';
-    case 'WELDER': return 'Welder';
-    case 'TORCH': return 'Torch';
-    case 'AIR_COMPRESSOR': return 'Air compressor';
-    case 'NAIL_GUN': return 'Nail gun';
-    case 'OTHER': return 'Other';
-  }
+export function categoryLabel(c: ToolCategory, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `toolCategory.${c}`);
 }
 
-export function toolStatusLabel(s: ToolStatus): string {
-  switch (s) {
-    case 'IN_YARD': return 'In yard';
-    case 'IN_SHOP': return 'In shop';
-    case 'ASSIGNED': return 'Assigned';
-    case 'OUT_FOR_REPAIR': return 'Out for repair';
-    case 'LOST': return 'Lost';
-    case 'RETIRED': return 'Retired';
-  }
+export function toolStatusLabel(s: ToolStatus, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `toolStatus.${s}`);
 }
 
 /** A short identifier suitable for a packing-list line: name + serial. */

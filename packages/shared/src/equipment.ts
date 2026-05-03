@@ -21,6 +21,7 @@
 //   - rental-rate book and inter-job billing
 
 import { z } from 'zod';
+import { translate, SEED_DICTIONARY, type Locale } from './i18n';
 
 /** What kind of unit? Drives the field set surfaced in the editor and
  *  the category groups in the list view. SUPPORT covers water trucks,
@@ -176,52 +177,16 @@ export type EquipmentAssign = z.infer<typeof EquipmentAssignSchema>;
 
 // ---- Display + service-math helpers --------------------------------------
 
-export function equipmentCategoryLabel(c: EquipmentCategory): string {
-  switch (c) {
-    case 'TRUCK': return 'Truck';
-    case 'TRAILER': return 'Trailer';
-    case 'DOZER': return 'Dozer';
-    case 'EXCAVATOR': return 'Excavator';
-    case 'LOADER': return 'Loader';
-    case 'BACKHOE': return 'Backhoe';
-    case 'GRADER': return 'Grader';
-    case 'ROLLER': return 'Roller';
-    case 'PAVER': return 'Paver';
-    case 'COMPACTOR_LARGE': return 'Compactor (ride-on)';
-    case 'WATER_TRUCK': return 'Water truck';
-    case 'SWEEPER': return 'Sweeper';
-    case 'GENERATOR_LARGE': return 'Generator (large)';
-    case 'SUPPORT': return 'Support';
-    case 'OTHER': return 'Other';
-  }
+export function equipmentCategoryLabel(c: EquipmentCategory, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `equipmentCategory.${c}`);
 }
 
-export function equipmentStatusLabel(s: EquipmentStatus): string {
-  switch (s) {
-    case 'IN_YARD': return 'In yard';
-    case 'ASSIGNED': return 'Assigned';
-    case 'IN_SERVICE': return 'In service';
-    case 'OUT_FOR_REPAIR': return 'Out for repair';
-    case 'RETIRED': return 'Retired';
-    case 'SOLD': return 'Sold';
-  }
+export function equipmentStatusLabel(s: EquipmentStatus, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `equipmentStatus.${s}`);
 }
 
-export function maintenanceKindLabel(k: MaintenanceKind): string {
-  switch (k) {
-    case 'OIL_CHANGE': return 'Oil change';
-    case 'FILTER': return 'Filter';
-    case 'TIRE': return 'Tire';
-    case 'BRAKE': return 'Brake';
-    case 'HYDRAULIC': return 'Hydraulic';
-    case 'ELECTRICAL': return 'Electrical';
-    case 'COOLING': return 'Cooling system';
-    case 'TRANSMISSION': return 'Transmission';
-    case 'ENGINE_MAJOR': return 'Engine (major)';
-    case 'INSPECTION': return 'Inspection';
-    case 'BREAKDOWN_REPAIR': return 'Breakdown repair';
-    case 'OTHER': return 'Other';
-  }
+export function maintenanceKindLabel(k: MaintenanceKind, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `maintenanceKind.${k}`);
 }
 
 export function usageUnitLabel(metric: EquipmentUsageMetric): string {

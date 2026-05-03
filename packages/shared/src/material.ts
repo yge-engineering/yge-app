@@ -16,6 +16,7 @@
 // (so it's transactional with the invoice write).
 
 import { z } from 'zod';
+import { translate, SEED_DICTIONARY, type Locale } from './i18n';
 
 /** Free-form-ish category that drives the list view's grouping. */
 export const MaterialCategorySchema = z.enum([
@@ -128,37 +129,12 @@ export type StockMovementCreate = z.infer<typeof StockMovementCreateSchema>;
 
 // ---- Pure helpers --------------------------------------------------------
 
-export function materialCategoryLabel(c: MaterialCategory): string {
-  switch (c) {
-    case 'AGGREGATE': return 'Aggregate';
-    case 'ASPHALT': return 'Asphalt';
-    case 'CONCRETE': return 'Concrete';
-    case 'REBAR': return 'Rebar';
-    case 'PIPE': return 'Pipe';
-    case 'FITTING': return 'Fitting';
-    case 'GEOTEXTILE': return 'Geotextile';
-    case 'EROSION_CONTROL': return 'Erosion control';
-    case 'SIGN': return 'Sign';
-    case 'PAINT': return 'Paint';
-    case 'WELDING': return 'Welding';
-    case 'FUEL': return 'Fuel';
-    case 'LUBRICANT': return 'Lubricant';
-    case 'FASTENER': return 'Fastener';
-    case 'SAFETY': return 'Safety';
-    case 'ELECTRICAL': return 'Electrical';
-    case 'CONSUMABLE': return 'Consumable';
-    case 'OTHER': return 'Other';
-  }
+export function materialCategoryLabel(c: MaterialCategory, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `materialCategory.${c}`);
 }
 
-export function movementKindLabel(k: StockMovementKind): string {
-  switch (k) {
-    case 'RECEIVED': return 'Received';
-    case 'CONSUMED': return 'Consumed';
-    case 'RETURNED': return 'Returned';
-    case 'ADJUSTED': return 'Adjusted';
-    case 'TRANSFERRED': return 'Transferred';
-  }
+export function movementKindLabel(k: StockMovementKind, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `stockMovementKind.${k}`);
 }
 
 /** Apply a movement to a quantity-on-hand value. RECEIVED + RETURNED add;
