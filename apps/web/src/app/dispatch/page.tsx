@@ -18,6 +18,7 @@ import {
   StatusPill,
   Tile,
 } from '../../components';
+import { getTranslator, type Translator } from '../../lib/locale';
 import {
   computeDispatchRollup,
   detectDoubleBookings,
@@ -85,34 +86,35 @@ export default async function DispatchPage({
   const csvHref = `${publicApiBaseUrl()}/api/dispatches?format=csv&scheduledFor=${encodeURIComponent(filter.scheduledFor)}${
     filter.jobId ? '&jobId=' + encodeURIComponent(filter.jobId) : ''
   }`;
+  const t = getTranslator();
 
   return (
     <AppShell>
       <main className="mx-auto max-w-6xl">
         <PageHeader
-          title="Dispatch board"
-          subtitle="Today's crew + equipment assignments. Print one yard handout per job."
+          title={t('dispatch.title')}
+          subtitle={t('dispatch.subtitle')}
           actions={
             <span className="flex gap-2">
               <a
                 href={csvHref}
                 className="inline-flex items-center rounded-md border border-blue-700 px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-50"
               >
-                Download CSV
+                {t('dispatch.downloadCsv')}
               </a>
               <LinkButton href="/dispatch/new" variant="primary" size="md">
-                + New dispatch
+                {t('dispatch.newDispatch')}
               </LinkButton>
             </span>
           }
         />
 
         <section className="mb-4 grid gap-3 sm:grid-cols-4">
-          <Tile label="Today's jobs" value={rollup.todayCount} />
-          <Tile label="Crew on today" value={rollup.todayCrewHeadcount} />
-          <Tile label="Equipment today" value={rollup.todayEquipmentCount} />
+          <Tile label={t('dispatch.tile.todayJobs')} value={rollup.todayCount} />
+          <Tile label={t('dispatch.tile.crewToday')} value={rollup.todayCrewHeadcount} />
+          <Tile label={t('dispatch.tile.equipmentToday')} value={rollup.todayEquipmentCount} />
           <Tile
-            label="Double-bookings"
+            label={t('dispatch.tile.doubleBookings')}
             value={rollup.doubleBookings}
             tone={rollup.doubleBookings > 0 ? 'danger' : 'success'}
           />
@@ -132,10 +134,10 @@ export default async function DispatchPage({
         ) : null}
 
         <section className="mb-4 flex flex-wrap items-center gap-2 rounded-md border border-gray-200 bg-white p-3">
-          <span className="text-xs uppercase tracking-wide text-gray-500">Day:</span>
-          <DayLink label="Today" date={today} active={filter.scheduledFor === today} />
-          <DayLink label="Tomorrow" date={addDays(today, 1)} active={filter.scheduledFor === addDays(today, 1)} />
-          <DayLink label="Yesterday" date={addDays(today, -1)} active={filter.scheduledFor === addDays(today, -1)} />
+          <span className="text-xs uppercase tracking-wide text-gray-500">{t('dispatch.day.label')}</span>
+          <DayLink label={t('dispatch.day.today')} date={today} active={filter.scheduledFor === today} />
+          <DayLink label={t('dispatch.day.tomorrow')} date={addDays(today, 1)} active={filter.scheduledFor === addDays(today, 1)} />
+          <DayLink label={t('dispatch.day.yesterday')} date={addDays(today, -1)} active={filter.scheduledFor === addDays(today, -1)} />
           <form action="/dispatch" className="ml-2 flex items-center gap-2">
             <input
               type="date"
@@ -147,21 +149,21 @@ export default async function DispatchPage({
               type="submit"
               className="rounded-md border border-blue-700 px-2 py-1 text-xs text-blue-700 hover:bg-blue-50"
             >
-              Go
+              {t('dispatch.day.go')}
             </button>
           </form>
         </section>
 
         {dispatches.length === 0 ? (
           <EmptyState
-            title={`No dispatches scheduled for ${filter.scheduledFor}`}
-            body="Pick a different day, or assign a crew to a job for this date."
-            actions={[{ href: '/dispatch/new', label: 'New dispatch', primary: true }]}
+            title={t('dispatch.empty.title', { date: filter.scheduledFor })}
+            body={t('dispatch.empty.body')}
+            actions={[{ href: '/dispatch/new', label: t('dispatch.empty.action'), primary: true }]}
           />
         ) : (
           <div className="grid gap-4 lg:grid-cols-2">
             {dispatches.map((d) => (
-              <DispatchCard key={d.id} d={d} />
+              <DispatchCard key={d.id} d={d} t={t} />
             ))}
           </div>
         )}
@@ -170,7 +172,7 @@ export default async function DispatchPage({
   );
 }
 
-function DispatchCard({ d }: { d: Dispatch }) {
+function DispatchCard({ d, t }: { d: Dispatch; t: Translator }) {
   return (
     <Card>
       <div className="flex items-start justify-between gap-3">
@@ -182,7 +184,7 @@ function DispatchCard({ d }: { d: Dispatch }) {
           <p className="mt-1 flex items-center gap-2 text-sm text-gray-700">
             <Avatar name={d.foremanName} size="sm" />
             <span>
-              Foreman: {d.foremanName}
+              {t('dispatch.card.foreman')}: {d.foremanName}
               {d.foremanPhone ? ` · ${d.foremanPhone}` : ''}
             </span>
           </p>
@@ -190,33 +192,33 @@ function DispatchCard({ d }: { d: Dispatch }) {
         <div className="flex flex-col items-end gap-1">
           <StatusPill label={dispatchStatusLabel(d.status)} tone={statusTone(d.status)} />
           <Link href={`/dispatch/${d.id}/handout`} className="text-xs text-blue-700 hover:underline">
-            Print handout
+            {t('dispatch.card.printHandout')}
           </Link>
         </div>
       </div>
       <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
         <div>
-          <div className="font-semibold uppercase text-gray-500">Meet</div>
+          <div className="font-semibold uppercase text-gray-500">{t('dispatch.card.meet')}</div>
           <div>{d.meetTime ?? '—'}</div>
           <div className="text-gray-600">{d.meetLocation ?? '—'}</div>
         </div>
         <div>
-          <div className="font-semibold uppercase text-gray-500">Headcount</div>
+          <div className="font-semibold uppercase text-gray-500">{t('dispatch.card.headcount')}</div>
           <div>{d.crew.length} crew · {d.equipment.length} equip</div>
         </div>
       </div>
       <div className="mt-3">
-        <div className="text-xs font-semibold uppercase text-gray-500">Scope</div>
+        <div className="text-xs font-semibold uppercase text-gray-500">{t('dispatch.card.scope')}</div>
         <div className="line-clamp-3 text-sm text-gray-800">{d.scopeOfWork}</div>
       </div>
       {d.crew.length > 0 ? (
         <div className="mt-2 text-xs text-gray-700">
-          <span className="font-semibold">Crew:</span> {d.crew.map((c) => c.name).join(', ')}
+          <span className="font-semibold">{t('dispatch.card.crew')}:</span> {d.crew.map((c) => c.name).join(', ')}
         </div>
       ) : null}
       {d.equipment.length > 0 ? (
         <div className="mt-1 text-xs text-gray-700">
-          <span className="font-semibold">Equipment:</span> {d.equipment.map((e) => e.name).join(', ')}
+          <span className="font-semibold">{t('dispatch.card.equipment')}:</span> {d.equipment.map((e) => e.name).join(', ')}
         </div>
       ) : null}
     </Card>
