@@ -13,6 +13,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 
 interface BidResultOption {
   bidResultId: string;
@@ -29,6 +30,7 @@ interface Props {
 
 export function BidTabYgeLinkForm({ apiBaseUrl, tabId, candidates }: Props) {
   const router = useRouter();
+  const t = useTranslator();
   const [picked, setPicked] = useState<string>('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +40,7 @@ export function BidTabYgeLinkForm({ apiBaseUrl, tabId, candidates }: Props) {
     setError(null);
     const candidate = candidates.find((c) => c.bidResultId === picked);
     if (!candidate) {
-      setError('Pick one of the listed bid results.');
+      setError(t('bidTabYgeLink.errPick'));
       return;
     }
     setBusy(true);
@@ -53,7 +55,7 @@ export function BidTabYgeLinkForm({ apiBaseUrl, tabId, candidates }: Props) {
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? `Link failed (${res.status})`);
+        setError(body.error ?? t('bidTabYgeLink.errFail', { status: res.status }));
         return;
       }
       router.refresh();
@@ -65,13 +67,16 @@ export function BidTabYgeLinkForm({ apiBaseUrl, tabId, candidates }: Props) {
   }
 
   if (candidates.length === 0) {
+    // Empty-state has an inline link — split-and-fill via __LINK__ sentinel.
+    const emptyTpl = t('bidTabYgeLink.empty', { link: '__LINK__' });
+    const [emptyPre, emptyPost] = emptyTpl.split('__LINK__');
     return (
       <p className="text-xs text-gray-600">
-        No YGE bid results to link to. Add one on{' '}
+        {emptyPre}
         <a href="/bid-results/new" className="text-yge-blue-500 hover:underline">
           /bid-results/new
-        </a>{' '}
-        first.
+        </a>
+        {emptyPost}
       </p>
     );
   }
@@ -84,7 +89,7 @@ export function BidTabYgeLinkForm({ apiBaseUrl, tabId, candidates }: Props) {
         disabled={busy}
         className="rounded border border-gray-300 bg-white px-2 py-1 text-xs"
       >
-        <option value="">— pick a YGE bid result —</option>
+        <option value="">{t('bidTabYgeLink.placeholder')}</option>
         {candidates.map((c) => (
           <option key={c.bidResultId} value={c.bidResultId}>
             {c.projectName} · {c.bidOpenedAt}
@@ -97,7 +102,7 @@ export function BidTabYgeLinkForm({ apiBaseUrl, tabId, candidates }: Props) {
         disabled={busy || !picked}
         className="rounded bg-yge-blue-500 px-3 py-1 text-xs font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50"
       >
-        {busy ? 'Linking…' : 'Link'}
+        {busy ? t('bidTabYgeLink.busy') : t('bidTabYgeLink.action')}
       </button>
       {error && <span className="text-red-700">⚠ {error}</span>}
     </div>

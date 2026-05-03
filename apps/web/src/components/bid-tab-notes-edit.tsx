@@ -10,6 +10,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 
 interface Props {
   apiBaseUrl: string;
@@ -19,6 +20,7 @@ interface Props {
 
 export function BidTabNotesEdit({ apiBaseUrl, tabId, initialNotes }: Props) {
   const router = useRouter();
+  const t = useTranslator();
   const [editing, setEditing] = useState(false);
   const [notes, setNotes] = useState(initialNotes);
   const [busy, setBusy] = useState(false);
@@ -36,7 +38,7 @@ export function BidTabNotesEdit({ apiBaseUrl, tabId, initialNotes }: Props) {
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? `Save failed (${res.status})`);
+        setError(body.error ?? t('bidTabNotes.errSave', { status: res.status }));
         return;
       }
       setEditing(false);
@@ -55,7 +57,7 @@ export function BidTabNotesEdit({ apiBaseUrl, tabId, initialNotes }: Props) {
           <div className="whitespace-pre-wrap text-gray-700">{initialNotes}</div>
         ) : (
           <p className="text-[11px] italic text-gray-500">
-            No notes yet.
+            {t('bidTabNotes.empty')}
           </p>
         )}
         <button
@@ -63,7 +65,7 @@ export function BidTabNotesEdit({ apiBaseUrl, tabId, initialNotes }: Props) {
           onClick={() => setEditing(true)}
           className="mt-1 text-[11px] text-yge-blue-500 hover:underline"
         >
-          {initialNotes ? 'Edit notes' : 'Add notes'} →
+          {initialNotes ? t('bidTabNotes.editAction') : t('bidTabNotes.addAction')} →
         </button>
       </div>
     );
@@ -77,7 +79,7 @@ export function BidTabNotesEdit({ apiBaseUrl, tabId, initialNotes }: Props) {
         rows={4}
         maxLength={8000}
         className="w-full rounded border border-gray-300 bg-white p-2 text-xs"
-        placeholder="Pre-bid attendance, addenda count, agency post-bid memo notes…"
+        placeholder={t('bidTabNotes.placeholder')}
       />
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <button
@@ -86,7 +88,7 @@ export function BidTabNotesEdit({ apiBaseUrl, tabId, initialNotes }: Props) {
           disabled={busy}
           className="rounded bg-yge-blue-500 px-3 py-1 text-xs font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50"
         >
-          {busy ? 'Saving…' : 'Save'}
+          {busy ? t('bidTabNotes.busy') : t('bidTabNotes.save')}
         </button>
         <button
           type="button"
@@ -98,7 +100,7 @@ export function BidTabNotesEdit({ apiBaseUrl, tabId, initialNotes }: Props) {
           disabled={busy}
           className="rounded border border-gray-300 bg-white px-3 py-1 text-xs text-gray-700 hover:bg-gray-100 disabled:opacity-50"
         >
-          Cancel
+          {t('bidTabNotes.cancel')}
         </button>
         {error && <span className="text-[11px] text-red-700">⚠ {error}</span>}
       </div>

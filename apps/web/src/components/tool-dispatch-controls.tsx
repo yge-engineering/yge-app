@@ -14,6 +14,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { fullName, type Employee, type Tool } from '@yge/shared';
+import { useTranslator } from '../lib/use-translator';
 
 interface Props {
   tool: Tool;
@@ -23,6 +24,7 @@ interface Props {
 
 export function ToolDispatchControls({ tool, employees, apiBaseUrl }: Props) {
   const router = useRouter();
+  const t = useTranslator();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [target, setTarget] = useState<string>(employees[0]?.id ?? '');
@@ -36,7 +38,7 @@ export function ToolDispatchControls({ tool, employees, apiBaseUrl }: Props) {
       body: JSON.stringify({ assignedToEmployeeId: target }),
     });
     if (!res.ok) {
-      setError(`Dispatch failed (${res.status})`);
+      setError(t('toolDispatch.errDispatch', { status: res.status }));
       return;
     }
     startTransition(() => router.refresh());
@@ -50,7 +52,7 @@ export function ToolDispatchControls({ tool, employees, apiBaseUrl }: Props) {
       body: JSON.stringify({ destination }),
     });
     if (!res.ok) {
-      setError(`Return failed (${res.status})`);
+      setError(t('toolDispatch.errReturn', { status: res.status }));
       return;
     }
     startTransition(() => router.refresh());
@@ -65,7 +67,7 @@ export function ToolDispatchControls({ tool, employees, apiBaseUrl }: Props) {
           disabled={pending}
           className="rounded border border-gray-300 px-2 py-1 hover:bg-gray-50 disabled:opacity-50"
         >
-          Return to yard
+          {t('toolDispatch.returnYard')}
         </button>
         <button
           type="button"
@@ -73,7 +75,7 @@ export function ToolDispatchControls({ tool, employees, apiBaseUrl }: Props) {
           disabled={pending}
           className="rounded border border-orange-300 px-2 py-1 text-orange-700 hover:bg-orange-50 disabled:opacity-50"
         >
-          Send to repair
+          {t('toolDispatch.sendRepair')}
         </button>
         {error && <span className="text-red-600">{error}</span>}
       </div>
@@ -83,7 +85,9 @@ export function ToolDispatchControls({ tool, employees, apiBaseUrl }: Props) {
   if (tool.status === 'RETIRED' || tool.status === 'LOST') {
     return (
       <span className="text-xs text-gray-400">
-        Not dispatchable while {tool.status === 'RETIRED' ? 'retired' : 'lost'}
+        {tool.status === 'RETIRED'
+          ? t('toolDispatch.notDispatchableRetired')
+          : t('toolDispatch.notDispatchableLost')}
       </span>
     );
   }
@@ -95,7 +99,7 @@ export function ToolDispatchControls({ tool, employees, apiBaseUrl }: Props) {
         onChange={(e) => setTarget(e.target.value)}
         className="rounded border border-gray-300 px-2 py-1"
       >
-        {employees.length === 0 && <option value="">No active crew</option>}
+        {employees.length === 0 && <option value="">{t('toolDispatch.noCrew')}</option>}
         {employees.map((e) => (
           <option key={e.id} value={e.id}>
             {fullName(e)}
@@ -108,7 +112,7 @@ export function ToolDispatchControls({ tool, employees, apiBaseUrl }: Props) {
         disabled={pending || !target}
         className="rounded bg-yge-blue-500 px-2 py-1 font-medium text-white hover:bg-yge-blue-700 disabled:opacity-50"
       >
-        Assign
+        {t('toolDispatch.assign')}
       </button>
       {error && <span className="text-red-600">{error}</span>}
     </div>
