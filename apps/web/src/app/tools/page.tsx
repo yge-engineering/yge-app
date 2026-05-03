@@ -8,6 +8,7 @@
 import Link from 'next/link';
 
 import { AppShell } from '../../components/app-shell';
+import { getTranslator } from '../../lib/locale';
 import {
   categoryLabel,
   fullName,
@@ -50,6 +51,7 @@ export default async function ToolsPage() {
   const assignedCount = tools.filter((t) => t.status === 'ASSIGNED').length;
   const inYardCount = tools.filter((t) => t.status === 'IN_YARD').length;
   const repairCount = tools.filter((t) => t.status === 'OUT_FOR_REPAIR').length;
+  const t = getTranslator();
 
   return (
     <AppShell>
@@ -60,74 +62,78 @@ export default async function ToolsPage() {
         </Link>
         <div className="flex items-center gap-3 text-sm">
           <Link href="/crew" className="text-yge-blue-500 hover:underline">
-            Crew &rarr;
+            {t('tools.crewLink')}
           </Link>
           <Link
             href="/tools/new"
             className="rounded bg-yge-blue-500 px-3 py-1 font-medium text-white hover:bg-yge-blue-700"
           >
-            + Add tool
+            {t('tools.addTool')}
           </Link>
         </div>
       </div>
 
-      <h1 className="text-3xl font-bold text-yge-blue-500">Power tools</h1>
+      <h1 className="text-3xl font-bold text-yge-blue-500">{t('tools.title')}</h1>
       <p className="mt-2 text-gray-700">
-        {tools.length} tool{tools.length === 1 ? '' : 's'} on the books &middot;{' '}
-        {assignedCount} assigned &middot; {inYardCount} in yard
+        {t('tools.subtitle', {
+          units: tools.length,
+          plural: tools.length === 1 ? '' : 's',
+          assigned: assignedCount,
+          inYard: inYardCount,
+        })}
         {repairCount > 0 && (
           <>
             {' '}&middot;{' '}
-            <span className="text-orange-700">{repairCount} out for repair</span>
+            <span className="text-orange-700">{t('tools.subtitle.repair', { count: repairCount })}</span>
           </>
         )}
       </p>
 
       {tools.length === 0 ? (
         <div className="mt-6 rounded border border-gray-200 bg-gray-50 p-6 text-sm text-gray-600">
-          No tools yet. Click <em>Add tool</em> to start the inventory.
+          {t('tools.empty')}
         </div>
       ) : (
         <div className="mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
           <table className="w-full text-left text-sm">
             <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
               <tr>
-                <th className="px-4 py-2">Tool</th>
-                <th className="px-4 py-2">Category</th>
-                <th className="px-4 py-2">Status</th>
-                <th className="px-4 py-2">Assigned to</th>
-                <th className="px-4 py-2">Dispatch</th>
+                <th className="px-4 py-2">{t('tools.col.tool')}</th>
+                <th className="px-4 py-2">{t('tools.col.category')}</th>
+                <th className="px-4 py-2">{t('tools.col.status')}</th>
+                <th className="px-4 py-2">{t('tools.col.assignedTo')}</th>
+                <th className="px-4 py-2">{t('tools.col.dispatch')}</th>
                 <th className="px-4 py-2"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {tools.map((t) => {
-                const assignee = t.assignedToEmployeeId
-                  ? empById.get(t.assignedToEmployeeId)
+              {tools.map((tool) => {
+                const assignee = tool.assignedToEmployeeId
+                  ? empById.get(tool.assignedToEmployeeId)
                   : undefined;
                 return (
-                  <tr key={t.id}>
+                  <tr key={tool.id}>
                     <td className="px-4 py-3">
-                      <div className="font-medium text-gray-900">{t.name}</div>
+                      <div className="font-medium text-gray-900">{tool.name}</div>
                       <div className="text-xs text-gray-500">
-                        {[t.make, t.model].filter(Boolean).join(' ')}
-                        {t.serialNumber && (
+                        {[tool.make, tool.model].filter(Boolean).join(' ')}
+                        {tool.serialNumber && (
                           <>
-                            {(t.make || t.model) ? ' \u00b7 ' : ''}SN {t.serialNumber}
+                            {(tool.make || tool.model) ? ' \u00b7 ' : ''}{t('tools.snPrefix')} {tool.serialNumber}
                           </>
                         )}
-                        {t.assetTag && (
+                        {tool.assetTag && (
                           <>
-                            {' '}\u00b7 Tag {t.assetTag}
+                            {' '}\u00b7 {t('tools.tagPrefix')} {tool.assetTag}
                           </>
                         )}
                       </div>
                     </td>
                     <td className="px-4 py-3 text-xs text-gray-700">
-                      {categoryLabel(t.category)}
+                      {categoryLabel(tool.category)}
                     </td>
                     <td className="px-4 py-3 text-xs">
-                      <StatusBadge status={t.status} />
+                      <StatusBadge status={tool.status} />
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-700">
                       {assignee ? (
@@ -143,17 +149,17 @@ export default async function ToolsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <ToolDispatchControls
-                        tool={t}
+                        tool={tool}
                         employees={activeForemen}
                         apiBaseUrl={publicApiBaseUrl()}
                       />
                     </td>
                     <td className="px-4 py-3 text-right text-sm">
                       <Link
-                        href={`/tools/${t.id}`}
+                        href={`/tools/${tool.id}`}
                         className="text-yge-blue-500 hover:underline"
                       >
-                        Edit
+                        {t('tools.edit')}
                       </Link>
                     </td>
                   </tr>
