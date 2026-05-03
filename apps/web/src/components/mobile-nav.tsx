@@ -8,6 +8,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useTranslator } from '../lib/use-translator';
 
 interface NavLink {
   label: string;
@@ -25,11 +26,12 @@ interface Props {
 
 export function MobileNav({ groups }: Props) {
   const [open, setOpen] = useState(false);
+  const t = useTranslator();
   return (
     <>
       <button
         type="button"
-        aria-label="Open navigation"
+        aria-label={t('shell.openNav')}
         onClick={() => setOpen(true)}
         className="rounded-md p-2 text-gray-700 hover:bg-gray-100 lg:hidden"
       >
@@ -42,7 +44,7 @@ export function MobileNav({ groups }: Props) {
         <div className="fixed inset-0 z-50 flex lg:hidden">
           <button
             type="button"
-            aria-label="Close navigation"
+            aria-label={t('shell.closeNav')}
             onClick={() => setOpen(false)}
             className="absolute inset-0 bg-black/40"
           />
@@ -52,11 +54,11 @@ export function MobileNav({ groups }: Props) {
                 <div className="flex h-7 w-7 items-center justify-center rounded-md bg-blue-700 text-xs font-bold text-white">
                   YGE
                 </div>
-                <span className="text-sm font-semibold text-gray-900">Menu</span>
+                <span className="text-sm font-semibold text-gray-900">{t('shell.menu')}</span>
               </div>
               <button
                 type="button"
-                aria-label="Close navigation"
+                aria-label={t('shell.closeNav')}
                 onClick={() => setOpen(false)}
                 className="rounded-md p-1 text-gray-500 hover:bg-gray-100"
               >

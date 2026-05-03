@@ -11,7 +11,7 @@ import { KeyboardShortcuts } from './keyboard-shortcuts';
 import { LocaleSwitcher } from './locale-switcher';
 import { MobileNav } from './mobile-nav';
 import { Toaster } from './toast';
-import { getLocale } from '../lib/locale';
+import { getLocale, getTranslator } from '../lib/locale';
 
 interface NavLink {
   label: string;
@@ -23,89 +23,104 @@ interface NavGroup {
   links: NavLink[];
 }
 
-const NAV: NavGroup[] = [
+interface NavLinkSpec {
+  key: string;
+  href: string;
+}
+
+interface NavGroupSpec {
+  key: string;
+  links: NavLinkSpec[];
+}
+
+const NAV_SPEC: NavGroupSpec[] = [
   {
-    label: 'Daily',
+    key: 'nav.group.daily',
     links: [
-      { label: 'Dashboard', href: '/dashboard' },
-      { label: 'My today', href: '/me/today' },
-      { label: 'Calendar', href: '/calendar' },
-      { label: 'Dispatch', href: '/dispatch' },
-      { label: 'Daily reports', href: '/daily-reports' },
-      { label: 'Time cards', href: '/time-cards' },
+      { key: 'nav.dashboard', href: '/dashboard' },
+      { key: 'nav.myToday', href: '/me/today' },
+      { key: 'nav.calendar', href: '/calendar' },
+      { key: 'nav.dispatch', href: '/dispatch' },
+      { key: 'nav.dailyReports', href: '/daily-reports' },
+      { key: 'nav.timeCards', href: '/time-cards' },
     ],
   },
   {
-    label: 'Project',
+    key: 'nav.group.project',
     links: [
-      { label: 'Jobs', href: '/jobs' },
-      { label: 'Estimates', href: '/estimates' },
-      { label: 'Bid results', href: '/bid-results' },
-      { label: 'Change orders', href: '/change-orders' },
-      { label: 'RFIs', href: '/rfis' },
-      { label: 'Submittals', href: '/submittals' },
-      { label: 'Punch lists', href: '/punch-lists' },
+      { key: 'nav.jobs', href: '/jobs' },
+      { key: 'nav.estimates', href: '/estimates' },
+      { key: 'nav.bidResults', href: '/bid-results' },
+      { key: 'nav.changeOrders', href: '/change-orders' },
+      { key: 'nav.rfis', href: '/rfis' },
+      { key: 'nav.submittals', href: '/submittals' },
+      { key: 'nav.punchLists', href: '/punch-lists' },
     ],
   },
   {
-    label: 'Money',
+    key: 'nav.group.money',
     links: [
-      { label: 'AR invoices', href: '/ar-invoices' },
-      { label: 'AR payments', href: '/ar-payments' },
-      { label: 'AP invoices', href: '/ap-invoices' },
-      { label: 'AP payments', href: '/ap-payments' },
-      { label: 'Aging', href: '/aging' },
-      { label: 'Cash forecast', href: '/cash-forecast' },
-      { label: 'Bank recs', href: '/bank-recs' },
-      { label: 'Balance sheet', href: '/balance-sheet' },
+      { key: 'nav.arInvoices', href: '/ar-invoices' },
+      { key: 'nav.arPayments', href: '/ar-payments' },
+      { key: 'nav.apInvoices', href: '/ap-invoices' },
+      { key: 'nav.apPayments', href: '/ap-payments' },
+      { key: 'nav.aging', href: '/aging' },
+      { key: 'nav.cashForecast', href: '/cash-forecast' },
+      { key: 'nav.bankRecs', href: '/bank-recs' },
+      { key: 'nav.balanceSheet', href: '/balance-sheet' },
     ],
   },
   {
-    label: 'Field',
+    key: 'nav.group.field',
     links: [
-      { label: 'Crew', href: '/crew' },
-      { label: 'Equipment', href: '/equipment' },
-      { label: 'Mileage', href: '/mileage' },
-      { label: 'Expenses', href: '/expenses' },
-      { label: 'Photos', href: '/photos' },
+      { key: 'nav.crew', href: '/crew' },
+      { key: 'nav.equipment', href: '/equipment' },
+      { key: 'nav.mileage', href: '/mileage' },
+      { key: 'nav.expenses', href: '/expenses' },
+      { key: 'nav.photos', href: '/photos' },
     ],
   },
   {
-    label: 'Compliance',
+    key: 'nav.group.compliance',
     links: [
-      { label: 'Lien waivers', href: '/lien-waivers' },
-      { label: 'Certified payrolls', href: '/certified-payrolls' },
-      { label: 'DIR rates', href: '/dir-rates' },
-      { label: 'Toolbox talks', href: '/toolbox-talks' },
-      { label: 'Incidents', href: '/incidents' },
-      { label: 'Weather', href: '/weather' },
-      { label: 'SWPPP', href: '/swppp' },
+      { key: 'nav.lienWaivers', href: '/lien-waivers' },
+      { key: 'nav.certifiedPayrolls', href: '/certified-payrolls' },
+      { key: 'nav.dirRates', href: '/dir-rates' },
+      { key: 'nav.toolboxTalks', href: '/toolbox-talks' },
+      { key: 'nav.incidents', href: '/incidents' },
+      { key: 'nav.weather', href: '/weather' },
+      { key: 'nav.swppp', href: '/swppp' },
     ],
   },
   {
-    label: 'Records',
+    key: 'nav.group.records',
     links: [
-      { label: 'Customers', href: '/customers' },
-      { label: 'Vendors', href: '/vendors' },
-      { label: 'Employees', href: '/employees' },
-      { label: 'Team', href: '/team' },
-      { label: 'Documents', href: '/documents' },
+      { key: 'nav.customers', href: '/customers' },
+      { key: 'nav.vendors', href: '/vendors' },
+      { key: 'nav.employees', href: '/employees' },
+      { key: 'nav.team', href: '/team' },
+      { key: 'nav.documents', href: '/documents' },
     ],
   },
   {
-    label: 'More',
+    key: 'nav.group.more',
     links: [
-      { label: 'All modules', href: '/all-modules' },
-      { label: 'Print views', href: '/print' },
-      { label: 'Settings', href: '/settings' },
-      { label: 'Help', href: '/help' },
-      { label: "What's new", href: '/changelog' },
-      { label: 'Feedback', href: '/feedback' },
+      { key: 'nav.allModules', href: '/all-modules' },
+      { key: 'nav.printViews', href: '/print' },
+      { key: 'nav.settings', href: '/settings' },
+      { key: 'nav.help', href: '/help' },
+      { key: 'nav.changelog', href: '/changelog' },
+      { key: 'nav.feedback', href: '/feedback' },
     ],
   },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const t = getTranslator();
+  const NAV: NavGroup[] = NAV_SPEC.map((g) => ({
+    label: t(g.key),
+    links: g.links.map((l) => ({ label: t(l.key), href: l.href })),
+  }));
   return (
     <div className="min-h-screen flex flex-col">
       <KeyboardShortcuts />
@@ -117,8 +132,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             YGE
           </div>
           <div className="hidden sm:block">
-            <div className="text-sm font-semibold text-gray-900">Young General Engineering</div>
-            <div className="text-[11px] text-gray-500">Cottonwood, CA · CSLB 1145219 · DIR 2000018967</div>
+            <div className="text-sm font-semibold text-gray-900">{t('shell.companyName')}</div>
+            <div className="text-[11px] text-gray-500">{t('shell.companyTagline')}</div>
           </div>
         </Link>
         <form action="/search" method="get" className="ml-auto hidden flex-1 max-w-md sm:block sm:mx-6">
@@ -126,10 +141,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <input
               name="q"
               type="search"
-              placeholder="Search jobs, customers, vendors, employees…"
+              placeholder={t('shell.searchPlaceholder')}
               className="w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 pr-10 text-sm focus:border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-700/20"
             />
-            <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded border border-gray-300 bg-gray-50 px-1.5 py-0.5 font-mono text-[10px] text-gray-500" aria-label="Press slash to focus">
+            <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded border border-gray-300 bg-gray-50 px-1.5 py-0.5 font-mono text-[10px] text-gray-500" aria-label={t('shell.searchKeyAria')}>
               /
             </kbd>
           </div>
@@ -166,12 +181,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">{children}</main>
       </div>
       <footer className="border-t border-gray-200 bg-white px-6 py-3 text-center text-xs text-gray-400">
-        Young General Engineering, Inc · CSLB 1145219 · DIR 2000018967 · DOT 4528204 · Trouble? Call Ryan at 707-599-9921 ·{' '}
-        <Link href="/changelog" className="hover:underline">What&apos;s new</Link>
+        {t('shell.footer')}{' '}
+        <Link href="/changelog" className="hover:underline">{t('shell.footer.whatsNew')}</Link>
         {' · '}
-        <Link href="/terms" className="hover:underline">Terms</Link>
+        <Link href="/terms" className="hover:underline">{t('shell.footer.terms')}</Link>
         {' · '}
-        <Link href="/privacy" className="hover:underline">Privacy</Link>
+        <Link href="/privacy" className="hover:underline">{t('shell.footer.privacy')}</Link>
       </footer>
     </div>
   );
