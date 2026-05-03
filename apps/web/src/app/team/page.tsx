@@ -14,6 +14,7 @@ import {
   RoleBadge,
 } from '../../components';
 import { isSupabaseConfigured } from '../../lib/auth';
+import { getTranslator } from '../../lib/locale';
 
 interface TeamMember {
   id: string; // = email, satisfies DataTable's keyFn
@@ -33,43 +34,38 @@ const TEAM: TeamMember[] = [
 
 export default function TeamPage() {
   const supabaseLive = isSupabaseConfigured();
+  const t = getTranslator();
   return (
     <AppShell>
       <main className="mx-auto max-w-3xl">
         <PageHeader
-          title="Team"
-          subtitle={
-            supabaseLive
-              ? 'Everyone with sign-in access. Source: Supabase Auth.'
-              : 'Everyone with sign-in access. Source: dev-mode email allowlist (lib/auth.ts).'
-          }
+          title={t('team.title')}
+          subtitle={supabaseLive ? t('team.subtitleSupabase') : t('team.subtitleDev')}
         />
 
         {!supabaseLive ? (
-          <Alert tone="warn" title="Dev mode" className="mb-4">
-            Adding a new team member today means editing{' '}
-            <code className="rounded bg-amber-100 px-1 font-mono text-xs">apps/web/src/lib/auth.ts</code>{' '}
-            and shipping a commit. When Supabase Auth lands, this becomes a UI flow.
+          <Alert tone="warn" title={t('team.devAlert.title')} className="mb-4">
+            {t('team.devAlert.body')}
           </Alert>
         ) : null}
 
         <DataTable
           rows={TEAM}
-          keyFn={(t) => t.email}
+          keyFn={(member) => member.email}
           columns={[
             {
               key: 'name',
-              header: 'Name',
-              cell: (t) => (
+              header: t('team.col.name'),
+              cell: (member) => (
                 <span className="flex items-center gap-2">
-                  <Avatar name={t.name} size="sm" />
-                  <span className="font-medium text-gray-900">{t.name}</span>
+                  <Avatar name={member.name} size="sm" />
+                  <span className="font-medium text-gray-900">{member.name}</span>
                 </span>
               ),
             },
-            { key: 'role', header: 'Role', cell: (t) => <RoleBadge role={t.role} size="md" /> },
-            { key: 'email', header: 'Email', cell: (t) => <span className="font-mono text-xs text-gray-700">{t.email}</span> },
-            { key: 'phone', header: 'Phone', cell: (t) => t.phone ?? <span className="text-gray-400">—</span> },
+            { key: 'role', header: t('team.col.role'), cell: (member) => <RoleBadge role={member.role} size="md" /> },
+            { key: 'email', header: t('team.col.email'), cell: (member) => <span className="font-mono text-xs text-gray-700">{member.email}</span> },
+            { key: 'phone', header: t('team.col.phone'), cell: (member) => member.phone ?? <span className="text-gray-400">—</span> },
           ]}
         />
       </main>
