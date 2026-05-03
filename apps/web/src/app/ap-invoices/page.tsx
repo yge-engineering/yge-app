@@ -17,6 +17,7 @@ import {
   StatusPill,
   Tile,
 } from '../../components';
+import { getLocale, getTranslator } from '../../lib/locale';
 import {
   apDueLevel,
   apStatusLabel,
@@ -98,23 +99,25 @@ export default async function ApInvoicesPage({
   const csvHref = `${publicApiBaseUrl()}/api/ap-invoices?format=csv${
     searchParams.status ? '&status=' + encodeURIComponent(searchParams.status) : ''
   }${searchParams.jobId ? '&jobId=' + encodeURIComponent(searchParams.jobId) : ''}`;
+  const t = getTranslator();
+  const locale = getLocale();
 
   return (
     <AppShell>
       <main className="mx-auto max-w-6xl">
         <PageHeader
-          title="AP invoices"
-          subtitle="Vendor bills. Manual entry for Phase 1; AI-scan from a PDF lands in a later phase that drops the same shape into the create endpoint."
+          title={t('ap.title')}
+          subtitle={t('ap.subtitle')}
           actions={
             <span className="flex gap-2">
               <a
                 href={csvHref}
                 className="inline-flex items-center rounded-md border border-blue-700 px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-50"
               >
-                Download CSV
+                {t('ap.downloadCsv')}
               </a>
               <LinkButton href="/ap-invoices/new" variant="primary" size="md">
-                + New invoice
+                {t('ap.newInvoice')}
               </LinkButton>
             </span>
           }
@@ -122,27 +125,27 @@ export default async function ApInvoicesPage({
 
         <section className="mb-4 grid gap-3 sm:grid-cols-4">
           <Tile
-            label="Outstanding"
+            label={t('ap.tile.outstanding')}
             value={<Money cents={rollup.outstandingCents} />}
-            sublabel={`${rollup.draft + rollup.pending + rollup.approved} invoice(s)`}
+            sublabel={t('ap.tile.outstandingSub', { count: rollup.draft + rollup.pending + rollup.approved })}
             tone={rollup.outstandingCents > 0 ? 'warn' : 'neutral'}
           />
           <Tile
-            label="Overdue"
+            label={t('ap.tile.overdue')}
             value={<Money cents={rollup.overdueCents} />}
             tone={rollup.overdueCents > 0 ? 'danger' : 'success'}
           />
-          <Tile label="Pending approval" value={rollup.pending} />
-          <Tile label="Paid (lifetime)" value={rollup.paid} tone="success" />
+          <Tile label={t('ap.tile.pending')} value={rollup.pending} />
+          <Tile label={t('ap.tile.paid')} value={rollup.paid} tone="success" />
         </section>
 
         <section className="mb-4 flex flex-wrap items-center gap-2 rounded-md border border-gray-200 bg-white p-3">
-          <span className="text-xs uppercase tracking-wide text-gray-500">Status:</span>
+          <span className="text-xs uppercase tracking-wide text-gray-500">{t('ap.filter.status')}</span>
           <Link
             href={buildHref({ status: undefined })}
             className={`rounded px-2 py-1 text-xs ${!searchParams.status ? 'bg-blue-700 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
           >
-            All
+            {t('ap.filter.all')}
           </Link>
           {STATUSES.map((s) => (
             <Link
@@ -150,30 +153,30 @@ export default async function ApInvoicesPage({
               href={buildHref({ status: s })}
               className={`rounded px-2 py-1 text-xs ${searchParams.status === s ? 'bg-blue-700 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
             >
-              {apStatusLabel(s)}
+              {apStatusLabel(s, locale)}
             </Link>
           ))}
         </section>
 
         {invoices.length === 0 ? (
           <EmptyState
-            title="No invoices match"
-            body="Vendor bills land here once we log them. Phase 2 will OCR a PDF and pre-fill the form for you."
-            actions={[{ href: '/ap-invoices/new', label: 'New invoice', primary: true }]}
+            title={t('ap.empty.title')}
+            body={t('ap.empty.body')}
+            actions={[{ href: '/ap-invoices/new', label: t('ap.empty.action'), primary: true }]}
           />
         ) : (
           <div className="overflow-x-auto rounded-md border border-gray-200 bg-white">
             <table className="w-full text-left text-sm">
               <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
                 <tr>
-                  <th className="px-4 py-2">Vendor</th>
-                  <th className="px-4 py-2">Invoice #</th>
-                  <th className="px-4 py-2">Job</th>
-                  <th className="px-4 py-2">Date</th>
-                  <th className="px-4 py-2">Due</th>
-                  <th className="px-4 py-2 text-right">Total</th>
-                  <th className="px-4 py-2 text-right">Balance</th>
-                  <th className="px-4 py-2">Status</th>
+                  <th className="px-4 py-2">{t('ap.col.vendor')}</th>
+                  <th className="px-4 py-2">{t('ap.col.invoiceNumber')}</th>
+                  <th className="px-4 py-2">{t('ap.col.job')}</th>
+                  <th className="px-4 py-2">{t('ap.col.date')}</th>
+                  <th className="px-4 py-2">{t('ap.col.due')}</th>
+                  <th className="px-4 py-2 text-right">{t('ap.col.total')}</th>
+                  <th className="px-4 py-2 text-right">{t('ap.col.balance')}</th>
+                  <th className="px-4 py-2">{t('ap.col.status')}</th>
                   <th className="px-4 py-2"></th>
                 </tr>
               </thead>
@@ -204,7 +207,7 @@ export default async function ApInvoicesPage({
                       <td className="px-4 py-3 text-right">
                         {balance > 0 ? <Money cents={balance} className="font-semibold" /> : <span className="text-sm text-gray-400">paid</span>}
                       </td>
-                      <td className="px-4 py-3"><StatusPill label={apStatusLabel(inv.status)} tone={statusTone(inv.status)} /></td>
+                      <td className="px-4 py-3"><StatusPill label={apStatusLabel(inv.status, locale)} tone={statusTone(inv.status)} /></td>
                       <td className="px-4 py-3 text-right text-sm">
                         <Link href={`/ap-invoices/${inv.id}`} className="text-blue-700 hover:underline">Open</Link>
                       </td>
