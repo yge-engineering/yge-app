@@ -6,6 +6,7 @@
 import Link from 'next/link';
 
 import { AppShell } from '../../components/app-shell';
+import { getTranslator } from '../../lib/locale';
 import {
   documentKindLabel,
   type Document,
@@ -85,6 +86,7 @@ export default async function DocumentsPage({
     const q = params.toString();
     return q ? `/documents?${q}` : '/documents';
   }
+  const t = getTranslator();
 
   return (
     <AppShell>
@@ -97,26 +99,22 @@ export default async function DocumentsPage({
           href="/documents/new"
           className="rounded bg-yge-blue-500 px-3 py-1 text-sm font-medium text-white hover:bg-yge-blue-700"
         >
-          + Add document
+          {t('docs.addDocument')}
         </Link>
       </div>
 
-      <h1 className="text-3xl font-bold text-yge-blue-500">Document vault</h1>
-      <p className="mt-2 text-gray-700">
-        Phase 1 metadata-only store. Captures the URL or path to a PDF + the
-        kind + tags so it&rsquo;s findable later. File upload + AI summarization
-        land in a later phase.
-      </p>
+      <h1 className="text-3xl font-bold text-yge-blue-500">{t('docs.title')}</h1>
+      <p className="mt-2 text-gray-700">{t('docs.subtitle')}</p>
 
       {/* Filters */}
       <section className="mt-6 space-y-3 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
         <div className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="text-xs uppercase tracking-wide text-gray-500">Job:</span>
+          <span className="text-xs uppercase tracking-wide text-gray-500">{t('docs.filter.job')}</span>
           <Link
             href={buildHref({ jobId: undefined })}
             className={`rounded px-2 py-1 text-xs ${!searchParams.jobId ? 'bg-yge-blue-500 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
           >
-            All
+            {t('docs.filter.all')}
           </Link>
           {jobs.slice(0, 6).map((j) => (
             <Link
@@ -129,12 +127,12 @@ export default async function DocumentsPage({
           ))}
         </div>
         <div className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="text-xs uppercase tracking-wide text-gray-500">Kind:</span>
+          <span className="text-xs uppercase tracking-wide text-gray-500">{t('docs.filter.kind')}</span>
           <Link
             href={buildHref({ kind: undefined })}
             className={`rounded px-2 py-1 text-xs ${!searchParams.kind ? 'bg-yge-blue-500 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
           >
-            All
+            {t('docs.filter.all')}
           </Link>
           {ALL_KINDS.map((k) => (
             <Link
@@ -148,20 +146,20 @@ export default async function DocumentsPage({
         </div>
         {allTags.length > 0 && (
           <div className="flex flex-wrap items-center gap-2 text-sm">
-            <span className="text-xs uppercase tracking-wide text-gray-500">Tag:</span>
+            <span className="text-xs uppercase tracking-wide text-gray-500">{t('docs.filter.tag')}</span>
             <Link
               href={buildHref({ tag: undefined })}
               className={`rounded px-2 py-1 text-xs ${!searchParams.tag ? 'bg-yge-blue-500 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
             >
-              All
+              {t('docs.filter.all')}
             </Link>
-            {allTags.map((t) => (
+            {allTags.map((tg) => (
               <Link
-                key={t}
-                href={buildHref({ tag: t })}
-                className={`rounded px-2 py-1 text-xs ${searchParams.tag === t ? 'bg-yge-blue-500 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+                key={tg}
+                href={buildHref({ tag: tg })}
+                className={`rounded px-2 py-1 text-xs ${searchParams.tag === tg ? 'bg-yge-blue-500 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
               >
-                #{t}
+                #{tg}
               </Link>
             ))}
           </div>
@@ -170,7 +168,7 @@ export default async function DocumentsPage({
 
       {activeJob && (
         <p className="mt-4 text-sm text-gray-600">
-          Filtered to <strong>{activeJob.projectName}</strong>
+          {t('docs.filteredTo')} <strong>{activeJob.projectName}</strong>
           {searchParams.kind && (
             <>
               {' '}\u00b7 {documentKindLabel(searchParams.kind as DocumentKind)}
@@ -182,18 +180,18 @@ export default async function DocumentsPage({
 
       {docs.length === 0 ? (
         <div className="mt-6 rounded border border-gray-200 bg-gray-50 p-6 text-sm text-gray-600">
-          No documents match. Try adjusting the filters or click <em>Add document</em>.
+          {t('docs.empty')}
         </div>
       ) : (
         <div className="mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
           <table className="w-full text-left text-sm">
             <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
               <tr>
-                <th className="px-4 py-2">Title</th>
-                <th className="px-4 py-2">Kind</th>
-                <th className="px-4 py-2">Job</th>
-                <th className="px-4 py-2">Date</th>
-                <th className="px-4 py-2">Tags</th>
+                <th className="px-4 py-2">{t('docs.col.title')}</th>
+                <th className="px-4 py-2">{t('docs.col.kind')}</th>
+                <th className="px-4 py-2">{t('docs.col.job')}</th>
+                <th className="px-4 py-2">{t('docs.col.date')}</th>
+                <th className="px-4 py-2">{t('docs.col.tags')}</th>
                 <th className="px-4 py-2"></th>
               </tr>
             </thead>
@@ -206,7 +204,7 @@ export default async function DocumentsPage({
                       <div className="font-medium text-gray-900">{d.title}</div>
                       {d.pageCount !== undefined && (
                         <div className="text-xs text-gray-500">
-                          {d.pageCount} page{d.pageCount === 1 ? '' : 's'}
+                          {t('docs.pageCount', { count: d.pageCount, plural: d.pageCount === 1 ? '' : 's' })}
                         </div>
                       )}
                     </td>
@@ -229,12 +227,12 @@ export default async function DocumentsPage({
                       {d.tags.length === 0 ? (
                         <span className="text-gray-400">—</span>
                       ) : (
-                        d.tags.map((t) => (
+                        d.tags.map((tg) => (
                           <span
-                            key={t}
+                            key={tg}
                             className="mr-1 inline-block rounded bg-gray-100 px-1.5 py-0.5 text-[10px]"
                           >
-                            #{t}
+                            #{tg}
                           </span>
                         ))
                       )}
@@ -247,14 +245,14 @@ export default async function DocumentsPage({
                           rel="noopener noreferrer"
                           className="mr-3 text-yge-blue-500 hover:underline"
                         >
-                          Open
+                          {t('docs.open')}
                         </a>
                       )}
                       <Link
                         href={`/documents/${d.id}`}
                         className="text-yge-blue-500 hover:underline"
                       >
-                        Edit
+                        {t('docs.edit')}
                       </Link>
                     </td>
                   </tr>
