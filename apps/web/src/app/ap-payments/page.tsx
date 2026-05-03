@@ -15,6 +15,7 @@ import {
   StatusPill,
   Tile,
 } from '../../components';
+import { getTranslator } from '../../lib/locale';
 import {
   apPaymentMethodLabel,
   computeApPaymentRollup,
@@ -71,33 +72,34 @@ export default async function ApPaymentsPage({
   const csvHref = `${publicApiBaseUrl()}/api/ap-payments?format=csv${
     searchParams.method ? '&method=' + encodeURIComponent(searchParams.method) : ''
   }`;
+  const t = getTranslator();
 
   return (
     <AppShell>
       <main className="mx-auto max-w-6xl">
         <PageHeader
-          title="Check register"
-          subtitle="Money out to vendors against AP invoices. Sorted newest-first; uncleared rows are highlighted because they're funds in transit."
+          title={t('apPay.title')}
+          subtitle={t('apPay.subtitle')}
           actions={
             <span className="flex gap-2">
               <a
                 href={csvHref}
                 className="inline-flex items-center rounded-md border border-blue-700 px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-50"
               >
-                Download CSV
+                {t('apPay.csv')}
               </a>
               <LinkButton href="/ap-payments/new" variant="primary" size="md">
-                + Record payment
+                {t('apPay.recordPayment')}
               </LinkButton>
             </span>
           }
         />
 
         <section className="mb-4 grid gap-3 sm:grid-cols-4">
-          <Tile label="Payments" value={rollup.total} />
-          <Tile label="Total paid (lifetime)" value={<Money cents={rollup.totalCents} />} />
+          <Tile label={t('apPay.tile.payments')} value={rollup.total} />
+          <Tile label={t('apPay.tile.totalPaid')} value={<Money cents={rollup.totalCents} />} />
           <Tile
-            label="Uncleared"
+            label={t('apPay.tile.uncleared')}
             value={
               <>
                 {rollup.uncleared} · <Money cents={rollup.unclearedCents} />
@@ -105,16 +107,16 @@ export default async function ApPaymentsPage({
             }
             tone={rollup.uncleared > 0 ? 'warn' : 'success'}
           />
-          <Tile label="Voided" value={rollup.voided} />
+          <Tile label={t('apPay.tile.voided')} value={rollup.voided} />
         </section>
 
         <section className="mb-4 flex flex-wrap items-center gap-2 rounded-md border border-gray-200 bg-white p-3">
-          <span className="text-xs uppercase tracking-wide text-gray-500">Method:</span>
+          <span className="text-xs uppercase tracking-wide text-gray-500">{t('apPay.filter.method')}</span>
           <Link
             href={buildHref({ method: undefined })}
             className={`rounded px-2 py-1 text-xs ${!searchParams.method ? 'bg-blue-700 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
           >
-            All
+            {t('apPay.filter.all')}
           </Link>
           {METHODS.map((m) => (
             <Link
@@ -129,22 +131,22 @@ export default async function ApPaymentsPage({
 
         {payments.length === 0 ? (
           <EmptyState
-            title="No payments in this filter"
-            body="The check register fills up as you cut checks / send ACH / pay cards. Bank rec sets the cleared flag automatically once the payment matches a statement line."
-            actions={[{ href: '/ap-payments/new', label: 'Record payment', primary: true }]}
+            title={t('apPay.empty.title')}
+            body={t('apPay.empty.body')}
+            actions={[{ href: '/ap-payments/new', label: t('apPay.empty.action'), primary: true }]}
           />
         ) : (
           <div className="overflow-x-auto rounded-md border border-gray-200 bg-white">
             <table className="w-full text-left text-sm">
               <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
                 <tr>
-                  <th className="px-4 py-2">Paid</th>
-                  <th className="px-4 py-2">Vendor</th>
-                  <th className="px-4 py-2">Method</th>
-                  <th className="px-4 py-2">Reference</th>
-                  <th className="px-4 py-2">Bank</th>
-                  <th className="px-4 py-2 text-right">Amount</th>
-                  <th className="px-4 py-2">Status</th>
+                  <th className="px-4 py-2">{t('apPay.col.paid')}</th>
+                  <th className="px-4 py-2">{t('apPay.col.vendor')}</th>
+                  <th className="px-4 py-2">{t('apPay.col.method')}</th>
+                  <th className="px-4 py-2">{t('apPay.col.reference')}</th>
+                  <th className="px-4 py-2">{t('apPay.col.bank')}</th>
+                  <th className="px-4 py-2 text-right">{t('apPay.col.amount')}</th>
+                  <th className="px-4 py-2">{t('apPay.col.status')}</th>
                   <th className="px-4 py-2"></th>
                 </tr>
               </thead>
@@ -175,10 +177,10 @@ export default async function ApPaymentsPage({
                     </td>
                     <td className="px-4 py-3">
                       {p.voided
-                        ? <StatusPill label="Voided" tone="muted" />
+                        ? <StatusPill label={t('apPay.status.voided')} tone="muted" />
                         : p.cleared
-                          ? <StatusPill label="Cleared" tone="success" />
-                          : <StatusPill label="In transit" tone="warn" />}
+                          ? <StatusPill label={t('apPay.status.cleared')} tone="success" />
+                          : <StatusPill label={t('apPay.status.inTransit')} tone="warn" />}
                     </td>
                     <td className="px-4 py-3"></td>
                   </tr>
