@@ -8,6 +8,7 @@
 import Link from 'next/link';
 
 import { AppShell } from '../../components/app-shell';
+import { getTranslator } from '../../lib/locale';
 import { YGE_COMPANY_INFO } from '@yge/shared';
 import { Letterhead } from '@/components/letterhead';
 
@@ -54,6 +55,7 @@ const COLORS: ColorSwatch[] = [
 
 export default function BrandPage() {
   const company = YGE_COMPANY_INFO;
+  const t = getTranslator();
   return (
     <AppShell>
     <main className="mx-auto max-w-5xl space-y-10 p-8">
@@ -61,30 +63,18 @@ export default function BrandPage() {
         <Link href="/dashboard" className="text-sm text-yge-blue-500 hover:underline">
           &larr; Dashboard
         </Link>
-        <div className="text-xs text-gray-500">
-          Phase-1 placeholder kit &middot; swap for designer-final assets when
-          they land
-        </div>
+        <div className="text-xs text-gray-500">{t('brand.headerNote')}</div>
       </div>
 
       <header>
-        <h1 className="text-3xl font-bold text-yge-blue-500">YGE brand kit</h1>
-        <p className="mt-2 text-gray-700">
-          Logos, colors, typography, and the standard letterhead block. Every
-          printable page in the app pulls from these tokens, so updating this
-          page (or replacing the SVG files in <code>/public</code>) cascades
-          across cover letters, bid summaries, envelope checklists, and
-          rosters.
-        </p>
+        <h1 className="text-3xl font-bold text-yge-blue-500">{t('brand.title')}</h1>
+        <p className="mt-2 text-gray-700">{t('brand.subtitle')}</p>
       </header>
 
       {/* ---------- Logos ---------- */}
       <section>
-        <h2 className="text-xl font-semibold text-gray-900">Logos</h2>
-        <p className="mt-1 text-sm text-gray-600">
-          Drop-in replaceable: save a designer-final SVG over the file at
-          the same path and every consumer picks it up.
-        </p>
+        <h2 className="text-xl font-semibold text-gray-900">{t('brand.h.logos')}</h2>
+        <p className="mt-1 text-sm text-gray-600">{t('brand.logos.intro')}</p>
         <div className="mt-4 grid gap-6 sm:grid-cols-2">
           <div className="rounded-lg border border-gray-200 bg-white p-6 text-center shadow-sm">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -94,12 +84,8 @@ export default function BrandPage() {
               className="mx-auto h-32 w-32"
             />
             <div className="mt-3 text-xs text-gray-500">/yge-logo.svg</div>
-            <div className="mt-1 text-xs font-medium text-gray-700">
-              Square mark
-            </div>
-            <div className="text-xs text-gray-500">
-              For favicons, social avatars, square signage
-            </div>
+            <div className="mt-1 text-xs font-medium text-gray-700">{t('brand.logos.squareName')}</div>
+            <div className="text-xs text-gray-500">{t('brand.logos.squareUse')}</div>
           </div>
           <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -111,23 +97,16 @@ export default function BrandPage() {
             <div className="mt-3 text-xs text-gray-500">
               /yge-logo-horizontal.svg
             </div>
-            <div className="mt-1 text-xs font-medium text-gray-700">
-              Horizontal lockup
-            </div>
-            <div className="text-xs text-gray-500">
-              For letterhead headers, email signatures, vehicle decals
-            </div>
+            <div className="mt-1 text-xs font-medium text-gray-700">{t('brand.logos.horizontalName')}</div>
+            <div className="text-xs text-gray-500">{t('brand.logos.horizontalUse')}</div>
           </div>
         </div>
       </section>
 
       {/* ---------- Colors ---------- */}
       <section>
-        <h2 className="text-xl font-semibold text-gray-900">Colors</h2>
-        <p className="mt-1 text-sm text-gray-600">
-          Defined in <code>apps/web/tailwind.config.ts</code> &mdash; reference
-          them via the Tailwind class names below.
-        </p>
+        <h2 className="text-xl font-semibold text-gray-900">{t('brand.h.colors')}</h2>
+        <p className="mt-1 text-sm text-gray-600">{t('brand.colors.intro')}</p>
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {COLORS.map((c) => (
             <div
@@ -150,12 +129,8 @@ export default function BrandPage() {
 
       {/* ---------- Typography ---------- */}
       <section>
-        <h2 className="text-xl font-semibold text-gray-900">Typography</h2>
-        <p className="mt-1 text-sm text-gray-600">
-          Inter is the default sans family across the app and the printables.
-          Pair with a heavy weight (700-800) for headings, regular (400-500)
-          for body, semi (600) for labels and metadata strips.
-        </p>
+        <h2 className="text-xl font-semibold text-gray-900">{t('brand.h.typography')}</h2>
+        <p className="mt-1 text-sm text-gray-600">{t('brand.typography.intro')}</p>
         <div className="mt-4 space-y-3 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
           <div className="text-3xl font-bold text-yge-blue-500">
             Heading 1 / 30px / 700
@@ -181,11 +156,8 @@ export default function BrandPage() {
 
       {/* ---------- Address block ---------- */}
       <section>
-        <h2 className="text-xl font-semibold text-gray-900">Standard address block</h2>
-        <p className="mt-1 text-sm text-gray-600">
-          Pulled from <code>YGE_COMPANY_INFO</code> in <code>@yge/shared</code>.
-          Update the constant once, every printable updates.
-        </p>
+        <h2 className="text-xl font-semibold text-gray-900">{t('brand.h.address')}</h2>
+        <p className="mt-1 text-sm text-gray-600">{t('brand.address.intro')}</p>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <pre className="overflow-x-auto rounded border border-gray-200 bg-gray-50 p-4 text-xs leading-relaxed text-gray-800">
 {`${company.legalName}
@@ -212,10 +184,8 @@ Vice President: ${company.vicePresident.name} (${company.vicePresident.phone})`}
 
       {/* ---------- Full letterhead preview ---------- */}
       <section>
-        <h2 className="text-xl font-semibold text-gray-900">Full letterhead</h2>
-        <p className="mt-1 text-sm text-gray-600">
-          Used at the top of cover letters and bid summaries.
-        </p>
+        <h2 className="text-xl font-semibold text-gray-900">{t('brand.h.letterhead')}</h2>
+        <p className="mt-1 text-sm text-gray-600">{t('brand.letterhead.intro')}</p>
         <div className="mt-4 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
           <Letterhead />
         </div>
