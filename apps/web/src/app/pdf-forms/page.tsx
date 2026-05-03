@@ -13,6 +13,7 @@ import {
   PageHeader,
   StatusPill,
 } from '../../components';
+import { getTranslator } from '../../lib/locale';
 import {
   computeFillability,
   computeFormLibraryRollup,
@@ -53,6 +54,7 @@ export default async function PdfFormsPage({
   }
   const mappings = await fetchMappings(qs);
   const rollup = computeFormLibraryRollup(mappings);
+  const t = getTranslator();
 
   return (
     <AppShell>
@@ -67,34 +69,31 @@ export default async function PdfFormsPage({
         </div>
 
         <PageHeader
-          title="PDF form library"
-          subtitle="Pre-mapped agency forms — CAL FIRE, Caltrans, DIR, IRS, ACORD, counties. Pick a form, answer any inline prompts, get a filled-and-flattened PDF back."
+          title={t('pdfForms.title')}
+          subtitle={t('pdfForms.subtitle')}
         />
 
         <section className="mt-4 grid gap-3 sm:grid-cols-3">
-          <Tile label="Forms in library" value={String(rollup.total)} />
-          <Tile label="Reviewed" value={String(rollup.reviewedCount)} tone="success" />
-          <Tile label="Drafts (need review)" value={String(rollup.draftCount)} tone="warn" />
+          <Tile label={t('pdfForms.tile.total')} value={String(rollup.total)} />
+          <Tile label={t('pdfForms.tile.reviewed')} value={String(rollup.reviewedCount)} tone="success" />
+          <Tile label={t('pdfForms.tile.drafts')} value={String(rollup.draftCount)} tone="warn" />
         </section>
 
         {mappings.length === 0 ? (
           <Alert tone="info" className="mt-6">
-            No form mappings loaded yet. The seeded library (CAL FIRE 720,
-            DAS-140 / DAS-142, PWC-100, IRS W-9, ACORD 25, top county
-            packets) ships in the next bundle. In the meantime, the
-            POST /api/pdf-form-mappings endpoint accepts custom mappings.
+            {t('pdfForms.empty')}
           </Alert>
         ) : (
           <section className="mt-6 overflow-hidden rounded-md border border-gray-200 bg-white shadow-sm">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
                 <tr>
-                  <th className="px-3 py-2 text-left">Form</th>
-                  <th className="px-3 py-2 text-left">Agency</th>
-                  <th className="px-3 py-2 text-left">Status</th>
-                  <th className="px-3 py-2 text-right">Fillability</th>
-                  <th className="px-3 py-2 text-left">Field mix</th>
-                  <th className="px-3 py-2 text-right">Action</th>
+                  <th className="px-3 py-2 text-left">{t('pdfForms.col.form')}</th>
+                  <th className="px-3 py-2 text-left">{t('pdfForms.col.agency')}</th>
+                  <th className="px-3 py-2 text-left">{t('pdfForms.col.status')}</th>
+                  <th className="px-3 py-2 text-right">{t('pdfForms.col.fillability')}</th>
+                  <th className="px-3 py-2 text-left">{t('pdfForms.col.fieldMix')}</th>
+                  <th className="px-3 py-2 text-right">{t('pdfForms.col.action')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -121,12 +120,12 @@ export default async function PdfFormsPage({
                       </td>
                       <td className="px-3 py-2 text-right text-xs">
                         <div className="font-mono text-gray-900">
-                          {fill.autoFillCount} / {fill.total} auto
+                          {fill.autoFillCount} / {fill.total} {t('pdfForms.fillability.auto')}
                         </div>
                         {fill.promptCount > 0 && (
                           <div className="text-gray-500">
-                            {fill.promptCount} prompt
-                            {fill.sensitivePromptCount > 0 && ` (${fill.sensitivePromptCount} sensitive)`}
+                            {fill.promptCount} {t('pdfForms.fillability.prompt')}
+                            {fill.sensitivePromptCount > 0 && ` (${fill.sensitivePromptCount} ${t('pdfForms.fillability.sensitive')})`}
                           </div>
                         )}
                       </td>
@@ -138,7 +137,7 @@ export default async function PdfFormsPage({
                           href={`/pdf-forms/${m.id}`}
                           className="rounded bg-yge-blue-500 px-2 py-1 text-xs font-medium text-white hover:bg-yge-blue-700"
                         >
-                          Open
+                          {t('pdfForms.action.open')}
                         </Link>
                       </td>
                     </tr>
