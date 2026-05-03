@@ -17,6 +17,7 @@ import {
   StatusPill,
   Tile,
 } from '../../components';
+import { getTranslator } from '../../lib/locale';
 import {
   accountTypeLabel,
   computeCoaRollup,
@@ -82,56 +83,56 @@ export default async function CoaPage({
     const q = params.toString();
     return q ? `/coa?${q}` : '/coa';
   }
+  const t = getTranslator();
 
   return (
     <AppShell>
       <main className="mx-auto max-w-6xl">
         <PageHeader
-          title="Chart of accounts"
-          subtitle="GL backbone for AP coding, AR posting, and Phase 2 trial balance / P&L. Standard 5-digit construction numbering."
+          title={t('coa.title')}
+          subtitle={t('coa.subtitle')}
           actions={
             <span className="flex gap-2">
               {empty ? <CoaSeedButton apiBaseUrl={publicApiBaseUrl()} /> : null}
               <LinkButton href="/coa/new" variant="primary" size="md">
-                + Add account
+                {t('coa.addAccount')}
               </LinkButton>
             </span>
           }
         />
 
         <section className="mb-4 grid gap-3 sm:grid-cols-4">
-          <Tile label="Total accounts" value={rollup.total} />
-          <Tile label="Active" value={rollup.active} />
-          <Tile label="Inactive" value={rollup.inactive} />
-          <Tile label="Account types" value={rollup.byType.length} />
+          <Tile label={t('coa.tile.total')} value={rollup.total} />
+          <Tile label={t('coa.tile.active')} value={rollup.active} />
+          <Tile label={t('coa.tile.inactive')} value={rollup.inactive} />
+          <Tile label={t('coa.tile.types')} value={rollup.byType.length} />
         </section>
 
         <section className="mb-4 flex flex-wrap items-center gap-2 rounded-md border border-gray-200 bg-white p-3">
-          <span className="text-xs uppercase tracking-wide text-gray-500">Type:</span>
+          <span className="text-xs uppercase tracking-wide text-gray-500">{t('coa.filter.type')}</span>
           <Link
             href={buildHref({ type: undefined })}
             className={`rounded px-2 py-1 text-xs ${!searchParams.type ? 'bg-blue-700 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
           >
-            All
+            {t('coa.filter.all')}
           </Link>
-          {TYPES.map((t) => (
+          {TYPES.map((tp) => (
             <Link
-              key={t}
-              href={buildHref({ type: t })}
-              className={`rounded px-2 py-1 text-xs ${searchParams.type === t ? 'bg-blue-700 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+              key={tp}
+              href={buildHref({ type: tp })}
+              className={`rounded px-2 py-1 text-xs ${searchParams.type === tp ? 'bg-blue-700 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
             >
-              {accountTypeLabel(t)}
+              {accountTypeLabel(tp)}
             </Link>
           ))}
         </section>
 
         {empty ? (
-          <Alert tone="warn" title="No accounts yet">
-            Click <em>Apply default seed</em> above to drop in the starter CA construction COA
-            (~50 accounts) — you can prune it after.
+          <Alert tone="warn" title={t('coa.empty.title')}>
+            {t('coa.empty.body')}
           </Alert>
         ) : accounts.length === 0 ? (
-          <EmptyState title="Nothing in this filter" body="Try widening the type filter, or add a new account." />
+          <EmptyState title={t('coa.empty.filter.title')} body={t('coa.empty.filter.body')} />
         ) : (
           <DataTable
             rows={accounts}
@@ -139,7 +140,7 @@ export default async function CoaPage({
             columns={[
               {
                 key: 'number',
-                header: '#',
+                header: t('coa.col.number'),
                 cell: (a) => (
                   <Link href={`/coa/${a.id}`} className={`font-mono text-sm font-medium ${a.active ? 'text-blue-700 hover:underline' : 'text-gray-400'}`}>
                     {a.number}
@@ -148,7 +149,7 @@ export default async function CoaPage({
               },
               {
                 key: 'name',
-                header: 'Name',
+                header: t('coa.col.name'),
                 cell: (a) => (
                   <span className={`text-sm ${a.active ? 'text-gray-900' : 'text-gray-400'}`}>
                     {a.parentNumber ? <span className="text-gray-400">↳ </span> : null}
@@ -156,17 +157,17 @@ export default async function CoaPage({
                   </span>
                 ),
               },
-              { key: 'type', header: 'Type', cell: (a) => <span className="text-xs text-gray-700">{accountTypeLabel(a.type)}</span> },
+              { key: 'type', header: t('coa.col.type'), cell: (a) => <span className="text-xs text-gray-700">{accountTypeLabel(a.type)}</span> },
               {
                 key: 'parent',
-                header: 'Parent',
+                header: t('coa.col.parent'),
                 cell: (a) => <span className="font-mono text-xs text-gray-700">{a.parentNumber ?? '—'}</span>,
               },
               {
                 key: 'status',
-                header: 'Status',
+                header: t('coa.col.status'),
                 cell: (a) =>
-                  a.active ? <StatusPill label="Active" tone="success" /> : <StatusPill label="Inactive" tone="muted" />,
+                  a.active ? <StatusPill label={t('coa.status.active')} tone="success" /> : <StatusPill label={t('coa.status.inactive')} tone="muted" />,
               },
             ]}
           />
