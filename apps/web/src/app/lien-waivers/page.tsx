@@ -17,6 +17,7 @@ import {
   StatusPill,
   Tile,
 } from '../../components';
+import { getTranslator } from '../../lib/locale';
 import {
   computeLienWaiverRollup,
   isConditional,
@@ -73,39 +74,40 @@ export default async function LienWaiversPage({
     const q = params.toString();
     return q ? `/lien-waivers?${q}` : '/lien-waivers';
   }
+  const t = getTranslator();
 
   return (
     <AppShell>
       <main className="mx-auto max-w-6xl">
         <PageHeader
-          title="Lien waivers"
-          subtitle="CA Civil Code statutory waivers — §8132/§8134 progress + §8136/§8138 final. Conditional = safe before payment clears; unconditional = wait until funds clear."
+          title={t('lw.title')}
+          subtitle={t('lw.subtitle')}
           actions={
             <LinkButton href="/lien-waivers/new" variant="primary" size="md">
-              + New waiver
+              {t('lw.newWaiver')}
             </LinkButton>
           }
         />
 
         <section className="mb-4 grid gap-3 sm:grid-cols-4">
-          <Tile label="Total" value={rollup.total} />
-          <Tile label="Draft" value={rollup.draft} />
-          <Tile label="Signed" value={rollup.signed} />
+          <Tile label={t('lw.tile.total')} value={rollup.total} />
+          <Tile label={t('lw.tile.draft')} value={rollup.draft} />
+          <Tile label={t('lw.tile.signed')} value={rollup.signed} />
           <Tile
-            label="Unsigned uncond. (caution)"
+            label={t('lw.tile.unsignedUncond')}
             value={rollup.unsignedUnconditional}
             tone={rollup.unsignedUnconditional > 0 ? 'warn' : 'success'}
-            warnText={rollup.unsignedUnconditional > 0 ? 'Confirm payment cleared before signing' : undefined}
+            warnText={rollup.unsignedUnconditional > 0 ? t('lw.tile.unsignedUncond.warn') : undefined}
           />
         </section>
 
         <section className="mb-4 flex flex-wrap items-center gap-2 rounded-md border border-gray-200 bg-white p-3">
-          <span className="text-xs uppercase tracking-wide text-gray-500">Status:</span>
+          <span className="text-xs uppercase tracking-wide text-gray-500">{t('lw.filter.status')}</span>
           <Link
             href={buildHref({ status: undefined })}
             className={`rounded px-2 py-1 text-xs ${!searchParams.status ? 'bg-blue-700 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
           >
-            All
+            {t('lw.filter.all')}
           </Link>
           {STATUSES.map((s) => (
             <Link
@@ -120,9 +122,9 @@ export default async function LienWaiversPage({
 
         {waivers.length === 0 ? (
           <EmptyState
-            title="No lien waivers yet"
-            body="Customers usually require these to release each progress payment. Conditional progress (§8132) is the most common one for monthly draws."
-            actions={[{ href: '/lien-waivers/new', label: 'New waiver', primary: true }]}
+            title={t('lw.empty.title')}
+            body={t('lw.empty.body')}
+            actions={[{ href: '/lien-waivers/new', label: t('lw.empty.action'), primary: true }]}
           />
         ) : (
           <DataTable
@@ -131,7 +133,7 @@ export default async function LienWaiversPage({
             columns={[
               {
                 key: 'through',
-                header: 'Through',
+                header: t('lw.col.through'),
                 cell: (w) => (
                   <Link href={`/lien-waivers/${w.id}`} className="font-mono text-xs font-medium text-blue-700 hover:underline">
                     {w.throughDate}
@@ -140,7 +142,7 @@ export default async function LienWaiversPage({
               },
               {
                 key: 'kind',
-                header: 'Kind',
+                header: t('lw.col.kind'),
                 cell: (w) => (
                   <span>
                     <span
@@ -154,17 +156,17 @@ export default async function LienWaiversPage({
                   </span>
                 ),
               },
-              { key: 'owner', header: 'Owner', cell: (w) => <span className="text-sm text-gray-900">{w.ownerName}</span> },
-              { key: 'job', header: 'Job', cell: (w) => <span className="text-xs text-gray-700">{w.jobName}</span> },
+              { key: 'owner', header: t('lw.col.owner'), cell: (w) => <span className="text-sm text-gray-900">{w.ownerName}</span> },
+              { key: 'job', header: t('lw.col.job'), cell: (w) => <span className="text-xs text-gray-700">{w.jobName}</span> },
               {
                 key: 'amount',
-                header: 'Amount',
+                header: t('lw.col.amount'),
                 numeric: true,
                 cell: (w) => <Money cents={w.paymentAmountCents} />,
               },
               {
                 key: 'status',
-                header: 'Status',
+                header: t('lw.col.status'),
                 cell: (w) => <StatusPill label={lienWaiverStatusLabel(w.status)} tone="neutral" />,
               },
               {
@@ -172,7 +174,7 @@ export default async function LienWaiversPage({
                 header: '',
                 cell: (w) => (
                   <Link href={`/lien-waivers/${w.id}/print`} className="text-xs text-blue-700 hover:underline">
-                    Print
+                    {t('lw.action.print')}
                   </Link>
                 ),
               },
