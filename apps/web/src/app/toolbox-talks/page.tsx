@@ -15,6 +15,7 @@ import {
   StatusPill,
   Tile,
 } from '../../components';
+import { getTranslator } from '../../lib/locale';
 import {
   computeToolboxTalkRollup,
   signedAttendeeCount,
@@ -69,42 +70,43 @@ export default async function ToolboxTalksPage({
     const q = params.toString();
     return q ? `/toolbox-talks?${q}` : '/toolbox-talks';
   }
+  const t = getTranslator();
 
   return (
     <AppShell>
       <main className="mx-auto max-w-6xl">
         <PageHeader
-          title="Toolbox talks"
-          subtitle="Cal/OSHA T8 §1509 requires a tailgate safety meeting at least every 10 working days. Records are subject to inspection."
+          title={t('toolbox.title')}
+          subtitle={t('toolbox.subtitle')}
           actions={
             <LinkButton href="/toolbox-talks/new" variant="primary" size="md">
-              + New toolbox talk
+              {t('toolbox.newTalk')}
             </LinkButton>
           }
         />
 
         <section className="mb-4 grid gap-3 sm:grid-cols-4">
-          <Tile label="Total" value={rollup.total} />
-          <Tile label="Last held" value={rollup.lastHeldOn ?? '—'} />
+          <Tile label={t('toolbox.tile.total')} value={rollup.total} />
+          <Tile label={t('toolbox.tile.lastHeld')} value={rollup.lastHeldOn ?? '—'} />
           <Tile
-            label="Working days since"
+            label={t('toolbox.tile.daysSince')}
             value={rollup.daysSinceLast ?? '—'}
             tone={rollup.overdue ? 'danger' : 'success'}
           />
           <Tile
-            label="§1509 compliance"
-            value={rollup.overdue ? 'OVERDUE' : 'Current'}
+            label={t('toolbox.tile.compliance')}
+            value={rollup.overdue ? t('toolbox.tile.compliance.overdue') : t('toolbox.tile.compliance.current')}
             tone={rollup.overdue ? 'danger' : 'success'}
           />
         </section>
 
         <section className="mb-4 flex flex-wrap items-center gap-2 rounded-md border border-gray-200 bg-white p-3">
-          <span className="text-xs uppercase tracking-wide text-gray-500">Status:</span>
+          <span className="text-xs uppercase tracking-wide text-gray-500">{t('toolbox.filter.status')}</span>
           <Link
             href={buildHref({ status: undefined })}
             className={`rounded px-2 py-1 text-xs ${!searchParams.status ? 'bg-blue-700 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
           >
-            All
+            {t('toolbox.filter.all')}
           </Link>
           {STATUSES.map((s) => (
             <Link
@@ -119,43 +121,43 @@ export default async function ToolboxTalksPage({
 
         {talks.length === 0 ? (
           <EmptyState
-            title="No toolbox talks yet"
-            body="Log your tailgate safety meetings here. Cal/OSHA expects one every 10 working days; we'll flag you if you slip."
-            actions={[{ href: '/toolbox-talks/new', label: 'Log a meeting', primary: true }]}
+            title={t('toolbox.empty.title')}
+            body={t('toolbox.empty.body')}
+            actions={[{ href: '/toolbox-talks/new', label: t('toolbox.empty.action'), primary: true }]}
           />
         ) : (
           <DataTable
             rows={talks}
-            keyFn={(t) => t.id}
+            keyFn={(tt) => tt.id}
             columns={[
               {
                 key: 'heldOn',
-                header: 'Held',
-                cell: (t) => (
-                  <Link href={`/toolbox-talks/${t.id}`} className="font-mono text-xs font-medium text-blue-700 hover:underline">
-                    {t.heldOn}
+                header: t('toolbox.col.held'),
+                cell: (tt) => (
+                  <Link href={`/toolbox-talks/${tt.id}`} className="font-mono text-xs font-medium text-blue-700 hover:underline">
+                    {tt.heldOn}
                   </Link>
                 ),
               },
-              { key: 'topic', header: 'Topic', cell: (t) => <span className="text-sm text-gray-900">{t.topic}</span> },
-              { key: 'leader', header: 'Leader', cell: (t) => <span className="text-xs text-gray-700">{t.leaderName}</span> },
+              { key: 'topic', header: t('toolbox.col.topic'), cell: (tt) => <span className="text-sm text-gray-900">{tt.topic}</span> },
+              { key: 'leader', header: t('toolbox.col.leader'), cell: (tt) => <span className="text-xs text-gray-700">{tt.leaderName}</span> },
               {
                 key: 'attendees',
-                header: 'Attendees',
+                header: t('toolbox.col.attendees'),
                 numeric: true,
-                cell: (t) => <span className="font-mono text-xs text-gray-700">{signedAttendeeCount(t)} / {t.attendees.length}</span>,
+                cell: (tt) => <span className="font-mono text-xs text-gray-700">{signedAttendeeCount(tt)} / {tt.attendees.length}</span>,
               },
               {
                 key: 'status',
-                header: 'Status',
-                cell: (t) => <StatusPill label={toolboxTalkStatusLabel(t.status)} tone="neutral" />,
+                header: t('toolbox.col.status'),
+                cell: (tt) => <StatusPill label={toolboxTalkStatusLabel(tt.status)} tone="neutral" />,
               },
               {
                 key: 'actions',
                 header: '',
-                cell: (t) => (
-                  <Link href={`/toolbox-talks/${t.id}/sign-in`} className="text-xs text-blue-700 hover:underline">
-                    Sign-in
+                cell: (tt) => (
+                  <Link href={`/toolbox-talks/${tt.id}/sign-in`} className="text-xs text-blue-700 hover:underline">
+                    {t('toolbox.action.signIn')}
                   </Link>
                 ),
               },
