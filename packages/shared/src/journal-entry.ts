@@ -14,6 +14,7 @@
 // trial balance.
 
 import { z } from 'zod';
+import { translate, SEED_DICTIONARY, type Locale } from './i18n';
 
 export const JournalEntrySourceSchema = z.enum([
   'MANUAL',
@@ -126,28 +127,12 @@ export type JournalEntryPatch = z.infer<typeof JournalEntryPatchSchema>;
 
 // ---- Helpers -------------------------------------------------------------
 
-export function journalEntrySourceLabel(s: JournalEntrySource): string {
-  switch (s) {
-    case 'MANUAL': return 'Manual';
-    case 'AP_INVOICE': return 'AP invoice';
-    case 'AP_PAYMENT': return 'AP payment';
-    case 'AR_INVOICE': return 'AR invoice';
-    case 'AR_PAYMENT': return 'AR payment';
-    case 'PAYROLL': return 'Payroll';
-    case 'DEPRECIATION': return 'Depreciation';
-    case 'CASH_TRANSFER': return 'Cash transfer';
-    case 'ADJUSTING': return 'Adjusting';
-    case 'CLOSING': return 'Closing';
-    case 'OTHER': return 'Other';
-  }
+export function journalEntrySourceLabel(s: JournalEntrySource, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `journalEntrySource.${s}`);
 }
 
-export function journalEntryStatusLabel(s: JournalEntryStatus): string {
-  switch (s) {
-    case 'DRAFT': return 'Draft';
-    case 'POSTED': return 'Posted';
-    case 'VOIDED': return 'Voided';
-  }
+export function journalEntryStatusLabel(s: JournalEntryStatus, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `journalEntryStatus.${s}`);
 }
 
 export function totalDebitCents(je: Pick<JournalEntry, 'lines'>): number {

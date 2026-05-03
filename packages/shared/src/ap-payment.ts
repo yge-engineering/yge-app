@@ -11,6 +11,7 @@
 
 import { z } from 'zod';
 import { ApPaymentMethodSchema, type ApPaymentMethod } from './ap-invoice';
+import { translate, SEED_DICTIONARY, type Locale } from './i18n';
 
 // Re-export the enum from ap-invoice so callers can pull it from here
 // alongside the rest of the AP-payment surface.
@@ -74,15 +75,8 @@ export type ApPaymentPatch = z.infer<typeof ApPaymentPatchSchema>;
 
 // ---- Helpers -------------------------------------------------------------
 
-export function apPaymentMethodLabel(m: ApPaymentMethod): string {
-  switch (m) {
-    case 'CHECK': return 'Check';
-    case 'ACH': return 'ACH';
-    case 'WIRE': return 'Wire';
-    case 'CREDIT_CARD': return 'Credit card';
-    case 'CASH': return 'Cash';
-    case 'OTHER': return 'Other';
-  }
+export function apPaymentMethodLabel(m: ApPaymentMethod, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `apPaymentMethod.${m}`);
 }
 
 /** Sum of non-voided payments applied to one invoice. */

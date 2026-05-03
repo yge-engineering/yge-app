@@ -17,6 +17,7 @@
 // posts journal entries against these account numbers.
 
 import { z } from 'zod';
+import { translate, SEED_DICTIONARY, type Locale } from './i18n';
 
 export const AccountTypeSchema = z.enum([
   'ASSET',
@@ -84,17 +85,8 @@ export type AccountPatch = z.infer<typeof AccountPatchSchema>;
 
 // ---- Helpers -------------------------------------------------------------
 
-export function accountTypeLabel(t: AccountType): string {
-  switch (t) {
-    case 'ASSET': return 'Asset';
-    case 'LIABILITY': return 'Liability';
-    case 'EQUITY': return 'Equity';
-    case 'REVENUE': return 'Revenue';
-    case 'COGS': return 'Job cost (COGS)';
-    case 'EXPENSE': return 'Overhead expense';
-    case 'OTHER_INCOME': return 'Other income';
-    case 'OTHER_EXPENSE': return 'Other expense';
-  }
+export function accountTypeLabel(t: AccountType, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `accountType.${t}`);
 }
 
 /** Infer account type from the leading digit. Used as a default when

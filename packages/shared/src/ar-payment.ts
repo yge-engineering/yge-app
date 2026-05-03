@@ -13,6 +13,7 @@
 // CA prompt-pay interest if released late (2% per month per §7107(f)).
 
 import { z } from 'zod';
+import { translate, SEED_DICTIONARY, type Locale } from './i18n';
 
 export const ArPaymentMethodSchema = z.enum([
   'ACH',
@@ -81,25 +82,12 @@ export type ArPaymentPatch = z.infer<typeof ArPaymentPatchSchema>;
 
 // ---- Pure helpers --------------------------------------------------------
 
-export function arPaymentMethodLabel(m: ArPaymentMethod): string {
-  switch (m) {
-    case 'ACH': return 'ACH';
-    case 'CHECK': return 'Check';
-    case 'WIRE': return 'Wire';
-    case 'CARD': return 'Card';
-    case 'CASH': return 'Cash';
-    case 'OTHER': return 'Other';
-  }
+export function arPaymentMethodLabel(m: ArPaymentMethod, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `arPaymentMethod.${m}`);
 }
 
-export function arPaymentKindLabel(k: ArPaymentKind): string {
-  switch (k) {
-    case 'PROGRESS': return 'Progress';
-    case 'RETENTION_RELEASE': return 'Retention release';
-    case 'FINAL': return 'Final';
-    case 'PARTIAL': return 'Partial';
-    case 'OTHER': return 'Other';
-  }
+export function arPaymentKindLabel(k: ArPaymentKind, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `arPaymentKind.${k}`);
 }
 
 /** Sum of all payments applied to a single invoice (cents). */
