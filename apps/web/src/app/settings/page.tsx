@@ -6,6 +6,7 @@
 // have a home for future toggles + integrations.
 
 import { AppShell, Card, LinkButton, PageHeader } from '../../components';
+import { getTranslator } from '../../lib/locale';
 import { isSupabaseConfigured } from '../../lib/auth';
 
 interface Section {
@@ -19,11 +20,12 @@ interface Section {
 export default function SettingsPage() {
   const supabaseLive = isSupabaseConfigured();
   const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+  const t = getTranslator();
 
   const sections: Section[] = [
     {
-      title: 'Authentication',
-      blurb: 'How users sign in.',
+      title: t('settings.section.auth'),
+      blurb: t('settings.section.auth.blurb'),
       status: supabaseLive ? 'live' : 'planned',
       items: [
         { label: 'Mode', value: supabaseLive ? 'Supabase Auth' : 'Email allowlist (dev)' },
@@ -32,37 +34,37 @@ export default function SettingsPage() {
       ],
     },
     {
-      title: 'API',
-      blurb: 'Where the dashboard fetches data from.',
+      title: t('settings.section.api'),
+      blurb: t('settings.section.api.blurb'),
       status: 'live',
       items: [
         { label: 'NEXT_PUBLIC_API_URL', value: apiBaseUrl },
         { label: 'Health check', value: 'See API status page' },
       ],
-      actions: [{ label: 'Open API status', href: '/api-status' }],
+      actions: [{ label: t('settings.action.openApiStatus'), href: '/api-status' }],
     },
     {
-      title: 'Brand',
-      blurb: 'Logo, letterhead, and company info that prints on every document.',
+      title: t('settings.section.brand'),
+      blurb: t('settings.section.brand.blurb'),
       status: 'live',
       items: [
         { label: 'Legal name', value: 'Young General Engineering, Inc' },
         { label: 'CSLB', value: '1145219' },
         { label: 'DIR', value: '2000018967' },
       ],
-      actions: [{ label: 'Edit brand', href: '/brand' }],
+      actions: [{ label: t('settings.action.editBrand'), href: '/brand' }],
     },
     {
-      title: 'Notifications',
-      blurb: 'Email + SMS triggers for daily reports, RFI responses, AR aging.',
+      title: t('settings.section.notifications'),
+      blurb: t('settings.section.notifications.blurb'),
       status: 'planned',
       items: [
         { label: 'Status', value: 'Not yet wired — every alert is silent for now.' },
       ],
     },
     {
-      title: 'Integrations',
-      blurb: 'External systems the app talks to.',
+      title: t('settings.section.integrations'),
+      blurb: t('settings.section.integrations.blurb'),
       status: 'planned',
       items: [
         { label: 'QuickBooks Online', value: 'Planned for Phase 2' },
@@ -72,8 +74,8 @@ export default function SettingsPage() {
       ],
     },
     {
-      title: 'Data export',
-      blurb: 'Pull out your data anytime.',
+      title: t('settings.section.dataExport'),
+      blurb: t('settings.section.dataExport.blurb'),
       status: 'planned',
       items: [
         { label: 'CSV exports', value: 'Available per-list (look for the Export CSV link on AP / AR / customer pages)' },
@@ -86,8 +88,8 @@ export default function SettingsPage() {
     <AppShell>
       <main className="mx-auto max-w-3xl">
         <PageHeader
-          title="Settings"
-          subtitle="App configuration. Some sections are placeholders for future settings — they'll fill in as we ship more."
+          title={t('settings.title')}
+          subtitle={t('settings.subtitle')}
         />
 
         <div className="space-y-4">
@@ -103,7 +105,7 @@ export default function SettingsPage() {
                     s.status === 'live' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'
                   }`}
                 >
-                  {s.status}
+                  {s.status === 'live' ? t('settings.status.live') : t('settings.status.planned')}
                 </span>
               </div>
               <dl className="space-y-1 text-sm">
