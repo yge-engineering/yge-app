@@ -17,7 +17,7 @@ import {
   PageHeader,
   Tile,
 } from '../../components';
-import { getTranslator } from '../../lib/locale';
+import { getLocale, getTranslator } from '../../lib/locale';
 import {
   computeSwpppRollup,
   deficiencyCount,
@@ -52,6 +52,7 @@ export default async function SwpppPage({
   const inspections = await fetchInspections(searchParams);
   const rollup = computeSwpppRollup(inspections);
   const t = getTranslator();
+  const locale = getLocale();
 
   return (
     <AppShell>
@@ -111,7 +112,7 @@ export default async function SwpppPage({
                   </Link>
                 ),
               },
-              { key: 'trigger', header: t('swppp.col.trigger'), cell: (s) => <span className="text-xs text-gray-700">{swpppTriggerLabel(s.trigger)}</span> },
+              { key: 'trigger', header: t('swppp.col.trigger'), cell: (s) => <span className="text-xs text-gray-700">{swpppTriggerLabel(s.trigger, locale)}</span> },
               {
                 key: 'inspector',
                 header: t('swppp.col.inspector'),

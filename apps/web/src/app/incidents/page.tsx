@@ -16,7 +16,7 @@ import {
   PageHeader,
   Tile,
 } from '../../components';
-import { getTranslator } from '../../lib/locale';
+import { getLocale, getTranslator } from '../../lib/locale';
 import {
   computeForm300A,
   computeIncidentRollup,
@@ -74,6 +74,7 @@ export default async function IncidentsPage({
   const years = Array.from(new Set(all.map((i) => i.logYear)));
   if (!years.includes(yearFromParams)) years.push(yearFromParams);
   const t = getTranslator();
+  const locale = getLocale();
   years.sort((a, b) => b - a);
 
   return (
@@ -151,8 +152,8 @@ export default async function IncidentsPage({
                 header: t('incidents.col.description'),
                 cell: (i) => <div className="line-clamp-2 text-xs text-gray-700">{i.description}</div>,
               },
-              { key: 'class', header: t('incidents.col.classification'), cell: (i) => <span className="text-xs text-gray-700">{incidentClassificationLabel(i.classification)}</span> },
-              { key: 'outcome', header: t('incidents.col.outcome'), cell: (i) => <span className="text-xs text-gray-700">{incidentOutcomeLabel(i.outcome)}</span> },
+              { key: 'class', header: t('incidents.col.classification'), cell: (i) => <span className="text-xs text-gray-700">{incidentClassificationLabel(i.classification, locale)}</span> },
+              { key: 'outcome', header: t('incidents.col.outcome'), cell: (i) => <span className="text-xs text-gray-700">{incidentOutcomeLabel(i.outcome, locale)}</span> },
               {
                 key: 'days',
                 header: t('incidents.col.days'),

@@ -23,6 +23,7 @@
 // from a single record. Phase 2 will print the actual government PDFs.
 
 import { z } from 'zod';
+import { translate, SEED_DICTIONARY, type Locale } from './i18n';
 
 export const IncidentClassificationSchema = z.enum([
   'INJURY',
@@ -159,31 +160,16 @@ export type IncidentPatch = z.infer<typeof IncidentPatchSchema>;
 
 // ---- Helpers -------------------------------------------------------------
 
-export function incidentClassificationLabel(c: IncidentClassification): string {
-  switch (c) {
-    case 'INJURY': return 'Injury';
-    case 'SKIN_DISORDER': return 'Skin disorder';
-    case 'RESPIRATORY': return 'Respiratory condition';
-    case 'POISONING': return 'Poisoning';
-    case 'HEARING_LOSS': return 'Hearing loss';
-    case 'OTHER_ILLNESS': return 'Other illness';
-  }
+export function incidentClassificationLabel(c: IncidentClassification, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `incident.classification.${c}`);
 }
 
-export function incidentOutcomeLabel(o: IncidentOutcome): string {
-  switch (o) {
-    case 'DEATH': return 'Death';
-    case 'DAYS_AWAY': return 'Days away from work';
-    case 'JOB_TRANSFER_OR_RESTRICTION': return 'Job transfer / restriction';
-    case 'OTHER_RECORDABLE': return 'Other recordable';
-  }
+export function incidentOutcomeLabel(o: IncidentOutcome, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `incident.outcome.${o}`);
 }
 
-export function incidentStatusLabel(s: IncidentStatus): string {
-  switch (s) {
-    case 'OPEN': return 'Open';
-    case 'CLOSED': return 'Closed';
-  }
+export function incidentStatusLabel(s: IncidentStatus, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `incident.status.${s}`);
 }
 
 /**

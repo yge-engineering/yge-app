@@ -19,6 +19,7 @@
 // inspection form.
 
 import { z } from 'zod';
+import { translate, SEED_DICTIONARY, type Locale } from './i18n';
 
 export const SwpppInspectionTriggerSchema = z.enum([
   'WEEKLY',
@@ -115,15 +116,8 @@ export type SwpppInspectionPatch = z.infer<typeof SwpppInspectionPatchSchema>;
 
 // ---- Helpers -------------------------------------------------------------
 
-export function swpppTriggerLabel(t: SwpppInspectionTrigger): string {
-  switch (t) {
-    case 'WEEKLY': return 'Weekly';
-    case 'PRE_STORM': return 'Pre-storm (24h before)';
-    case 'DURING_STORM': return 'During storm';
-    case 'POST_STORM': return 'Post-storm (48h after)';
-    case 'NON_STORM_DISCHARGE': return 'Non-storm discharge';
-    case 'OTHER': return 'Other';
-  }
+export function swpppTriggerLabel(t: SwpppInspectionTrigger, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `swppp.trigger.${t}`);
 }
 
 export function bmpStatusLabel(s: BmpStatus): string {

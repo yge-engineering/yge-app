@@ -16,7 +16,7 @@ import {
   StatusPill,
   Tile,
 } from '../../components';
-import { getTranslator } from '../../lib/locale';
+import { getLocale, getTranslator } from '../../lib/locale';
 import {
   computeWeatherLogRollup,
   heatComplianceGap,
@@ -64,6 +64,7 @@ export default async function WeatherPage({
   const logs = await fetchLogs(searchParams);
   const rollup = computeWeatherLogRollup(logs);
   const t = getTranslator();
+  const locale = getLocale();
 
   return (
     <AppShell>
@@ -146,12 +147,12 @@ export default async function WeatherPage({
               {
                 key: 'condition',
                 header: t('weather.col.conditions'),
-                cell: (w) => <span className="text-xs text-gray-700">{weatherConditionLabel(w.primaryCondition)}</span>,
+                cell: (w) => <span className="text-xs text-gray-700">{weatherConditionLabel(w.primaryCondition, locale)}</span>,
               },
               {
                 key: 'impact',
                 header: t('weather.col.impact'),
-                cell: (w) => <StatusPill label={weatherImpactLabel(w.impact)} tone={impactTone(w.impact)} />,
+                cell: (w) => <StatusPill label={weatherImpactLabel(w.impact, locale)} tone={impactTone(w.impact)} />,
               },
               {
                 key: 'lostHours',

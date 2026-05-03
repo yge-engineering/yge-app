@@ -17,6 +17,7 @@
 // automatically and pre-fill the row.
 
 import { z } from 'zod';
+import { translate, SEED_DICTIONARY, type Locale } from './i18n';
 
 export const WeatherConditionSchema = z.enum([
   'CLEAR',
@@ -103,28 +104,12 @@ export type WeatherLogPatch = z.infer<typeof WeatherLogPatchSchema>;
 
 // ---- Helpers -------------------------------------------------------------
 
-export function weatherConditionLabel(c: WeatherCondition): string {
-  switch (c) {
-    case 'CLEAR': return 'Clear';
-    case 'PARTLY_CLOUDY': return 'Partly cloudy';
-    case 'OVERCAST': return 'Overcast';
-    case 'LIGHT_RAIN': return 'Light rain';
-    case 'HEAVY_RAIN': return 'Heavy rain';
-    case 'SNOW': return 'Snow';
-    case 'FOG': return 'Fog';
-    case 'WIND': return 'Wind';
-    case 'EXTREME_HEAT': return 'Extreme heat';
-    case 'EXTREME_COLD': return 'Extreme cold';
-    case 'OTHER': return 'Other';
-  }
+export function weatherConditionLabel(c: WeatherCondition, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `weather.condition.${c}`);
 }
 
-export function weatherImpactLabel(i: WeatherImpact): string {
-  switch (i) {
-    case 'NONE': return 'No impact';
-    case 'PARTIAL': return 'Partial — some crews lost time';
-    case 'STOPPED': return 'Stopped — full shutdown';
-  }
+export function weatherImpactLabel(i: WeatherImpact, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `weather.impact.${i}`);
 }
 
 /** Heat-illness threshold per T8 §3395(d) — outdoor temp ≥ 80°F triggers
