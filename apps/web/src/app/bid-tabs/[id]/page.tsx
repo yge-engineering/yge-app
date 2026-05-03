@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { AppShell, PageHeader, StatusPill } from '../../../components';
 import { BidTabCoreEdit } from '../../../components/bid-tab-core-edit';
+import { BidTabMarkAwarded } from '../../../components/bid-tab-mark-awarded';
 import { BidTabNotesEdit } from '../../../components/bid-tab-notes-edit';
 import { BidTabYgeLinkForm } from '../../../components/bid-tab-yge-link-form';
 import { BidTabYgeUnlinkButton } from '../../../components/bid-tab-yge-unlink-button';
@@ -103,7 +104,7 @@ export default async function BidTabPage({
           subtitle={`${tab.agencyName} · ${tab.source} · opened ${tab.bidOpenedAt.slice(0, 10)}`}
         />
 
-        <div className="mt-2">
+        <div className="mt-2 flex flex-wrap items-center gap-3">
           <BidTabCoreEdit
             apiBaseUrl={publicApiBaseUrl()}
             tabId={tab.id}
@@ -120,6 +121,14 @@ export default async function BidTabPage({
               awardedToBidderName: tab.awardedToBidderName ?? '',
               awardedAt: tab.awardedAt?.slice(0, 10) ?? '',
             }}
+          />
+          <span className="text-gray-300">·</span>
+          <BidTabMarkAwarded
+            apiBaseUrl={publicApiBaseUrl()}
+            tabId={tab.id}
+            bidders={tab.bidders.map((b) => ({ name: b.name, rank: b.rank }))}
+            currentAwardedToBidderName={tab.awardedToBidderName}
+            currentAwardedAt={tab.awardedAt?.slice(0, 10)}
           />
         </div>
 

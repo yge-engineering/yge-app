@@ -214,6 +214,26 @@ export async function patchBidTabCore(
 ): Promise<BidTab | null> {
   const existing = await getBidTab(id);
   if (!existing) return null;
+  const nextAwardedName =
+    patch.awardedToBidderName === undefined
+      ? existing.awardedToBidderName
+      : patch.awardedToBidderName === null
+        ? undefined
+        : patch.awardedToBidderName;
+
+  // Mirror awardedToBidderName onto the bidder rows so the
+  // 'awarded' chip on /bid-tabs/[id] stays consistent. If the
+  // operator clears the awardedToBidderName, drop every bidder's
+  // awardedTo flag too — otherwise we'd leave stale awards on the
+  // list.
+  let bidders = existing.bidders;
+  if (patch.awardedToBidderName !== undefined) {
+    bidders = existing.bidders.map((b) => ({
+      ...b,
+      awardedTo: nextAwardedName ? b.name === nextAwardedName : false,
+    }));
+  }
+
   const next: BidTab = {
     ...existing,
     agencyName: patch.agencyName ?? existing.agencyName,
@@ -243,18 +263,14 @@ export async function patchBidTabCore(
         : patch.sourceUrl === null
           ? undefined
           : patch.sourceUrl,
-    awardedToBidderName:
-      patch.awardedToBidderName === undefined
-        ? existing.awardedToBidderName
-        : patch.awardedToBidderName === null
-          ? undefined
-          : patch.awardedToBidderName,
+    awardedToBidderName: nextAwardedName,
     awardedAt:
       patch.awardedAt === undefined
         ? existing.awardedAt
         : patch.awardedAt === null
           ? undefined
           : patch.awardedAt,
+    bidders,
     updatedAt: new Date().toISOString(),
   };
   const updated = BidTabSchema.parse(next);
