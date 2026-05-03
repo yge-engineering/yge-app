@@ -16,6 +16,7 @@ import {
   PageHeader,
   Tile,
 } from '../../components';
+import { getTranslator } from '../../lib/locale';
 import {
   computeForm300A,
   computeIncidentRollup,
@@ -72,40 +73,41 @@ export default async function IncidentsPage({
   // Build year selector based on data.
   const years = Array.from(new Set(all.map((i) => i.logYear)));
   if (!years.includes(yearFromParams)) years.push(yearFromParams);
+  const t = getTranslator();
   years.sort((a, b) => b - a);
 
   return (
     <AppShell>
       <main className="mx-auto max-w-6xl">
         <PageHeader
-          title="OSHA 300 log"
-          subtitle="Workplace injury + illness record. Federal 29 CFR 1904 / CA T8 §14300. Form 300A must be posted Feb 1 – April 30."
+          title={t('incidents.title')}
+          subtitle={t('incidents.subtitle')}
           actions={
             <span className="flex gap-2">
               <LinkButton href={`/incidents/300a/${yearFromParams}`} variant="secondary" size="md">
-                Print Form 300A
+                {t('incidents.printForm300a')}
               </LinkButton>
               <LinkButton href="/incidents/new" variant="primary" size="md">
-                + Log incident
+                {t('incidents.logIncident')}
               </LinkButton>
             </span>
           }
         />
 
         <section className="mb-4 grid gap-3 sm:grid-cols-4">
-          <Tile label={`${yearFromParams} cases`} value={summary.totalCases} />
-          <Tile label="Days away (YTD)" value={summary.totalDaysAway} />
-          <Tile label="Open" value={rollup.open} />
+          <Tile label={t('incidents.tile.cases', { year: yearFromParams })} value={summary.totalCases} />
+          <Tile label={t('incidents.tile.daysAway')} value={summary.totalDaysAway} />
+          <Tile label={t('incidents.tile.open')} value={rollup.open} />
           <Tile
-            label="Unreported serious"
+            label={t('incidents.tile.unreportedSerious')}
             value={rollup.unreportedSerious}
             tone={rollup.unreportedSerious > 0 ? 'danger' : 'success'}
-            warnText={rollup.unreportedSerious > 0 ? 'CalOSHA report due ≤ 8 hr' : undefined}
+            warnText={rollup.unreportedSerious > 0 ? t('incidents.tile.unreportedSerious.warn') : undefined}
           />
         </section>
 
         <section className="mb-4 flex flex-wrap items-center gap-2 rounded-md border border-gray-200 bg-white p-3">
-          <span className="text-xs uppercase tracking-wide text-gray-500">Year:</span>
+          <span className="text-xs uppercase tracking-wide text-gray-500">{t('incidents.year.label')}</span>
           {years.map((y) => (
             <Link
               key={y}
@@ -119,9 +121,9 @@ export default async function IncidentsPage({
 
         {incidents.length === 0 ? (
           <EmptyState
-            title={`No incidents logged for ${yearFromParams}`}
-            body="Quiet years are good years. If something happens, log it within 7 days; serious injuries must be CalOSHA-reported within 8 hours."
-            actions={[{ href: '/incidents/new', label: 'Log incident', primary: true }]}
+            title={t('incidents.empty.title', { year: yearFromParams })}
+            body={t('incidents.empty.body')}
+            actions={[{ href: '/incidents/new', label: t('incidents.empty.action'), primary: true }]}
           />
         ) : (
           <DataTable
@@ -130,38 +132,38 @@ export default async function IncidentsPage({
             columns={[
               {
                 key: 'case',
-                header: 'Case #',
+                header: t('incidents.col.case'),
                 cell: (i) => (
                   <Link href={`/incidents/${i.id}`} className="font-mono text-xs font-medium text-blue-700 hover:underline">
                     {i.caseNumber}
                   </Link>
                 ),
               },
-              { key: 'date', header: 'Date', cell: (i) => <span className="font-mono text-xs text-gray-700">{i.incidentDate}</span> },
+              { key: 'date', header: t('incidents.col.date'), cell: (i) => <span className="font-mono text-xs text-gray-700">{i.incidentDate}</span> },
               {
                 key: 'employee',
-                header: 'Employee',
+                header: t('incidents.col.employee'),
                 cell: (i) =>
-                  i.privacyCase ? <span className="italic text-gray-500">Privacy Case</span> : <span className="text-sm text-gray-900">{i.employeeName}</span>,
+                  i.privacyCase ? <span className="italic text-gray-500">{t('incidents.col.privacyCase')}</span> : <span className="text-sm text-gray-900">{i.employeeName}</span>,
               },
               {
                 key: 'description',
-                header: 'Description',
+                header: t('incidents.col.description'),
                 cell: (i) => <div className="line-clamp-2 text-xs text-gray-700">{i.description}</div>,
               },
-              { key: 'class', header: 'Class.', cell: (i) => <span className="text-xs text-gray-700">{incidentClassificationLabel(i.classification)}</span> },
-              { key: 'outcome', header: 'Outcome', cell: (i) => <span className="text-xs text-gray-700">{incidentOutcomeLabel(i.outcome)}</span> },
+              { key: 'class', header: t('incidents.col.classification'), cell: (i) => <span className="text-xs text-gray-700">{incidentClassificationLabel(i.classification)}</span> },
+              { key: 'outcome', header: t('incidents.col.outcome'), cell: (i) => <span className="text-xs text-gray-700">{incidentOutcomeLabel(i.outcome)}</span> },
               {
                 key: 'days',
-                header: 'Days',
+                header: t('incidents.col.days'),
                 numeric: true,
                 cell: (i) => {
                   const flag = isSeriousReportable(i) && !i.calOshaReported;
                   return (
                     <span className={flag ? 'font-semibold text-red-700' : 'text-xs text-gray-700'}>
-                      {i.daysAway > 0 ? `Away: ${i.daysAway}` : ''}
+                      {i.daysAway > 0 ? t('incidents.col.daysAway', { n: i.daysAway }) : ''}
                       {i.daysAway > 0 && i.daysRestricted > 0 ? ' · ' : ''}
-                      {i.daysRestricted > 0 ? `Rest: ${i.daysRestricted}` : ''}
+                      {i.daysRestricted > 0 ? t('incidents.col.daysRestricted', { n: i.daysRestricted }) : ''}
                       {i.daysAway === 0 && i.daysRestricted === 0 ? '—' : ''}
                     </span>
                   );
@@ -172,7 +174,7 @@ export default async function IncidentsPage({
                 header: '',
                 cell: (i) => (
                   <Link href={`/incidents/${i.id}/301`} className="text-xs text-blue-700 hover:underline">
-                    301
+                    {t('incidents.action.301')}
                   </Link>
                 ),
               },
@@ -182,16 +184,16 @@ export default async function IncidentsPage({
 
         <Card className="mt-6">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
-            Form 300A summary — {summary.year}
+            {t('incidents.summary.title', { year: summary.year })}
           </h2>
           <div className="mt-3 grid gap-3 text-sm sm:grid-cols-3">
-            <Row label="Total cases" value={summary.totalCases} />
-            <Row label="Deaths" value={summary.totalDeaths} />
-            <Row label="Days-away cases" value={summary.totalDaysAwayCases} />
-            <Row label="Restricted-duty cases" value={summary.totalRestrictedCases} />
-            <Row label="Other recordable" value={summary.totalOtherRecordableCases} />
-            <Row label="Total days away" value={summary.totalDaysAway} />
-            <Row label="Total days restricted" value={summary.totalDaysRestricted} />
+            <Row label={t('incidents.summary.totalCases')} value={summary.totalCases} />
+            <Row label={t('incidents.summary.deaths')} value={summary.totalDeaths} />
+            <Row label={t('incidents.summary.daysAwayCases')} value={summary.totalDaysAwayCases} />
+            <Row label={t('incidents.summary.restrictedCases')} value={summary.totalRestrictedCases} />
+            <Row label={t('incidents.summary.otherRecordable')} value={summary.totalOtherRecordableCases} />
+            <Row label={t('incidents.summary.totalDaysAway')} value={summary.totalDaysAway} />
+            <Row label={t('incidents.summary.totalDaysRestricted')} value={summary.totalDaysRestricted} />
           </div>
           <h3 className="mt-4 text-xs font-semibold uppercase tracking-wide text-gray-500">
             By classification
