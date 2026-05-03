@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { AppShell, PageHeader, StatusPill } from '../../../components';
+import { BidTabBiddersEdit } from '../../../components/bid-tab-bidders-edit';
 import { BidTabCoreEdit } from '../../../components/bid-tab-core-edit';
 import { BidTabMarkAwarded } from '../../../components/bid-tab-mark-awarded';
 import { BidTabNotesEdit } from '../../../components/bid-tab-notes-edit';
@@ -129,6 +130,23 @@ export default async function BidTabPage({
             bidders={tab.bidders.map((b) => ({ name: b.name, rank: b.rank }))}
             currentAwardedToBidderName={tab.awardedToBidderName}
             currentAwardedAt={tab.awardedAt?.slice(0, 10)}
+          />
+          <span className="text-gray-300">·</span>
+          <BidTabBiddersEdit
+            apiBaseUrl={publicApiBaseUrl()}
+            tabId={tab.id}
+            initial={tab.bidders.map((b) => ({
+              name: b.name,
+              totalCents: b.totalCents,
+              cslbLicense: b.cslbLicense,
+              dirRegistration: b.dirRegistration,
+              dbe: b.dbe,
+              sbe: b.sbe,
+              withdrawn: b.withdrawn,
+              rejected: b.rejected,
+              rejectionReason: b.rejectionReason,
+              notes: b.notes,
+            }))}
           />
         </div>
 

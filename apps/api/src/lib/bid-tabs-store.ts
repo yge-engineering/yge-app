@@ -287,6 +287,107 @@ export async function patchBidTabCore(
 }
 
 /**
+ * Replace a tab's bidder list. Operators sometimes need to fix a
+ * typo, add a bidder the scraper missed, or strike a bidder that
+ * the agency rejected. The whole array is replaced atomically;
+ * the store re-ranks by totalCents (when ranks aren't supplied),
+ * recomputes nameNormalized, and re-applies the awardedToBidderName
+ * mirror so the awarded chip stays consistent.
+ *
+ * Re-runs the YGE auto-link in case YGE just got added (or
+ * dropped) — but only when ygeBidResultId isn't already pinned
+ * (operator's manual link survives).
+ */
+export async function patchBidTabBidders(
+  id: string,
+  bidders: Array<{
+    rank?: number;
+    name: string;
+    nameNormalized?: string;
+    totalCents: number;
+    cslbLicense?: string;
+    dirRegistration?: string;
+    dbe?: boolean;
+    sbe?: boolean;
+    withdrawn?: boolean;
+    rejected?: boolean;
+    rejectionReason?: string;
+    notes?: string;
+  }>,
+  ctx?: AuditContext,
+): Promise<BidTab | null> {
+  const existing = await getBidTab(id);
+  if (!existing) return null;
+
+  // Auto-rank by totalCents when caller didn't supply explicit
+  // ranks (mirrors the create flow).
+  let ordered = bidders;
+  const allRanked = bidders.every((b) => Number.isFinite(b.rank) && (b.rank ?? 0) > 0);
+  if (!allRanked) {
+    ordered = [...bidders]
+      .sort((a, b) => a.totalCents - b.totalCents)
+      .map((b, i) => ({ ...b, rank: i + 1 }));
+  }
+
+  // Normalize names server-side; mirror awardedToBidderName.
+  const awarded = existing.awardedToBidderName;
+  const normalized = ordered.map((b) => ({
+    rank: b.rank ?? 0,
+    name: b.name,
+    nameNormalized: normalizeCompanyName(b.name),
+    totalCents: b.totalCents,
+    cslbLicense: b.cslbLicense,
+    dirRegistration: b.dirRegistration,
+    dbe: b.dbe,
+    sbe: b.sbe,
+    awardedTo: awarded ? b.name === awarded : false,
+    withdrawn: b.withdrawn,
+    rejected: b.rejected,
+    rejectionReason: b.rejectionReason,
+    notes: b.notes,
+  }));
+
+  let next: BidTab = BidTabSchema.parse({
+    ...existing,
+    bidders: normalized,
+    updatedAt: new Date().toISOString(),
+  });
+
+  // Re-run YGE auto-link only when no manual link exists yet.
+  if (!next.ygeBidResultId) {
+    const [bidResults, jobs] = await Promise.all([listBidResults(), listJobs()]);
+    const jobsById = new Map(jobs.map((j) => [j.id, j]));
+    const enrichedResults = bidResults.map((br) => {
+      const j = jobsById.get(br.jobId);
+      const extra: { projectName?: string; projectNumber?: string } = {};
+      if (j?.projectName) extra.projectName = j.projectName;
+      const maybeNumber = (j as unknown as { projectNumber?: string } | undefined)?.projectNumber;
+      if (maybeNumber) extra.projectNumber = maybeNumber;
+      return { ...br, ...extra };
+    });
+    const linked = linkYgeOnImport({ tab: next, bidResults: enrichedResults });
+    if (linked.matchedBidResultId && linked.matchedJobId) {
+      next = BidTabSchema.parse({
+        ...next,
+        ygeJobId: next.ygeJobId ?? linked.matchedJobId,
+        ygeBidResultId: linked.matchedBidResultId,
+      });
+    }
+  }
+
+  await persist(next);
+  await recordAudit({
+    action: 'update',
+    entityType: 'BidResult',
+    entityId: id,
+    before: existing,
+    after: next,
+    ctx,
+  });
+  return next;
+}
+
+/**
  * Patch a tab's free-form notes. Operators tend to add post-import
  * context here ('Caltrans rejected Mercer's bid for missing sub
  * list — apparent low advanced to Knife River'), so the field gets

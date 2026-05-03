@@ -11,6 +11,7 @@ import {
   deleteBidTab,
   getBidTab,
   listBidTabs,
+  patchBidTabBidders,
   patchBidTabCore,
   patchBidTabLink,
   patchBidTabNotes,
@@ -116,6 +117,35 @@ bidTabsRouter.patch('/:id/core', async (req, res, next) => {
       return res.status(400).json({ error: 'Validation failed', issues: parsed.error.issues });
     }
     const tab = await patchBidTabCore(req.params.id, parsed.data);
+    if (!tab) return res.status(404).json({ error: 'Bid tab not found' });
+    return res.json({ tab });
+  } catch (err) { next(err); }
+});
+
+const PatchBiddersSchema = z.object({
+  bidders: z.array(z.object({
+    rank: z.number().int().positive().optional(),
+    name: z.string().min(1).max(200),
+    nameNormalized: z.string().min(1).max(200).optional(),
+    totalCents: z.number().int().nonnegative(),
+    cslbLicense: z.string().max(40).optional(),
+    dirRegistration: z.string().max(40).optional(),
+    dbe: z.boolean().optional(),
+    sbe: z.boolean().optional(),
+    withdrawn: z.boolean().optional(),
+    rejected: z.boolean().optional(),
+    rejectionReason: z.string().max(500).optional(),
+    notes: z.string().max(2000).optional(),
+  })).min(1).max(50),
+});
+
+bidTabsRouter.patch('/:id/bidders', async (req, res, next) => {
+  try {
+    const parsed = PatchBiddersSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Validation failed', issues: parsed.error.issues });
+    }
+    const tab = await patchBidTabBidders(req.params.id, parsed.data.bidders);
     if (!tab) return res.status(404).json({ error: 'Bid tab not found' });
     return res.json({ tab });
   } catch (err) { next(err); }
