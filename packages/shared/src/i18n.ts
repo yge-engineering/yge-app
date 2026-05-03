@@ -2088,6 +2088,9 @@ export const SEED_DICTIONARY: DictionaryByLocale = {
     'today.timeCard.empty.body': "Your weekly hours card hasn't been started. Submit by Friday to make payroll.",
     'today.timeCard.empty.action': 'Start time card',
     'today.timeCard.summary': '{entries} entries · status {status}',
+    'print.title': 'Print views',
+    'print.subtitle': 'Pages designed to look right on paper. The bracketed [id] views need an actual record id — open the underlying record first.',
+    'print.openExample': 'Open example',
   },
   es: {
     'app.title': 'YGE',
@@ -4094,6 +4097,9 @@ export const SEED_DICTIONARY: DictionaryByLocale = {
     'today.timeCard.empty.body': 'Tu tarjeta semanal de horas no ha sido iniciada. Envíala antes del viernes para hacer la nómina.',
     'today.timeCard.empty.action': 'Iniciar tarjeta de tiempo',
     'today.timeCard.summary': '{entries} entradas · estado {status}',
+    'print.title': 'Vistas para imprimir',
+    'print.subtitle': 'Páginas diseñadas para verse bien en papel. Las vistas con [id] entre corchetes necesitan un id real — abre primero el registro base.',
+    'print.openExample': 'Abrir ejemplo',
   },
 };
 

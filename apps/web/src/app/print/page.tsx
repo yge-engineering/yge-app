@@ -6,6 +6,7 @@
 // something you have on screen.
 
 import { AppShell, Card, LinkButton, PageHeader } from '../../components';
+import { getTranslator } from '../../lib/locale';
 
 interface PrintLink {
   label: string;
@@ -64,12 +65,13 @@ const PRINT_LINKS: PrintLink[] = [
 ];
 
 export default function PrintIndexPage() {
+  const t = getTranslator();
   return (
     <AppShell>
       <main className="mx-auto max-w-3xl">
         <PageHeader
-          title="Print views"
-          subtitle="Pages designed to look right on paper. The bracketed [id] views need an actual record id — open the underlying record first."
+          title={t('print.title')}
+          subtitle={t('print.subtitle')}
         />
 
         <div className="space-y-3">
@@ -85,7 +87,7 @@ export default function PrintIndexPage() {
                 </div>
                 {p.example ? (
                   <LinkButton href={p.href} variant="primary" size="sm">
-                    Open example
+                    {t('print.openExample')}
                   </LinkButton>
                 ) : null}
               </div>
