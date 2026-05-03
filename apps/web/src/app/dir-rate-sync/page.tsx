@@ -22,6 +22,7 @@ import {
   type DirRateProposalStatus,
   type DirRateSyncRun,
 } from '@yge/shared';
+import { getTranslator } from '../../lib/locale';
 
 function apiBaseUrl(): string {
   return (
@@ -79,45 +80,38 @@ export default async function DirRateSyncPage() {
   const pending = proposals.filter((p) => p.status === 'PENDING');
   const significant = pending.filter((p) => p.diff.significantWageMove);
   const recent = runs.slice(0, 5);
+  const t = getTranslator();
 
   return (
     <AppShell>
       <main className="mx-auto max-w-6xl p-8">
         <div className="mb-6 flex items-center justify-between">
           <Link href="/dir-rates" className="text-sm text-yge-blue-500 hover:underline">
-            &larr; Live DIR rates
+            {t('drs.backLink')}
           </Link>
           <span className="text-xs text-gray-500">
-            {pending.length} pending · {proposals.length - pending.length} reviewed
+            {t('drs.headerCount', { pending: pending.length, reviewed: proposals.length - pending.length })}
           </span>
         </div>
 
         <PageHeader
-          title="DIR rate proposals"
-          subtitle="Staged updates from the DIR website. Accept rolls a proposal into the live rate set; reject keeps the existing rate untouched. Every decision is audit-logged."
+          title={t('drs.title')}
+          subtitle={t('drs.subtitle')}
         />
 
         {significant.length > 0 && (
           <Alert
             tone="warn"
             className="mt-4"
-            title={`${significant.length} proposal${significant.length === 1 ? '' : 's'} with a significant wage move`}
+            title={t('drs.alert.significant.title', { count: significant.length, plural: significant.length === 1 ? '' : 's' })}
           >
-            These move the total prevailing wage by more than 25¢/hr. Review
-            carefully before accepting — every open bid and CPR rebases
-            against the new rates the moment the proposal is accepted.
+            {t('drs.alert.significant.body')}
           </Alert>
         )}
 
         {proposals.length === 0 && (
           <Alert tone="info" className="mt-6">
-            No proposals staged yet. POST a manual batch to{' '}
-            <code className="font-mono text-xs">/api/dir-rate-sync/manual-import</code>{' '}
-            with a body of <code className="font-mono text-xs">{'{ proposals: [{ proposedRate: { … } }] }'}</code>{' '}
-            to create a sync run + one proposal per entry. The
-            existingRateId for each is auto-resolved against the live
-            DIR rate set. The scheduled-scrape worker (Caltrans-quality
-            HTTP fetch + parse of the DIR website) lands as a follow-up.
+            {t('drs.alert.empty')}
           </Alert>
         )}
 
@@ -126,14 +120,14 @@ export default async function DirRateSyncPage() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
                 <tr>
-                  <th className="px-3 py-2 text-left">Status</th>
-                  <th className="px-3 py-2 text-left">Classification · County</th>
-                  <th className="px-3 py-2 text-left">Effective</th>
-                  <th className="px-3 py-2 text-right">Δ basic</th>
-                  <th className="px-3 py-2 text-right">Δ fringe</th>
-                  <th className="px-3 py-2 text-right">Δ total</th>
-                  <th className="px-3 py-2 text-left">Note</th>
-                  <th className="px-3 py-2 text-right">Review</th>
+                  <th className="px-3 py-2 text-left">{t('drs.col.status')}</th>
+                  <th className="px-3 py-2 text-left">{t('drs.col.classification')}</th>
+                  <th className="px-3 py-2 text-left">{t('drs.col.effective')}</th>
+                  <th className="px-3 py-2 text-right">{t('drs.col.deltaBasic')}</th>
+                  <th className="px-3 py-2 text-right">{t('drs.col.deltaFringe')}</th>
+                  <th className="px-3 py-2 text-right">{t('drs.col.deltaTotal')}</th>
+                  <th className="px-3 py-2 text-left">{t('drs.col.note')}</th>
+                  <th className="px-3 py-2 text-right">{t('drs.col.review')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -150,12 +144,12 @@ export default async function DirRateSyncPage() {
                         <StatusPill label={p.status} tone={STATUS_TONE[p.status]} size="sm" />
                         {p.diff.kind === 'new' && (
                           <span className="ml-2 rounded bg-blue-100 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-blue-800">
-                            new
+                            {t('drs.badge.new')}
                           </span>
                         )}
                         {p.diff.significantWageMove && p.status === 'PENDING' && (
                           <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-amber-800">
-                            significant
+                            {t('drs.badge.significant')}
                           </span>
                         )}
                       </td>
@@ -195,10 +189,10 @@ export default async function DirRateSyncPage() {
 
         <section className="mt-8">
           <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-            Recent sync runs
+            {t('drs.recentRuns')}
           </h2>
           {recent.length === 0 ? (
-            <p className="text-xs text-gray-500">No sync runs yet.</p>
+            <p className="text-xs text-gray-500">{t('drs.noRuns')}</p>
           ) : (
             <ul className="space-y-1 text-sm">
               {recent.map((r) => (
@@ -209,11 +203,10 @@ export default async function DirRateSyncPage() {
                   </time>
                   <span className="text-xs uppercase tracking-wide text-gray-500">{r.source}</span>
                   <span className="text-sm text-gray-700">
-                    {r.proposalsCreated} proposal{r.proposalsCreated === 1 ? '' : 's'} ·
-                    {' '}{r.classificationsScraped} scraped
+                    {t('drs.runStats', { created: r.proposalsCreated, plural: r.proposalsCreated === 1 ? '' : 's', scraped: r.classificationsScraped })}
                     {r.classificationsFailed > 0 && (
                       <span className="ml-1 text-red-700">
-                        / {r.classificationsFailed} failed
+                        {t('drs.runFailed', { count: r.classificationsFailed })}
                       </span>
                     )}
                   </span>
@@ -228,13 +221,7 @@ export default async function DirRateSyncPage() {
 
         <DirRateManualImportForm apiBaseUrl={publicApiBaseUrl()} />
 
-        <p className="mt-8 text-xs text-gray-500">
-          Accept rolls a proposal into the live <Link href="/dir-rates" className="text-yge-blue-500 hover:underline">DIR rates</Link>{' '}
-          set in one shot — both the proposal status flip and the live-rate write
-          run inside the same API handler with rollback semantics. Reject keeps
-          the existing live rate untouched. Every decision is audit-logged with
-          the reviewer + reason.
-        </p>
+        <p className="mt-8 text-xs text-gray-500">{t('drs.footer')}</p>
       </main>
     </AppShell>
   );
