@@ -16,6 +16,7 @@ import {
   StatusPill,
   Tile,
 } from '../../components';
+import { getTranslator } from '../../lib/locale';
 import {
   arPaymentKindLabel,
   arPaymentMethodLabel,
@@ -57,33 +58,34 @@ export default async function ArPaymentsPage({
   const csvHref = `${publicApiBaseUrl()}/api/ar-payments?format=csv${
     searchParams.arInvoiceId ? '&arInvoiceId=' + encodeURIComponent(searchParams.arInvoiceId) : ''
   }${searchParams.jobId ? '&jobId=' + encodeURIComponent(searchParams.jobId) : ''}`;
+  const t = getTranslator();
 
   return (
     <AppShell>
       <main className="mx-auto max-w-6xl">
         <PageHeader
-          title="Customer payments"
-          subtitle="Money in. Receipts applied to AR invoices. Retention releases tracked for CA Public Contract Code §7107 prompt-pay interest."
+          title={t('arPay.title')}
+          subtitle={t('arPay.subtitle')}
           actions={
             <span className="flex gap-2">
               <a
                 href={csvHref}
                 className="inline-flex items-center rounded-md border border-blue-700 px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-50"
               >
-                Download CSV
+                {t('arPay.csv')}
               </a>
               <LinkButton href="/ar-payments/new" variant="primary" size="md">
-                + Record payment
+                {t('arPay.recordPayment')}
               </LinkButton>
             </span>
           }
         />
 
         <section className="mb-4 grid gap-3 sm:grid-cols-3">
-          <Tile label="Receipts" value={rollup.total} />
-          <Tile label="Total received" value={<Money cents={rollup.totalCents} />} />
+          <Tile label={t('arPay.tile.receipts')} value={rollup.total} />
+          <Tile label={t('arPay.tile.total')} value={<Money cents={rollup.totalCents} />} />
           <Tile
-            label="Retention released"
+            label={t('arPay.tile.retention')}
             value={
               <>
                 {rollup.retentionReleaseCount} / <Money cents={rollup.retentionReleaseCents} />
@@ -94,21 +96,21 @@ export default async function ArPaymentsPage({
 
         {payments.length === 0 ? (
           <EmptyState
-            title="No payments yet"
-            body="Record each receipt against the AR invoice it applies to. Mark a receipt as a retention release to start the §7107 clock."
-            actions={[{ href: '/ar-payments/new', label: 'Record payment', primary: true }]}
+            title={t('arPay.empty.title')}
+            body={t('arPay.empty.body')}
+            actions={[{ href: '/ar-payments/new', label: t('arPay.empty.action'), primary: true }]}
           />
         ) : (
           <div className="overflow-x-auto rounded-md border border-gray-200 bg-white">
             <table className="w-full text-left text-sm">
               <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
                 <tr>
-                  <th className="px-4 py-2">Received</th>
-                  <th className="px-4 py-2">Kind</th>
-                  <th className="px-4 py-2">Method</th>
-                  <th className="px-4 py-2">Reference</th>
-                  <th className="px-4 py-2 text-right">Amount</th>
-                  <th className="px-4 py-2">Invoice</th>
+                  <th className="px-4 py-2">{t('arPay.col.received')}</th>
+                  <th className="px-4 py-2">{t('arPay.col.kind')}</th>
+                  <th className="px-4 py-2">{t('arPay.col.method')}</th>
+                  <th className="px-4 py-2">{t('arPay.col.reference')}</th>
+                  <th className="px-4 py-2 text-right">{t('arPay.col.amount')}</th>
+                  <th className="px-4 py-2">{t('arPay.col.invoice')}</th>
                   <th className="px-4 py-2"></th>
                 </tr>
               </thead>
