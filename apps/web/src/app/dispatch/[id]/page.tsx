@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Dispatch } from '@yge/shared';
 import { DispatchEditor } from '../../../components/dispatch-editor';
+import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
   return (
@@ -24,27 +25,28 @@ export default async function DispatchDetailPage({
 }) {
   const dispatch = await fetchDispatch(params.id);
   if (!dispatch) notFound();
+  const t = getTranslator();
 
   return (
     <main className="mx-auto max-w-3xl p-8">
       <div className="mb-6 flex items-center justify-between">
         <Link href="/dispatch" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Dispatch Board
+          {t('dispatchNew.backLink')}
         </Link>
         <Link
           href={`/dispatch/${dispatch.id}/handout`}
           className="rounded bg-yge-blue-500 px-3 py-1 text-sm font-medium text-white hover:bg-yge-blue-700"
         >
-          Print handout
+          {t('dispatchDetail.printHandout')}
         </Link>
       </div>
       <h1 className="text-3xl font-bold text-yge-blue-500">
         {dispatch.scheduledFor}
       </h1>
       <p className="mt-1 text-sm text-gray-600">
-        {dispatch.jobId} · foreman {dispatch.foremanName}
+        {t('dispatchDetail.foremanLine', { jobId: dispatch.jobId, foreman: dispatch.foremanName })}
       </p>
-      <p className="mt-1 text-xs text-gray-500">ID: {dispatch.id}</p>
+      <p className="mt-1 text-xs text-gray-500">{t('dispatchDetail.idLine', { id: dispatch.id })}</p>
       <div className="mt-6">
         <DispatchEditor mode="edit" dispatch={dispatch} />
       </div>
