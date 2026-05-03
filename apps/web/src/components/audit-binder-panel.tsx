@@ -18,6 +18,7 @@ import {
   type AuditEvent,
 } from '@yge/shared';
 import { StatusPill } from './status-pill';
+import { getTranslator } from '../lib/locale';
 
 interface Props {
   entityType: AuditEntityType;
@@ -79,25 +80,27 @@ export async function AuditBinderPanel({
 }: Props) {
   const data = await fetchEvents(entityType, entityId, limit);
   const events = data.events;
+  const t = getTranslator();
 
   return (
     <section className={`mt-6 rounded-md border border-gray-200 bg-white p-4 shadow-sm ${className ?? ''}`}>
       <header className="mb-3 flex items-center justify-between">
         <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-          Audit history
+          {t('auditBinder.title')}
         </h3>
         <Link
           href={`/audit?entityType=${entityType}&entityId=${encodeURIComponent(entityId)}`}
           className="text-xs text-yge-blue-500 hover:underline"
         >
-          {data.total > limit ? `View all ${data.total} →` : 'Open in audit log →'}
+          {data.total > limit
+            ? t('auditBinder.viewAll', { count: data.total })
+            : t('auditBinder.openInLog')}
         </Link>
       </header>
 
       {events.length === 0 ? (
         <p className="text-xs text-gray-500">
-          No audit events recorded for this {entityType}. Either it's brand new
-          or the audit log was rotated below this record's first mutation.
+          {t('auditBinder.empty', { entityType })}
         </p>
       ) : (
         <ol className="space-y-2 text-sm">
@@ -112,7 +115,7 @@ export async function AuditBinderPanel({
               <div className="min-w-0 flex-1">
                 <div className="text-xs text-gray-700">
                   <span className="font-medium text-gray-900">
-                    {e.actorUserId ?? <em className="text-gray-500">system</em>}
+                    {e.actorUserId ?? <em className="text-gray-500">{t('auditBinder.system')}</em>}
                   </span>
                   {(() => {
                     const fields = changedFields(e.before, e.after);
@@ -122,7 +125,7 @@ export async function AuditBinderPanel({
                       (fields.length > 4 ? `, +${fields.length - 4}` : '');
                     return (
                       <span className="ml-2 font-mono text-[11px] text-gray-500">
-                        changed: {label}
+                        {t('auditBinder.changed', { fields: label })}
                       </span>
                     );
                   })()}

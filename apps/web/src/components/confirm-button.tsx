@@ -10,6 +10,7 @@ import { useState, type FormEvent } from 'react';
 
 import { Button } from './button';
 import { Modal } from './modal';
+import { useTranslator } from '../lib/use-translator';
 
 interface Props {
   /** What the user clicks. Defaults to 'Delete'. */
@@ -31,15 +32,18 @@ interface Props {
 }
 
 export function ConfirmButton({
-  label = 'Delete',
+  label,
   title,
   body,
-  confirmLabel = 'Yes, do it',
+  confirmLabel,
   action,
   hiddenFields,
   variant = 'danger',
   size = 'md',
 }: Props) {
+  const t = useTranslator();
+  const resolvedLabel = label ?? t('confirmButton.defaultLabel');
+  const resolvedConfirm = confirmLabel ?? t('confirmButton.defaultConfirm');
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
 
@@ -63,7 +67,7 @@ export function ConfirmButton({
         size={size}
         onClick={() => setOpen(true)}
       >
-        {label}
+        {resolvedLabel}
       </Button>
       <Modal
         open={open}
@@ -72,7 +76,7 @@ export function ConfirmButton({
         footer={
           <>
             <Button type="button" variant="secondary" size="md" onClick={() => setOpen(false)} disabled={pending}>
-              Cancel
+              {t('confirmButton.cancel')}
             </Button>
             <Button
               type="submit"
@@ -84,7 +88,7 @@ export function ConfirmButton({
                 f?.requestSubmit();
               }}
             >
-              {pending ? 'Working…' : confirmLabel}
+              {pending ? t('confirmButton.busy') : resolvedConfirm}
             </Button>
           </>
         }
