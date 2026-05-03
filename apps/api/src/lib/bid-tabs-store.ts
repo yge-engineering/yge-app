@@ -187,6 +187,90 @@ export async function createBidTab(
 }
 
 /**
+ * Patch a tab's core descriptive fields. Operators routinely need
+ * to fix typos or fill in missing metadata after import — the
+ * scraper might leave projectNumber blank, the agency name might
+ * be misspelled, etc. Bidder list, YGE link, and notes are
+ * patched separately.
+ *
+ * Pass null to CLEAR an optional field; undefined leaves it
+ * untouched. The required fields (agencyName, projectName, etc.)
+ * are always overwritten when supplied.
+ */
+export async function patchBidTabCore(
+  id: string,
+  patch: {
+    agencyName?: string;
+    projectName?: string;
+    projectNumber?: string | null;
+    county?: string | null;
+    bidOpenedAt?: string;
+    engineersEstimateCents?: number | null;
+    sourceUrl?: string | null;
+    awardedToBidderName?: string | null;
+    awardedAt?: string | null;
+  },
+  ctx?: AuditContext,
+): Promise<BidTab | null> {
+  const existing = await getBidTab(id);
+  if (!existing) return null;
+  const next: BidTab = {
+    ...existing,
+    agencyName: patch.agencyName ?? existing.agencyName,
+    projectName: patch.projectName ?? existing.projectName,
+    projectNumber:
+      patch.projectNumber === undefined
+        ? existing.projectNumber
+        : patch.projectNumber === null
+          ? undefined
+          : patch.projectNumber,
+    county:
+      patch.county === undefined
+        ? existing.county
+        : patch.county === null
+          ? undefined
+          : patch.county,
+    bidOpenedAt: patch.bidOpenedAt ?? existing.bidOpenedAt,
+    engineersEstimateCents:
+      patch.engineersEstimateCents === undefined
+        ? existing.engineersEstimateCents
+        : patch.engineersEstimateCents === null
+          ? undefined
+          : patch.engineersEstimateCents,
+    sourceUrl:
+      patch.sourceUrl === undefined
+        ? existing.sourceUrl
+        : patch.sourceUrl === null
+          ? undefined
+          : patch.sourceUrl,
+    awardedToBidderName:
+      patch.awardedToBidderName === undefined
+        ? existing.awardedToBidderName
+        : patch.awardedToBidderName === null
+          ? undefined
+          : patch.awardedToBidderName,
+    awardedAt:
+      patch.awardedAt === undefined
+        ? existing.awardedAt
+        : patch.awardedAt === null
+          ? undefined
+          : patch.awardedAt,
+    updatedAt: new Date().toISOString(),
+  };
+  const updated = BidTabSchema.parse(next);
+  await persist(updated);
+  await recordAudit({
+    action: 'update',
+    entityType: 'BidResult',
+    entityId: id,
+    before: existing,
+    after: updated,
+    ctx,
+  });
+  return updated;
+}
+
+/**
  * Patch a tab's free-form notes. Operators tend to add post-import
  * context here ('Caltrans rejected Mercer's bid for missing sub
  * list — apparent low advanced to Knife River'), so the field gets

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { AppShell, PageHeader, StatusPill } from '../../../components';
+import { BidTabCoreEdit } from '../../../components/bid-tab-core-edit';
 import { BidTabNotesEdit } from '../../../components/bid-tab-notes-edit';
 import { BidTabYgeLinkForm } from '../../../components/bid-tab-yge-link-form';
 import { BidTabYgeUnlinkButton } from '../../../components/bid-tab-yge-unlink-button';
@@ -101,6 +102,26 @@ export default async function BidTabPage({
           title={tab.projectName}
           subtitle={`${tab.agencyName} · ${tab.source} · opened ${tab.bidOpenedAt.slice(0, 10)}`}
         />
+
+        <div className="mt-2">
+          <BidTabCoreEdit
+            apiBaseUrl={publicApiBaseUrl()}
+            tabId={tab.id}
+            initial={{
+              agencyName: tab.agencyName,
+              projectName: tab.projectName,
+              projectNumber: tab.projectNumber ?? '',
+              county: tab.county ?? '',
+              bidOpenedAt: tab.bidOpenedAt.slice(0, 10),
+              engineersEstimateDollars: tab.engineersEstimateCents
+                ? (tab.engineersEstimateCents / 100).toString()
+                : '',
+              sourceUrl: tab.sourceUrl ?? '',
+              awardedToBidderName: tab.awardedToBidderName ?? '',
+              awardedAt: tab.awardedAt?.slice(0, 10) ?? '',
+            }}
+          />
+        </div>
 
         <section className="mt-4 grid gap-3 sm:grid-cols-3">
           <Tile
