@@ -6,6 +6,7 @@ import { AppShell, AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { Employee, Job, TimeCard } from '@yge/shared';
 import { TimeCardEditor } from '@/components/time-card-editor';
+import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
   return (
@@ -46,13 +47,14 @@ export default async function TimeCardDetailPage({
     fetchJobs(),
   ]);
   if (!card) notFound();
+  const t = getTranslator();
 
   return (
     <AppShell>
     <main className="mx-auto max-w-5xl p-8">
       <div className="mb-6">
         <Link href="/time-cards" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Back to time cards
+          {t('timeCardDetail.backLink')}
         </Link>
       </div>
 

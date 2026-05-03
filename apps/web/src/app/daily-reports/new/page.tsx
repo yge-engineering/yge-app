@@ -16,6 +16,7 @@ import {
   type Job,
 } from '@yge/shared';
 import { ApiError, postJson } from '@/lib/api';
+import { useTranslator } from '../../../lib/use-translator';
 
 export default function NewDailyReportPage() {
   const router = useRouter();
@@ -26,6 +27,7 @@ export default function NewDailyReportPage() {
   const [foremen, setForemen] = useState<Employee[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const t = useTranslator();
 
   useEffect(() => {
     const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
@@ -58,11 +60,11 @@ export default function NewDailyReportPage() {
     e.preventDefault();
     setError(null);
     if (!jobId) {
-      setError('Pick a job.');
+      setError(t('dailyReportNew.error.pickJob'));
       return;
     }
     if (foremanId.trim().length === 0) {
-      setError('Pick a foreman.');
+      setError(t('dailyReportNew.error.pickForeman'));
       return;
     }
     setSaving(true);
@@ -79,7 +81,7 @@ export default function NewDailyReportPage() {
       } else if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError('Unknown error');
+        setError(t('dailyReportNew.error.unknown'));
       }
       setSaving(false);
     }
@@ -93,19 +95,15 @@ export default function NewDailyReportPage() {
           href="/daily-reports"
           className="text-sm text-yge-blue-500 hover:underline"
         >
-          &larr; Back to daily reports
+          {t('dailyReportDetail.backLink')}
         </Link>
       </div>
 
-      <h1 className="text-3xl font-bold text-yge-blue-500">New daily report</h1>
-      <p className="mt-2 text-gray-700">
-        Pick the date, job, and foreman. After saving you can add crew, log
-        hours, and fill in the scope-completed / issues / next-day-plan
-        sections on the edit page.
-      </p>
+      <h1 className="text-3xl font-bold text-yge-blue-500">{t('dailyReportNew.title')}</h1>
+      <p className="mt-2 text-gray-700">{t('dailyReportNew.subtitle')}</p>
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-4">
-        <Field label="Report date *">
+        <Field label={t('dailyReportNew.field.date')}>
           <input
             required
             type="date"
@@ -114,14 +112,14 @@ export default function NewDailyReportPage() {
             className="rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Job *">
+        <Field label={t('dailyReportNew.field.job')}>
           <select
             required
             value={jobId}
             onChange={(e) => setJobId(e.target.value)}
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           >
-            <option value="">— Pick a job —</option>
+            <option value="">{t('dailyReportNew.option.pickJob')}</option>
             {jobs.map((j) => (
               <option key={j.id} value={j.id}>
                 {j.projectName}
@@ -130,14 +128,14 @@ export default function NewDailyReportPage() {
             ))}
           </select>
         </Field>
-        <Field label="Submitting foreman *">
+        <Field label={t('dailyReportNew.field.foreman')}>
           <select
             required
             value={foremanId}
             onChange={(e) => setForemanId(e.target.value)}
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           >
-            <option value="">— Pick a foreman —</option>
+            <option value="">{t('dailyReportNew.option.pickForeman')}</option>
             {foremen.map((f) => (
               <option key={f.id} value={f.id}>
                 {fullName(f)}
@@ -156,13 +154,13 @@ export default function NewDailyReportPage() {
             disabled={saving}
             className="rounded bg-yge-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50"
           >
-            {saving ? 'Saving…' : 'Create draft'}
+            {saving ? t('dailyReportNew.btn.saving') : t('dailyReportNew.btn.create')}
           </button>
           <Link
             href="/daily-reports"
             className="text-sm text-gray-600 hover:underline"
           >
-            Cancel
+            {t('dailyReportNew.btn.cancel')}
           </Link>
         </div>
       </form>

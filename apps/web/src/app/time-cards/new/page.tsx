@@ -7,6 +7,7 @@ import { Alert, AppShell } from '../../../components';
 import { useRouter } from 'next/navigation';
 import { fullName, mondayOfWeek, type Employee, type TimeCard } from '@yge/shared';
 import { ApiError, postJson } from '@/lib/api';
+import { useTranslator } from '../../../lib/use-translator';
 
 export default function NewTimeCardPage() {
   const router = useRouter();
@@ -15,6 +16,7 @@ export default function NewTimeCardPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const t = useTranslator();
 
   useEffect(() => {
     const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
@@ -32,7 +34,7 @@ export default function NewTimeCardPage() {
     e.preventDefault();
     setError(null);
     if (!employeeId) {
-      setError('Pick an employee.');
+      setError(t('timeCardNew.error.pickEmployee'));
       return;
     }
     setSaving(true);
@@ -45,7 +47,7 @@ export default function NewTimeCardPage() {
     } catch (err) {
       if (err instanceof ApiError) setError(`${err.message} (HTTP ${err.status})`);
       else if (err instanceof Error) setError(err.message);
-      else setError('Unknown error');
+      else setError(t('timeCardNew.error.unknown'));
       setSaving(false);
     }
   }
@@ -55,21 +57,21 @@ export default function NewTimeCardPage() {
     <main className="mx-auto max-w-xl p-8">
       <div className="mb-6">
         <Link href="/time-cards" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Back to time cards
+          {t('timeCardDetail.backLink')}
         </Link>
       </div>
 
-      <h1 className="text-3xl font-bold text-yge-blue-500">New time card</h1>
+      <h1 className="text-3xl font-bold text-yge-blue-500">{t('timeCardNew.title')}</h1>
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-4">
-        <Field label="Employee *">
+        <Field label={t('timeCardNew.field.employee')}>
           <select
             required
             value={employeeId}
             onChange={(e) => setEmployeeId(e.target.value)}
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           >
-            <option value="">— Pick an employee —</option>
+            <option value="">{t('timeCardNew.option.pickEmployee')}</option>
             {employees.map((e) => (
               <option key={e.id} value={e.id}>
                 {fullName(e)}
@@ -77,16 +79,14 @@ export default function NewTimeCardPage() {
             ))}
           </select>
         </Field>
-        <Field label="Week starting (Monday)">
+        <Field label={t('timeCardNew.field.weekStarting')}>
           <input
             type="date"
             value={weekStarting}
             onChange={(e) => setWeekStarting(e.target.value)}
             className="rounded border border-gray-300 px-3 py-2 text-sm"
           />
-          <p className="mt-1 text-xs text-gray-500">
-            If you pick mid-week, we&rsquo;ll snap to the Monday automatically.
-          </p>
+          <p className="mt-1 text-xs text-gray-500">{t('timeCardNew.hint.weekStarting')}</p>
         </Field>
 
         {error && (
@@ -99,10 +99,10 @@ export default function NewTimeCardPage() {
             disabled={saving}
             className="rounded bg-yge-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50"
           >
-            {saving ? 'Saving…' : 'Create card'}
+            {saving ? t('timeCardNew.btn.saving') : t('timeCardNew.btn.create')}
           </button>
           <Link href="/time-cards" className="text-sm text-gray-600 hover:underline">
-            Cancel
+            {t('timeCardNew.btn.cancel')}
           </Link>
         </div>
       </form>

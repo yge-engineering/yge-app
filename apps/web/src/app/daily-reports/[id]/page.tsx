@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { AuditBinderPanel } from '../../../components';
 import type { DailyReport, Employee, Job } from '@yge/shared';
 import { DailyReportEditor } from '@/components/daily-report-editor';
+import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
   return (
@@ -47,6 +48,7 @@ export default async function DailyReportDetailPage({
     fetchJobs(),
   ]);
   if (!report) notFound();
+  const t = getTranslator();
 
   return (
     <main className="mx-auto max-w-5xl p-8">
@@ -55,7 +57,7 @@ export default async function DailyReportDetailPage({
           href="/daily-reports"
           className="text-sm text-yge-blue-500 hover:underline"
         >
-          &larr; Back to daily reports
+          {t('dailyReportDetail.backLink')}
         </Link>
       </div>
 
