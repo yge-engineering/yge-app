@@ -7,6 +7,7 @@
 import Link from 'next/link';
 
 import { AppShell } from '../../components/app-shell';
+import { getTranslator } from '../../lib/locale';
 import {
   buildCrewRoster,
   certKindLabel,
@@ -41,6 +42,7 @@ async function fetchTools(): Promise<Tool[]> {
 export default async function CrewPage() {
   const [employees, tools] = await Promise.all([fetchEmployees(), fetchTools()]);
   const roster = buildCrewRoster({ employees, tools });
+  const t = getTranslator();
 
   return (
     <AppShell>
@@ -51,42 +53,41 @@ export default async function CrewPage() {
         </Link>
         <div className="flex items-center gap-3 text-sm">
           <Link href="/tools" className="text-yge-blue-500 hover:underline">
-            Power tools &rarr;
+            {t('crew.toolsLink')}
           </Link>
           <Link
             href="/crew/print"
             className="rounded border border-yge-blue-500 px-3 py-1 font-medium text-yge-blue-500 hover:bg-yge-blue-50"
           >
-            Print / email roster
+            {t('crew.printRoster')}
           </Link>
           <Link
             href="/crew/new"
             className="rounded bg-yge-blue-500 px-3 py-1 font-medium text-white hover:bg-yge-blue-700"
           >
-            + Add employee
+            {t('crew.addEmployee')}
           </Link>
         </div>
       </div>
 
-      <h1 className="text-3xl font-bold text-yge-blue-500">Crew roster</h1>
+      <h1 className="text-3xl font-bold text-yge-blue-500">{t('crew.title')}</h1>
       <p className="mt-2 text-gray-700">
-        {roster.totalActive} active &middot; {roster.totalInactive} inactive
+        {t('crew.subtitle', { active: roster.totalActive, inactive: roster.totalInactive })}
         {roster.expiredCertCount > 0 && (
           <span className="ml-3 inline-block rounded bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800">
-            {roster.expiredCertCount} expired cert
-            {roster.expiredCertCount === 1 ? '' : 's'}
+            {t('crew.expiredBadge', { count: roster.expiredCertCount, plural: roster.expiredCertCount === 1 ? '' : 's' })}
           </span>
         )}
         {roster.expiringSoonCertCount > 0 && (
           <span className="ml-2 inline-block rounded bg-yellow-100 px-2 py-0.5 text-xs font-semibold text-yellow-800">
-            {roster.expiringSoonCertCount} expiring soon
+            {t('crew.expiringSoonBadge', { count: roster.expiringSoonCertCount })}
           </span>
         )}
       </p>
 
       {roster.groups.length === 0 && (
         <div className="mt-6 rounded border border-gray-200 bg-gray-50 p-6 text-sm text-gray-600">
-          No employees on file yet. Click <em>Add employee</em> to start.
+          {t('crew.empty')}
         </div>
       )}
 
@@ -101,18 +102,20 @@ export default async function CrewPage() {
                 {group.label}
               </h2>
               <p className="text-xs text-gray-500">
-                {group.members.length}{' '}
-                {group.members.length === 1 ? 'person' : 'people'}
+                {t('crew.foreman.people', {
+                  count: group.members.length,
+                  label: group.members.length === 1 ? t('crew.foreman.person') : t('crew.foreman.peopleWord'),
+                })}
               </p>
             </header>
             <table className="w-full text-left text-sm">
               <thead className="bg-white text-xs uppercase tracking-wide text-gray-500">
                 <tr>
-                  <th className="px-5 py-2">Name / Role</th>
-                  <th className="px-5 py-2">Phone</th>
-                  <th className="px-5 py-2">Classification</th>
-                  <th className="px-5 py-2">Certs</th>
-                  <th className="px-5 py-2">Tools out</th>
+                  <th className="px-5 py-2">{t('crew.col.nameRole')}</th>
+                  <th className="px-5 py-2">{t('crew.col.phone')}</th>
+                  <th className="px-5 py-2">{t('crew.col.classification')}</th>
+                  <th className="px-5 py-2">{t('crew.col.certs')}</th>
+                  <th className="px-5 py-2">{t('crew.col.toolsOut')}</th>
                   <th className="px-5 py-2"></th>
                 </tr>
               </thead>
@@ -142,7 +145,7 @@ export default async function CrewPage() {
                       </td>
                       <td className="px-5 py-3 text-xs text-gray-700">
                         {m.certs.length === 0 ? (
-                          <span className="text-gray-400">none</span>
+                          <span className="text-gray-400">{t('crew.none')}</span>
                         ) : (
                           <ul className="space-y-0.5">
                             {m.certs.map((c, i) => (
@@ -160,7 +163,7 @@ export default async function CrewPage() {
                                 {c.cert.expiresOn && (
                                   <> &middot; {c.cert.expiresOn}</>
                                 )}
-                                {c.status === 'expired' && ' (EXPIRED)'}
+                                {c.status === 'expired' && ' ' + t('crew.expired')}
                               </li>
                             ))}
                           </ul>
@@ -168,11 +171,11 @@ export default async function CrewPage() {
                       </td>
                       <td className="px-5 py-3 text-xs text-gray-700">
                         {m.tools.length === 0 ? (
-                          <span className="text-gray-400">none</span>
+                          <span className="text-gray-400">{t('crew.none')}</span>
                         ) : (
                           <ul className="space-y-0.5">
-                            {m.tools.map((t) => (
-                              <li key={t.id}>{toolIdentifier(t)}</li>
+                            {m.tools.map((tool) => (
+                              <li key={tool.id}>{toolIdentifier(tool)}</li>
                             ))}
                           </ul>
                         )}
@@ -182,7 +185,7 @@ export default async function CrewPage() {
                           href={`/crew/${e.id}`}
                           className="text-yge-blue-500 hover:underline"
                         >
-                          Edit
+                          {t('crew.edit')}
                         </Link>
                       </td>
                     </tr>
