@@ -4,20 +4,20 @@ import Link from 'next/link';
 
 import { AppShell } from '../../../components/app-shell';
 import { VendorEditor } from '../../../components/vendor-editor';
+import { getTranslator } from '../../../lib/locale';
 
 export default function NewVendorPage() {
+  const t = getTranslator();
   return (
     <AppShell>
     <main className="mx-auto max-w-3xl p-8">
       <div className="mb-6">
         <Link href="/vendors" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Vendors
+          {t('vendorDetail.backLink')}
         </Link>
       </div>
-      <h1 className="text-3xl font-bold text-yge-blue-500">New vendor</h1>
-      <p className="mt-2 text-gray-700">
-        Add a supplier, subcontractor, or service provider to the vendor master.
-      </p>
+      <h1 className="text-3xl font-bold text-yge-blue-500">{t('vendorNew.title')}</h1>
+      <p className="mt-2 text-gray-700">{t('vendorNew.subtitle')}</p>
       <div className="mt-6">
         <VendorEditor mode="create" />
       </div>
