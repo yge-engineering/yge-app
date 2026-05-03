@@ -5,6 +5,7 @@
 // start. Will grow as we land more features.
 
 import { AppShell, Card, LinkButton, PageHeader } from '../../components';
+import { getTranslator } from '../../lib/locale';
 
 interface HowTo {
   title: string;
@@ -79,16 +80,17 @@ const FAQS = [
 ];
 
 export default function HelpPage() {
+  const t = getTranslator();
   return (
     <AppShell>
       <main className="mx-auto max-w-3xl">
         <PageHeader
-          title="Help"
-          subtitle="Plain-English how-tos for the things you'll do most. Bookmark this page for the first month."
+          title={t('help.title')}
+          subtitle={t('help.subtitle')}
         />
 
         <section className="mb-10">
-          <h2 className="mb-4 text-base font-semibold text-gray-900">How-tos</h2>
+          <h2 className="mb-4 text-base font-semibold text-gray-900">{t('help.h.howTos')}</h2>
           <div className="space-y-4">
             {HOW_TOS.map((h) => (
               <Card key={h.title}>
@@ -112,7 +114,7 @@ export default function HelpPage() {
         </section>
 
         <section>
-          <h2 className="mb-4 text-base font-semibold text-gray-900">Common questions</h2>
+          <h2 className="mb-4 text-base font-semibold text-gray-900">{t('help.h.faq')}</h2>
           <dl className="space-y-3">
             {FAQS.map((f) => (
               <Card key={f.q}>
@@ -124,7 +126,7 @@ export default function HelpPage() {
         </section>
 
         <p className="mt-10 text-center text-xs text-gray-400">
-          Stuck? Call Ryan at 707-599-9921.
+          {t('help.footer')}
         </p>
       </main>
     </AppShell>

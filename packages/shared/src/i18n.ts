@@ -1694,6 +1694,11 @@ export const SEED_DICTIONARY: DictionaryByLocale = {
     'terms.h.contact': 'Contact',
     'terms.contact.line1': 'Questions: Ryan D. Young, VP — ryoung@youngge.com — 707-599-9921.',
     'terms.contact.line2': 'Mailing: 19645 Little Woods Rd, Cottonwood CA 96022.',
+    'help.title': 'Help',
+    'help.subtitle': "Plain-English how-tos for the things you'll do most. Bookmark this page for the first month.",
+    'help.h.howTos': 'How-tos',
+    'help.h.faq': 'Common questions',
+    'help.footer': 'Stuck? Call Ryan at 707-599-9921.',
   },
   es: {
     'app.title': 'YGE',
@@ -3306,6 +3311,11 @@ export const SEED_DICTIONARY: DictionaryByLocale = {
     'terms.h.contact': 'Contacto',
     'terms.contact.line1': 'Preguntas: Ryan D. Young, VP — ryoung@youngge.com — 707-599-9921.',
     'terms.contact.line2': 'Correo: 19645 Little Woods Rd, Cottonwood CA 96022.',
+    'help.title': 'Ayuda',
+    'help.subtitle': 'Cómo-hacer en español sencillo para las cosas que harás más. Guarda esta página el primer mes.',
+    'help.h.howTos': 'Cómo se hace',
+    'help.h.faq': 'Preguntas comunes',
+    'help.footer': '¿Atascado? Llama a Ryan al 707-599-9921.',
   },
 };
 
