@@ -10,6 +10,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 
 interface Props {
   apiBaseUrl: string;
@@ -20,6 +21,7 @@ interface Props {
 
 export function DirProposalDecisionButtons({ apiBaseUrl, proposalId, disabled }: Props) {
   const router = useRouter();
+  const t = useTranslator();
   const [busy, setBusy] = useState<'accept' | 'reject' | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,10 +29,7 @@ export function DirProposalDecisionButtons({ apiBaseUrl, proposalId, disabled }:
 
   async function accept() {
     if (busy) return;
-    const note = window.prompt(
-      'Optional note for the audit trail. Leave blank to accept without comment.',
-      '',
-    );
+    const note = window.prompt(t('dirProposalDecision.acceptPrompt'), '');
     // window.prompt returns null on cancel, '' on empty submit.
     if (note === null) return;
     setError(null);
@@ -43,7 +42,7 @@ export function DirProposalDecisionButtons({ apiBaseUrl, proposalId, disabled }:
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? `API returned ${res.status}`);
+        setError(body.error ?? t('dirProposalDecision.error', { status: res.status }));
         setBusy(null);
         return;
       }
@@ -57,13 +56,10 @@ export function DirProposalDecisionButtons({ apiBaseUrl, proposalId, disabled }:
 
   async function reject() {
     if (busy) return;
-    const reason = window.prompt(
-      'Why reject this proposal? Required — the reason lands in the audit log.',
-      '',
-    );
+    const reason = window.prompt(t('dirProposalDecision.rejectPrompt'), '');
     if (reason === null) return;
     if (reason.trim().length === 0) {
-      window.alert('Reject reason is required.');
+      window.alert(t('dirProposalDecision.rejectRequired'));
       return;
     }
     setError(null);
@@ -76,7 +72,7 @@ export function DirProposalDecisionButtons({ apiBaseUrl, proposalId, disabled }:
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? `API returned ${res.status}`);
+        setError(body.error ?? t('dirProposalDecision.error', { status: res.status }));
         setBusy(null);
         return;
       }
@@ -96,7 +92,7 @@ export function DirProposalDecisionButtons({ apiBaseUrl, proposalId, disabled }:
         disabled={busy != null}
         className="rounded bg-emerald-600 px-2 py-0.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
       >
-        {busy === 'accept' ? 'Accepting…' : 'Accept'}
+        {busy === 'accept' ? t('dirProposalDecision.accepting') : t('dirProposalDecision.accept')}
       </button>
       <button
         type="button"
@@ -104,7 +100,7 @@ export function DirProposalDecisionButtons({ apiBaseUrl, proposalId, disabled }:
         disabled={busy != null}
         className="rounded border border-red-600 px-2 py-0.5 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
       >
-        {busy === 'reject' ? 'Rejecting…' : 'Reject'}
+        {busy === 'reject' ? t('dirProposalDecision.rejecting') : t('dirProposalDecision.reject')}
       </button>
       {error && (
         <span className="text-xs text-red-700" title={error}>

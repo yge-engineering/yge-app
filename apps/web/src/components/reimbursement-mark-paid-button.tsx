@@ -9,6 +9,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { formatUSD } from '@yge/shared';
+import { useTranslator } from '../lib/use-translator';
 
 export function ReimbursementMarkPaidButton({
   apiBaseUrl,
@@ -22,6 +23,7 @@ export function ReimbursementMarkPaidButton({
   totalCents: number;
 }) {
   const router = useRouter();
+  const t = useTranslator();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
@@ -29,11 +31,11 @@ export function ReimbursementMarkPaidButton({
   async function markAllPaid() {
     const total = mileageIds.length + expenseIds.length;
     if (total === 0) return;
-    if (
-      !confirm(
-        `Mark ${total} item${total === 1 ? '' : 's'} (${formatUSD(totalCents)}) as paid? This cannot be undone in bulk — each row would have to be flipped back individually.`,
-      )
-    ) {
+    const confirmMsg =
+      total === 1
+        ? t('reimbursementMarkPaid.confirmOne', { amount: formatUSD(totalCents) })
+        : t('reimbursementMarkPaid.confirmMany', { count: total, amount: formatUSD(totalCents) });
+    if (!confirm(confirmMsg)) {
       return;
     }
     setBusy(true);
@@ -79,8 +81,11 @@ export function ReimbursementMarkPaidButton({
         className="rounded bg-yge-blue-500 px-3 py-1 text-sm font-medium text-white hover:bg-yge-blue-700 disabled:opacity-50"
       >
         {busy
-          ? `Marking… ${progress?.done ?? 0}/${progress?.total ?? 0}`
-          : `Mark all paid (${formatUSD(totalCents)})`}
+          ? t('reimbursementMarkPaid.busy', {
+              done: progress?.done ?? 0,
+              total: progress?.total ?? 0,
+            })
+          : t('reimbursementMarkPaid.action', { amount: formatUSD(totalCents) })}
       </button>
       {error && <span className="mt-1 text-xs text-red-700">{error}</span>}
     </div>

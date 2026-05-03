@@ -11,6 +11,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 
 interface BidderOption {
   name: string;
@@ -33,6 +34,7 @@ export function BidTabMarkAwarded({
   currentAwardedAt,
 }: Props) {
   const router = useRouter();
+  const t = useTranslator();
   const [editing, setEditing] = useState(false);
   const [picked, setPicked] = useState(currentAwardedToBidderName ?? '');
   const [awardedAt, setAwardedAt] = useState(currentAwardedAt ?? '');
@@ -43,7 +45,7 @@ export function BidTabMarkAwarded({
     if (busy) return;
     setError(null);
     if (!picked) {
-      setError('Pick the awarded bidder.');
+      setError(t('bidTabMarkAwarded.errPick'));
       return;
     }
     setBusy(true);
@@ -58,7 +60,7 @@ export function BidTabMarkAwarded({
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? `Mark-awarded failed (${res.status})`);
+        setError(body.error ?? t('bidTabMarkAwarded.errMark', { status: res.status }));
         return;
       }
       setEditing(false);
@@ -73,9 +75,7 @@ export function BidTabMarkAwarded({
   async function clearAward() {
     if (busy) return;
     if (typeof window !== 'undefined') {
-      const ok = window.confirm(
-        'Clear the recorded award on this tab? Bidder awardedTo flags will reset to none.',
-      );
+      const ok = window.confirm(t('bidTabMarkAwarded.confirmClear'));
       if (!ok) return;
     }
     setError(null);
@@ -88,7 +88,7 @@ export function BidTabMarkAwarded({
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? `Clear failed (${res.status})`);
+        setError(body.error ?? t('bidTabMarkAwarded.errClear', { status: res.status }));
         return;
       }
       setPicked('');
@@ -109,17 +109,23 @@ export function BidTabMarkAwarded({
         onClick={() => setEditing(true)}
         className="text-[11px] text-yge-blue-500 hover:underline"
       >
-        {currentAwardedToBidderName ? 'Edit award →' : 'Mark awarded →'}
+        {currentAwardedToBidderName
+          ? t('bidTabMarkAwarded.editAward')
+          : t('bidTabMarkAwarded.markAwarded')}
       </button>
     );
   }
+
+  // Help blurb has an inline <em> word — split-and-fill via sentinel.
+  const helpTpl = t('bidTabMarkAwarded.help', { awardedItalic: '__AWARDED__' });
+  const [helpPre, helpPost] = helpTpl.split('__AWARDED__');
 
   return (
     <div className="mt-2 rounded-md border border-emerald-300 bg-emerald-50 p-3 text-xs">
       <div className="grid gap-2 sm:grid-cols-2">
         <label className="block">
           <span className="mb-0.5 block text-[10px] uppercase tracking-wide text-gray-600">
-            Awarded to
+            {t('bidTabMarkAwarded.awardedTo')}
           </span>
           <select
             value={picked}
@@ -127,7 +133,7 @@ export function BidTabMarkAwarded({
             disabled={busy}
             className="w-full rounded border border-gray-300 bg-white px-2 py-1 text-xs"
           >
-            <option value="">— pick a bidder —</option>
+            <option value="">{t('bidTabMarkAwarded.pickBidder')}</option>
             {bidders.map((b) => (
               <option key={`${b.rank}-${b.name}`} value={b.name}>
                 {b.rank}. {b.name}
@@ -137,7 +143,7 @@ export function BidTabMarkAwarded({
         </label>
         <label className="block">
           <span className="mb-0.5 block text-[10px] uppercase tracking-wide text-gray-600">
-            Awarded date
+            {t('bidTabMarkAwarded.awardedDate')}
           </span>
           <input
             type="date"
@@ -156,7 +162,7 @@ export function BidTabMarkAwarded({
           disabled={busy || !picked}
           className="rounded bg-emerald-600 px-3 py-1 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
         >
-          {busy ? 'Saving…' : 'Confirm award'}
+          {busy ? t('bidTabMarkAwarded.busy') : t('bidTabMarkAwarded.confirmAction')}
         </button>
         {currentAwardedToBidderName && (
           <button
@@ -165,7 +171,7 @@ export function BidTabMarkAwarded({
             disabled={busy}
             className="rounded border border-amber-500 bg-white px-3 py-1 text-xs text-amber-700 hover:bg-amber-50 disabled:opacity-50"
           >
-            Clear award
+            {t('bidTabMarkAwarded.clearAward')}
           </button>
         )}
         <button
@@ -179,14 +185,14 @@ export function BidTabMarkAwarded({
           disabled={busy}
           className="rounded border border-gray-300 bg-white px-3 py-1 text-xs text-gray-700 hover:bg-gray-100 disabled:opacity-50"
         >
-          Cancel
+          {t('bidTabMarkAwarded.cancel')}
         </button>
         {error && <span className="text-[11px] text-red-700">⚠ {error}</span>}
       </div>
       <p className="mt-2 text-[10px] text-gray-600">
-        Records the award + flips the bidder’s <em>awarded</em> chip in the
-        ranked list. Clears every other bidder’s awarded flag if it was
-        previously set.
+        {helpPre}
+        <em>{t('bidTabMarkAwarded.awardedItalic')}</em>
+        {helpPost}
       </p>
     </div>
   );
