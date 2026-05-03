@@ -7,6 +7,7 @@
 import Link from 'next/link';
 
 import { AppShell, Card, EmptyState, PageHeader, StatusPill } from '../../components';
+import { getTranslator, type Translator } from '../../lib/locale';
 import type { Dispatch } from '@yge/shared';
 
 function apiBaseUrl(): string {
@@ -27,14 +28,14 @@ async function fetchDispatches(): Promise<Dispatch[]> {
   }
 }
 
-function dayLabel(iso: string, today: string): string {
-  if (iso === today) return 'Today';
+function dayLabel(iso: string, today: string, t: Translator): string {
+  if (iso === today) return t('cal.today');
   const d = new Date(`${iso}T00:00:00`);
-  const t = new Date(`${today}T00:00:00`);
-  const ms = d.getTime() - t.getTime();
+  const tDate = new Date(`${today}T00:00:00`);
+  const ms = d.getTime() - tDate.getTime();
   const days = Math.round(ms / 86_400_000);
-  if (days === 1) return 'Tomorrow';
-  if (days === -1) return 'Yesterday';
+  if (days === 1) return t('cal.tomorrow');
+  if (days === -1) return t('cal.yesterday');
   return d.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
 }
 
@@ -68,20 +69,21 @@ export default async function CalendarPage() {
   }
 
   const totalInWindow = days.reduce((sum, d) => sum + (byDay.get(d)?.length ?? 0), 0);
+  const t = getTranslator();
 
   return (
     <AppShell>
       <main className="mx-auto max-w-5xl">
         <PageHeader
-          title="Calendar"
-          subtitle={`${totalInWindow} dispatches across the 14-day window. Past 3 days at top, then today, then the next 10.`}
+          title={t('cal.title')}
+          subtitle={t('cal.subtitle', { count: totalInWindow })}
         />
 
         {dispatches.length === 0 ? (
           <EmptyState
-            title="No dispatches"
-            body="Once you start posting daily dispatches, they'll show up here grouped by day."
-            actions={[{ href: '/dispatch/new', label: 'Post a dispatch', primary: true }]}
+            title={t('cal.empty.title')}
+            body={t('cal.empty.body')}
+            actions={[{ href: '/dispatch/new', label: t('cal.empty.action'), primary: true }]}
           />
         ) : (
           <div className="space-y-3">
@@ -93,12 +95,12 @@ export default async function CalendarPage() {
                   <div className="flex flex-wrap items-baseline justify-between gap-3">
                     <div>
                       <div className={`text-sm font-semibold ${isToday ? 'text-blue-900' : 'text-gray-900'}`}>
-                        {dayLabel(iso, today)}
+                        {dayLabel(iso, today, t)}
                       </div>
                       <div className="text-[11px] uppercase tracking-wider text-gray-500">{iso}</div>
                     </div>
                     <div className="text-xs text-gray-600">
-                      {list.length === 0 ? <span className="text-gray-400">no dispatches</span> : `${list.length} dispatch${list.length === 1 ? '' : 'es'}`}
+                      {list.length === 0 ? <span className="text-gray-400">{t('cal.noDispatches')}</span> : t('cal.dispatchCount', { count: list.length, plural: list.length === 1 ? '' : 'es' })}
                     </div>
                   </div>
                   {list.length > 0 && (
@@ -109,7 +111,7 @@ export default async function CalendarPage() {
                             {d.foremanName}
                           </Link>
                           <span className="truncate text-xs text-gray-500">
-                            {d.crew.length} crew · {d.equipment.length} equipment
+                            {t('cal.crewEquipment', { crew: d.crew.length, equipment: d.equipment.length })}
                           </span>
                           <StatusPill label={d.status} tone={statusTone(d.status)} size="sm" />
                         </li>
