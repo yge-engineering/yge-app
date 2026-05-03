@@ -14,6 +14,7 @@ import {
   PageHeader,
   Tile,
 } from '../../components';
+import { getTranslator } from '../../lib/locale';
 import {
   buildPayrollSummary,
   computePayrollSummaryRollup,
@@ -96,18 +97,19 @@ export default async function PayrollSummaryPage({
   const missingRates = Array.from(classifications).filter(
     (c) => !ratesByClassification.has(c),
   );
+  const t = getTranslator();
 
   return (
     <AppShell>
       <main className="mx-auto max-w-7xl">
         <PageHeader
-          title="Payroll year-end"
-          subtitle="Per-employee YTD hours + gross wages, derived from time cards × DIR rates active mid-year. Backs W-2 + 941 + DE-9 reconciliation."
+          title={t('pr.title')}
+          subtitle={t('pr.subtitle')}
         />
 
         <form action="/payroll-summary" className="mb-4 flex flex-wrap items-end gap-3 rounded-md border border-gray-200 bg-white p-3">
           <label className="block text-xs">
-            <span className="mb-1 block font-medium text-gray-700">Year</span>
+            <span className="mb-1 block font-medium text-gray-700">{t('pr.year')}</span>
             <input
               type="number"
               name="year"
@@ -118,7 +120,7 @@ export default async function PayrollSummaryPage({
             />
           </label>
           <label className="block text-xs">
-            <span className="mb-1 block font-medium text-gray-700">County</span>
+            <span className="mb-1 block font-medium text-gray-700">{t('pr.county')}</span>
             <input
               name="county"
               defaultValue={county}
@@ -126,7 +128,7 @@ export default async function PayrollSummaryPage({
             />
           </label>
           <label className="block text-xs">
-            <span className="mb-1 block font-medium text-gray-700">Employer tax rate (%)</span>
+            <span className="mb-1 block font-medium text-gray-700">{t('pr.taxRate')}</span>
             <input
               type="number"
               step="0.1"
@@ -139,50 +141,58 @@ export default async function PayrollSummaryPage({
             type="submit"
             className="rounded-md bg-blue-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-800"
           >
-            Reload
+            {t('pr.reload')}
           </button>
         </form>
 
         {missingRates.length > 0 ? (
           <Alert
             tone="warn"
-            title={`Missing DIR rates for ${missingRates.length} classification${missingRates.length === 1 ? '' : 's'}:`}
+            title={t('pr.alert.missingRates', { count: missingRates.length, plural: missingRates.length === 1 ? '' : 's' })}
             className="mb-4"
           >
-            {missingRates.join(', ')}. Add a DIR rate for {county} county at{' '}
-            <Link href="/dir-rates/new" className="text-blue-700 hover:underline">/dir-rates/new</Link>{' '}
-            before relying on these totals for W-2 prep.
+            {(() => {
+              const tpl = t('pr.alert.body', { list: missingRates.join(', '), county });
+              const [pre, post] = tpl.split('/dir-rates/new');
+              return (
+                <>
+                  {pre}
+                  <Link href="/dir-rates/new" className="text-blue-700 hover:underline">/dir-rates/new</Link>
+                  {post}
+                </>
+              );
+            })()}
           </Alert>
         ) : null}
 
         <section className="mb-4 grid gap-3 sm:grid-cols-4">
-          <Tile label="Employees" value={rollup.employees} />
-          <Tile label="Total hours" value={rollup.totalHours.toFixed(1)} />
-          <Tile label="Gross wages" value={<Money cents={rollup.totalGrossWagesCents} />} />
-          <Tile label="Fringe (trust)" value={<Money cents={rollup.totalFringeCents} />} />
+          <Tile label={t('pr.tile.employees')} value={rollup.employees} />
+          <Tile label={t('pr.tile.totalHours')} value={rollup.totalHours.toFixed(1)} />
+          <Tile label={t('pr.tile.grossWages')} value={<Money cents={rollup.totalGrossWagesCents} />} />
+          <Tile label={t('pr.tile.fringe')} value={<Money cents={rollup.totalFringeCents} />} />
         </section>
 
         {visible.length === 0 ? (
           <div className="rounded-md border border-gray-200 bg-gray-50 p-6 text-sm text-gray-600">
-            No time cards in {year}.
+            {t('pr.empty', { year })}
           </div>
         ) : (
           <div className="overflow-x-auto rounded-md border border-gray-200 bg-white">
             <table className="w-full text-left text-xs">
               <thead className="bg-gray-50 uppercase tracking-wide text-gray-500">
                 <tr>
-                  <th className="px-3 py-2">Employee</th>
-                  <th className="px-3 py-2">Classification</th>
-                  <th className="px-3 py-2 text-right">Wks</th>
-                  <th className="px-3 py-2 text-right">Reg hrs</th>
-                  <th className="px-3 py-2 text-right">OT hrs</th>
-                  <th className="px-3 py-2 text-right">Total hrs</th>
-                  <th className="px-3 py-2 text-right">Base $/hr</th>
-                  <th className="px-3 py-2 text-right">Reg wages</th>
-                  <th className="px-3 py-2 text-right">OT wages</th>
-                  <th className="px-3 py-2 text-right">Gross</th>
-                  <th className="px-3 py-2 text-right">Fringe</th>
-                  <th className="px-3 py-2 text-right">Emp. tax est</th>
+                  <th className="px-3 py-2">{t('pr.col.employee')}</th>
+                  <th className="px-3 py-2">{t('pr.col.classification')}</th>
+                  <th className="px-3 py-2 text-right">{t('pr.col.weeks')}</th>
+                  <th className="px-3 py-2 text-right">{t('pr.col.regHours')}</th>
+                  <th className="px-3 py-2 text-right">{t('pr.col.otHours')}</th>
+                  <th className="px-3 py-2 text-right">{t('pr.col.totalHours')}</th>
+                  <th className="px-3 py-2 text-right">{t('pr.col.baseRate')}</th>
+                  <th className="px-3 py-2 text-right">{t('pr.col.regWages')}</th>
+                  <th className="px-3 py-2 text-right">{t('pr.col.otWages')}</th>
+                  <th className="px-3 py-2 text-right">{t('pr.col.gross')}</th>
+                  <th className="px-3 py-2 text-right">{t('pr.col.fringe')}</th>
+                  <th className="px-3 py-2 text-right">{t('pr.col.empTax')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -190,7 +200,7 @@ export default async function PayrollSummaryPage({
                   <Row key={r.employeeId} row={r} />
                 ))}
                 <tr className="border-t-2 border-black bg-gray-50 font-semibold">
-                  <td colSpan={3} className="px-3 py-3 text-right uppercase tracking-wide">Totals</td>
+                  <td colSpan={3} className="px-3 py-3 text-right uppercase tracking-wide">{t('pr.totals')}</td>
                   <td className="px-3 py-3 text-right font-mono">{rollup.totalRegularHours.toFixed(1)}</td>
                   <td className="px-3 py-3 text-right font-mono">{rollup.totalOvertimeHours.toFixed(1)}</td>
                   <td className="px-3 py-3 text-right font-mono">{rollup.totalHours.toFixed(1)}</td>
@@ -204,11 +214,7 @@ export default async function PayrollSummaryPage({
           </div>
         )}
 
-        <p className="mt-4 text-xs text-gray-500">
-          Estimates only — actual payroll runs (Phase 2) will produce the W-2 numbers.
-          Fringe is paid into trust funds (H&amp;W / pension / vac), not on the W-2.
-          Employer tax est. = gross × the rate above (FICA + FUTA + SUTA + workers comp blended).
-        </p>
+        <p className="mt-4 text-xs text-gray-500">{t('pr.note')}</p>
       </main>
     </AppShell>
   );
