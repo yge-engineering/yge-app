@@ -13,6 +13,7 @@ import {
   PageHeader,
   Tile,
 } from '../../components';
+import { getTranslator, type Translator } from '../../lib/locale';
 import {
   AGING_BUCKETS,
   buildApAgingReport,
@@ -58,18 +59,19 @@ export default async function AgingPage({
   const ar = buildArAgingReport({ asOf, arInvoices });
   const ap = buildApAgingReport({ asOf, apInvoices });
   const netCents = ar.totalOpenCents - ap.totalOpenCents;
+  const t = getTranslator();
 
   return (
     <AppShell>
       <main className="mx-auto max-w-7xl">
         <PageHeader
-          title="AR + AP aging"
-          subtitle={`Who owes us money, who we owe money to, bucketed by days past due. Snapshot as of ${asOf}.`}
+          title={t('aging.title')}
+          subtitle={t('aging.subtitle', { asOf })}
         />
 
         <form action="/aging" className="mb-4 flex flex-wrap items-end gap-3 rounded-md border border-gray-200 bg-white p-3">
           <label className="block text-xs">
-            <span className="mb-1 block font-medium text-gray-700">As-of date</span>
+            <span className="mb-1 block font-medium text-gray-700">{t('aging.asOfDate')}</span>
             <input
               name="asOf"
               type="date"
@@ -81,55 +83,49 @@ export default async function AgingPage({
             type="submit"
             className="rounded-md bg-blue-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-800"
           >
-            Reload
+            {t('aging.reload')}
           </button>
         </form>
 
         {/* Summary cards — net AR-AP exposure at a glance. */}
         <section className="mb-4 grid gap-3 sm:grid-cols-3">
           <Tile
-            label="Open AR (money in)"
+            label={t('aging.tile.openAr')}
             value={<Money cents={ar.totalOpenCents} />}
-            sublabel={`${ar.rows.length} invoice${ar.rows.length === 1 ? '' : 's'}`}
+            sublabel={t('aging.tile.invoiceSub', { count: ar.rows.length, plural: ar.rows.length === 1 ? '' : 's' })}
             tone={ar.hasDangerBucket ? 'danger' : 'success'}
-            warnText={ar.hasDangerBucket ? 'Has 90+ bucket' : undefined}
+            warnText={ar.hasDangerBucket ? t('aging.tile.dangerWarn') : undefined}
           />
           <Tile
-            label="Open AP (money out)"
+            label={t('aging.tile.openAp')}
             value={<Money cents={ap.totalOpenCents} />}
-            sublabel={`${ap.rows.length} bill${ap.rows.length === 1 ? '' : 's'}`}
+            sublabel={t('aging.tile.billSub', { count: ap.rows.length, plural: ap.rows.length === 1 ? '' : 's' })}
             tone={ap.hasDangerBucket ? 'danger' : 'success'}
-            warnText={ap.hasDangerBucket ? 'Has 90+ bucket' : undefined}
+            warnText={ap.hasDangerBucket ? t('aging.tile.dangerWarn') : undefined}
           />
           <Tile
-            label="Net working capital"
+            label={t('aging.tile.netWorking')}
             value={<Money cents={netCents} />}
-            sublabel="AR open − AP open"
+            sublabel={t('aging.tile.netSub')}
             tone={netCents < 0 ? 'danger' : 'success'}
           />
         </section>
 
         <div className="mb-6 flex flex-wrap gap-3 text-sm">
-          <a href="#ar" className="text-blue-700 hover:underline">↓ Receivables</a>
-          <a href="#ap" className="text-blue-700 hover:underline">↓ Payables</a>
+          <a href="#ar" className="text-blue-700 hover:underline">{t('aging.jump.ar')}</a>
+          <a href="#ap" className="text-blue-700 hover:underline">{t('aging.jump.ap')}</a>
         </div>
 
         <section id="ar" className="scroll-mt-8">
-          <h2 className="text-xl font-bold text-gray-900">Receivables — who owes YGE</h2>
-          <p className="mt-1 text-sm text-gray-600">
-            Open customer invoices, by customer. Worst-90+ first. Caltrans + Cal
-            Fire normally pay 30-45 days; anything past 60 means a packet got
-            rejected upstream.
-          </p>
-          <PartyTable report={ar} partyHeader="Customer" empty="No open receivables. Nice." />
+          <h2 className="text-xl font-bold text-gray-900">{t('aging.ar.heading')}</h2>
+          <p className="mt-1 text-sm text-gray-600">{t('aging.ar.body')}</p>
+          <PartyTable report={ar} partyHeader={t('aging.col.customer')} empty={t('aging.empty.ar')} t={t} />
         </section>
 
         <section id="ap" className="mt-12 scroll-mt-8">
-          <h2 className="text-xl font-bold text-gray-900">Payables — who YGE owes</h2>
-          <p className="mt-1 text-sm text-gray-600">
-            Open vendor bills, by vendor. Anything in 90+ is hurting our terms — flag for the next check run.
-          </p>
-          <PartyTable report={ap} partyHeader="Vendor" empty="No open payables." />
+          <h2 className="text-xl font-bold text-gray-900">{t('aging.ap.heading')}</h2>
+          <p className="mt-1 text-sm text-gray-600">{t('aging.ap.body')}</p>
+          <PartyTable report={ap} partyHeader={t('aging.col.vendor')} empty={t('aging.empty.ap')} t={t} />
         </section>
       </main>
     </AppShell>
@@ -140,10 +136,12 @@ function PartyTable({
   report,
   partyHeader,
   empty,
+  t,
 }: {
   report: AgingReport;
   partyHeader: string;
   empty: string;
+  t: Translator;
 }) {
   if (report.byParty.length === 0) {
     return (
@@ -158,12 +156,12 @@ function PartyTable({
         <thead className="bg-gray-50 uppercase tracking-wide text-gray-500">
           <tr>
             <th className="px-3 py-2">{partyHeader}</th>
-            <th className="px-3 py-2 text-right"># inv</th>
+            <th className="px-3 py-2 text-right">{t('aging.col.invCount')}</th>
             {AGING_BUCKETS.map((b) => (
-              <th key={b} className="px-3 py-2 text-right">{b} days</th>
+              <th key={b} className="px-3 py-2 text-right">{t('aging.col.bucket', { bucket: b })}</th>
             ))}
-            <th className="px-3 py-2 text-right">Total open</th>
-            <th className="px-3 py-2 text-right">Oldest</th>
+            <th className="px-3 py-2 text-right">{t('aging.col.totalOpen')}</th>
+            <th className="px-3 py-2 text-right">{t('aging.col.oldest')}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
@@ -198,12 +196,12 @@ function PartyTable({
                   p.oldestDaysOverdue > 90 ? 'font-bold text-red-700' : p.oldestDaysOverdue > 60 ? 'text-amber-700' : 'text-gray-600'
                 }`}
               >
-                {p.oldestDaysOverdue > 0 ? `${p.oldestDaysOverdue}d` : 'current'}
+                {p.oldestDaysOverdue > 0 ? `${p.oldestDaysOverdue}d` : t('aging.current')}
               </td>
             </tr>
           ))}
           <tr className="border-t-2 border-black bg-gray-50 font-semibold">
-            <td className="px-3 py-3 uppercase tracking-wide">Totals</td>
+            <td className="px-3 py-3 uppercase tracking-wide">{t('aging.totals')}</td>
             <td className="px-3 py-3 text-right font-mono">{report.rows.length}</td>
             {AGING_BUCKETS.map((b) => (
               <td key={b} className="px-3 py-3 text-right">
