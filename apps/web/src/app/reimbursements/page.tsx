@@ -15,6 +15,7 @@ import {
   PageHeader,
   Tile,
 } from '../../components';
+import { getTranslator } from '../../lib/locale';
 import {
   buildAllReimbursementSummaries,
   computeReimbursementGrandTotals,
@@ -47,21 +48,22 @@ export default async function ReimbursementsPage() {
   const [mileage, expenses] = await Promise.all([fetchMileage(), fetchExpenses()]);
   const summaries = buildAllReimbursementSummaries({ mileage, expenses });
   const totals = computeReimbursementGrandTotals(summaries);
+  const t = getTranslator();
 
   return (
     <AppShell>
       <main className="mx-auto max-w-5xl">
         <PageHeader
-          title="Reimbursements owed"
-          subtitle="Per-employee bundles of outstanding mileage and out-of-pocket expense receipts. Click into an employee to see the breakdown, print, and mark all paid in one click."
+          title={t('reimb.title')}
+          subtitle={t('reimb.subtitle')}
         />
 
         <section className="mb-4 grid gap-3 sm:grid-cols-4">
-          <Tile label="Employees owed" value={totals.employees} />
-          <Tile label="Mileage" value={<Money cents={totals.mileageCents} />} />
-          <Tile label="Expenses" value={<Money cents={totals.expenseCents} />} />
+          <Tile label={t('reimb.tile.employees')} value={totals.employees} />
+          <Tile label={t('reimb.tile.mileage')} value={<Money cents={totals.mileageCents} />} />
+          <Tile label={t('reimb.tile.expenses')} value={<Money cents={totals.expenseCents} />} />
           <Tile
-            label="Total owed"
+            label={t('reimb.tile.total')}
             value={<Money cents={totals.totalCents} />}
             tone={totals.totalCents > 0 ? 'warn' : 'success'}
           />
@@ -69,7 +71,7 @@ export default async function ReimbursementsPage() {
 
         {summaries.length === 0 ? (
           <Alert tone="success">
-            ✓ Nothing owed. Every personal-vehicle mile and every out-of-pocket receipt has been reimbursed.
+            {t('reimb.allClear')}
           </Alert>
         ) : (
           <DataTable
@@ -78,7 +80,7 @@ export default async function ReimbursementsPage() {
             columns={[
               {
                 key: 'employee',
-                header: 'Employee',
+                header: t('reimb.col.employee'),
                 cell: (s) => (
                   <Link href={`/reimbursements/${s.employeeId}`} className="text-sm font-medium text-blue-700 hover:underline">
                     {s.employeeName}
@@ -86,13 +88,13 @@ export default async function ReimbursementsPage() {
                   </Link>
                 ),
               },
-              { key: 'miles', header: 'Miles', numeric: true, cell: (s) => <span className="font-mono text-xs text-gray-700">{s.totalMiles.toFixed(1)}</span> },
-              { key: 'mileage', header: 'Mileage $', numeric: true, cell: (s) => <Money cents={s.totalMileageCents} /> },
-              { key: 'receipts', header: 'Receipts', numeric: true, cell: (s) => <span className="font-mono text-xs text-gray-700">{s.expenseRows.length}</span> },
-              { key: 'expense', header: 'Expense $', numeric: true, cell: (s) => <Money cents={s.totalExpenseCents} /> },
+              { key: 'miles', header: t('reimb.col.miles'), numeric: true, cell: (s) => <span className="font-mono text-xs text-gray-700">{s.totalMiles.toFixed(1)}</span> },
+              { key: 'mileage', header: t('reimb.col.mileageDollars'), numeric: true, cell: (s) => <Money cents={s.totalMileageCents} /> },
+              { key: 'receipts', header: t('reimb.col.receipts'), numeric: true, cell: (s) => <span className="font-mono text-xs text-gray-700">{s.expenseRows.length}</span> },
+              { key: 'expense', header: t('reimb.col.expenseDollars'), numeric: true, cell: (s) => <Money cents={s.totalExpenseCents} /> },
               {
                 key: 'total',
-                header: 'Total owed',
+                header: t('reimb.col.total'),
                 numeric: true,
                 cell: (s) => <Money cents={s.totalCents} className="text-base font-semibold" />,
               },
