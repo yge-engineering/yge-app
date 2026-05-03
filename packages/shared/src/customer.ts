@@ -10,6 +10,7 @@
 // history.
 
 import { z } from 'zod';
+import { translate, SEED_DICTIONARY, type Locale } from './i18n';
 
 export const CustomerKindSchema = z.enum([
   'STATE_AGENCY',         // CalFire, Caltrans, DGS, etc.
@@ -87,17 +88,8 @@ export type CustomerPatch = z.infer<typeof CustomerPatchSchema>;
 
 // ---- Helpers -------------------------------------------------------------
 
-export function customerKindLabel(k: CustomerKind): string {
-  switch (k) {
-    case 'STATE_AGENCY': return 'State agency';
-    case 'FEDERAL_AGENCY': return 'Federal agency';
-    case 'COUNTY': return 'County';
-    case 'CITY': return 'City';
-    case 'SPECIAL_DISTRICT': return 'Special district';
-    case 'PRIVATE_OWNER': return 'Private owner';
-    case 'PRIME_CONTRACTOR': return 'Prime contractor';
-    case 'OTHER': return 'Other';
-  }
+export function customerKindLabel(k: CustomerKind, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `customer.kind.${k}`);
 }
 
 /** Display name — DBA preferred, falls back to legal. */

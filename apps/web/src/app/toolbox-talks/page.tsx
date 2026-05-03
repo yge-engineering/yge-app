@@ -15,7 +15,7 @@ import {
   StatusPill,
   Tile,
 } from '../../components';
-import { getTranslator } from '../../lib/locale';
+import { getLocale, getTranslator } from '../../lib/locale';
 import {
   computeToolboxTalkRollup,
   signedAttendeeCount,
@@ -71,6 +71,7 @@ export default async function ToolboxTalksPage({
     return q ? `/toolbox-talks?${q}` : '/toolbox-talks';
   }
   const t = getTranslator();
+  const locale = getLocale();
 
   return (
     <AppShell>
@@ -114,7 +115,7 @@ export default async function ToolboxTalksPage({
               href={buildHref({ status: s })}
               className={`rounded px-2 py-1 text-xs ${searchParams.status === s ? 'bg-blue-700 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
             >
-              {toolboxTalkStatusLabel(s)}
+              {toolboxTalkStatusLabel(s, locale)}
             </Link>
           ))}
         </section>
@@ -150,7 +151,7 @@ export default async function ToolboxTalksPage({
               {
                 key: 'status',
                 header: t('toolbox.col.status'),
-                cell: (tt) => <StatusPill label={toolboxTalkStatusLabel(tt.status)} tone="neutral" />,
+                cell: (tt) => <StatusPill label={toolboxTalkStatusLabel(tt.status, locale)} tone="neutral" />,
               },
               {
                 key: 'actions',

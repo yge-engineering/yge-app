@@ -15,7 +15,7 @@ import {
   StatusPill,
   Tile,
 } from '../../components';
-import { getTranslator } from '../../lib/locale';
+import { getLocale, getTranslator } from '../../lib/locale';
 import {
   computeCustomerRollup,
   customerDisplayName,
@@ -82,6 +82,7 @@ export default async function CustomersPage({
     searchParams.kind ? '&kind=' + encodeURIComponent(searchParams.kind) : ''
   }`;
   const t = getTranslator();
+  const locale = getLocale();
 
   return (
     <AppShell>
@@ -125,7 +126,7 @@ export default async function CustomersPage({
               href={buildHref({ kind: k })}
               className={`rounded px-2 py-1 text-xs ${searchParams.kind === k ? 'bg-blue-700 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
             >
-              {customerKindLabel(k)}
+              {customerKindLabel(k, locale)}
             </Link>
           ))}
         </section>
@@ -159,7 +160,7 @@ export default async function CustomersPage({
                       {c.dbaName ? <div className="text-xs text-gray-500">{c.legalName}</div> : null}
                     </td>
                     <td className="px-4 py-3 text-xs">
-                      {customerKindLabel(c.kind)}
+                      {customerKindLabel(c.kind, locale)}
                       {isPublicAgency(c) ? (
                         <div className="mt-0.5 inline-block rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-800">
                           {t('customers.tag.publicWorks')}

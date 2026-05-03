@@ -15,7 +15,7 @@ import {
   StatusPill,
   Tile,
 } from '../../components';
-import { getTranslator } from '../../lib/locale';
+import { getLocale, getTranslator } from '../../lib/locale';
 import {
   computeVendorRollup,
   maskTaxId,
@@ -84,6 +84,7 @@ export default async function VendorsPage({
     searchParams.kind ? '&kind=' + encodeURIComponent(searchParams.kind) : ''
   }`;
   const t = getTranslator();
+  const locale = getLocale();
 
   return (
     <AppShell>
@@ -127,7 +128,7 @@ export default async function VendorsPage({
               href={buildHref({ kind: k })}
               className={`rounded px-2 py-1 text-xs ${searchParams.kind === k ? 'bg-blue-700 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
             >
-              {vendorKindLabel(k)}
+              {vendorKindLabel(k, locale)}
             </Link>
           ))}
         </section>
@@ -172,7 +173,7 @@ export default async function VendorsPage({
                           </span>
                         ) : null}
                       </td>
-                      <td className="px-4 py-3 text-xs text-gray-700">{vendorKindLabel(v.kind)}</td>
+                      <td className="px-4 py-3 text-xs text-gray-700">{vendorKindLabel(v.kind, locale)}</td>
                       <td className="px-4 py-3 text-sm font-mono text-gray-700">
                         {maskTaxId(v.taxId) || <span className="text-gray-400 font-sans">—</span>}
                       </td>
@@ -186,7 +187,7 @@ export default async function VendorsPage({
                           ? <StatusPill label={coiCurrent ? t('vendors.coi.to', { date: v.coiExpiresOn ?? '?' }) : t('vendors.coi.expired')} tone={coiCurrent ? 'success' : 'danger'} />
                           : <span className="text-xs text-gray-400">{t('vendors.na')}</span>}
                       </td>
-                      <td className="px-4 py-3 text-xs text-gray-700">{vendorPaymentTermsLabel(v.paymentTerms)}</td>
+                      <td className="px-4 py-3 text-xs text-gray-700">{vendorPaymentTermsLabel(v.paymentTerms, locale)}</td>
                       <td className="px-4 py-3"></td>
                     </tr>
                   );

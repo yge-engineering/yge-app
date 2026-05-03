@@ -6,6 +6,7 @@
 // monthly COI-expiration check.
 
 import { z } from 'zod';
+import { translate, SEED_DICTIONARY, type Locale } from './i18n';
 
 export const VendorKindSchema = z.enum([
   'SUPPLIER',           // material vendor
@@ -111,31 +112,12 @@ export type VendorPatch = z.infer<typeof VendorPatchSchema>;
 
 // ---- Helpers -------------------------------------------------------------
 
-export function vendorKindLabel(k: VendorKind): string {
-  switch (k) {
-    case 'SUPPLIER': return 'Supplier';
-    case 'SUBCONTRACTOR': return 'Subcontractor';
-    case 'EQUIPMENT_RENTAL': return 'Equipment rental';
-    case 'TRUCKING': return 'Trucking';
-    case 'PROFESSIONAL': return 'Professional';
-    case 'UTILITY': return 'Utility';
-    case 'GOVERNMENT': return 'Government';
-    case 'OTHER': return 'Other';
-  }
+export function vendorKindLabel(k: VendorKind, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `vendor.kind.${k}`);
 }
 
-export function vendorPaymentTermsLabel(t: VendorPaymentTerms): string {
-  switch (t) {
-    case 'NET_30': return 'Net 30';
-    case 'NET_60': return 'Net 60';
-    case 'NET_45': return 'Net 45';
-    case 'NET_15': return 'Net 15';
-    case 'NET_10': return 'Net 10';
-    case 'DUE_ON_RECEIPT': return 'Due on receipt';
-    case 'COD': return 'COD';
-    case 'PREPAID': return 'Prepaid';
-    case 'OTHER': return 'Other';
-  }
+export function vendorPaymentTermsLabel(t: VendorPaymentTerms, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `vendor.terms.${t}`);
 }
 
 /** Mask a tax ID for display. Returns just the last 4 with ***-**-XXXX

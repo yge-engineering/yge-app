@@ -14,6 +14,7 @@
 // needed to print a paper sign-in sheet for in-person signatures.
 
 import { z } from 'zod';
+import { translate, SEED_DICTIONARY, type Locale } from './i18n';
 
 export const ToolboxTalkStatusSchema = z.enum([
   'DRAFT',
@@ -87,12 +88,8 @@ export type ToolboxTalkPatch = z.infer<typeof ToolboxTalkPatchSchema>;
 
 // ---- Helpers -------------------------------------------------------------
 
-export function toolboxTalkStatusLabel(s: ToolboxTalkStatus): string {
-  switch (s) {
-    case 'DRAFT': return 'Draft';
-    case 'HELD': return 'Held';
-    case 'SUBMITTED': return 'Submitted';
-  }
+export function toolboxTalkStatusLabel(s: ToolboxTalkStatus, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `toolboxTalk.status.${s}`);
 }
 
 /** Count attendees who signed the sheet. */
