@@ -16,6 +16,7 @@ import {
   PageHeader,
   Tile,
 } from '../../components';
+import { getTranslator } from '../../lib/locale';
 import {
   classificationLabel,
   computeDirRateRollup,
@@ -58,34 +59,35 @@ export default async function DirRatesPage({
   const csvHref = `${publicApiBaseUrl()}/api/dir-rates?format=csv${
     searchParams.classification ? '&classification=' + encodeURIComponent(searchParams.classification) : ''
   }${searchParams.county ? '&county=' + encodeURIComponent(searchParams.county) : ''}`;
+  const t = getTranslator();
 
   return (
     <AppShell>
       <main className="mx-auto max-w-6xl">
         <PageHeader
-          title="DIR prevailing wage"
-          subtitle="California Department of Industrial Relations general prevailing wage determinations. Drives certified payroll and labor billing rates on public-works contracts."
+          title={t('dirRates.title')}
+          subtitle={t('dirRates.subtitle')}
           actions={
             <span className="flex gap-2">
               <a
                 href={csvHref}
                 className="inline-flex items-center rounded-md border border-blue-700 px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-50"
               >
-                Download CSV
+                {t('dirRates.csv')}
               </a>
               <LinkButton href="/dir-rates/new" variant="primary" size="md">
-                + New rate
+                {t('dirRates.newRate')}
               </LinkButton>
             </span>
           }
         />
 
         <section className="mb-4 grid gap-3 sm:grid-cols-4">
-          <Tile label="Determinations" value={rollup.total} />
-          <Tile label="Classifications" value={rollup.classifications} />
-          <Tile label="Counties" value={rollup.counties} />
+          <Tile label={t('dirRates.tile.determinations')} value={rollup.total} />
+          <Tile label={t('dirRates.tile.classifications')} value={rollup.classifications} />
+          <Tile label={t('dirRates.tile.counties')} value={rollup.counties} />
           <Tile
-            label="Active today"
+            label={t('dirRates.tile.activeToday')}
             value={rollup.activeToday}
             tone={rollup.activeToday > 0 ? 'success' : 'warn'}
           />
@@ -93,22 +95,22 @@ export default async function DirRatesPage({
 
         {rates.length === 0 ? (
           <EmptyState
-            title="No DIR rates loaded yet"
+            title={t('dirRates.empty.title')}
             body={(
               <>
-                Add a determination from{' '}
+                {t('dirRates.empty.bodyPrefix')}
                 <a
                   href="https://www.dir.ca.gov/oprl/PWD/index.htm"
                   className="text-blue-700 hover:underline"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  DIR's website
+                  {t('dirRates.empty.bodyLink')}
                 </a>
-                . The bulk import sync that pulls from DIR directly is on the roadmap.
+                {t('dirRates.empty.bodySuffix')}
               </>
             )}
-            actions={[{ href: '/dir-rates/new', label: 'New rate', primary: true }]}
+            actions={[{ href: '/dir-rates/new', label: t('dirRates.empty.action'), primary: true }]}
           />
         ) : (
           <DataTable
@@ -117,32 +119,32 @@ export default async function DirRatesPage({
             columns={[
               {
                 key: 'classification',
-                header: 'Classification',
+                header: t('dirRates.col.classification'),
                 cell: (r) => (
                   <Link href={`/dir-rates/${r.id}`} className="text-xs font-medium text-blue-700 hover:underline">
                     {classificationLabel(r.classification)}
                   </Link>
                 ),
               },
-              { key: 'county', header: 'County', cell: (r) => <span className="text-xs">{r.county}</span> },
-              { key: 'effective', header: 'Effective', cell: (r) => <span className="font-mono text-xs">{r.effectiveDate}</span> },
+              { key: 'county', header: t('dirRates.col.county'), cell: (r) => <span className="text-xs">{r.county}</span> },
+              { key: 'effective', header: t('dirRates.col.effective'), cell: (r) => <span className="font-mono text-xs">{r.effectiveDate}</span> },
               {
                 key: 'expires',
-                header: 'Expires',
+                header: t('dirRates.col.expires'),
                 cell: (r) => {
                   const isActive = r.effectiveDate <= today && (!r.expiresOn || r.expiresOn >= today);
                   return (
                     <span className={`font-mono text-xs ${isActive ? '' : 'text-gray-400'}`}>
-                      {r.expiresOn ?? 'current'}
+                      {r.expiresOn ?? t('dirRates.current')}
                     </span>
                   );
                 },
               },
-              { key: 'basic', header: 'Basic', numeric: true, cell: (r) => <Money cents={r.basicHourlyCents} /> },
-              { key: 'fringe', header: 'Fringe', numeric: true, cell: (r) => <Money cents={totalFringeCents(r)} /> },
+              { key: 'basic', header: t('dirRates.col.basic'), numeric: true, cell: (r) => <Money cents={r.basicHourlyCents} /> },
+              { key: 'fringe', header: t('dirRates.col.fringe'), numeric: true, cell: (r) => <Money cents={totalFringeCents(r)} /> },
               {
                 key: 'total',
-                header: 'Total',
+                header: t('dirRates.col.total'),
                 numeric: true,
                 cell: (r) => <Money cents={totalPrevailingWageCents(r)} className="font-semibold" />,
               },
