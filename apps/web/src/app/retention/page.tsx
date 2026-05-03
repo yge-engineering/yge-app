@@ -16,6 +16,7 @@ import {
   ProgressBar,
   Tile,
 } from '../../components';
+import { getTranslator } from '../../lib/locale';
 import {
   buildJobRetentionStatus,
   computeRetentionRollup,
@@ -84,36 +85,37 @@ export default async function RetentionPage({
     );
 
   const rollup = computeRetentionRollup(rows);
+  const t = getTranslator();
 
   return (
     <AppShell>
       <main className="mx-auto max-w-6xl">
         <PageHeader
-          title="Retention"
-          subtitle="Money still being held by customers. Past-due §7107 (60-day) clock triggers statutory 2% / month prompt-pay interest — don't leave it on the table."
+          title={t('retention.title')}
+          subtitle={t('retention.subtitle')}
         />
 
         <section className="mb-4 grid gap-3 sm:grid-cols-4">
-          <Tile label="Jobs with retention" value={rollup.jobsWithRetention} />
-          <Tile label="Total held" value={<Money cents={rollup.totalHeldCents} />} />
+          <Tile label={t('retention.tile.jobsWithRetention')} value={rollup.jobsWithRetention} />
+          <Tile label={t('retention.tile.totalHeld')} value={<Money cents={rollup.totalHeldCents} />} />
           <Tile
-            label="Outstanding"
+            label={t('retention.tile.outstanding')}
             value={<Money cents={rollup.totalOutstandingCents} />}
             tone={rollup.totalOutstandingCents > 0 ? 'warn' : 'success'}
           />
           <Tile
-            label="Past-due interest"
+            label={t('retention.tile.pastDueInterest')}
             value={<Money cents={rollup.totalAccruedInterestCents} />}
             tone={rollup.pastDueJobCount > 0 ? 'danger' : 'success'}
-            warnText={rollup.pastDueJobCount > 0 ? `${rollup.pastDueJobCount} job${rollup.pastDueJobCount === 1 ? '' : 's'} past §7107 60-day clock` : undefined}
+            warnText={rollup.pastDueJobCount > 0 ? t('retention.tile.warn', { count: rollup.pastDueJobCount, plural: rollup.pastDueJobCount === 1 ? '' : 's' }) : undefined}
           />
         </section>
 
         {rows.length === 0 ? (
           <EmptyState
-            title="No retention activity yet"
-            body="Add a retention amount on an AR invoice and a row will appear here for that job."
-            actions={[{ href: '/ar-invoices/new', label: 'New AR invoice', primary: true }]}
+            title={t('retention.empty.title')}
+            body={t('retention.empty.body')}
+            actions={[{ href: '/ar-invoices/new', label: t('retention.empty.action'), primary: true }]}
           />
         ) : (
           <DataTable
@@ -122,18 +124,18 @@ export default async function RetentionPage({
             columns={[
               {
                 key: 'job',
-                header: 'Job',
+                header: t('retention.col.job'),
                 cell: (r) => (
                   <Link href={`/jobs/${r.jobId}`} className="font-mono text-xs font-medium text-blue-700 hover:underline">
                     {r.jobId}
                   </Link>
                 ),
               },
-              { key: 'customer', header: 'Customer', cell: (r) => <span className="text-sm text-gray-900">{r.customerName}</span> },
-              { key: 'held', header: 'Held', numeric: true, cell: (r) => <Money cents={r.totalRetentionHeldCents} /> },
+              { key: 'customer', header: t('retention.col.customer'), cell: (r) => <span className="text-sm text-gray-900">{r.customerName}</span> },
+              { key: 'held', header: t('retention.col.held'), numeric: true, cell: (r) => <Money cents={r.totalRetentionHeldCents} /> },
               {
                 key: 'released',
-                header: 'Released',
+                header: t('retention.col.released'),
                 numeric: true,
                 cell: (r) => (
                   <span className="inline-flex w-24 flex-col items-stretch align-middle">
@@ -152,27 +154,35 @@ export default async function RetentionPage({
               },
               {
                 key: 'outstanding',
-                header: 'Outstanding',
+                header: t('retention.col.outstanding'),
                 numeric: true,
                 cell: (r) => <Money cents={r.outstandingRetentionCents} className="font-semibold" />,
               },
               {
                 key: 'lastInvoice',
-                header: 'Last invoice',
+                header: t('retention.col.lastInvoice'),
                 cell: (r) => <span className="text-xs text-gray-700">{r.lastInvoiceDate ?? '—'}</span>,
               },
               {
                 key: 'ca7107',
-                header: '§7107',
+                header: t('retention.col.ca7107'),
                 cell: (r) => {
-                  if (!r.ca7107) return <span className="text-xs text-gray-400">No completion date</span>;
+                  if (!r.ca7107) return <span className="text-xs text-gray-400">{t('retention.noCompletion')}</span>;
                   const overdue = r.ca7107.daysLate > 0;
-                  return overdue ? (
-                    <span className="text-xs font-semibold text-red-700">
-                      {r.ca7107.daysLate}d late · <Money cents={r.ca7107.interestCents} /> int.
-                    </span>
-                  ) : (
-                    <span className="text-xs text-emerald-700">On time · due {r.ca7107.dueOn}</span>
+                  if (overdue) {
+                    // Split-and-fill: split the localized template on the
+                    // {interest} sentinel so we can keep the inline <Money/>
+                    // component for the interest value.
+                    const tpl = t('retention.daysLate', { days: r.ca7107.daysLate, interest: '__INT__' });
+                    const [pre, post] = tpl.split('__INT__');
+                    return (
+                      <span className="text-xs font-semibold text-red-700">
+                        {pre}<Money cents={r.ca7107.interestCents} />{post}
+                      </span>
+                    );
+                  }
+                  return (
+                    <span className="text-xs text-emerald-700">{t('retention.onTime', { date: r.ca7107.dueOn })}</span>
                   );
                 },
               },
@@ -180,11 +190,7 @@ export default async function RetentionPage({
           />
         )}
 
-        <p className="mt-4 text-xs text-gray-500">
-          Tip: until job records carry a completion-notice date, append{' '}
-          <code className="rounded bg-gray-100 px-1 font-mono">?completionNotice.{'{'}jobId{'}'}=YYYY-MM-DD</code>{' '}
-          to the URL to project §7107 interest for a single job.
-        </p>
+        <p className="mt-4 text-xs text-gray-500">{t('retention.tip')}</p>
       </main>
     </AppShell>
   );
