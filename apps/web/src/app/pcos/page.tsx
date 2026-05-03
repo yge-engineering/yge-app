@@ -17,6 +17,7 @@ import {
   StatusPill,
   Tile,
 } from '../../components';
+import { getTranslator } from '../../lib/locale';
 import {
   computePcoRollup,
   daysAwaitingResponse,
@@ -94,46 +95,47 @@ export default async function PcoListPage({
     const q = params.toString();
     return q ? `/pcos?${q}` : '/pcos';
   }
+  const t = getTranslator();
 
   return (
     <AppShell>
       <main className="mx-auto max-w-6xl">
         <PageHeader
-          title="Potential change orders"
-          subtitle="Money + schedule already worked or about to be worked but not yet contracted for. PCOs become formal change orders once approved."
+          title={t('pco.title')}
+          subtitle={t('pco.subtitle')}
           actions={
             <LinkButton href="/pcos/new" variant="primary" size="md">
-              + New PCO
+              {t('pco.newPco')}
             </LinkButton>
           }
         />
 
         <section className="mb-4 grid gap-3 sm:grid-cols-4">
-          <Tile label="Total" value={rollup.total} />
+          <Tile label={t('pco.tile.total')} value={rollup.total} />
           <Tile
-            label="Open exposure ($)"
+            label={t('pco.tile.openExposure')}
             value={<Money cents={rollup.openExposureCents} />}
             tone={rollup.openExposureCents > 0 ? 'warn' : 'success'}
           />
           <Tile
-            label="Approved-pending-CO ($)"
+            label={t('pco.tile.approvedPendingCo')}
             value={<Money cents={rollup.approvedPendingCoCents} />}
             tone={rollup.approvedPendingCoCents > 0 ? 'warn' : 'success'}
           />
           <Tile
-            label="Oldest awaiting reply"
-            value={`${rollup.oldestAwaitingDays} days`}
+            label={t('pco.tile.oldestAwaiting')}
+            value={t('pco.tile.days', { count: rollup.oldestAwaitingDays })}
             tone={rollup.oldestAwaitingDays > 30 ? 'danger' : rollup.oldestAwaitingDays > 14 ? 'warn' : 'success'}
           />
         </section>
 
         <section className="mb-4 flex flex-wrap items-center gap-2 rounded-md border border-gray-200 bg-white p-3">
-          <span className="text-xs uppercase tracking-wide text-gray-500">Status:</span>
+          <span className="text-xs uppercase tracking-wide text-gray-500">{t('pco.filter.status')}</span>
           <Link
             href={buildHref({ status: undefined })}
             className={`rounded px-2 py-1 text-xs ${!searchParams.status ? 'bg-blue-700 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
           >
-            All
+            {t('pco.filter.all')}
           </Link>
           {STATUSES.map((s) => (
             <Link
@@ -148,9 +150,9 @@ export default async function PcoListPage({
 
         {pcos.length === 0 ? (
           <EmptyState
-            title="No PCOs yet"
-            body="Capture scope creep here so it doesn't disappear into the cost bucket. Once approved, convert each PCO into a formal CO."
-            actions={[{ href: '/pcos/new', label: 'New PCO', primary: true }]}
+            title={t('pco.empty.title')}
+            body={t('pco.empty.body')}
+            actions={[{ href: '/pcos/new', label: t('pco.empty.action'), primary: true }]}
           />
         ) : (
           <DataTable
@@ -159,7 +161,7 @@ export default async function PcoListPage({
             columns={[
               {
                 key: 'pcoNumber',
-                header: 'PCO #',
+                header: t('pco.col.pcoNumber'),
                 cell: (p) => (
                   <Link href={`/pcos/${p.id}`} className="font-mono text-xs font-medium text-blue-700 hover:underline">
                     {p.pcoNumber}
@@ -168,7 +170,7 @@ export default async function PcoListPage({
               },
               {
                 key: 'title',
-                header: 'Title',
+                header: t('pco.col.title'),
                 cell: (p) => (
                   <div className="text-sm text-gray-900">
                     <div className="font-medium">{p.title}</div>
@@ -176,12 +178,12 @@ export default async function PcoListPage({
                   </div>
                 ),
               },
-              { key: 'origin', header: 'Origin', cell: (p) => <span className="text-xs text-gray-700">{pcoOriginLabel(p.origin)}</span> },
-              { key: 'status', header: 'Status', cell: (p) => <StatusPill label={pcoStatusLabel(p.status)} tone={statusTone(p)} /> },
-              { key: 'cost', header: 'Cost', numeric: true, cell: (p) => <Money cents={p.costImpactCents} /> },
+              { key: 'origin', header: t('pco.col.origin'), cell: (p) => <span className="text-xs text-gray-700">{pcoOriginLabel(p.origin)}</span> },
+              { key: 'status', header: t('pco.col.status'), cell: (p) => <StatusPill label={pcoStatusLabel(p.status)} tone={statusTone(p)} /> },
+              { key: 'cost', header: t('pco.col.cost'), numeric: true, cell: (p) => <Money cents={p.costImpactCents} /> },
               {
                 key: 'days',
-                header: 'Sched.',
+                header: t('pco.col.schedule'),
                 numeric: true,
                 cell: (p) => (
                   <span className="font-mono text-xs text-gray-700">
@@ -191,7 +193,7 @@ export default async function PcoListPage({
               },
               {
                 key: 'awaiting',
-                header: 'Awaiting',
+                header: t('pco.col.awaiting'),
                 numeric: true,
                 cell: (p) => {
                   const wait = daysAwaitingResponse(p);
