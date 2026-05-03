@@ -17,6 +17,7 @@ import {
   PageHeader,
   StatusPill,
 } from '../../components';
+import { getTranslator } from '../../lib/locale';
 import { punchItemStatusLabel, punchItemSeverityLabel, type PunchItem } from '@yge/shared';
 
 function apiBaseUrl(): string {
@@ -58,35 +59,36 @@ export default async function PunchListsPage() {
   const closed = items.filter((i) => !OPEN_STATUSES.has(i.status));
   open.sort((a, b) => a.identifiedOn.localeCompare(b.identifiedOn));
   const overdueCount = open.filter((i) => i.dueOn && i.dueOn < today).length;
+  const t = getTranslator();
 
   return (
     <AppShell>
       <main className="mx-auto max-w-6xl">
         <PageHeader
-          title="Punch lists"
+          title={t('punchLists.title')}
           subtitle={
             <>
-              {open.length} open ·{' '}
+              {t('punchLists.subtitle.open', { count: open.length })} ·{' '}
               {overdueCount > 0 ? (
-                <span className="font-semibold text-red-700">{overdueCount} overdue</span>
+                <span className="font-semibold text-red-700">{t('punchLists.subtitle.overdue', { count: overdueCount })}</span>
               ) : (
-                '0 overdue'
+                t('punchLists.subtitle.zeroOverdue')
               )}{' '}
-              · {closed.length} closed
+              · {t('punchLists.subtitle.closed', { count: closed.length })}
             </>
           }
           actions={
             <LinkButton href="/punch-lists/new" variant="primary" size="md">
-              + New punch item
+              {t('punchLists.newItem')}
             </LinkButton>
           }
         />
 
         {open.length === 0 ? (
           <EmptyState
-            title="No open punch items"
-            body="Either everything's done or you haven't done a closeout walkthrough yet."
-            actions={[{ href: '/punch-lists/new', label: 'Add a punch item', primary: true }]}
+            title={t('punchLists.empty.title')}
+            body={t('punchLists.empty.body')}
+            actions={[{ href: '/punch-lists/new', label: t('punchLists.empty.action'), primary: true }]}
           />
         ) : (
           <DataTable
@@ -95,28 +97,28 @@ export default async function PunchListsPage() {
             columns={[
               {
                 key: 'identifiedOn',
-                header: 'Identified',
+                header: t('punchLists.col.identified'),
                 cell: (i) => i.identifiedOn,
               },
               {
                 key: 'jobId',
-                header: 'Job',
+                header: t('punchLists.col.job'),
                 cell: (i) => (
                   <Link href={`/jobs/${i.jobId}`} className="text-blue-700 hover:underline">
                     {i.jobId}
                   </Link>
                 ),
               },
-              { key: 'location', header: 'Location', cell: (i) => i.location },
+              { key: 'location', header: t('punchLists.col.location'), cell: (i) => i.location },
               {
                 key: 'severity',
-                header: 'Severity',
+                header: t('punchLists.col.severity'),
                 cell: (i) => <StatusPill label={punchItemSeverityLabel(i.severity)} tone={severityTone(i.severity)} />,
               },
-              { key: 'description', header: 'Description', cell: (i) => i.description },
+              { key: 'description', header: t('punchLists.col.description'), cell: (i) => i.description },
               {
                 key: 'dueOn',
-                header: 'Due',
+                header: t('punchLists.col.due'),
                 cell: (i) => {
                   if (!i.dueOn) return <span className="text-gray-400">—</span>;
                   const overdue = i.dueOn < today;
@@ -125,8 +127,8 @@ export default async function PunchListsPage() {
               },
               {
                 key: 'responsibleParty',
-                header: 'Responsible',
-                cell: (i) => i.responsibleParty ?? <span className="text-gray-400">unassigned</span>,
+                header: t('punchLists.col.responsible'),
+                cell: (i) => i.responsibleParty ?? <span className="text-gray-400">{t('punchLists.unassigned')}</span>,
               },
             ]}
           />
@@ -135,7 +137,7 @@ export default async function PunchListsPage() {
         {closed.length > 0 && (
           <details className="mt-6 rounded-md border border-gray-200 bg-white">
             <summary className="cursor-pointer px-4 py-2 text-sm text-gray-600 hover:bg-gray-50">
-              Closed items ({closed.length})
+              {t('punchLists.closedSummary', { count: closed.length })}
             </summary>
             <ul className="divide-y divide-gray-100 text-sm">
               {closed.map((i) => (
