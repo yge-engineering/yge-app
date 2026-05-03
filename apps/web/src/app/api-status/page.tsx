@@ -7,6 +7,7 @@
 import Link from 'next/link';
 
 import { Alert, AppShell, DataTable, PageHeader, StatusPill } from '../../components';
+import { getTranslator } from '../../lib/locale';
 
 interface ProbeResult {
   name: string;
@@ -70,30 +71,29 @@ export default async function ApiStatusPage() {
   const upCount = results.filter((r) => r.ok).length;
   const allUp = upCount === results.length;
   const noneUp = upCount === 0;
+  const t = getTranslator();
 
   return (
     <AppShell>
       <main className="mx-auto max-w-3xl">
         <PageHeader
-          title="API status"
+          title={t('apiStatus.title')}
           subtitle={
             <>
-              Pinging <code className="rounded bg-gray-100 px-1 font-mono text-xs">{apiBaseUrl()}</code>. {upCount} of {results.length} routes responding.
+              {t('apiStatus.subtitlePrefix')}<code className="rounded bg-gray-100 px-1 font-mono text-xs">{apiBaseUrl()}</code>{t('apiStatus.subtitleSuffix', { up: upCount, total: results.length })}
             </>
           }
         />
 
         {noneUp && (
-          <Alert tone="danger" title="API is unreachable" className="mb-4">
-            Locally, run <code className="rounded bg-red-100 px-1 font-mono text-xs">pnpm dev</code> in{' '}
-            <code className="rounded bg-red-100 px-1 font-mono text-xs">apps/api</code>. In production, check that{' '}
-            <code className="rounded bg-red-100 px-1 font-mono text-xs">NEXT_PUBLIC_API_URL</code> points at a running API server.
+          <Alert tone="danger" title={t('apiStatus.unreachable.title')} className="mb-4">
+            {t('apiStatus.unreachable.body')}
           </Alert>
         )}
 
         {allUp && (
-          <Alert tone="success" title="All routes responding" className="mb-4">
-            Dashboard tiles should be filling in normally.
+          <Alert tone="success" title={t('apiStatus.allUp.title')} className="mb-4">
+            {t('apiStatus.allUp.body')}
           </Alert>
         )}
 
@@ -102,11 +102,11 @@ export default async function ApiStatusPage() {
             <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
               <tr>
                 <th className="w-8 px-3 py-2"></th>
-                <th className="px-3 py-2 font-semibold">Route</th>
-                <th className="px-3 py-2 font-semibold">URL</th>
-                <th className="px-3 py-2 font-semibold">Records</th>
-                <th className="px-3 py-2 font-semibold">Latency</th>
-                <th className="px-3 py-2 font-semibold">Status</th>
+                <th className="px-3 py-2 font-semibold">{t('apiStatus.col.route')}</th>
+                <th className="px-3 py-2 font-semibold">{t('apiStatus.col.url')}</th>
+                <th className="px-3 py-2 font-semibold">{t('apiStatus.col.records')}</th>
+                <th className="px-3 py-2 font-semibold">{t('apiStatus.col.latency')}</th>
+                <th className="px-3 py-2 font-semibold">{t('apiStatus.col.status')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -115,7 +115,7 @@ export default async function ApiStatusPage() {
                   <td className="px-3 py-2">
                     <span
                       className={`inline-block h-2.5 w-2.5 rounded-full ${r.ok ? 'bg-green-500' : 'bg-red-500'}`}
-                      aria-label={r.ok ? 'up' : 'down'}
+                      aria-label={r.ok ? t('apiStatus.upAria') : t('apiStatus.downAria')}
                     />
                   </td>
                   <td className="px-3 py-2 font-medium text-gray-900">{r.name}</td>
@@ -130,7 +130,7 @@ export default async function ApiStatusPage() {
         </div>
 
         <p className="mt-6 text-center text-xs text-gray-400">
-          Page reloads when you refresh. <Link href="/api-status" className="text-blue-700 hover:underline">Re-run checks</Link>.
+          {t('apiStatus.footerPrefix')}<Link href="/api-status" className="text-blue-700 hover:underline">{t('apiStatus.rerun')}</Link>.
         </p>
       </main>
     </AppShell>
