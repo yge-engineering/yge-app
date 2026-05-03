@@ -12,6 +12,7 @@ import {
   PageHeader,
   Tile,
 } from '../../components';
+import { getTranslator } from '../../lib/locale';
 import {
   buildCashForecast,
   dollarsToCents,
@@ -59,18 +60,19 @@ export default async function CashForecastPage({
     weeklyPayrollCents,
     startingBalanceCents,
   });
+  const t = getTranslator();
 
   return (
     <AppShell>
       <main className="mx-auto max-w-7xl">
         <PageHeader
-          title="Cash flow forecast"
-          subtitle="12-week rolling projection. AR receipts vs AP + payroll outflow. Past-due AR collapses into Week 1; invoices without an explicit due date assume invoice date + 30."
+          title={t('cf.title')}
+          subtitle={t('cf.subtitle')}
         />
 
         <form action="/cash-forecast" className="mb-4 flex flex-wrap items-end gap-3 rounded-md border border-gray-200 bg-white p-3">
           <label className="block text-xs">
-            <span className="mb-1 block font-medium text-gray-700">Starting cash ($)</span>
+            <span className="mb-1 block font-medium text-gray-700">{t('cf.startingCash')}</span>
             <input
               type="number"
               step="0.01"
@@ -82,7 +84,7 @@ export default async function CashForecastPage({
             />
           </label>
           <label className="block text-xs">
-            <span className="mb-1 block font-medium text-gray-700">Weekly payroll ($)</span>
+            <span className="mb-1 block font-medium text-gray-700">{t('cf.weeklyPayroll')}</span>
             <input
               type="number"
               step="0.01"
@@ -97,35 +99,36 @@ export default async function CashForecastPage({
             type="submit"
             className="rounded-md bg-blue-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-800"
           >
-            Recalculate
+            {t('cf.recalculate')}
           </button>
         </form>
 
         <section className="mb-4 grid gap-3 sm:grid-cols-4">
-          <Tile label="Total AR inflow" value={<Money cents={forecast.totalArInflowCents} />} />
+          <Tile label={t('cf.tile.arIn')} value={<Money cents={forecast.totalArInflowCents} />} />
           <Tile
-            label="Total AP outflow"
+            label={t('cf.tile.apOut')}
             value={<Money cents={forecast.totalApOutflowCents} />}
             tone={forecast.totalApOutflowCents > 0 ? 'warn' : 'success'}
           />
           <Tile
-            label="Ending balance"
+            label={t('cf.tile.endingBalance')}
             value={<Money cents={forecast.endingBalanceCents} />}
             tone={forecast.endingBalanceCents < 0 ? 'danger' : 'success'}
           />
           <Tile
-            label="Negative weeks"
+            label={t('cf.tile.negativeWeeks')}
             value={forecast.negativeWeekCount}
             tone={forecast.negativeWeekCount > 0 ? 'danger' : 'success'}
-            warnText={forecast.negativeWeekCount > 0 ? 'Cash dips below zero' : undefined}
+            warnText={forecast.negativeWeekCount > 0 ? t('cf.tile.warn') : undefined}
           />
         </section>
 
         {forecast.firstNegativeWeekIndex != null ? (
-          <Alert tone="danger" title="First negative week" className="mb-4">
-            Week {forecast.firstNegativeWeekIndex + 1} (starting{' '}
-            {forecast.weeks[forecast.firstNegativeWeekIndex]?.weekStart}). Running balance dips
-            below zero — collect AR or delay AP before this date.
+          <Alert tone="danger" title={t('cf.alert.title')} className="mb-4">
+            {t('cf.alert.body', {
+              week: forecast.firstNegativeWeekIndex + 1,
+              date: forecast.weeks[forecast.firstNegativeWeekIndex]?.weekStart ?? '',
+            })}
           </Alert>
         ) : null}
 
@@ -133,20 +136,20 @@ export default async function CashForecastPage({
           <table className="w-full text-left text-xs">
             <thead className="bg-gray-50 uppercase tracking-wide text-gray-500">
               <tr>
-                <th className="px-3 py-2">Week</th>
-                <th className="px-3 py-2">Starts</th>
-                <th className="px-3 py-2 text-right">AR in</th>
-                <th className="px-3 py-2 text-right">AP out</th>
-                <th className="px-3 py-2 text-right">Payroll</th>
-                <th className="px-3 py-2 text-right">Net</th>
-                <th className="px-3 py-2 text-right">Running</th>
-                <th className="px-3 py-2">Detail</th>
+                <th className="px-3 py-2">{t('cf.col.week')}</th>
+                <th className="px-3 py-2">{t('cf.col.starts')}</th>
+                <th className="px-3 py-2 text-right">{t('cf.col.arIn')}</th>
+                <th className="px-3 py-2 text-right">{t('cf.col.apOut')}</th>
+                <th className="px-3 py-2 text-right">{t('cf.col.payroll')}</th>
+                <th className="px-3 py-2 text-right">{t('cf.col.net')}</th>
+                <th className="px-3 py-2 text-right">{t('cf.col.running')}</th>
+                <th className="px-3 py-2">{t('cf.col.detail')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {forecast.weeks.map((w, i) => (
                 <tr key={w.weekStart} className={w.runningCents < 0 ? 'bg-red-50' : ''}>
-                  <td className="px-3 py-2 font-mono">W{i + 1}</td>
+                  <td className="px-3 py-2 font-mono">{t('cf.weekPrefix')}{i + 1}</td>
                   <td className="px-3 py-2 font-mono">{w.weekStart}</td>
                   <td className="px-3 py-2 text-right">
                     {w.arInflowCents > 0 ? <Money cents={w.arInflowCents} className="text-emerald-700" /> : <span className="font-mono text-gray-400">—</span>}
@@ -179,10 +182,7 @@ export default async function CashForecastPage({
           </table>
         </div>
 
-        <p className="mt-4 text-xs text-gray-500">
-          Tip: pass <code className="rounded bg-gray-100 px-1 font-mono">?startCash=N&amp;payroll=N</code>{' '}
-          for a real projection. Numbers in dollars (e.g. <code>250000</code> + <code>65000</code>).
-        </p>
+        <p className="mt-4 text-xs text-gray-500">{t('cf.tip')}</p>
       </main>
     </AppShell>
   );
