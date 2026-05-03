@@ -15,6 +15,7 @@ import {
   PageHeader,
   Tile,
 } from '../../components';
+import { getTranslator } from '../../lib/locale';
 import {
   certificateExpiryLevel,
   certificateKindLabel,
@@ -43,30 +44,31 @@ async function fetchCerts(): Promise<Certificate[]> {
 export default async function CertificatesPage() {
   const certs = await fetchCerts();
   const rollup = computeCertificateRollup(certs);
+  const t = getTranslator();
 
   return (
     <AppShell>
       <main className="mx-auto max-w-6xl">
         <PageHeader
-          title="Bonds, insurance, licenses"
-          subtitle="Every certificate the company holds, with expiration tracking. Bid envelopes deep-link here for CSLB and DIR records."
+          title={t('certs.title')}
+          subtitle={t('certs.subtitle')}
           actions={
             <LinkButton href="/certificates/new" variant="primary" size="md">
-              + Add certificate
+              {t('certs.addCertificate')}
             </LinkButton>
           }
         />
 
         <section className="mb-4 grid gap-3 sm:grid-cols-4">
-          <Tile label="Total" value={rollup.total} />
-          <Tile label="Active" value={rollup.active} tone="success" />
+          <Tile label={t('certs.tile.total')} value={rollup.total} />
+          <Tile label={t('certs.tile.active')} value={rollup.active} tone="success" />
           <Tile
-            label="Expiring soon"
+            label={t('certs.tile.expiringSoon')}
             value={rollup.expiringSoon}
             tone={rollup.expiringSoon > 0 ? 'warn' : 'neutral'}
           />
           <Tile
-            label="Expired"
+            label={t('certs.tile.expired')}
             value={rollup.expired}
             tone={rollup.expired > 0 ? 'danger' : 'neutral'}
           />
@@ -74,21 +76,21 @@ export default async function CertificatesPage() {
 
         {certs.length === 0 ? (
           <EmptyState
-            title="No certificates yet"
-            body="Add CSLB licenses, DIR registration, insurance policies, and bonding profiles. Bid envelopes will deep-link here once it's loaded."
-            actions={[{ href: '/certificates/new', label: 'Add certificate', primary: true }]}
+            title={t('certs.empty.title')}
+            body={t('certs.empty.body')}
+            actions={[{ href: '/certificates/new', label: t('certs.empty.action'), primary: true }]}
           />
         ) : (
           <div className="overflow-x-auto rounded-md border border-gray-200 bg-white">
             <table className="w-full text-left text-sm">
               <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
                 <tr>
-                  <th className="px-4 py-2">Kind</th>
-                  <th className="px-4 py-2">Label</th>
-                  <th className="px-4 py-2">Issuer / Carrier</th>
-                  <th className="px-4 py-2">Number</th>
-                  <th className="px-4 py-2">Limits / Caps</th>
-                  <th className="px-4 py-2">Expires</th>
+                  <th className="px-4 py-2">{t('certs.col.kind')}</th>
+                  <th className="px-4 py-2">{t('certs.col.label')}</th>
+                  <th className="px-4 py-2">{t('certs.col.issuer')}</th>
+                  <th className="px-4 py-2">{t('certs.col.number')}</th>
+                  <th className="px-4 py-2">{t('certs.col.limits')}</th>
+                  <th className="px-4 py-2">{t('certs.col.expires')}</th>
                   <th className="px-4 py-2"></th>
                 </tr>
               </thead>
@@ -125,16 +127,16 @@ export default async function CertificatesPage() {
                       </td>
                       <td className="px-4 py-3 text-xs text-gray-700">
                         {c.perOccurrenceLimitCents !== undefined ? (
-                          <div><Money cents={c.perOccurrenceLimitCents} /> <span className="text-gray-500">per occ.</span></div>
+                          <div><Money cents={c.perOccurrenceLimitCents} /> <span className="text-gray-500">{t('certs.perOcc')}</span></div>
                         ) : null}
                         {c.aggregateLimitCents !== undefined ? (
-                          <div><Money cents={c.aggregateLimitCents} /> <span className="text-gray-500">agg.</span></div>
+                          <div><Money cents={c.aggregateLimitCents} /> <span className="text-gray-500">{t('certs.agg')}</span></div>
                         ) : null}
                         {c.singleJobCapCents !== undefined ? (
-                          <div><Money cents={c.singleJobCapCents} /> <span className="text-gray-500">single-job cap</span></div>
+                          <div><Money cents={c.singleJobCapCents} /> <span className="text-gray-500">{t('certs.singleJobCap')}</span></div>
                         ) : null}
                         {c.bondingAggregateCapCents !== undefined ? (
-                          <div><Money cents={c.bondingAggregateCapCents} /> <span className="text-gray-500">bond agg. cap</span></div>
+                          <div><Money cents={c.bondingAggregateCapCents} /> <span className="text-gray-500">{t('certs.bondAggCap')}</span></div>
                         ) : null}
                       </td>
                       <td className="px-4 py-3 text-sm">
@@ -153,14 +155,14 @@ export default async function CertificatesPage() {
                               {days === undefined
                                 ? ''
                                 : days < 0
-                                  ? `EXPIRED ${Math.abs(days)} d ago`
+                                  ? t('certs.expiredAgo', { days: Math.abs(days) })
                                   : days === 0
-                                    ? 'expires today'
-                                    : `${days} d remaining`}
+                                    ? t('certs.expiresToday')
+                                    : t('certs.daysRemaining', { days })}
                             </div>
                           </>
                         ) : (
-                          <span className="text-gray-400">Lifetime</span>
+                          <span className="text-gray-400">{t('certs.lifetime')}</span>
                         )}
                       </td>
                       <td className="px-4 py-3 text-right text-sm">
