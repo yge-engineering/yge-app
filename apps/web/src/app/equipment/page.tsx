@@ -7,6 +7,7 @@
 import Link from 'next/link';
 
 import { AppShell } from '../../components/app-shell';
+import { getTranslator, type Translator } from '../../lib/locale';
 import {
   equipmentCategoryLabel,
   equipmentStatusLabel,
@@ -60,6 +61,7 @@ export default async function EquipmentPage() {
 
   const dueCount = equipment.filter(isServiceDue).length;
   const assignedCount = equipment.filter((e) => e.status === 'ASSIGNED').length;
+  const t = getTranslator();
 
   return (
     <AppShell>
@@ -72,37 +74,40 @@ export default async function EquipmentPage() {
           href="/equipment/new"
           className="rounded bg-yge-blue-500 px-3 py-1 text-sm font-medium text-white hover:bg-yge-blue-700"
         >
-          + Add unit
+          {t('equipment.addUnit')}
         </Link>
       </div>
 
-      <h1 className="text-3xl font-bold text-yge-blue-500">Equipment + vehicles</h1>
+      <h1 className="text-3xl font-bold text-yge-blue-500">{t('equipment.title')}</h1>
       <p className="mt-2 text-gray-700">
-        {equipment.length} unit{equipment.length === 1 ? '' : 's'} on the books
-        {' '}&middot; {assignedCount} assigned
+        {t('equipment.subtitle', {
+          units: equipment.length,
+          plural: equipment.length === 1 ? '' : 's',
+          assigned: assignedCount,
+        })}
         {dueCount > 0 && (
           <>
             {' '}&middot;{' '}
-            <span className="text-red-700">{dueCount} due / overdue for service</span>
+            <span className="text-red-700">{t('equipment.subtitle.due', { count: dueCount })}</span>
           </>
         )}
       </p>
 
       {equipment.length === 0 ? (
         <div className="mt-6 rounded border border-gray-200 bg-gray-50 p-6 text-sm text-gray-600">
-          No equipment yet. Click <em>Add unit</em> to start the inventory.
+          {t('equipment.empty')}
         </div>
       ) : (
         <div className="mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
           <table className="w-full text-left text-sm">
             <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
               <tr>
-                <th className="px-4 py-2">Unit</th>
-                <th className="px-4 py-2">Category</th>
-                <th className="px-4 py-2">Usage</th>
-                <th className="px-4 py-2">Service</th>
-                <th className="px-4 py-2">Status</th>
-                <th className="px-4 py-2">Assignment</th>
+                <th className="px-4 py-2">{t('equipment.col.unit')}</th>
+                <th className="px-4 py-2">{t('equipment.col.category')}</th>
+                <th className="px-4 py-2">{t('equipment.col.usage')}</th>
+                <th className="px-4 py-2">{t('equipment.col.service')}</th>
+                <th className="px-4 py-2">{t('equipment.col.status')}</th>
+                <th className="px-4 py-2">{t('equipment.col.assignment')}</th>
                 <th className="px-4 py-2"></th>
               </tr>
             </thead>
@@ -147,7 +152,7 @@ export default async function EquipmentPage() {
                       {formatUsage(eq)}
                     </td>
                     <td className="px-4 py-3 text-xs">
-                      <ServicePill eq={eq} />
+                      <ServicePill eq={eq} t={t} />
                     </td>
                     <td className="px-4 py-3 text-xs">
                       <StatusBadge status={eq.status} />
@@ -165,7 +170,7 @@ export default async function EquipmentPage() {
                       )}
                       {op && (
                         <div className="text-xs text-gray-500">
-                          Operator: {fullName(op)}
+                          {t('equipment.operator')}: {fullName(op)}
                         </div>
                       )}
                     </td>
@@ -174,7 +179,7 @@ export default async function EquipmentPage() {
                         href={`/equipment/${eq.id}`}
                         className="text-yge-blue-500 hover:underline"
                       >
-                        Open
+                        {t('equipment.open')}
                       </Link>
                     </td>
                   </tr>
@@ -189,7 +194,7 @@ export default async function EquipmentPage() {
   );
 }
 
-function ServicePill({ eq }: { eq: Equipment }) {
+function ServicePill({ eq, t }: { eq: Equipment; t: Translator }) {
   const lvl = serviceDueLevel(eq);
   if (lvl === 'none') {
     return <span className="text-gray-400">&mdash;</span>;
@@ -197,20 +202,20 @@ function ServicePill({ eq }: { eq: Equipment }) {
   if (lvl === 'overdue') {
     return (
       <span className="rounded bg-red-100 px-2 py-0.5 font-semibold uppercase tracking-wide text-red-800">
-        Overdue
+        {t('equipment.service.overdue')}
       </span>
     );
   }
   if (lvl === 'warn') {
     return (
       <span className="rounded bg-yellow-100 px-2 py-0.5 font-semibold uppercase tracking-wide text-yellow-800">
-        Soon
+        {t('equipment.service.soon')}
       </span>
     );
   }
   return (
     <span className="rounded bg-green-100 px-2 py-0.5 font-semibold uppercase tracking-wide text-green-800">
-      OK
+      {t('equipment.service.ok')}
     </span>
   );
 }
