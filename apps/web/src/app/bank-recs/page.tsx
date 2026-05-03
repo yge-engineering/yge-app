@@ -17,6 +17,7 @@ import {
   StatusPill,
   Tile,
 } from '../../components';
+import { getTranslator } from '../../lib/locale';
 import {
   bankRecStatusLabel,
   computeBankRec,
@@ -50,32 +51,33 @@ function statusTone(s: BankRec['status']): 'success' | 'warn' | 'muted' | 'neutr
 export default async function BankRecsPage() {
   const recs = await fetchRecs();
   const rollup = computeBankRecRollup(recs);
+  const t = getTranslator();
 
   return (
     <AppShell>
       <main className="mx-auto max-w-6xl">
         <PageHeader
-          title="Bank reconciliations"
-          subtitle="One record per (bank account, statement period). Reconciles when statement balance − outstanding checks + outstanding deposits = GL balance + adjustments."
+          title={t('bankRec.title')}
+          subtitle={t('bankRec.subtitle')}
           actions={
             <LinkButton href="/bank-recs/new" variant="primary" size="md">
-              + New reconciliation
+              {t('bankRec.newReconciliation')}
             </LinkButton>
           }
         />
 
         <section className="mb-4 grid gap-3 sm:grid-cols-4">
-          <Tile label="Total" value={rollup.total} />
-          <Tile label="Reconciled" value={rollup.reconciled} tone="success" />
-          <Tile label="Draft" value={rollup.draft} tone={rollup.draft > 0 ? 'warn' : 'success'} />
-          <Tile label="Last reconciled" value={rollup.lastReconciledOn ?? '—'} />
+          <Tile label={t('bankRec.tile.total')} value={rollup.total} />
+          <Tile label={t('bankRec.tile.reconciled')} value={rollup.reconciled} tone="success" />
+          <Tile label={t('bankRec.tile.draft')} value={rollup.draft} tone={rollup.draft > 0 ? 'warn' : 'success'} />
+          <Tile label={t('bankRec.tile.lastReconciled')} value={rollup.lastReconciledOn ?? '—'} />
         </section>
 
         {recs.length === 0 ? (
           <EmptyState
-            title="No bank recs yet"
-            body="Pull each statement when it arrives and reconcile against the GL. The Δ column tells you how far off you are."
-            actions={[{ href: '/bank-recs/new', label: 'New reconciliation', primary: true }]}
+            title={t('bankRec.empty.title')}
+            body={t('bankRec.empty.body')}
+            actions={[{ href: '/bank-recs/new', label: t('bankRec.empty.action'), primary: true }]}
           />
         ) : (
           <DataTable
@@ -84,19 +86,19 @@ export default async function BankRecsPage() {
             columns={[
               {
                 key: 'statementDate',
-                header: 'Statement',
+                header: t('bankRec.col.statement'),
                 cell: (r) => (
                   <Link href={`/bank-recs/${r.id}`} className="font-mono text-xs font-medium text-blue-700 hover:underline">
                     {r.statementDate}
                   </Link>
                 ),
               },
-              { key: 'account', header: 'Account', cell: (r) => <span className="text-sm text-gray-900">{r.bankAccountLabel}</span> },
-              { key: 'statement', header: 'Statement $', numeric: true, cell: (r) => <Money cents={r.statementBalanceCents} /> },
-              { key: 'gl', header: 'GL $', numeric: true, cell: (r) => <Money cents={r.glBalanceCents} /> },
+              { key: 'account', header: t('bankRec.col.account'), cell: (r) => <span className="text-sm text-gray-900">{r.bankAccountLabel}</span> },
+              { key: 'statement', header: t('bankRec.col.statementDollars'), numeric: true, cell: (r) => <Money cents={r.statementBalanceCents} /> },
+              { key: 'gl', header: t('bankRec.col.glDollars'), numeric: true, cell: (r) => <Money cents={r.glBalanceCents} /> },
               {
                 key: 'delta',
-                header: 'Δ',
+                header: t('bankRec.col.delta'),
                 numeric: true,
                 cell: (r) => {
                   const c = computeBankRec(r);
@@ -108,7 +110,7 @@ export default async function BankRecsPage() {
                   );
                 },
               },
-              { key: 'status', header: 'Status', cell: (r) => <StatusPill label={bankRecStatusLabel(r.status)} tone={statusTone(r.status)} /> },
+              { key: 'status', header: t('bankRec.col.status'), cell: (r) => <StatusPill label={bankRecStatusLabel(r.status)} tone={statusTone(r.status)} /> },
             ]}
           />
         )}
