@@ -17,6 +17,7 @@ import {
   PageHeader,
   Tile,
 } from '../../components';
+import { getTranslator } from '../../lib/locale';
 import {
   computeSwpppRollup,
   deficiencyCount,
@@ -50,51 +51,51 @@ export default async function SwpppPage({
 }) {
   const inspections = await fetchInspections(searchParams);
   const rollup = computeSwpppRollup(inspections);
+  const t = getTranslator();
 
   return (
     <AppShell>
       <main className="mx-auto max-w-6xl">
         <PageHeader
-          title="SWPPP inspections"
-          subtitle="Stormwater Pollution Prevention Plan / BMP inspections per the CA Construction General Permit. Audited by the State Water Resources Control Board."
+          title={t('swppp.title')}
+          subtitle={t('swppp.subtitle')}
           actions={
             <LinkButton href="/swppp/new" variant="primary" size="md">
-              + New inspection
+              {t('swppp.newInspection')}
             </LinkButton>
           }
         />
 
         <section className="mb-4 grid gap-3 sm:grid-cols-4">
-          <Tile label="Total" value={rollup.total} />
+          <Tile label={t('swppp.tile.total')} value={rollup.total} />
           <Tile
-            label="With deficiencies"
+            label={t('swppp.tile.withDef')}
             value={rollup.withDeficiencies}
             tone={rollup.withDeficiencies > 0 ? 'warn' : 'success'}
           />
           <Tile
-            label="Open deficiencies"
+            label={t('swppp.tile.openDef')}
             value={rollup.openDeficiencies}
             tone={rollup.openDeficiencies > 0 ? 'danger' : 'success'}
           />
           <Tile
-            label="Days since last"
+            label={t('swppp.tile.daysSince')}
             value={rollup.daysSinceLast ?? '—'}
             tone={rollup.weeklyCadenceLate ? 'danger' : 'success'}
           />
         </section>
 
         {rollup.weeklyCadenceLate ? (
-          <Alert tone="danger" title="Weekly cadence missed" className="mb-4">
-            {rollup.daysSinceLast} days since last inspection ({rollup.lastInspectedOn}). The CGP
-            requires at least weekly inspections during the rainy season.
+          <Alert tone="danger" title={t('swppp.alert.cadence.title')} className="mb-4">
+            {t('swppp.alert.cadence.body', { days: rollup.daysSinceLast ?? '?', date: rollup.lastInspectedOn ?? '—' })}
           </Alert>
         ) : null}
 
         {inspections.length === 0 ? (
           <EmptyState
-            title="No SWPPP inspections yet"
-            body="Stormwater inspections protect us against fines and stop-work orders. Log them on a weekly cadence in the rainy season."
-            actions={[{ href: '/swppp/new', label: 'New inspection', primary: true }]}
+            title={t('swppp.empty.title')}
+            body={t('swppp.empty.body')}
+            actions={[{ href: '/swppp/new', label: t('swppp.empty.action'), primary: true }]}
           />
         ) : (
           <DataTable
@@ -103,17 +104,17 @@ export default async function SwpppPage({
             columns={[
               {
                 key: 'date',
-                header: 'Date',
+                header: t('swppp.col.date'),
                 cell: (s) => (
                   <Link href={`/swppp/${s.id}`} className="font-mono text-xs font-medium text-blue-700 hover:underline">
                     {s.inspectedOn}
                   </Link>
                 ),
               },
-              { key: 'trigger', header: 'Trigger', cell: (s) => <span className="text-xs text-gray-700">{swpppTriggerLabel(s.trigger)}</span> },
+              { key: 'trigger', header: t('swppp.col.trigger'), cell: (s) => <span className="text-xs text-gray-700">{swpppTriggerLabel(s.trigger)}</span> },
               {
                 key: 'inspector',
-                header: 'Inspector',
+                header: t('swppp.col.inspector'),
                 cell: (s) => (
                   <span className="text-xs text-gray-700">
                     {s.inspectorName}
@@ -123,17 +124,17 @@ export default async function SwpppPage({
               },
               {
                 key: 'job',
-                header: 'Job',
+                header: t('swppp.col.job'),
                 cell: (s) => (
                   <Link href={`/jobs/${s.jobId}`} className="font-mono text-xs text-blue-700 hover:underline">
                     {s.jobId}
                   </Link>
                 ),
               },
-              { key: 'bmps', header: 'BMPs', numeric: true, cell: (s) => <span className="font-mono text-xs">{s.bmpChecks.length}</span> },
+              { key: 'bmps', header: t('swppp.col.bmps'), numeric: true, cell: (s) => <span className="font-mono text-xs">{s.bmpChecks.length}</span> },
               {
                 key: 'deficient',
-                header: 'Deficient',
+                header: t('swppp.col.deficient'),
                 numeric: true,
                 cell: (s) => {
                   const def = deficiencyCount(s);
@@ -146,7 +147,7 @@ export default async function SwpppPage({
               },
               {
                 key: 'open',
-                header: 'Open',
+                header: t('swppp.col.open'),
                 numeric: true,
                 cell: (s) => {
                   const open = openDeficiencyCount(s);
