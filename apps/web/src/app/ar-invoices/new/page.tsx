@@ -7,6 +7,7 @@ import { Alert, AppShell } from '../../../components';
 import { useRouter } from 'next/navigation';
 import type { ArInvoice, Job } from '@yge/shared';
 import { ApiError, postJson } from '@/lib/api';
+import { useTranslator } from '../../../lib/use-translator';
 
 export default function NewArInvoicePage() {
   const router = useRouter();
@@ -17,6 +18,7 @@ export default function NewArInvoicePage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const t = useTranslator();
 
   useEffect(() => {
     const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
@@ -42,7 +44,7 @@ export default function NewArInvoicePage() {
     e.preventDefault();
     setError(null);
     if (!jobId || !customerName.trim() || !invoiceNumber.trim()) {
-      setError('Job, customer, and invoice number are required.');
+      setError(t('arInvoiceNew.error.required'));
       return;
     }
     setSaving(true);
@@ -57,7 +59,7 @@ export default function NewArInvoicePage() {
     } catch (err) {
       if (err instanceof ApiError) setError(`${err.message} (HTTP ${err.status})`);
       else if (err instanceof Error) setError(err.message);
-      else setError('Unknown error');
+      else setError(t('arInvoiceNew.error.unknown'));
       setSaving(false);
     }
   }
@@ -67,25 +69,22 @@ export default function NewArInvoicePage() {
     <main className="mx-auto max-w-xl p-8">
       <div className="mb-6">
         <Link href="/ar-invoices" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Back to invoices
+          {t('arInvoiceDetail.backLink')}
         </Link>
       </div>
 
-      <h1 className="text-3xl font-bold text-yge-blue-500">New customer invoice</h1>
-      <p className="mt-2 text-gray-700">
-        Pick the job, set the customer + invoice number + date. After saving
-        you can build line items from daily reports or add them manually.
-      </p>
+      <h1 className="text-3xl font-bold text-yge-blue-500">{t('arInvoiceNew.title')}</h1>
+      <p className="mt-2 text-gray-700">{t('arInvoiceNew.subtitle')}</p>
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-4">
-        <Field label="Job *">
+        <Field label={t('arInvoiceNew.field.job')}>
           <select
             required
             value={jobId}
             onChange={(e) => pickJob(e.target.value)}
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           >
-            <option value="">— Pick a job —</option>
+            <option value="">{t('arInvoiceNew.option.pickJob')}</option>
             {jobs.map((j) => (
               <option key={j.id} value={j.id}>
                 {j.projectName}
@@ -93,26 +92,26 @@ export default function NewArInvoicePage() {
             ))}
           </select>
         </Field>
-        <Field label="Customer / agency *">
+        <Field label={t('arInvoiceNew.field.customer')}>
           <input
             required
             value={customerName}
             onChange={(e) => setCustomerName(e.target.value)}
-            placeholder="CAL FIRE"
+            placeholder={t('arInvoiceNew.placeholder.customer')}
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Invoice number *">
+          <Field label={t('arInvoiceNew.field.invoiceNumber')}>
             <input
               required
               value={invoiceNumber}
               onChange={(e) => setInvoiceNumber(e.target.value)}
-              placeholder="YGE-2026-0001"
+              placeholder={t('arInvoiceNew.placeholder.invoiceNumber')}
               className="w-full rounded border border-gray-300 px-3 py-2 text-sm font-mono"
             />
           </Field>
-          <Field label="Invoice date">
+          <Field label={t('arInvoiceNew.field.invoiceDate')}>
             <input
               type="date"
               value={invoiceDate}
@@ -132,10 +131,10 @@ export default function NewArInvoicePage() {
             disabled={saving}
             className="rounded bg-yge-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50"
           >
-            {saving ? 'Saving…' : 'Create invoice'}
+            {saving ? t('arInvoiceNew.btn.saving') : t('arInvoiceNew.btn.create')}
           </button>
           <Link href="/ar-invoices" className="text-sm text-gray-600 hover:underline">
-            Cancel
+            {t('arInvoiceNew.btn.cancel')}
           </Link>
         </div>
       </form>

@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { AuditBinderPanel } from '../../../components';
 import type { ArInvoice, Job } from '@yge/shared';
 import { ArInvoiceEditor } from '@/components/ar-invoice-editor';
+import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
   return (
@@ -37,12 +38,13 @@ export default async function ArInvoiceDetailPage({
 }) {
   const [invoice, jobs] = await Promise.all([fetchInvoice(params.id), fetchJobs()]);
   if (!invoice) notFound();
+  const t = getTranslator();
 
   return (
     <main className="mx-auto max-w-4xl p-8">
       <div className="mb-6">
         <Link href="/ar-invoices" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Back to invoices
+          {t('arInvoiceDetail.backLink')}
         </Link>
       </div>
 
