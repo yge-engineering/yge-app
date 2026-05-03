@@ -3,6 +3,7 @@
 import Link from 'next/link';
 
 import { Alert, AppShell } from '../../components';
+import { getTranslator, type Translator } from '../../lib/locale';
 import {
   buildCloseChecklist,
   severityLabel,
@@ -71,6 +72,7 @@ export default async function CloseChecklistPage({
     dailyReports,
     swpppInspections,
   });
+  const t = getTranslator();
 
   return (
     <AppShell>
@@ -81,18 +83,15 @@ export default async function CloseChecklistPage({
         </Link>
       </div>
 
-      <h1 className="text-3xl font-bold text-yge-blue-500">Month-end Close</h1>
-      <p className="mt-2 text-gray-700">
-        Single-page runbook for closing the books on a given month. Blockers
-        must be cleared before close; advisories are nudges to follow up.
-      </p>
+      <h1 className="text-3xl font-bold text-yge-blue-500">{t('cc.title')}</h1>
+      <p className="mt-2 text-gray-700">{t('cc.subtitle')}</p>
 
       <form
         action="/close-checklist"
         className="mt-4 flex flex-wrap items-end gap-3 rounded-lg border border-gray-200 bg-white p-3 shadow-sm"
       >
         <label className="block text-xs">
-          <span className="mb-1 block font-medium text-gray-700">Month</span>
+          <span className="mb-1 block font-medium text-gray-700">{t('cc.month')}</span>
           <input
             type="month"
             name="month"
@@ -104,55 +103,53 @@ export default async function CloseChecklistPage({
           type="submit"
           className="rounded bg-yge-blue-500 px-3 py-1 text-sm font-medium text-white hover:bg-yge-blue-700"
         >
-          Reload
+          {t('cc.reload')}
         </button>
       </form>
 
       <Alert tone={checklist.readyToClose ? 'success' : 'danger'} className="mt-4">
         <strong>
           {checklist.readyToClose
-            ? `✓ Ready to close ${checklist.month}`
-            : `✗ ${checklist.blockerCount} blocker${checklist.blockerCount === 1 ? '' : 's'} before closing ${checklist.month}`}
+            ? t('cc.alert.ready', { month: checklist.month })
+            : t('cc.alert.blockers', { count: checklist.blockerCount, plural: checklist.blockerCount === 1 ? '' : 's', month: checklist.month })}
         </strong>
         {checklist.warnCount > 0 && (
           <span className="ml-2 text-xs">
-            ({checklist.warnCount} advisor{checklist.warnCount === 1 ? 'y' : 'ies'})
+            {t('cc.alert.advisorySuffix', { count: checklist.warnCount, plural: checklist.warnCount === 1 ? 'y' : 'ies' })}
           </span>
         )}
       </Alert>
 
       <article className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <header className="border-b border-gray-300 pb-2 text-center">
-          <h2 className="text-lg font-bold uppercase">Close Runbook</h2>
-          <p className="text-sm">
-            Period: {checklist.monthStart} through {checklist.monthEnd}
-          </p>
+          <h2 className="text-lg font-bold uppercase">{t('cc.runbook')}</h2>
+          <p className="text-sm">{t('cc.period', { start: checklist.monthStart, end: checklist.monthEnd })}</p>
         </header>
 
         <table className="mt-4 w-full border-collapse text-sm">
           <thead>
             <tr className="border-b-2 border-black text-xs uppercase tracking-wide text-gray-500">
-              <th className="px-2 py-1 text-left">Check</th>
-              <th className="w-24 px-2 py-1 text-center">Severity</th>
-              <th className="w-20 px-2 py-1 text-center">Status</th>
-              <th className="w-12 px-2 py-1 text-center">Init</th>
+              <th className="px-2 py-1 text-left">{t('cc.col.check')}</th>
+              <th className="w-24 px-2 py-1 text-center">{t('cc.col.severity')}</th>
+              <th className="w-20 px-2 py-1 text-center">{t('cc.col.status')}</th>
+              <th className="w-12 px-2 py-1 text-center">{t('cc.col.init')}</th>
             </tr>
           </thead>
           <tbody>
             {checklist.items.map((it) => (
-              <ItemRow key={it.id} item={it} />
+              <ItemRow key={it.id} item={it} t={t} />
             ))}
           </tbody>
         </table>
 
         <div className="mt-6 grid grid-cols-2 gap-6 text-xs">
           <div>
-            <div className="font-semibold uppercase">Closed by</div>
+            <div className="font-semibold uppercase">{t('cc.signoff.closedBy')}</div>
             <div className="mt-6 border-b border-gray-400">&nbsp;</div>
-            <div className="mt-1 text-gray-600">Print + sign</div>
+            <div className="mt-1 text-gray-600">{t('cc.signoff.printSign')}</div>
           </div>
           <div>
-            <div className="font-semibold uppercase">Closed on</div>
+            <div className="font-semibold uppercase">{t('cc.signoff.closedOn')}</div>
             <div className="mt-6 border-b border-gray-400">&nbsp;</div>
           </div>
         </div>
@@ -162,7 +159,7 @@ export default async function CloseChecklistPage({
   );
 }
 
-function ItemRow({ item }: { item: CloseCheckItem }) {
+function ItemRow({ item, t }: { item: CloseCheckItem; t: Translator }) {
   const rowCls =
     item.status === 'FAIL'
       ? 'bg-red-50'
@@ -198,11 +195,11 @@ function ItemRow({ item }: { item: CloseCheckItem }) {
       </td>
       <td className="px-2 py-2 text-center">
         {item.status === 'PASS' ? (
-          <span className="font-bold text-green-700">PASS</span>
+          <span className="font-bold text-green-700">{t('cc.status.pass')}</span>
         ) : item.status === 'WARN' ? (
-          <span className="font-semibold text-yellow-800">WARN</span>
+          <span className="font-semibold text-yellow-800">{t('cc.status.warn')}</span>
         ) : (
-          <span className="font-bold text-red-700">FAIL</span>
+          <span className="font-bold text-red-700">{t('cc.status.fail')}</span>
         )}
       </td>
       <td className="px-2 py-2 text-center">
