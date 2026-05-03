@@ -17,6 +17,7 @@ import {
   type PtoEProjectType,
 } from '@yge/shared';
 import { ApiError, postJson } from '@/lib/api';
+import { useTranslator } from '../../../lib/use-translator';
 
 const PROJECT_TYPES: PtoEProjectType[] = [
   'ROAD_RECONSTRUCTION',
@@ -83,6 +84,7 @@ export default function NewJobPage() {
   const [form, setForm] = useState<FormState>(INITIAL);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const t = useTranslator();
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -92,7 +94,7 @@ export default function NewJobPage() {
     e.preventDefault();
     setError(null);
     if (form.projectName.trim().length === 0) {
-      setError('Project name is required.');
+      setError(t('jobNew.error.projectNameRequired'));
       return;
     }
 
@@ -101,7 +103,7 @@ export default function NewJobPage() {
     if (form.engineersEstimateDollars.trim().length > 0) {
       const n = Number(form.engineersEstimateDollars);
       if (!Number.isFinite(n) || n < 0) {
-        setError('Engineer\u2019s estimate must be a non-negative number.');
+        setError(t('jobNew.error.estimateNonNegative'));
         return;
       }
       engineersEstimateCents = Math.round(n * 100);
@@ -130,7 +132,7 @@ export default function NewJobPage() {
       } else if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError('Unknown error');
+        setError(t('jobNew.error.unknown'));
       }
       setSaving(false);
     }
@@ -141,27 +143,24 @@ export default function NewJobPage() {
     <main className="mx-auto max-w-3xl p-8">
       <div className="mb-6 flex items-center justify-between">
         <Link href="/jobs" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Jobs
+          {t('jobDetail.backLink')}
         </Link>
       </div>
 
-      <h1 className="text-3xl font-bold text-yge-blue-500">New job</h1>
-      <p className="mt-2 text-gray-700">
-        Spin up a new project. You can attach Plans-to-Estimate drafts and priced
-        estimates to it once it&rsquo;s saved.
-      </p>
+      <h1 className="text-3xl font-bold text-yge-blue-500">{t('jobNew.title')}</h1>
+      <p className="mt-2 text-gray-700">{t('jobNew.subtitle')}</p>
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-5">
         <div>
           <label htmlFor="projectName" className="block text-sm font-semibold text-gray-700">
-            Project name <span className="text-red-600">*</span>
+            {t('jobNew.field.projectName')} <span className="text-red-600">*</span>
           </label>
           <input
             id="projectName"
             type="text"
             value={form.projectName}
             onChange={(e) => update('projectName', e.target.value)}
-            placeholder="e.g. Sulphur Springs Soquol Road"
+            placeholder={t('jobNew.placeholder.projectName')}
             className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
             disabled={saving}
             required
@@ -172,7 +171,7 @@ export default function NewJobPage() {
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="projectType" className="block text-sm font-semibold text-gray-700">
-              Project type
+              {t('jobNew.field.projectType')}
             </label>
             <select
               id="projectType"
@@ -181,9 +180,9 @@ export default function NewJobPage() {
               className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
               disabled={saving}
             >
-              {PROJECT_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {projectTypeLabel(t)}
+              {PROJECT_TYPES.map((pt) => (
+                <option key={pt} value={pt}>
+                  {projectTypeLabel(pt)}
                 </option>
               ))}
             </select>
@@ -191,7 +190,7 @@ export default function NewJobPage() {
 
           <div>
             <label htmlFor="contractType" className="block text-sm font-semibold text-gray-700">
-              Contract type
+              {t('jobNew.field.contractType')}
             </label>
             <select
               id="contractType"
@@ -202,9 +201,9 @@ export default function NewJobPage() {
               className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
               disabled={saving}
             >
-              {CONTRACT_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {contractTypeLabel(t)}
+              {CONTRACT_TYPES.map((ct) => (
+                <option key={ct} value={ct}>
+                  {contractTypeLabel(ct)}
                 </option>
               ))}
             </select>
@@ -213,7 +212,7 @@ export default function NewJobPage() {
 
         <div>
           <label htmlFor="status" className="block text-sm font-semibold text-gray-700">
-            Status
+            {t('jobNew.field.status')}
           </label>
           <select
             id="status"
@@ -233,14 +232,14 @@ export default function NewJobPage() {
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="ownerAgency" className="block text-sm font-semibold text-gray-700">
-              Owner / awarding agency
+              {t('jobNew.field.ownerAgency')}
             </label>
             <input
               id="ownerAgency"
               type="text"
               value={form.ownerAgency}
               onChange={(e) => update('ownerAgency', e.target.value)}
-              placeholder="e.g. City of Cottonwood"
+              placeholder={t('jobNew.placeholder.ownerAgency')}
               className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
               disabled={saving}
               maxLength={200}
@@ -249,14 +248,14 @@ export default function NewJobPage() {
 
           <div>
             <label htmlFor="location" className="block text-sm font-semibold text-gray-700">
-              Location
+              {t('jobNew.field.location')}
             </label>
             <input
               id="location"
               type="text"
               value={form.location}
               onChange={(e) => update('location', e.target.value)}
-              placeholder="City, county, or address"
+              placeholder={t('jobNew.placeholder.location')}
               className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
               disabled={saving}
               maxLength={200}
@@ -267,21 +266,19 @@ export default function NewJobPage() {
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="bidDueDate" className="block text-sm font-semibold text-gray-700">
-              Bid due date
+              {t('jobNew.field.bidDueDate')}
             </label>
             <input
               id="bidDueDate"
               type="text"
               value={form.bidDueDate}
               onChange={(e) => update('bidDueDate', e.target.value)}
-              placeholder="2026-04-30 2:00 PM"
+              placeholder={t('jobNew.placeholder.bidDueDate')}
               className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
               disabled={saving}
               maxLength={40}
             />
-            <p className="mt-1 text-xs text-gray-500">
-              Free-form &mdash; date or date+time. Phase 1 keeps this flexible.
-            </p>
+            <p className="mt-1 text-xs text-gray-500">{t('jobNew.hint.bidDueDate')}</p>
           </div>
 
           <div>
@@ -289,7 +286,7 @@ export default function NewJobPage() {
               htmlFor="engineersEstimateDollars"
               className="block text-sm font-semibold text-gray-700"
             >
-              Engineer&rsquo;s estimate (USD)
+              {t('jobNew.field.engineersEstimate')}
             </label>
             <input
               id="engineersEstimateDollars"
@@ -298,26 +295,24 @@ export default function NewJobPage() {
               step="0.01"
               value={form.engineersEstimateDollars}
               onChange={(e) => update('engineersEstimateDollars', e.target.value)}
-              placeholder="e.g. 1450000"
+              placeholder={t('jobNew.placeholder.engineersEstimate')}
               className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
               disabled={saving}
             />
-            <p className="mt-1 text-xs text-gray-500">
-              The agency&rsquo;s published budget, if any. Stored as cents internally.
-            </p>
+            <p className="mt-1 text-xs text-gray-500">{t('jobNew.hint.engineersEstimate')}</p>
           </div>
         </div>
 
         <div>
           <label htmlFor="pursuitOwner" className="block text-sm font-semibold text-gray-700">
-            Pursuit owner (YGE staff)
+            {t('jobNew.field.pursuitOwner')}
           </label>
           <input
             id="pursuitOwner"
             type="text"
             value={form.pursuitOwner}
             onChange={(e) => update('pursuitOwner', e.target.value)}
-            placeholder="e.g. Ryan Young"
+            placeholder={t('jobNew.placeholder.pursuitOwner')}
             className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
             disabled={saving}
             maxLength={120}
@@ -326,13 +321,13 @@ export default function NewJobPage() {
 
         <div>
           <label htmlFor="notes" className="block text-sm font-semibold text-gray-700">
-            Pursuit notes
+            {t('jobNew.field.notes')}
           </label>
           <textarea
             id="notes"
             value={form.notes}
             onChange={(e) => update('notes', e.target.value)}
-            placeholder="Walk-through observations, competitor intel, scoping notes."
+            placeholder={t('jobNew.placeholder.notes')}
             className="mt-1 h-32 w-full rounded border border-gray-300 px-3 py-2 text-sm"
             disabled={saving}
             maxLength={10000}
@@ -349,13 +344,13 @@ export default function NewJobPage() {
             disabled={saving}
             className="rounded bg-yge-blue-500 px-6 py-3 font-semibold text-white hover:bg-yge-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {saving ? 'Saving\u2026' : 'Create job'}
+            {saving ? t('jobNew.btn.saving') : t('jobNew.btn.create')}
           </button>
           <Link
             href="/jobs"
             className="text-sm text-gray-600 hover:text-gray-900 hover:underline"
           >
-            Cancel
+            {t('jobNew.btn.cancel')}
           </Link>
         </div>
       </form>
