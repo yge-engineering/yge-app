@@ -18,6 +18,7 @@ import {
   RoleBadge,
   StatusPill,
 } from '../../components';
+import { getTranslator } from '../../lib/locale';
 import type { Employee } from '@yge/shared';
 
 function apiBaseUrl(): string {
@@ -58,25 +59,26 @@ export default async function EmployeesPage() {
   });
 
   const activeCount = sorted.filter((e) => e.status === 'ACTIVE').length;
+  const t = getTranslator();
 
   return (
     <AppShell>
       <main className="mx-auto max-w-6xl">
         <PageHeader
-          title="Employees"
-          subtitle={`${activeCount} active · ${sorted.length} total on file`}
+          title={t('employees.title')}
+          subtitle={t('employees.subtitle', { active: activeCount, total: sorted.length })}
           actions={
             <LinkButton href="/employees/new" variant="primary" size="md">
-              + New employee
+              {t('employees.newEmployee')}
             </LinkButton>
           }
         />
 
         {sorted.length === 0 ? (
           <EmptyState
-            title="No employees yet"
-            body="Add your foremen, operators, and laborers so dispatch boards and certified payrolls have people to reference."
-            actions={[{ href: '/employees/new', label: 'Add your first employee', primary: true }]}
+            title={t('employees.empty.title')}
+            body={t('employees.empty.body')}
+            actions={[{ href: '/employees/new', label: t('employees.empty.action'), primary: true }]}
           />
         ) : (
           <DataTable
@@ -85,7 +87,7 @@ export default async function EmployeesPage() {
             columns={[
               {
                 key: 'name',
-                header: 'Name',
+                header: t('employees.col.name'),
                 cell: (e) => (
                   <span className="flex items-center gap-2">
                     <Avatar name={`${e.firstName} ${e.lastName}`} size="sm" />
@@ -97,22 +99,22 @@ export default async function EmployeesPage() {
               },
               {
                 key: 'role',
-                header: 'Role',
+                header: t('employees.col.role'),
                 cell: (e) => <RoleBadge role={e.role} />,
               },
               {
                 key: 'classification',
-                header: 'Classification',
+                header: t('employees.col.classification'),
                 cell: (e) => <span className="text-gray-700">{e.classification}</span>,
               },
               {
                 key: 'status',
-                header: 'Status',
+                header: t('employees.col.status'),
                 cell: (e) => <StatusPill label={e.status} tone={statusTone(e.status)} />,
               },
               {
                 key: 'phone',
-                header: 'Phone',
+                header: t('employees.col.phone'),
                 cell: (e) => e.phone ?? <span className="text-gray-400">—</span>,
               },
             ]}
