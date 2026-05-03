@@ -15,6 +15,7 @@
 // Employee model so the swap is a one-day refactor.
 
 import { z } from 'zod';
+import { translate, SEED_DICTIONARY, type Locale } from './i18n';
 
 /** YGE internal role — what does the person *do* day to day? Free-form-ish
  *  but constrained to a small set so the foreman-grouping works. Think
@@ -159,65 +160,20 @@ export function fullName(e: Pick<Employee, 'firstName' | 'lastName' | 'displayNa
   return `${e.firstName} ${e.lastName}`;
 }
 
-export function roleLabel(r: EmployeeRole): string {
-  switch (r) {
-    case 'OWNER': return 'Owner';
-    case 'OFFICE': return 'Office';
-    case 'PROJECT_MANAGER': return 'Project Manager';
-    case 'SUPERINTENDENT': return 'Superintendent';
-    case 'FOREMAN': return 'Foreman';
-    case 'OPERATOR': return 'Operator';
-    case 'TRUCK_DRIVER': return 'Truck Driver';
-    case 'LABORER': return 'Laborer';
-    case 'MECHANIC': return 'Mechanic';
-    case 'APPRENTICE': return 'Apprentice';
-    case 'OTHER': return 'Other';
-  }
+export function roleLabel(r: EmployeeRole, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `employeeRole.${r}`);
 }
 
-export function classificationLabel(c: DirClassification): string {
-  switch (c) {
-    case 'OPERATING_ENGINEER_GROUP_1': return 'Operating Engineer — Group 1';
-    case 'OPERATING_ENGINEER_GROUP_2': return 'Operating Engineer — Group 2';
-    case 'OPERATING_ENGINEER_GROUP_3': return 'Operating Engineer — Group 3';
-    case 'OPERATING_ENGINEER_GROUP_4': return 'Operating Engineer — Group 4';
-    case 'OPERATING_ENGINEER_GROUP_5': return 'Operating Engineer — Group 5';
-    case 'TEAMSTER_GROUP_1': return 'Teamster — Group 1';
-    case 'TEAMSTER_GROUP_2': return 'Teamster — Group 2';
-    case 'LABORER_GROUP_1': return 'Laborer — Group 1';
-    case 'LABORER_GROUP_2': return 'Laborer — Group 2';
-    case 'LABORER_GROUP_3': return 'Laborer — Group 3';
-    case 'CARPENTER': return 'Carpenter';
-    case 'CEMENT_MASON': return 'Cement Mason';
-    case 'IRONWORKER': return 'Ironworker';
-    case 'NOT_APPLICABLE': return 'Not applicable';
-    case 'OTHER': return 'Other';
-  }
+export function classificationLabel(c: DirClassification, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `dirClassification.${c}`);
 }
 
-export function employmentStatusLabel(s: EmploymentStatus): string {
-  switch (s) {
-    case 'ACTIVE': return 'Active';
-    case 'ON_LEAVE': return 'On leave';
-    case 'LAID_OFF': return 'Laid off';
-    case 'TERMINATED': return 'Terminated';
-  }
+export function employmentStatusLabel(s: EmploymentStatus, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `employmentStatus.${s}`);
 }
 
-export function certKindLabel(k: CertificationKind): string {
-  switch (k) {
-    case 'CDL_A': return 'CDL Class A';
-    case 'CDL_B': return 'CDL Class B';
-    case 'OSHA_10': return 'OSHA 10';
-    case 'OSHA_30': return 'OSHA 30';
-    case 'FIRST_AID_CPR': return 'First Aid / CPR';
-    case 'FORKLIFT': return 'Forklift';
-    case 'TRAFFIC_CONTROL': return 'Traffic Control';
-    case 'CONFINED_SPACE': return 'Confined Space';
-    case 'CRANE_OPERATOR': return 'Crane Operator';
-    case 'HAZWOPER': return 'HAZWOPER';
-    case 'OTHER': return 'Other';
-  }
+export function certKindLabel(k: CertificationKind, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `certKind.${k}`);
 }
 
 /** Cert expiry classification — the roster prints "expires soon" rows in red. */

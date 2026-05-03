@@ -19,6 +19,7 @@
 // blocker for close or just an advisory.
 
 import { computeAccountBalances, type JournalEntry } from './journal-entry';
+import { translate, SEED_DICTIONARY, type Locale } from './i18n';
 import type { ApInvoice } from './ap-invoice';
 import type { ApPayment } from './ap-payment';
 import type { ArInvoice } from './ar-invoice';
@@ -267,10 +268,6 @@ function mondayOfISOWeekKey(date: string): string {
   return mon.toISOString().slice(0, 10);
 }
 
-export function severityLabel(s: CloseCheckSeverity): string {
-  switch (s) {
-    case 'BLOCKER': return 'Blocker';
-    case 'ADVISORY': return 'Advisory';
-    case 'INFO': return 'Info';
-  }
+export function severityLabel(s: CloseCheckSeverity, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `closeCheckSeverity.${s}`);
 }

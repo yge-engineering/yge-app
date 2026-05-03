@@ -15,6 +15,7 @@
 // effect lives in the API route, not in this pure-data module.
 
 import { z } from 'zod';
+import { translate, SEED_DICTIONARY, type Locale } from './i18n';
 
 /** A single bidder line on the agency's tabulation. */
 export const BidResultBidderSchema = z.object({
@@ -224,13 +225,8 @@ export function computeBidResultRollup(results: BidResult[]): BidResultRollup {
 
 // ---- Display helpers + id ------------------------------------------------
 
-export function bidOutcomeLabel(o: BidOutcome): string {
-  switch (o) {
-    case 'WON_BY_YGE': return 'Won by YGE';
-    case 'WON_BY_OTHER': return 'Won by other';
-    case 'NO_AWARD': return 'No award';
-    case 'TBD': return 'TBD';
-  }
+export function bidOutcomeLabel(o: BidOutcome, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `bidOutcome.${o}`);
 }
 
 export function newBidResultId(): string {
