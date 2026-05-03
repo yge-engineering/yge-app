@@ -16,6 +16,7 @@ import {
   StatusPill,
   Tile,
 } from '../../components';
+import { getTranslator } from '../../lib/locale';
 import {
   computeWeatherLogRollup,
   heatComplianceGap,
@@ -62,41 +63,42 @@ export default async function WeatherPage({
 }) {
   const logs = await fetchLogs(searchParams);
   const rollup = computeWeatherLogRollup(logs);
+  const t = getTranslator();
 
   return (
     <AppShell>
       <main className="mx-auto max-w-6xl">
         <PageHeader
-          title="Weather log"
-          subtitle="Daily per-job weather record. Backs delay-claim time extensions and documents §3395 heat-illness compliance (80°F base / 95°F high-heat)."
+          title={t('weather.title')}
+          subtitle={t('weather.subtitle')}
           actions={
             <LinkButton href="/weather/new" variant="primary" size="md">
-              + Log day
+              {t('weather.logDay')}
             </LinkButton>
           }
         />
 
         <section className="mb-6 grid gap-3 sm:grid-cols-4">
-          <Tile label="Days logged" value={rollup.total} />
-          <Tile label="Lost hours" value={rollup.totalLostHours} />
+          <Tile label={t('weather.tile.daysLogged')} value={rollup.total} />
+          <Tile label={t('weather.tile.lostHours')} value={rollup.totalLostHours} />
           <Tile
-            label="Heat-trigger days"
-            value={`${rollup.heatTriggerDays} (${rollup.highHeatTriggerDays} high)`}
+            label={t('weather.tile.heatTrigger')}
+            value={t('weather.tile.heatTrigger.value', { count: rollup.heatTriggerDays, high: rollup.highHeatTriggerDays })}
             warn={rollup.heatTriggerDays > 0}
           />
           <Tile
-            label="§3395 gaps"
+            label={t('weather.tile.gaps')}
             value={rollup.heatComplianceGaps}
             warn={rollup.heatComplianceGaps > 0}
-            warnText={rollup.heatComplianceGaps > 0 ? 'Heat procedures missing on hot day' : undefined}
+            warnText={rollup.heatComplianceGaps > 0 ? t('weather.tile.gaps.warn') : undefined}
           />
         </section>
 
         {logs.length === 0 ? (
           <EmptyState
-            title="No weather logs yet"
-            body="Log a day's high/low, precip, and crew impact so delay-claim documentation and §3395 heat compliance live in the same place."
-            actions={[{ href: '/weather/new', label: 'Log today', primary: true }]}
+            title={t('weather.empty.title')}
+            body={t('weather.empty.body')}
+            actions={[{ href: '/weather/new', label: t('weather.empty.action'), primary: true }]}
           />
         ) : (
           <DataTable
@@ -105,7 +107,7 @@ export default async function WeatherPage({
             columns={[
               {
                 key: 'observedOn',
-                header: 'Date',
+                header: t('weather.col.date'),
                 cell: (w) => (
                   <Link href={`/weather/${w.id}`} className="font-mono text-xs font-medium text-blue-700 hover:underline">
                     {w.observedOn}
@@ -114,7 +116,7 @@ export default async function WeatherPage({
               },
               {
                 key: 'jobId',
-                header: 'Job',
+                header: t('weather.col.job'),
                 cell: (w) => (
                   <Link href={`/jobs/${w.jobId}`} className="font-mono text-xs text-blue-700 hover:underline">
                     {w.jobId}
@@ -123,7 +125,7 @@ export default async function WeatherPage({
               },
               {
                 key: 'highLow',
-                header: 'High / Low',
+                header: t('weather.col.highLow'),
                 numeric: true,
                 cell: (w) => (
                   <span className="font-mono text-xs text-gray-700">
@@ -133,7 +135,7 @@ export default async function WeatherPage({
               },
               {
                 key: 'precip',
-                header: 'Precip',
+                header: t('weather.col.precip'),
                 numeric: true,
                 cell: (w) => (
                   <span className="font-mono text-xs text-gray-700">
@@ -143,17 +145,17 @@ export default async function WeatherPage({
               },
               {
                 key: 'condition',
-                header: 'Conditions',
+                header: t('weather.col.conditions'),
                 cell: (w) => <span className="text-xs text-gray-700">{weatherConditionLabel(w.primaryCondition)}</span>,
               },
               {
                 key: 'impact',
-                header: 'Impact',
+                header: t('weather.col.impact'),
                 cell: (w) => <StatusPill label={weatherImpactLabel(w.impact)} tone={impactTone(w.impact)} />,
               },
               {
                 key: 'lostHours',
-                header: 'Lost hrs',
+                header: t('weather.col.lostHrs'),
                 numeric: true,
                 cell: (w) => <span className="font-mono text-sm">{w.lostHours}</span>,
               },
@@ -163,9 +165,9 @@ export default async function WeatherPage({
                 cell: (w) => {
                   const gap = heatComplianceGap(w);
                   const flag = gap.missingHeatActivation || gap.missingHighHeatActivation;
-                  if (flag) return <span className="text-xs font-semibold text-red-700">GAP</span>;
+                  if (flag) return <span className="text-xs font-semibold text-red-700">{t('weather.heat.gap')}</span>;
                   if (w.heatProceduresActivated || w.highHeatProceduresActivated) {
-                    return <span className="text-xs text-green-700">Active</span>;
+                    return <span className="text-xs text-green-700">{t('weather.heat.active')}</span>;
                   }
                   return <span className="text-xs text-gray-400">—</span>;
                 },
