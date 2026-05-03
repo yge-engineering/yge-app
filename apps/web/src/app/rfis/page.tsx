@@ -15,7 +15,7 @@ import {
   StatusPill,
   Tile,
 } from '../../components';
-import { getTranslator } from '../../lib/locale';
+import { getLocale, getTranslator } from '../../lib/locale';
 import {
   computeRfiRollup,
   rfiDaysOutstanding,
@@ -100,6 +100,7 @@ export default async function RfisPage({
     return q ? `/rfis?${q}` : '/rfis';
   }
   const t = getTranslator();
+  const locale = getLocale();
 
   return (
     <AppShell>
@@ -138,7 +139,7 @@ export default async function RfisPage({
               href={buildHref({ status: s })}
               className={`rounded px-2 py-1 text-xs ${searchParams.status === s ? 'bg-blue-700 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
             >
-              {rfiStatusLabel(s)}
+              {rfiStatusLabel(s, locale)}
             </Link>
           ))}
         </section>
@@ -197,8 +198,8 @@ export default async function RfisPage({
                       <td className="px-4 py-3 font-mono text-xs text-gray-700">
                         {days === undefined ? <span className="text-gray-400 font-sans">—</span> : `${days} d`}
                       </td>
-                      <td className="px-4 py-3"><StatusPill label={rfiPriorityLabel(r.priority)} tone={priorityTone(r.priority)} /></td>
-                      <td className="px-4 py-3"><StatusPill label={rfiStatusLabel(r.status)} tone={statusTone(r.status)} /></td>
+                      <td className="px-4 py-3"><StatusPill label={rfiPriorityLabel(r.priority, locale)} tone={priorityTone(r.priority)} /></td>
+                      <td className="px-4 py-3"><StatusPill label={rfiStatusLabel(r.status, locale)} tone={statusTone(r.status)} /></td>
                       <td className="px-4 py-3"></td>
                     </tr>
                   );

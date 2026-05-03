@@ -15,6 +15,7 @@
 //   - 'When was Rev A returned and why?'
 
 import { z } from 'zod';
+import { translate, SEED_DICTIONARY, type Locale } from './i18n';
 
 export const SubmittalKindSchema = z.enum([
   'SHOP_DRAWING',
@@ -102,30 +103,12 @@ export type SubmittalPatch = z.infer<typeof SubmittalPatchSchema>;
 
 // ---- Helpers -------------------------------------------------------------
 
-export function submittalStatusLabel(s: SubmittalStatus): string {
-  switch (s) {
-    case 'DRAFT': return 'Draft';
-    case 'SUBMITTED': return 'Submitted';
-    case 'APPROVED': return 'Approved';
-    case 'APPROVED_AS_NOTED': return 'Approved as noted';
-    case 'REVISE_RESUBMIT': return 'Revise & resubmit';
-    case 'REJECTED': return 'Rejected';
-    case 'WITHDRAWN': return 'Withdrawn';
-  }
+export function submittalStatusLabel(s: SubmittalStatus, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `submittal.status.${s}`);
 }
 
-export function submittalKindLabel(k: SubmittalKind): string {
-  switch (k) {
-    case 'SHOP_DRAWING': return 'Shop drawing';
-    case 'PRODUCT_DATA': return 'Product data';
-    case 'SAMPLE': return 'Sample';
-    case 'CERTIFICATE': return 'Certificate';
-    case 'METHOD_STATEMENT': return 'Method statement';
-    case 'MIX_DESIGN': return 'Mix design';
-    case 'OPERATIONS_MANUAL': return 'O&M manual';
-    case 'WARRANTY': return 'Warranty';
-    case 'OTHER': return 'Other';
-  }
+export function submittalKindLabel(k: SubmittalKind, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `submittal.kind.${k}`);
 }
 
 /** Days outstanding since submission. Negative when returned before

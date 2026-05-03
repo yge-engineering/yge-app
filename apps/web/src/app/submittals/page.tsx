@@ -15,7 +15,7 @@ import {
   StatusPill,
   Tile,
 } from '../../components';
-import { getTranslator } from '../../lib/locale';
+import { getLocale, getTranslator } from '../../lib/locale';
 import {
   computeSubmittalRollup,
   submittalDaysOutstanding,
@@ -102,6 +102,7 @@ export default async function SubmittalsPage({
     return q ? `/submittals?${q}` : '/submittals';
   }
   const t = getTranslator();
+  const locale = getLocale();
 
   return (
     <AppShell>
@@ -145,7 +146,7 @@ export default async function SubmittalsPage({
               href={buildHref({ status: s })}
               className={`rounded px-2 py-1 text-xs ${searchParams.status === s ? 'bg-blue-700 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
             >
-              {submittalStatusLabel(s)}
+              {submittalStatusLabel(s, locale)}
             </Link>
           ))}
         </section>
@@ -185,7 +186,7 @@ export default async function SubmittalsPage({
                       <td className="px-4 py-3">
                         <div className="font-medium text-gray-900">{s.subject}</div>
                         <div className="mt-0.5 text-xs text-gray-500">
-                          {submittalKindLabel(s.kind)}
+                          {submittalKindLabel(s.kind, locale)}
                           {s.specSection ? <> · {s.specSection}</> : null}
                         </div>
                         {s.blocksOrdering ? (
@@ -208,7 +209,7 @@ export default async function SubmittalsPage({
                         {days === undefined ? <span className="text-gray-400 font-sans">—</span> : `${days} d`}
                       </td>
                       <td className="px-4 py-3">
-                        <StatusPill label={submittalStatusLabel(s.status)} tone={statusTone(s.status)} />
+                        <StatusPill label={submittalStatusLabel(s.status, locale)} tone={statusTone(s.status)} />
                       </td>
                       <td className="px-4 py-3"></td>
                     </tr>

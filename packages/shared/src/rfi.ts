@@ -17,6 +17,7 @@
 //   - 'Did the engineer answer this in writing or just on a phone call?'
 
 import { z } from 'zod';
+import { translate, SEED_DICTIONARY, type Locale } from './i18n';
 
 export const RfiStatusSchema = z.enum([
   'DRAFT',
@@ -98,23 +99,12 @@ export type RfiPatch = z.infer<typeof RfiPatchSchema>;
 
 // ---- Helpers -------------------------------------------------------------
 
-export function rfiStatusLabel(s: RfiStatus): string {
-  switch (s) {
-    case 'DRAFT': return 'Draft';
-    case 'SENT': return 'Sent';
-    case 'ANSWERED': return 'Answered';
-    case 'CLOSED': return 'Closed';
-    case 'WITHDRAWN': return 'Withdrawn';
-  }
+export function rfiStatusLabel(s: RfiStatus, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `rfi.status.${s}`);
 }
 
-export function rfiPriorityLabel(p: RfiPriority): string {
-  switch (p) {
-    case 'LOW': return 'Low';
-    case 'MEDIUM': return 'Medium';
-    case 'HIGH': return 'High';
-    case 'CRITICAL': return 'Critical';
-  }
+export function rfiPriorityLabel(p: RfiPriority, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `rfi.priority.${p}`);
 }
 
 /** Days the RFI has been outstanding. Negative when answer arrived
