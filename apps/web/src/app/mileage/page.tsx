@@ -16,6 +16,7 @@ import {
   StatusPill,
   Tile,
 } from '../../components';
+import { getTranslator } from '../../lib/locale';
 import {
   computeMileageRollup,
   mileagePurposeLabel,
@@ -77,66 +78,67 @@ export default async function MileagePage({
   const csvHref = `${publicApiBaseUrl()}/api/mileage?format=csv${
     searchParams.employeeId ? '&employeeId=' + encodeURIComponent(searchParams.employeeId) : ''
   }`;
+  const t = getTranslator();
 
   return (
     <AppShell>
       <main className="mx-auto max-w-6xl">
         <PageHeader
-          title="Mileage log"
-          subtitle="Per-employee odometer / mileage entries. Personal-vehicle miles → IRS-rate reimbursement; company-vehicle miles back equipment depreciation + per-diem proof."
+          title={t('mileage.title')}
+          subtitle={t('mileage.subtitle')}
           actions={
             <span className="flex gap-2">
               <a
                 href={csvHref}
                 className="inline-flex items-center rounded-md border border-blue-700 px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-50"
               >
-                Download CSV
+                {t('mileage.csv')}
               </a>
               <LinkButton href="/mileage/new" variant="primary" size="md">
-                + Log mileage
+                {t('mileage.logMileage')}
               </LinkButton>
             </span>
           }
         />
 
         <section className="mb-4 grid gap-3 sm:grid-cols-4">
-          <Tile label="Entries" value={rollup.total} />
-          <Tile label="Total miles" value={rollup.totalBusinessMiles.toFixed(1)} />
-          <Tile label="Personal-vehicle miles" value={rollup.personalMiles.toFixed(1)} />
+          <Tile label={t('mileage.tile.entries')} value={rollup.total} />
+          <Tile label={t('mileage.tile.totalMiles')} value={rollup.totalBusinessMiles.toFixed(1)} />
+          <Tile label={t('mileage.tile.personalMiles')} value={rollup.personalMiles.toFixed(1)} />
           <Tile
-            label="Reimburse owed"
+            label={t('mileage.tile.owed')}
             value={<Money cents={rollup.outstandingCents} />}
             tone={rollup.outstandingCents > 0 ? 'warn' : 'success'}
           />
         </section>
 
         <section className="mb-4 flex flex-wrap items-center gap-2 rounded-md border border-gray-200 bg-white p-3">
-          <span className="text-xs uppercase tracking-wide text-gray-500">Reimbursed:</span>
+          <span className="text-xs uppercase tracking-wide text-gray-500">{t('mileage.filter.reimbursed')}</span>
           <Link
             href={buildHref({ reimbursed: undefined })}
             className={`rounded px-2 py-1 text-xs ${!searchParams.reimbursed ? 'bg-blue-700 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
           >
-            All
+            {t('mileage.filter.all')}
           </Link>
           <Link
             href={buildHref({ reimbursed: 'false' })}
             className={`rounded px-2 py-1 text-xs ${searchParams.reimbursed === 'false' ? 'bg-blue-700 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
           >
-            Owed
+            {t('mileage.filter.owed')}
           </Link>
           <Link
             href={buildHref({ reimbursed: 'true' })}
             className={`rounded px-2 py-1 text-xs ${searchParams.reimbursed === 'true' ? 'bg-blue-700 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
           >
-            Paid
+            {t('mileage.filter.paid')}
           </Link>
         </section>
 
         {entries.length === 0 ? (
           <EmptyState
-            title="No mileage entries in this filter"
-            body="Drivers should log every business trip. Personal vehicles get IRS-rate reimbursement; company vehicles still need miles for depreciation."
-            actions={[{ href: '/mileage/new', label: 'Log mileage', primary: true }]}
+            title={t('mileage.empty.title')}
+            body={t('mileage.empty.body')}
+            actions={[{ href: '/mileage/new', label: t('mileage.empty.action'), primary: true }]}
           />
         ) : (
           <DataTable
@@ -145,29 +147,29 @@ export default async function MileagePage({
             columns={[
               {
                 key: 'date',
-                header: 'Date',
+                header: t('mileage.col.date'),
                 cell: (e) => (
                   <Link href={`/mileage/${e.id}`} className="font-mono text-xs font-medium text-blue-700 hover:underline">
                     {e.tripDate}
                   </Link>
                 ),
               },
-              { key: 'employee', header: 'Employee', cell: (e) => <span className="text-sm text-gray-900">{e.employeeName}</span> },
+              { key: 'employee', header: t('mileage.col.employee'), cell: (e) => <span className="text-sm text-gray-900">{e.employeeName}</span> },
               {
                 key: 'vehicle',
-                header: 'Vehicle',
+                header: t('mileage.col.vehicle'),
                 cell: (e) => (
                   <span className="text-xs text-gray-700">
                     {e.vehicleDescription}
                     {e.isPersonalVehicle ? (
-                      <span className="ml-1 inline-block rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-800">Personal</span>
+                      <span className="ml-1 inline-block rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-800">{t('mileage.personal')}</span>
                     ) : null}
                   </span>
                 ),
               },
               {
                 key: 'purpose',
-                header: 'Purpose',
+                header: t('mileage.col.purpose'),
                 cell: (e) => (
                   <span className="text-xs text-gray-700">
                     {mileagePurposeLabel(e.purpose)}
@@ -175,10 +177,10 @@ export default async function MileagePage({
                   </span>
                 ),
               },
-              { key: 'miles', header: 'Miles', numeric: true, cell: (e) => <span className="font-mono text-sm">{e.businessMiles.toFixed(1)}</span> },
+              { key: 'miles', header: t('mileage.col.miles'), numeric: true, cell: (e) => <span className="font-mono text-sm">{e.businessMiles.toFixed(1)}</span> },
               {
                 key: 'reimburse',
-                header: 'Reimburse',
+                header: t('mileage.col.reimburse'),
                 numeric: true,
                 cell: (e) => {
                   const reimb = reimbursementCents(e);
@@ -187,11 +189,11 @@ export default async function MileagePage({
               },
               {
                 key: 'status',
-                header: 'Status',
+                header: t('mileage.col.status'),
                 cell: (e) => {
                   const reimb = reimbursementCents(e);
-                  if (e.reimbursed) return <StatusPill label="Paid" tone="success" />;
-                  if (reimb > 0) return <StatusPill label="Owed" tone="warn" />;
+                  if (e.reimbursed) return <StatusPill label={t('mileage.status.paid')} tone="success" />;
+                  if (reimb > 0) return <StatusPill label={t('mileage.status.owed')} tone="warn" />;
                   return <span className="text-xs text-gray-400">—</span>;
                 },
               },
