@@ -9,6 +9,7 @@ import Link from 'next/link';
 
 import { AppShell, Card, EmptyState, LinkButton, PageHeader, StatusPill } from '../../../components';
 import { getCurrentUser } from '../../../lib/auth';
+import { getTranslator } from '../../../lib/locale';
 import type { DailyReport, Dispatch, Rfi, TimeCard } from '@yge/shared';
 
 function apiBaseUrl(): string {
@@ -75,32 +76,35 @@ export default async function MyTodayPage() {
   );
 
   // My time card for this week.
-  const myTimeCard = timeCards.find((t) => t.weekStarting === week && t.employeeId.toLowerCase() === myEmail.toLowerCase());
+  const myTimeCard = timeCards.find((tc) => tc.weekStarting === week && tc.employeeId.toLowerCase() === myEmail.toLowerCase());
+  const t = getTranslator();
 
   return (
     <AppShell>
       <main className="mx-auto max-w-3xl">
         <PageHeader
-          title={`Today, ${user?.name?.split(' ')[0] ?? 'you'}`}
-          subtitle="Your stuff, filtered out of the team-wide dashboard."
+          title={t('today.title', { name: user?.name?.split(' ')[0] ?? t('today.fallbackName') })}
+          subtitle={t('today.subtitle')}
         />
 
         <div className="space-y-4">
           <Card>
             <div className="mb-2 flex items-baseline justify-between">
-              <h2 className="text-sm font-semibold text-gray-900">Dispatches I&apos;m on today</h2>
+              <h2 className="text-sm font-semibold text-gray-900">{t('today.h.dispatches')}</h2>
               <Link href="/dispatch" className="text-xs text-blue-700 hover:underline">
-                see all dispatches
+                {t('today.dispatches.seeAll')}
               </Link>
             </div>
             {myDispatchesToday.length === 0 ? (
-              <p className="text-sm text-gray-500">Nothing scheduled. If you should be on a dispatch today, tell Brook or Ryan.</p>
+              <p className="text-sm text-gray-500">{t('today.dispatches.empty')}</p>
             ) : (
               <ul className="space-y-2 text-sm">
                 {myDispatchesToday.map((d) => (
                   <li key={d.id} className="flex items-center justify-between gap-3">
                     <Link href={`/dispatch/${d.id}`} className="text-blue-700 hover:underline">
-                      {d.foremanName === myName ? `Leading: ${d.scopeOfWork.slice(0, 50)}` : `Crew on ${d.foremanName}'s job`}
+                      {d.foremanName === myName
+                        ? t('today.dispatches.leading', { scope: d.scopeOfWork.slice(0, 50) })
+                        : t('today.dispatches.crewOn', { foreman: d.foremanName })}
                     </Link>
                     <StatusPill label={d.status} tone={d.status === 'POSTED' ? 'info' : 'neutral'} size="sm" />
                   </li>
@@ -111,19 +115,19 @@ export default async function MyTodayPage() {
 
           <Card>
             <div className="mb-2 flex items-baseline justify-between">
-              <h2 className="text-sm font-semibold text-gray-900">Daily reports owed</h2>
+              <h2 className="text-sm font-semibold text-gray-900">{t('today.h.dailyReports')}</h2>
               <LinkButton href="/daily-reports/new" variant="primary" size="sm">
-                + New report
+                {t('today.dailyReports.new')}
               </LinkButton>
             </div>
             {myDailyReports.length === 0 ? (
-              <p className="text-sm text-gray-500">If you led a crew today, you owe a daily report. Click &ldquo;+ New report&rdquo; above.</p>
+              <p className="text-sm text-gray-500">{t('today.dailyReports.empty')}</p>
             ) : (
               <ul className="space-y-2 text-sm">
                 {myDailyReports.map((r) => (
                   <li key={r.id}>
                     <Link href={`/daily-reports/${r.id}`} className="text-blue-700 hover:underline">
-                      {r.date} report
+                      {t('today.dailyReports.label', { date: r.date })}
                     </Link>
                   </li>
                 ))}
@@ -133,19 +137,19 @@ export default async function MyTodayPage() {
 
           <Card>
             <div className="mb-2 flex items-baseline justify-between">
-              <h2 className="text-sm font-semibold text-gray-900">My open RFIs</h2>
+              <h2 className="text-sm font-semibold text-gray-900">{t('today.h.rfis')}</h2>
               <Link href="/rfis" className="text-xs text-blue-700 hover:underline">
-                see all RFIs
+                {t('today.rfis.seeAll')}
               </Link>
             </div>
             {myOpenRfis.length === 0 ? (
-              <p className="text-sm text-gray-500">No open RFIs you authored.</p>
+              <p className="text-sm text-gray-500">{t('today.rfis.empty')}</p>
             ) : (
               <ul className="space-y-2 text-sm">
                 {myOpenRfis.map((r) => (
                   <li key={r.id} className="flex items-center justify-between gap-3">
                     <Link href={`/rfis/${r.id}`} className="text-blue-700 hover:underline">
-                      RFI {r.rfiNumber}: {r.subject}
+                      {t('today.rfis.label', { number: r.rfiNumber, subject: r.subject })}
                     </Link>
                     <StatusPill label={r.status} tone={r.status === 'SENT' ? 'warn' : 'neutral'} size="sm" />
                   </li>
@@ -156,20 +160,20 @@ export default async function MyTodayPage() {
 
           <Card>
             <div className="mb-2 flex items-baseline justify-between">
-              <h2 className="text-sm font-semibold text-gray-900">My time card this week</h2>
-              <span className="text-xs text-gray-500">Week of {week}</span>
+              <h2 className="text-sm font-semibold text-gray-900">{t('today.h.timeCard')}</h2>
+              <span className="text-xs text-gray-500">{t('today.timeCard.weekOf', { date: week })}</span>
             </div>
             {!myTimeCard ? (
               <EmptyState
-                title="No time card yet"
-                body="Your weekly hours card hasn't been started. Submit by Friday to make payroll."
-                actions={[{ href: '/time-cards/new', label: 'Start time card', primary: true }]}
+                title={t('today.timeCard.empty.title')}
+                body={t('today.timeCard.empty.body')}
+                actions={[{ href: '/time-cards/new', label: t('today.timeCard.empty.action'), primary: true }]}
                 compact
               />
             ) : (
               <div className="text-sm">
                 <Link href={`/time-cards/${myTimeCard.id}`} className="text-blue-700 hover:underline">
-                  {myTimeCard.entries.length} entries · status {myTimeCard.status}
+                  {t('today.timeCard.summary', { entries: myTimeCard.entries.length, status: myTimeCard.status })}
                 </Link>
               </div>
             )}
