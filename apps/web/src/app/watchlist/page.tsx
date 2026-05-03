@@ -14,6 +14,7 @@ import {
   StatusPill,
   Tile,
 } from '../../components';
+import { getTranslator } from '../../lib/locale';
 import {
   bucketLabel,
   computeWatchlistRollup,
@@ -102,34 +103,35 @@ export default async function WatchlistPage({
     const q = params.toString();
     return q ? `/watchlist?${q}` : '/watchlist';
   }
+  const t = getTranslator();
 
   return (
     <AppShell>
       <main className="mx-auto max-w-6xl">
         <PageHeader
-          title="Cert watchlist"
-          subtitle="Every employee certification + subcontractor COI, ranked by expiration. Don't put a guy with a lapsed CDL on a road crew, and don't schedule a sub whose COI just expired."
+          title={t('watchlist.title')}
+          subtitle={t('watchlist.subtitle')}
         />
 
         <section className="mb-4 grid gap-3 sm:grid-cols-5">
-          <Tile label="Expired" value={rollup.expired} tone={rollup.expired > 0 ? 'danger' : 'success'} />
-          <Tile label="Within 30 days" value={rollup.within30} tone={rollup.within30 > 0 ? 'warn' : 'success'} />
-          <Tile label="Within 60 days" value={rollup.within60} />
-          <Tile label="Within 90 days" value={rollup.within90} />
+          <Tile label={t('watchlist.tile.expired')} value={rollup.expired} tone={rollup.expired > 0 ? 'danger' : 'success'} />
+          <Tile label={t('watchlist.tile.within30')} value={rollup.within30} tone={rollup.within30 > 0 ? 'warn' : 'success'} />
+          <Tile label={t('watchlist.tile.within60')} value={rollup.within60} />
+          <Tile label={t('watchlist.tile.within90')} value={rollup.within90} />
           <Tile
-            label="People needing action"
+            label={t('watchlist.tile.peopleNeedAction')}
             value={rollup.immediateActionSubjects}
             tone={rollup.immediateActionSubjects > 0 ? 'warn' : 'success'}
           />
         </section>
 
         <section className="mb-4 flex flex-wrap items-center gap-2 rounded-md border border-gray-200 bg-white p-3">
-          <span className="text-xs uppercase tracking-wide text-gray-500">Kind:</span>
-          <Chip href={buildHref({ kind: undefined })} active={!searchParams.kind} label="All" />
-          <Chip href={buildHref({ kind: 'EMPLOYEE_CERT' })} active={searchParams.kind === 'EMPLOYEE_CERT'} label="Employee certs" />
-          <Chip href={buildHref({ kind: 'SUB_COI' })} active={searchParams.kind === 'SUB_COI'} label="Sub COIs" />
-          <span className="ml-4 text-xs uppercase tracking-wide text-gray-500">Bucket:</span>
-          <Chip href={buildHref({ bucket: undefined })} active={!searchParams.bucket} label="All" />
+          <span className="text-xs uppercase tracking-wide text-gray-500">{t('watchlist.filter.kind')}</span>
+          <Chip href={buildHref({ kind: undefined })} active={!searchParams.kind} label={t('watchlist.filter.all')} />
+          <Chip href={buildHref({ kind: 'EMPLOYEE_CERT' })} active={searchParams.kind === 'EMPLOYEE_CERT'} label={t('watchlist.filter.employeeCerts')} />
+          <Chip href={buildHref({ kind: 'SUB_COI' })} active={searchParams.kind === 'SUB_COI'} label={t('watchlist.filter.subCois')} />
+          <span className="ml-4 text-xs uppercase tracking-wide text-gray-500">{t('watchlist.filter.bucket')}</span>
+          <Chip href={buildHref({ bucket: undefined })} active={!searchParams.bucket} label={t('watchlist.filter.all')} />
           {BUCKETS.map((b) => (
             <Chip key={b} href={buildHref({ bucket: b })} active={searchParams.bucket === b} label={bucketLabel(b)} />
           ))}
@@ -137,8 +139,8 @@ export default async function WatchlistPage({
 
         {visible.length === 0 ? (
           <EmptyState
-            title="Nothing in this filter"
-            body="Either you're current or you haven't recorded expiration dates yet."
+            title={t('watchlist.empty.title')}
+            body={t('watchlist.empty.body')}
           />
         ) : (
           <DataTable
@@ -147,17 +149,17 @@ export default async function WatchlistPage({
             columns={[
               {
                 key: 'subject',
-                header: 'Subject',
+                header: t('watchlist.col.subject'),
                 cell: (r) => (
                   <div className="text-sm">
                     <div className="font-medium text-gray-900">{r.subjectName}</div>
-                    <div className="text-[10px] text-gray-500">{r.kind === 'EMPLOYEE_CERT' ? 'Employee' : 'Subcontractor'}</div>
+                    <div className="text-[10px] text-gray-500">{r.kind === 'EMPLOYEE_CERT' ? t('watchlist.subjectKind.employee') : t('watchlist.subjectKind.subcontractor')}</div>
                   </div>
                 ),
               },
               {
                 key: 'item',
-                header: 'Item',
+                header: t('watchlist.col.item'),
                 cell: (r) => (
                   <div className="text-xs text-gray-700">
                     {r.itemLabel}
@@ -167,12 +169,12 @@ export default async function WatchlistPage({
               },
               {
                 key: 'expires',
-                header: 'Expires',
+                header: t('watchlist.col.expires'),
                 cell: (r) => <span className="font-mono text-xs text-gray-700">{r.expiresOn}</span>,
               },
               {
                 key: 'days',
-                header: 'Days',
+                header: t('watchlist.col.days'),
                 numeric: true,
                 cell: (r) => (
                   <span
@@ -190,7 +192,7 @@ export default async function WatchlistPage({
               },
               {
                 key: 'status',
-                header: 'Status',
+                header: t('watchlist.col.status'),
                 cell: (r) => <StatusPill label={bucketLabel(r.bucket)} tone={bucketTone(r.bucket)} />,
               },
               {
@@ -198,7 +200,7 @@ export default async function WatchlistPage({
                 header: '',
                 cell: (r) => (
                   <Link href={r.href} className="text-xs text-blue-700 hover:underline">
-                    Open
+                    {t('watchlist.open')}
                   </Link>
                 ),
               },
