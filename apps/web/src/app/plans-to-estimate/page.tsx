@@ -19,6 +19,7 @@ import { useSearchParams } from 'next/navigation';
 import type { Job, PtoEOutput } from '@yge/shared';
 import { ApiError, getJson, postJson } from '@/lib/api';
 import { DraftView } from '@/components/draft-view';
+import { useTranslator } from '@/lib/use-translator';
 
 interface ApiResult {
   jobId: string;
@@ -31,20 +32,10 @@ interface ApiResult {
   draft: PtoEOutput;
 }
 
-const SAMPLE_PLACEHOLDER = `Paste the full RFP, plan-set notes, or bid schedule here.
-
-Example sources:
-  • Bid schedule from Section 00 of a public works RFP
-  • Specification text exported from Bluebeam / Adobe
-  • Engineer's estimate of probable cost
-  • Plan-set callouts pasted in (one item per line works)
-
-The AI will read it and draft a bid item list with quantities, units, and
-flagged uncertainties. You review and refine before submitting.`;
-
 export default function PlansToEstimatePage() {
   const searchParams = useSearchParams();
   const preselectedJobId = searchParams.get('jobId') ?? '';
+  const t = useTranslator();
 
   const [documentText, setDocumentText] = useState('');
   const [sessionNotes, setSessionNotes] = useState('');
@@ -88,13 +79,11 @@ export default function PlansToEstimatePage() {
     setResult(null);
     setElapsedMs(null);
     if (!selectedJobId) {
-      setError(
-        'Pick a job first. Create one on the Jobs page if you don\u2019t have one yet.',
-      );
+      setError(t('pte.errors.pickJob'));
       return;
     }
     if (documentText.trim().length < 20) {
-      setError('Document text is too short — paste at least a couple of paragraphs.');
+      setError(t('pte.errors.tooShort'));
       return;
     }
 
@@ -131,36 +120,33 @@ export default function PlansToEstimatePage() {
           </Link>
           <div className="flex items-center gap-3">
             <Link href="/plans-to-estimate/multipass" className="text-sm text-yge-blue-500 hover:underline">
-              Multi-pass mode &rarr;
+              {t('pte.multipassLink')}
             </Link>
             <Link href="/drafts" className="text-sm text-yge-blue-500 hover:underline">
-              View saved drafts &rarr;
+              {t('pte.draftsLink')}
             </Link>
           </div>
         </div>
-        <h1 className="mt-2 text-3xl font-bold text-yge-blue-500">Plans-to-Estimate</h1>
-        <p className="mt-2 text-gray-700">
-          Paste an RFP, spec, or plan-set excerpt below. The AI drafts a bid item list — you
-          review, adjust, and use it as the starting point for the real estimate.
-        </p>
+        <h1 className="mt-2 text-3xl font-bold text-yge-blue-500">{t('pte.title')}</h1>
+        <p className="mt-2 text-gray-700">{t('pte.subtitle')}</p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="space-y-4">
           <div>
             <label htmlFor="job" className="block text-sm font-semibold text-gray-700">
-              Job
+              {t('pte.label.job')}
             </label>
             {jobs === null ? (
-              <p className="mt-1 text-xs text-gray-500">Loading jobs&hellip;</p>
+              <p className="mt-1 text-xs text-gray-500">{t('pte.loadingJobs')}</p>
             ) : jobs.length === 0 ? (
               <p className="mt-1 text-sm text-gray-700">
-                No jobs yet.{' '}
+                {t('pte.noJobsPrefix')}
                 <Link
                   href="/jobs/new"
                   className="text-yge-blue-500 hover:underline"
                 >
-                  Create one first &rarr;
+                  {t('pte.noJobsLink')}
                 </Link>
               </p>
             ) : (
@@ -180,49 +166,49 @@ export default function PlansToEstimatePage() {
                   ))}
                 </select>
                 <p className="mt-1 text-xs text-gray-500">
-                  Drafts are saved against the selected job.{' '}
+                  {t('pte.driftHint')}
                   <Link
                     href="/jobs/new"
                     className="text-yge-blue-500 hover:underline"
                   >
-                    + new job
+                    {t('pte.newJobLink')}
                   </Link>
                 </p>
               </>
             )}
             {jobsError && (
               <p className="mt-1 text-xs text-red-700">
-                Couldn&rsquo;t load jobs: {jobsError}
+                {t('pte.jobsError', { message: jobsError })}
               </p>
             )}
           </div>
 
           <div>
             <label htmlFor="doc" className="block text-sm font-semibold text-gray-700">
-              Document text
+              {t('pte.label.documentText')}
             </label>
             <textarea
               id="doc"
               value={documentText}
               onChange={(e) => setDocumentText(e.target.value)}
-              placeholder={SAMPLE_PLACEHOLDER}
+              placeholder={t('pte.placeholder')}
               className="mt-1 h-96 w-full rounded border border-gray-300 p-3 font-mono text-xs"
               disabled={loading}
             />
             <p className="mt-1 text-xs text-gray-500">
-              {documentText.length.toLocaleString()} characters
+              {t('pte.docCharCount', { count: documentText.length.toLocaleString() })}
             </p>
           </div>
 
           <div>
             <label htmlFor="notes" className="block text-sm font-semibold text-gray-700">
-              Notes for the estimator (optional)
+              {t('pte.label.notes')}
             </label>
             <textarea
               id="notes"
               value={sessionNotes}
               onChange={(e) => setSessionNotes(e.target.value)}
-              placeholder="e.g. Mandatory site walk Tuesday 4/28; assume CAL FIRE prevailing wage; hauling self-performed."
+              placeholder={t('pte.notesPlaceholder')}
               className="mt-1 h-24 w-full rounded border border-gray-300 p-3 text-sm"
               disabled={loading}
             />
@@ -235,7 +221,7 @@ export default function PlansToEstimatePage() {
             }
             className="rounded bg-yge-blue-500 px-6 py-3 text-white hover:bg-yge-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {loading ? 'Generating draft… (30-90s)' : 'Generate Draft Estimate'}
+            {loading ? t('pte.btn.generating') : t('pte.btn.generate')}
           </button>
 
           {error && <Alert tone="danger">{error}</Alert>}
@@ -244,25 +230,24 @@ export default function PlansToEstimatePage() {
         <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
           {!result && !loading && (
             <p className="text-sm text-gray-500">
-              The draft estimate appears here once you click Generate.
+              {t('pte.placeholder.right')}
             </p>
           )}
           {loading && (
             <p className="text-sm text-gray-700">
-              Reading the document and drafting the estimate. This typically takes 30-90 seconds for
-              a typical RFP.
+              {t('pte.loadingRight')}
             </p>
           )}
           {result && (
             <>
               {result.savedId && (
                 <p className="mb-3 text-xs text-gray-500">
-                  Saved to history.{' '}
+                  {t('pte.savedToHistory')}
                   <Link
                     href={`/drafts/${result.savedId}`}
                     className="text-yge-blue-500 hover:underline"
                   >
-                    Open this draft directly &rarr;
+                    {t('pte.openDraftLink')}
                   </Link>
                 </p>
               )}
