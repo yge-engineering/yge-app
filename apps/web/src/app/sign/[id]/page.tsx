@@ -20,6 +20,7 @@ import {
 import { SignFormOtp } from '@/components/sign-form-otp';
 import { SignFormDrawn } from '@/components/sign-form-drawn';
 import { SignatureFlattenButton } from '@/components/signature-flatten-button';
+import { getTranslator, type Translator } from '../../../lib/locale';
 import {
   isLegallyBinding,
   type Signature,
@@ -61,6 +62,7 @@ export default async function SignPage({
 }: {
   params: { id: string };
 }) {
+  const t = getTranslator();
   const signature = await fetchSignature(params.id);
   if (!signature) notFound();
 
@@ -71,24 +73,24 @@ export default async function SignPage({
       <main className="mx-auto max-w-3xl p-8">
         <div className="mb-6">
           <Link href="/signatures" className="text-sm text-yge-blue-500 hover:underline">
-            &larr; All signatures
+            {t('signPg.back')}
           </Link>
         </div>
 
         <PageHeader
           title={signature.document.displayName}
-          subtitle={`${signature.document.documentType} · signer ${signature.signer.name} (${signature.signer.email})`}
+          subtitle={t('signPg.subtitle', { docType: signature.document.documentType, name: signature.signer.name, email: signature.signer.email })}
         />
 
         {alreadySigned ? (
-          <AlreadyDecided signature={signature} />
+          <AlreadyDecided signature={signature} t={t} />
         ) : (
           <>
-            <DocumentSummary signature={signature} />
+            <DocumentSummary signature={signature} t={t} />
 
             <section className="mt-6 rounded-md border border-gray-200 bg-white p-6 shadow-sm">
               <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-700">
-                Disclosure
+                {t('signPg.disclosureHeader')}
               </h2>
               <pre className="whitespace-pre-wrap rounded bg-gray-50 p-3 text-xs leading-relaxed text-gray-700">
                 {DISCLOSURE_TEXT}
@@ -117,31 +119,27 @@ export default async function SignPage({
         )}
 
         <p className="mt-8 text-xs text-gray-500">
-          Phase-1 signing methods: TYPED with email-OTP attribution
-          (default for remote signers) and DRAWN with IN_PERSON attribution
-          (for the bid binder workflow). The signature row's <code>method</code>
-          decides which form renders. DRAWN images flatten into the
-          underlying PDF in the finalize step.
+          {t('signPg.phase1Note')}
         </p>
       </main>
     </AppShell>
   );
 }
 
-function DocumentSummary({ signature }: { signature: Signature }) {
+function DocumentSummary({ signature, t }: { signature: Signature; t: Translator }) {
   return (
     <section className="mt-4 rounded-md border border-gray-200 bg-white p-4 shadow-sm">
       <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-        Document
+        {t('signPg.documentHeader')}
       </h2>
       <dl className="grid grid-cols-2 gap-2 text-sm">
-        <dt className="text-gray-500">Display name</dt>
+        <dt className="text-gray-500">{t('signPg.lblDisplayName')}</dt>
         <dd className="font-medium text-gray-900">{signature.document.displayName}</dd>
-        <dt className="text-gray-500">Type</dt>
+        <dt className="text-gray-500">{t('signPg.lblType')}</dt>
         <dd className="text-gray-900">{signature.document.documentType}</dd>
-        <dt className="text-gray-500">Bytes</dt>
+        <dt className="text-gray-500">{t('signPg.lblBytes')}</dt>
         <dd className="text-gray-900">{signature.document.byteLength.toLocaleString()}</dd>
-        <dt className="text-gray-500">SHA-256</dt>
+        <dt className="text-gray-500">{t('signPg.lblSha256')}</dt>
         <dd className="font-mono text-xs text-gray-700 break-all">
           {signature.document.sha256}
         </dd>
@@ -150,28 +148,27 @@ function DocumentSummary({ signature }: { signature: Signature }) {
   );
 }
 
-function AlreadyDecided({ signature }: { signature: Signature }) {
+function AlreadyDecided({ signature, t }: { signature: Signature; t: Translator }) {
   const apiBase = publicApiBaseUrl();
   if (isLegallyBinding(signature)) {
     return (
       <>
-        <Alert tone="success" className="mt-4" title="Signed and binding">
-          This document was signed{' '}
-          {signature.signedAt && <>at <code className="font-mono">{signature.signedAt}</code> </>}
-          by {signature.signer.name}. The signature certificate is archived
-          and the flattened PDF hash is recorded.
+        <Alert tone="success" className="mt-4" title={t('signPg.boundTitle')}>
+          {t('signPg.boundIntro')}{' '}
+          {signature.signedAt && <>{t('signPg.boundAtFragment')} <code className="font-mono">{signature.signedAt}</code> </>}
+          {t('signPg.boundBy', { name: signature.signer.name })}
         </Alert>
         {signature.flattenedReference && (
           <section className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
             <p className="text-sm text-emerald-900">
-              Flattened PDF available · sha256{' '}
+              {t('signPg.flatAvailable')}{' '}
               <code className="font-mono text-xs">{signature.flattenedSha256?.slice(0, 16)}…</code>
             </p>
             <a
               href={`${apiBase}/api/signatures/${signature.id}/flattened`}
               className="mt-2 inline-block text-sm font-semibold text-emerald-800 underline"
             >
-              Download signed PDF →
+              {t('signPg.downloadSigned')}
             </a>
           </section>
         )}
@@ -180,11 +177,9 @@ function AlreadyDecided({ signature }: { signature: Signature }) {
   }
   if (signature.status === 'SIGNED' && signature.signatureImage && !signature.flattenedSha256) {
     return (
-      <Alert tone="info" className="mt-4" title="Signed — flatten next">
+      <Alert tone="info" className="mt-4" title={t('signPg.flattenTitle')}>
         <p className="mb-3">
-          The signature image and audit context are recorded. Click below to
-          embed the captured signature into the source PDF, write the
-          flattened bytes, and lock the certificate.
+          {t('signPg.flattenBody')}
         </p>
         <SignatureFlattenButton apiBaseUrl={apiBase} signatureId={signature.id} />
       </Alert>
@@ -192,14 +187,14 @@ function AlreadyDecided({ signature }: { signature: Signature }) {
   }
   if (signature.status === 'VOIDED') {
     return (
-      <Alert tone="danger" className="mt-4" title="Voided">
-        {signature.voidedReason ?? 'This signature was voided.'}
+      <Alert tone="danger" className="mt-4" title={t('signPg.voidedTitle')}>
+        {signature.voidedReason ?? t('signPg.voidedDefault')}
       </Alert>
     );
   }
   return (
-    <Alert tone="warn" className="mt-4" title={`Signature is ${signature.status}`}>
-      No further action available from this surface.
+    <Alert tone="warn" className="mt-4" title={t('signPg.otherTitle', { status: signature.status })}>
+      {t('signPg.otherBody')}
     </Alert>
   );
 }
