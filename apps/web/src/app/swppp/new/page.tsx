@@ -4,20 +4,21 @@ import Link from 'next/link';
 
 import { AppShell } from '../../../components/app-shell';
 import { SwpppInspectionEditor } from '../../../components/swppp-inspection-editor';
+import { getTranslator } from '../../../lib/locale';
 
 export default function NewSwpppInspectionPage() {
+  const t = getTranslator();
   return (
     <AppShell>
     <main className="mx-auto max-w-3xl p-8">
       <div className="mb-6">
         <Link href="/swppp" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; SWPPP Inspections
+          {t('newSwpppPg.back')}
         </Link>
       </div>
-      <h1 className="text-3xl font-bold text-yge-blue-500">New inspection</h1>
+      <h1 className="text-3xl font-bold text-yge-blue-500">{t('newSwpppPg.title')}</h1>
       <p className="mt-2 text-gray-700">
-        Log today's SWPPP / BMP inspection. List each BMP checked, status, and
-        any corrective action.
+        {t('newSwpppPg.subtitle')}
       </p>
       <div className="mt-6">
         <SwpppInspectionEditor mode="create" />

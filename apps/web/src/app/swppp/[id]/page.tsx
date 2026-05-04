@@ -5,6 +5,7 @@ import { AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { SwpppInspection } from '@yge/shared';
 import { SwpppInspectionEditor } from '../../../components/swppp-inspection-editor';
+import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
   return (
@@ -23,6 +24,7 @@ export default async function SwpppInspectionDetailPage({
 }: {
   params: { id: string };
 }) {
+  const t = getTranslator();
   const inspection = await fetchInspection(params.id);
   if (!inspection) notFound();
 
@@ -30,14 +32,14 @@ export default async function SwpppInspectionDetailPage({
     <main className="mx-auto max-w-3xl p-8">
       <div className="mb-6">
         <Link href="/swppp" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; SWPPP Inspections
+          {t('newSwpppPg.back')}
         </Link>
       </div>
       <h1 className="text-3xl font-bold text-yge-blue-500">
-        Inspection {inspection.inspectedOn}
+        {t('swpppPg.detailTitle', { date: inspection.inspectedOn })}
       </h1>
       <p className="mt-1 text-sm text-gray-600">{inspection.jobId}</p>
-      <p className="mt-1 text-xs text-gray-500">ID: {inspection.id}</p>
+      <p className="mt-1 text-xs text-gray-500">{t('photoPg.idLabel', { id: inspection.id })}</p>
       <div className="mt-6">
         <SwpppInspectionEditor mode="edit" inspection={inspection} />
       </div>
