@@ -4,6 +4,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 import {
   customerKindLabel,
   type Customer,
@@ -84,6 +85,7 @@ export function CustomerEditor({
   customer?: Customer;
 }) {
   const router = useRouter();
+  const t = useTranslator();
   const [form, setForm] = useState<FormState>(defaults(customer));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -154,8 +156,8 @@ export function CustomerEditor({
         </div>
       )}
 
-      <Section title="Identity">
-        <Field label="Legal name" required>
+      <Section title={t('customerEditor.secIdentity')}>
+        <Field label={t('customerEditor.lblLegalName')} required>
           <input
             className={inputCls}
             value={form.legalName}
@@ -163,14 +165,14 @@ export function CustomerEditor({
             required
           />
         </Field>
-        <Field label="DBA / display name">
+        <Field label={t('customerEditor.lblDba')}>
           <input
             className={inputCls}
             value={form.dbaName}
             onChange={(e) => setField('dbaName', e.target.value)}
           />
         </Field>
-        <Field label="Kind">
+        <Field label={t('customerEditor.lblKind')}>
           <select
             className={inputCls}
             value={form.kind}
@@ -183,39 +185,39 @@ export function CustomerEditor({
             ))}
           </select>
         </Field>
-        <Field label="Payment terms">
+        <Field label={t('customerEditor.lblPaymentTerms')}>
           <input
             className={inputCls}
             value={form.paymentTerms}
             onChange={(e) => setField('paymentTerms', e.target.value)}
-            placeholder="NET_30"
+            placeholder={t('customerEditor.phPaymentTerms')}
           />
         </Field>
       </Section>
 
-      <Section title="Contact">
-        <Field label="Contact name">
+      <Section title={t('customerEditor.secContact')}>
+        <Field label={t('customerEditor.lblContactName')}>
           <input
             className={inputCls}
             value={form.contactName}
             onChange={(e) => setField('contactName', e.target.value)}
           />
         </Field>
-        <Field label="Title">
+        <Field label={t('customerEditor.lblContactTitle')}>
           <input
             className={inputCls}
             value={form.contactTitle}
             onChange={(e) => setField('contactTitle', e.target.value)}
           />
         </Field>
-        <Field label="Phone">
+        <Field label={t('customerEditor.lblPhone')}>
           <input
             className={inputCls}
             value={form.phone}
             onChange={(e) => setField('phone', e.target.value)}
           />
         </Field>
-        <Field label="Email">
+        <Field label={t('customerEditor.lblEmail')}>
           <input
             className={inputCls}
             value={form.email}
@@ -224,36 +226,36 @@ export function CustomerEditor({
         </Field>
       </Section>
 
-      <Section title="Billing address">
-        <Field label="Address line 1" full>
+      <Section title={t('customerEditor.secBilling')}>
+        <Field label={t('customerEditor.lblAddrLine1')} full>
           <input
             className={inputCls}
             value={form.billingAddressLine}
             onChange={(e) => setField('billingAddressLine', e.target.value)}
           />
         </Field>
-        <Field label="Address line 2" full>
+        <Field label={t('customerEditor.lblAddrLine2')} full>
           <input
             className={inputCls}
             value={form.billingAddressLine2}
             onChange={(e) => setField('billingAddressLine2', e.target.value)}
           />
         </Field>
-        <Field label="City">
+        <Field label={t('customerEditor.lblCity')}>
           <input
             className={inputCls}
             value={form.city}
             onChange={(e) => setField('city', e.target.value)}
           />
         </Field>
-        <Field label="State">
+        <Field label={t('customerEditor.lblState')}>
           <input
             className={inputCls}
             value={form.state}
             onChange={(e) => setField('state', e.target.value)}
           />
         </Field>
-        <Field label="ZIP">
+        <Field label={t('customerEditor.lblZip')}>
           <input
             className={inputCls}
             value={form.zip}
@@ -262,30 +264,30 @@ export function CustomerEditor({
         </Field>
       </Section>
 
-      <Section title="Accounting">
-        <Field label="Our account # (their side)">
+      <Section title={t('customerEditor.secAccounting')}>
+        <Field label={t('customerEditor.lblOurAcct')}>
           <input
             className={inputCls}
             value={form.ourAccountNumber}
             onChange={(e) => setField('ourAccountNumber', e.target.value)}
           />
         </Field>
-        <Field label="Default revenue GL">
+        <Field label={t('customerEditor.lblDefaultRev')}>
           <input
             className={inputCls}
             value={form.defaultRevenueAccount}
             onChange={(e) => setField('defaultRevenueAccount', e.target.value)}
-            placeholder="40100"
+            placeholder={t('customerEditor.phDefaultRev')}
           />
         </Field>
-        <Field label="Tax exempt">
+        <Field label={t('customerEditor.lblTaxExempt')}>
           <Checkbox
             checked={form.taxExempt}
             onChange={(b) => setField('taxExempt', b)}
-            label="Exempt from sales tax"
+            label={t('customerEditor.cbTaxExempt')}
           />
         </Field>
-        <Field label="Tax exempt reason">
+        <Field label={t('customerEditor.lblTaxExemptReason')}>
           <input
             className={inputCls}
             value={form.taxExemptReason}
@@ -294,15 +296,15 @@ export function CustomerEditor({
         </Field>
       </Section>
 
-      <Section title="Status">
-        <Field label="On hold">
+      <Section title={t('customerEditor.secStatus')}>
+        <Field label={t('customerEditor.lblOnHold')}>
           <Checkbox
             checked={form.onHold}
             onChange={(b) => setField('onHold', b)}
-            label="Block invoices to this customer"
+            label={t('customerEditor.cbOnHold')}
           />
         </Field>
-        <Field label="On-hold reason">
+        <Field label={t('customerEditor.lblOnHoldReason')}>
           <input
             className={inputCls}
             value={form.onHoldReason}
@@ -311,8 +313,8 @@ export function CustomerEditor({
         </Field>
       </Section>
 
-      <Section title="Notes">
-        <Field label="Notes" full>
+      <Section title={t('customerEditor.secNotes')}>
+        <Field label={t('customerEditor.lblNotes')} full>
           <textarea
             className={`${inputCls} min-h-[100px]`}
             value={form.notes}
@@ -327,7 +329,7 @@ export function CustomerEditor({
           disabled={saving}
           className="rounded bg-yge-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-yge-blue-700 disabled:opacity-50"
         >
-          {saving ? 'Saving…' : mode === 'create' ? 'Create customer' : 'Save changes'}
+          {saving ? t('customerEditor.busy') : mode === 'create' ? t('customerEditor.create') : t('customerEditor.save')}
         </button>
       </div>
     </form>
