@@ -5,6 +5,7 @@ import { AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { Incident } from '@yge/shared';
 import { IncidentEditor } from '../../../components/incident-editor';
+import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
   return (
@@ -23,6 +24,7 @@ export default async function IncidentDetailPage({
 }: {
   params: { id: string };
 }) {
+  const t = getTranslator();
   const incident = await fetchIncident(params.id);
   if (!incident) notFound();
 
@@ -30,23 +32,23 @@ export default async function IncidentDetailPage({
     <main className="mx-auto max-w-3xl p-8">
       <div className="mb-6 flex items-center justify-between">
         <Link href="/incidents" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; OSHA 300 Log
+          {t('newIncidentPg.back')}
         </Link>
         <Link
           href={`/incidents/${incident.id}/301`}
           className="rounded bg-yge-blue-500 px-3 py-1 text-sm font-medium text-white hover:bg-yge-blue-700"
         >
-          Print Form 301
+          {t('incidentPg.print301')}
         </Link>
       </div>
       <h1 className="text-3xl font-bold text-yge-blue-500">
-        Case {incident.caseNumber}
+        {t('incidentPg.caseTitle', { num: incident.caseNumber })}
       </h1>
       <p className="mt-1 text-sm text-gray-600">
-        {incident.privacyCase ? 'Privacy Case' : incident.employeeName} ·{' '}
+        {incident.privacyCase ? t('incidentPg.privacyCase') : incident.employeeName} ·{' '}
         {incident.incidentDate}
       </p>
-      <p className="mt-1 text-xs text-gray-500">ID: {incident.id}</p>
+      <p className="mt-1 text-xs text-gray-500">{t('photoPg.idLabel', { id: incident.id })}</p>
       <div className="mt-6">
         <IncidentEditor mode="edit" incident={incident} />
       </div>
