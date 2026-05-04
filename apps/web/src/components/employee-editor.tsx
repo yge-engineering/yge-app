@@ -5,6 +5,7 @@
 // estimator change the foreman / status / classification.
 
 import { useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 import {
   certKindLabel,
   classificationLabel,
@@ -74,6 +75,7 @@ interface Props {
 }
 
 export function EmployeeEditor({ initial, foremen, apiBaseUrl }: Props) {
+  const t = useTranslator();
   const [emp, setEmp] = useState<Employee>(initial);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -159,7 +161,7 @@ export function EmployeeEditor({ initial, foremen, apiBaseUrl }: Props) {
               </option>
             ))}
           </select>
-          {saving && <span className="text-gray-500">Saving&hellip;</span>}
+          {saving && <span className="text-gray-500">{t('employeeEditor.saving')}</span>}
         </div>
       </div>
 
@@ -171,7 +173,7 @@ export function EmployeeEditor({ initial, foremen, apiBaseUrl }: Props) {
 
       {/* Role + classification + foreman */}
       <section className="grid gap-4 sm:grid-cols-2">
-        <Field label="Role">
+        <Field label={t('employeeEditor.lblRole')}>
           <select
             value={emp.role}
             onChange={(e) => void patch({ role: e.target.value as EmployeeRole })}
@@ -184,7 +186,7 @@ export function EmployeeEditor({ initial, foremen, apiBaseUrl }: Props) {
             ))}
           </select>
         </Field>
-        <Field label="DIR classification">
+        <Field label={t('employeeEditor.lblClassification')}>
           <select
             value={emp.classification}
             onChange={(e) =>
@@ -199,14 +201,14 @@ export function EmployeeEditor({ initial, foremen, apiBaseUrl }: Props) {
             ))}
           </select>
         </Field>
-        <Field label="Reports to (foreman)">
+        <Field label={t('employeeEditor.lblForeman')}>
           <select
             value={emp.foremanId ?? ''}
             onChange={(e) => void patch({ foremanId: e.target.value || undefined })}
             disabled={emp.role === 'FOREMAN'}
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm disabled:bg-gray-100"
           >
-            <option value="">— None / office staff —</option>
+            <option value="">{t('employeeEditor.foremanNone')}</option>
             {foremen.map((f) => (
               <option key={f.id} value={f.id}>
                 {fullName(f)}
@@ -214,7 +216,7 @@ export function EmployeeEditor({ initial, foremen, apiBaseUrl }: Props) {
             ))}
           </select>
         </Field>
-        <Field label="Hired on">
+        <Field label={t('employeeEditor.lblHired')}>
           <input
             type="date"
             value={hiredOn}
@@ -227,7 +229,7 @@ export function EmployeeEditor({ initial, foremen, apiBaseUrl }: Props) {
 
       {/* Contact */}
       <section className="grid gap-4 sm:grid-cols-2">
-        <Field label="Display / nickname">
+        <Field label={t('employeeEditor.lblDisplay')}>
           <input
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
@@ -235,7 +237,7 @@ export function EmployeeEditor({ initial, foremen, apiBaseUrl }: Props) {
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Phone">
+        <Field label={t('employeeEditor.lblPhone')}>
           <input
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
@@ -243,7 +245,7 @@ export function EmployeeEditor({ initial, foremen, apiBaseUrl }: Props) {
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Email">
+        <Field label={t('employeeEditor.lblEmail')}>
           <input
             type="email"
             value={email}
@@ -257,17 +259,17 @@ export function EmployeeEditor({ initial, foremen, apiBaseUrl }: Props) {
       {/* Certifications */}
       <section>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Certifications</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{t('employeeEditor.certsHeader')}</h2>
           <button
             type="button"
             onClick={addCert}
             className="rounded bg-yge-blue-500 px-3 py-1 text-sm font-medium text-white hover:bg-yge-blue-700"
           >
-            + Add cert
+            {t('employeeEditor.addCert')}
           </button>
         </div>
         {emp.certifications.length === 0 ? (
-          <p className="text-sm text-gray-500">No certifications on file.</p>
+          <p className="text-sm text-gray-500">{t('employeeEditor.certsEmpty')}</p>
         ) : (
           <ul className="space-y-2">
             {emp.certifications.map((c, i) => (
@@ -275,7 +277,7 @@ export function EmployeeEditor({ initial, foremen, apiBaseUrl }: Props) {
                 key={i}
                 className="flex flex-wrap items-end gap-3 rounded border border-gray-200 bg-gray-50 p-3"
               >
-                <Field label="Type">
+                <Field label={t('employeeEditor.lblCertType')}>
                   <select
                     value={c.kind}
                     onChange={(e) =>
@@ -293,14 +295,14 @@ export function EmployeeEditor({ initial, foremen, apiBaseUrl }: Props) {
                     ))}
                   </select>
                 </Field>
-                <Field label="Label">
+                <Field label={t('employeeEditor.lblCertLabel')}>
                   <input
                     value={c.label}
                     onChange={(e) => updateCert(i, { label: e.target.value })}
                     className="rounded border border-gray-300 px-2 py-1 text-sm"
                   />
                 </Field>
-                <Field label="Expires">
+                <Field label={t('employeeEditor.lblCertExpires')}>
                   <input
                     type="date"
                     value={c.expiresOn ?? ''}
@@ -310,7 +312,7 @@ export function EmployeeEditor({ initial, foremen, apiBaseUrl }: Props) {
                     className="rounded border border-gray-300 px-2 py-1 text-sm"
                   />
                 </Field>
-                <Field label="Issuer">
+                <Field label={t('employeeEditor.lblCertIssuer')}>
                   <input
                     value={c.issuer ?? ''}
                     onChange={(e) =>
@@ -324,7 +326,7 @@ export function EmployeeEditor({ initial, foremen, apiBaseUrl }: Props) {
                   onClick={() => removeCert(i)}
                   className="ml-auto text-sm text-red-600 hover:underline"
                 >
-                  Remove
+                  {t('employeeEditor.removeCert')}
                 </button>
               </li>
             ))}
@@ -334,7 +336,7 @@ export function EmployeeEditor({ initial, foremen, apiBaseUrl }: Props) {
 
       {/* Notes */}
       <section>
-        <Field label="Internal notes (not on roster)">
+        <Field label={t('employeeEditor.lblNotes')}>
           <textarea
             rows={4}
             value={notes}
