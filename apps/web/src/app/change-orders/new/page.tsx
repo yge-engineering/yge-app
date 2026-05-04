@@ -7,8 +7,10 @@ import { Alert, AppShell } from '../../../components';
 import { useRouter } from 'next/navigation';
 import type { ChangeOrder, Job } from '@yge/shared';
 import { ApiError, postJson } from '@/lib/api';
+import { useTranslator } from '../../../lib/use-translator';
 
 export default function NewChangeOrderPage() {
+  const t = useTranslator();
   const router = useRouter();
   const [jobId, setJobId] = useState('');
   const [changeOrderNumber, setChangeOrderNumber] = useState('');
@@ -32,7 +34,7 @@ export default function NewChangeOrderPage() {
     e.preventDefault();
     setError(null);
     if (!jobId || !changeOrderNumber.trim() || !subject.trim()) {
-      setError('Job, CO number, and subject are required.');
+      setError(t('newCo.errRequired'));
       return;
     }
     setSaving(true);
@@ -44,9 +46,9 @@ export default function NewChangeOrderPage() {
       });
       router.push(`/change-orders/${res.changeOrder.id}`);
     } catch (err) {
-      if (err instanceof ApiError) setError(`${err.message} (HTTP ${err.status})`);
+      if (err instanceof ApiError) setError(t('newCo.errHttp', { msg: err.message, status: err.status }));
       else if (err instanceof Error) setError(err.message);
-      else setError('Unknown error');
+      else setError(t('newCo.errUnknown'));
       setSaving(false);
     }
   }
@@ -56,21 +58,21 @@ export default function NewChangeOrderPage() {
     <main className="mx-auto max-w-xl p-8">
       <div className="mb-6">
         <Link href="/change-orders" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Back to change orders
+          {t('newCo.back')}
         </Link>
       </div>
 
-      <h1 className="text-3xl font-bold text-yge-blue-500">New change order</h1>
+      <h1 className="text-3xl font-bold text-yge-blue-500">{t('newCo.title')}</h1>
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-4">
-        <Field label="Job *">
+        <Field label={t('newCo.lblJob')}>
           <select
             required
             value={jobId}
             onChange={(e) => setJobId(e.target.value)}
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           >
-            <option value="">— Pick a job —</option>
+            <option value="">{t('newCo.pickJob')}</option>
             {jobs.map((j) => (
               <option key={j.id} value={j.id}>
                 {j.projectName}
@@ -78,7 +80,7 @@ export default function NewChangeOrderPage() {
             ))}
           </select>
         </Field>
-        <Field label="CO number *">
+        <Field label={t('newCo.lblNumber')}>
           <input
             required
             value={changeOrderNumber}
@@ -87,12 +89,12 @@ export default function NewChangeOrderPage() {
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm font-mono"
           />
         </Field>
-        <Field label="Subject *">
+        <Field label={t('newCo.lblSubject')}>
           <input
             required
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
-            placeholder='e.g. "Differing site conditions at STA 14+50"'
+            placeholder={t('newCo.phSubject')}
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
@@ -107,10 +109,10 @@ export default function NewChangeOrderPage() {
             disabled={saving}
             className="rounded bg-yge-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50"
           >
-            {saving ? 'Saving…' : 'Create CO'}
+            {saving ? t('newCo.busy') : t('newCo.action')}
           </button>
           <Link href="/change-orders" className="text-sm text-gray-600 hover:underline">
-            Cancel
+            {t('newCo.cancel')}
           </Link>
         </div>
       </form>

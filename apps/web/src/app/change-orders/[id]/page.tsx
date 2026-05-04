@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { AuditBinderPanel } from '../../../components';
 import type { ChangeOrder, Job, Rfi } from '@yge/shared';
 import { ChangeOrderEditor } from '@/components/change-order-editor';
+import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
   return (
@@ -41,6 +42,7 @@ export default async function ChangeOrderDetailPage({
 }: {
   params: { id: string };
 }) {
+  const t = getTranslator();
   const co = await fetchCo(params.id);
   if (!co) notFound();
   const [jobs, rfis] = await Promise.all([fetchJobs(), fetchRfis(co.jobId)]);
@@ -49,7 +51,7 @@ export default async function ChangeOrderDetailPage({
     <main className="mx-auto max-w-4xl p-8">
       <div className="mb-6">
         <Link href="/change-orders" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Back to change orders
+          {t('newCo.back')}
         </Link>
       </div>
 
