@@ -7,6 +7,8 @@
 // regex passes. Trade-off: simpler, no external lib, but no headings/
 // bullets/etc. For most user-typed prose, that's fine.
 
+import { getTranslator } from '../lib/locale';
+
 interface Props {
   text: string;
   /** Max chars before showing a 'Show more' toggle. Pass 0 to disable. */
@@ -32,7 +34,8 @@ function linkify(escaped: string): string {
 
 export function LongText({ text, truncate = 0 }: Props) {
   if (!text || text.trim().length === 0) {
-    return <span className="text-xs italic text-gray-400">(blank)</span>;
+    const t = getTranslator();
+    return <span className="text-xs italic text-gray-400">{t('longText.blank')}</span>;
   }
 
   const display = truncate > 0 && text.length > truncate ? text.slice(0, truncate) + '…' : text;
