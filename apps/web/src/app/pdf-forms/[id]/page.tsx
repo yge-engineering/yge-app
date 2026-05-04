@@ -31,6 +31,7 @@ import {
   type MasterProfile,
   type PdfFormMapping,
 } from '@yge/shared';
+import { getTranslator, type Translator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
   return (
@@ -63,15 +64,15 @@ export default async function PdfFormFillPage({
 }: {
   params: { id: string };
 }) {
+  const t = getTranslator();
   const [mapping, profile] = await Promise.all([fetchMapping(params.id), fetchProfile()]);
   if (!mapping) notFound();
   if (!profile) {
     return (
       <AppShell>
         <main className="mx-auto max-w-4xl p-8">
-          <Alert tone="danger" title="Master profile unavailable">
-            Could not load /api/master-profile. The form filler can&rsquo;t
-            preview without it.
+          <Alert tone="danger" title={t('pdfFormPg.profileUnavailable')}>
+            {t('pdfFormPg.profileUnavailableBody')}
           </Alert>
         </main>
       </AppShell>
@@ -89,26 +90,25 @@ export default async function PdfFormFillPage({
       <main className="mx-auto max-w-5xl p-8">
         <div className="mb-6 flex items-center justify-between">
           <Link href="/pdf-forms" className="text-sm text-yge-blue-500 hover:underline">
-            &larr; Form library
+            {t('pdfFormPg.back')}
           </Link>
           <Link href="/master-profile" className="text-xs text-yge-blue-500 hover:underline">
-            Master profile →
+            {t('pdfFormPg.masterProfileLink')}
           </Link>
         </div>
 
         <PageHeader
           title={mapping.displayName}
-          subtitle={`${mapping.agency}${mapping.formCode ? ` · ${mapping.formCode}` : ''}${mapping.versionDate ? ` · v${mapping.versionDate}` : ''}`}
+          subtitle={`${mapping.agency}${mapping.formCode ? ` · ${mapping.formCode}` : ''}${mapping.versionDate ? ` · ${t('pdfFormPg.versionPrefix')}${mapping.versionDate}` : ''}`}
         />
 
         {!mapping.reviewed && (
-          <Alert tone="warn" className="mt-4" title="This mapping is a draft">
-            It hasn&rsquo;t been reviewed against the agency PDF yet. PATCH the
-            row with reviewed=true once you&rsquo;ve verified every field.
+          <Alert tone="warn" className="mt-4" title={t('pdfFormPg.draftTitle')}>
+            {t('pdfFormPg.draftBody')}
           </Alert>
         )}
 
-        <FillSummary report={report} />
+        <FillSummary report={report} t={t} />
 
         {promptFields.length > 0 && (
           <PdfFormPromptForm
@@ -124,34 +124,29 @@ export default async function PdfFormFillPage({
           />
         )}
 
-        <FieldTable mapping={mapping} report={report} />
+        <FieldTable mapping={mapping} report={report} t={t} />
 
         <AuditBinderPanel entityType="Document" entityId={mapping.id} className="mt-8" />
 
         <p className="mt-8 text-xs text-gray-500">
-          Download streams a filled + flattened PDF (pdf-lib runtime). The
-          source PDF must exist under{' '}
-          <code className="font-mono">apps/api/data/pdf-forms/</code> at the
-          path on the mapping&rsquo;s <code className="font-mono">pdfReference</code>.
-          The byte sha256 lands in the response&rsquo;s{' '}
-          <code className="font-mono">X-PDF-Sha256</code> header so the
-          signing flow can finalize against it.
+          {t('pdfFormPg.techNote')}
         </p>
       </main>
     </AppShell>
   );
 }
 
-function FillSummary({ report }: { report: ReturnType<typeof buildFillReport> }) {
+function FillSummary({ report, t }: { report: ReturnType<typeof buildFillReport>; t: Translator }) {
   if (report.requiredEmpty.length > 0) {
     return (
       <Alert
         tone="danger"
         className="mt-4"
-        title={`${report.requiredEmpty.length} required field${report.requiredEmpty.length === 1 ? '' : 's'} blank`}
+        title={report.requiredEmpty.length === 1
+          ? t('pdfFormPg.requiredBlankOne', { count: report.requiredEmpty.length })
+          : t('pdfFormPg.requiredBlankMany', { count: report.requiredEmpty.length })}
       >
-        Fill the prompts below or update the master profile so these resolve
-        before downloading the filled PDF.
+        {t('pdfFormPg.requiredBlankBody')}
       </Alert>
     );
   }
@@ -160,10 +155,11 @@ function FillSummary({ report }: { report: ReturnType<typeof buildFillReport> })
       <Alert
         tone="warn"
         className="mt-4"
-        title={`${report.awaitingSensitivePrompts.length} sensitive value${report.awaitingSensitivePrompts.length === 1 ? '' : 's'} needed inline`}
+        title={report.awaitingSensitivePrompts.length === 1
+          ? t('pdfFormPg.sensitiveOne', { count: report.awaitingSensitivePrompts.length })
+          : t('pdfFormPg.sensitiveMany', { count: report.awaitingSensitivePrompts.length })}
       >
-        Sensitive prompts (SSN-style) are intentionally NOT stored on the
-        master profile. Enter them at fill time below.
+        {t('pdfFormPg.sensitiveBody')}
       </Alert>
     );
   }
@@ -172,11 +168,11 @@ function FillSummary({ report }: { report: ReturnType<typeof buildFillReport> })
       <Alert
         tone="warn"
         className="mt-4"
-        title={`${report.patternViolations.length} field${report.patternViolations.length === 1 ? '' : 's'} fail pattern check`}
+        title={report.patternViolations.length === 1
+          ? t('pdfFormPg.patternFailOne', { count: report.patternViolations.length })
+          : t('pdfFormPg.patternFailMany', { count: report.patternViolations.length })}
       >
-        Some computed values don&rsquo;t match the form&rsquo;s expected
-        pattern (e.g. ZIP, DIR registration). Fix the source value before
-        submitting.
+        {t('pdfFormPg.patternFailBody')}
       </Alert>
     );
   }
@@ -185,10 +181,9 @@ function FillSummary({ report }: { report: ReturnType<typeof buildFillReport> })
       <Alert
         tone="success"
         className="mt-4"
-        title={`Ready — all ${report.total} fields resolve`}
+        title={t('pdfFormPg.readyTitle', { total: report.total })}
       >
-        Every field has a value from the master profile or a literal /
-        computed source. The form is ready to download.
+        {t('pdfFormPg.readyBody')}
       </Alert>
     );
   }
@@ -196,11 +191,11 @@ function FillSummary({ report }: { report: ReturnType<typeof buildFillReport> })
     <Alert
       tone="info"
       className="mt-4"
-      title={`Auto-fills ${report.filledCount} of ${report.total} fields`}
+      title={t('pdfFormPg.autoFillTitle', { filled: report.filledCount, total: report.total })}
     >
-      You&rsquo;ll be asked for {report.awaitingPromptCount} value
-      {report.awaitingPromptCount === 1 ? '' : 's'} inline below before the
-      filled PDF is ready.
+      {report.awaitingPromptCount === 1
+        ? t('pdfFormPg.askValueOne', { count: report.awaitingPromptCount })
+        : t('pdfFormPg.askValueMany', { count: report.awaitingPromptCount })}
     </Alert>
   );
 }
@@ -208,19 +203,21 @@ function FillSummary({ report }: { report: ReturnType<typeof buildFillReport> })
 function FieldTable({
   mapping,
   report,
+  t,
 }: {
   mapping: PdfFormMapping;
   report: ReturnType<typeof buildFillReport>;
+  t: Translator;
 }) {
   return (
     <section className="mt-6 overflow-hidden rounded-md border border-gray-200 bg-white shadow-sm">
       <table className="w-full text-sm">
         <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
           <tr>
-            <th className="px-3 py-2 text-left">Label</th>
-            <th className="px-3 py-2 text-left">Source</th>
-            <th className="px-3 py-2 text-left">Value (preview)</th>
-            <th className="px-3 py-2 text-left">Status</th>
+            <th className="px-3 py-2 text-left">{t('pdfFormPg.thLabel')}</th>
+            <th className="px-3 py-2 text-left">{t('pdfFormPg.thSource')}</th>
+            <th className="px-3 py-2 text-left">{t('pdfFormPg.thValue')}</th>
+            <th className="px-3 py-2 text-left">{t('pdfFormPg.thStatus')}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
@@ -257,15 +254,15 @@ function FieldTable({
                   )}
                 </td>
                 <td className="px-3 py-2 align-top">
-                  {v.awaitingPrompt && <StatusPill label="ASK" tone="warn" size="sm" />}
+                  {v.awaitingPrompt && <StatusPill label={t('pdfFormPg.pillAsk')} tone="warn" size="sm" />}
                   {!v.awaitingPrompt && v.filled && f.required && (
-                    <StatusPill label="OK" tone="success" size="sm" />
+                    <StatusPill label={t('pdfFormPg.pillOk')} tone="success" size="sm" />
                   )}
                   {!v.awaitingPrompt && !v.filled && f.required && (
-                    <StatusPill label="EMPTY" tone="danger" size="sm" />
+                    <StatusPill label={t('pdfFormPg.pillEmpty')} tone="danger" size="sm" />
                   )}
                   {!v.awaitingPrompt && !v.filled && !f.required && (
-                    <span className="text-xs text-gray-400">optional</span>
+                    <span className="text-xs text-gray-400">{t('pdfFormPg.optional')}</span>
                   )}
                 </td>
               </tr>
