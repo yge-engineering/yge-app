@@ -3,6 +3,7 @@
 // Time card editor — weekly entries with overtime rollup.
 
 import { useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 import {
   entryWorkedHours,
   fullName,
@@ -28,6 +29,7 @@ interface Props {
 }
 
 export function TimeCardEditor({ initial, employees, jobs, apiBaseUrl }: Props) {
+  const t = useTranslator();
   const [card, setCard] = useState<TimeCard>(initial);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,11 +55,11 @@ export function TimeCardEditor({ initial, employees, jobs, apiBaseUrl }: Props) 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-      if (!res.ok) throw new Error(`Save failed: ${res.status}`);
+      if (!res.ok) throw new Error(t('tcEditor.errSaveStatus', { status: res.status }));
       const json = (await res.json()) as { timeCard: TimeCard };
       setCard(json.timeCard);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Save failed');
+      setError(err instanceof Error ? err.message : t('tcEditor.errFallback'));
     } finally {
       setSaving(false);
     }
@@ -65,7 +67,7 @@ export function TimeCardEditor({ initial, employees, jobs, apiBaseUrl }: Props) 
 
   function addEntry() {
     if (!entryJobId || !entryDate || !entryStart || !entryEnd) {
-      setError('Date, job, start, and end are required.');
+      setError(t('tcEditor.errEntryRequired'));
       return;
     }
     const next: TimeEntry = {
@@ -97,23 +99,15 @@ export function TimeCardEditor({ initial, employees, jobs, apiBaseUrl }: Props) 
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs uppercase tracking-wide text-gray-500">
-            Week of {card.weekStarting}
+            {t('tcEditor.weekOf', { date: card.weekStarting })}
           </p>
           <h1 className="mt-1 text-2xl font-bold text-yge-blue-500">
             {emp ? fullName(emp) : card.employeeId}
           </h1>
           <p className="mt-1 text-sm text-gray-600">
-            {total.toFixed(2)} hr total
-            {ot.dailyOvertimeHours > 0 && (
-              <>
-                {' '}\u00b7 {ot.dailyOvertimeHours.toFixed(2)} hr daily OT
-              </>
-            )}
-            {ot.weeklyOvertimeHours > 0 && (
-              <>
-                {' '}\u00b7 {ot.weeklyOvertimeHours.toFixed(2)} hr weekly OT
-              </>
-            )}
+            {t('tcEditor.subTotal', { total: total.toFixed(2) })}
+            {ot.dailyOvertimeHours > 0 && t('tcEditor.subDailyOt', { hr: ot.dailyOvertimeHours.toFixed(2) })}
+            {ot.weeklyOvertimeHours > 0 && t('tcEditor.subWeeklyOt', { hr: ot.weeklyOvertimeHours.toFixed(2) })}
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs">
@@ -128,7 +122,7 @@ export function TimeCardEditor({ initial, employees, jobs, apiBaseUrl }: Props) 
               </option>
             ))}
           </select>
-          {saving && <span className="text-gray-500">Saving&hellip;</span>}
+          {saving && <span className="text-gray-500">{t('tcEditor.saving')}</span>}
         </div>
       </header>
 
@@ -142,7 +136,7 @@ export function TimeCardEditor({ initial, employees, jobs, apiBaseUrl }: Props) 
       {byDate.length > 0 && (
         <section>
           <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-700">
-            Daily summary
+            {t('tcEditor.dailySummary')}
           </h2>
           <ul className="grid grid-cols-7 gap-1 text-center text-xs">
             {byDate.map((d) => (
@@ -154,7 +148,7 @@ export function TimeCardEditor({ initial, employees, jobs, apiBaseUrl }: Props) 
                 <div className="font-bold">{d.hours.toFixed(2)}</div>
                 {d.hours > 8 && (
                   <div className="text-[10px] text-orange-700">
-                    +{(d.hours - 8).toFixed(2)} OT
+                    {t('tcEditor.dailyOt', { hr: (d.hours - 8).toFixed(2) })}
                   </div>
                 )}
               </li>
@@ -167,7 +161,7 @@ export function TimeCardEditor({ initial, employees, jobs, apiBaseUrl }: Props) 
       {byJob.length > 0 && (
         <section>
           <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-700">
-            By job
+            {t('tcEditor.byJob')}
           </h2>
           <ul className="divide-y divide-gray-100 rounded border border-gray-200 bg-white text-sm">
             {byJob.map((j) => {
@@ -175,7 +169,7 @@ export function TimeCardEditor({ initial, employees, jobs, apiBaseUrl }: Props) 
               return (
                 <li key={j.jobId} className="flex items-center justify-between px-4 py-2">
                   <span>{job ? job.projectName : j.jobId}</span>
-                  <span className="font-mono tabular-nums">{j.hours.toFixed(2)} hr</span>
+                  <span className="font-mono tabular-nums">{t('tcEditor.byJobHours', { hr: j.hours.toFixed(2) })}</span>
                 </li>
               );
             })}
@@ -185,10 +179,10 @@ export function TimeCardEditor({ initial, employees, jobs, apiBaseUrl }: Props) 
 
       {/* Entry add */}
       <section>
-        <h2 className="mb-2 text-lg font-semibold text-gray-900">Add entry</h2>
+        <h2 className="mb-2 text-lg font-semibold text-gray-900">{t('tcEditor.addEntryHeader')}</h2>
         <div className="rounded border border-gray-200 bg-gray-50 p-3">
           <div className="grid gap-2 sm:grid-cols-7">
-            <Field label="Date">
+            <Field label={t('tcEditor.lblDate')}>
               <input
                 type="date"
                 value={entryDate}
@@ -196,7 +190,7 @@ export function TimeCardEditor({ initial, employees, jobs, apiBaseUrl }: Props) 
                 className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
               />
             </Field>
-            <Field label="Job">
+            <Field label={t('tcEditor.lblJob')}>
               <select
                 value={entryJobId}
                 onChange={(e) => setEntryJobId(e.target.value)}
@@ -209,7 +203,7 @@ export function TimeCardEditor({ initial, employees, jobs, apiBaseUrl }: Props) 
                 ))}
               </select>
             </Field>
-            <Field label="Start">
+            <Field label={t('tcEditor.lblStart')}>
               <input
                 type="time"
                 value={entryStart}
@@ -217,7 +211,7 @@ export function TimeCardEditor({ initial, employees, jobs, apiBaseUrl }: Props) 
                 className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
               />
             </Field>
-            <Field label="Lunch out">
+            <Field label={t('tcEditor.lblLunchOut')}>
               <input
                 type="time"
                 value={entryLunchOut}
@@ -225,7 +219,7 @@ export function TimeCardEditor({ initial, employees, jobs, apiBaseUrl }: Props) 
                 className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
               />
             </Field>
-            <Field label="Lunch in">
+            <Field label={t('tcEditor.lblLunchIn')}>
               <input
                 type="time"
                 value={entryLunchIn}
@@ -233,7 +227,7 @@ export function TimeCardEditor({ initial, employees, jobs, apiBaseUrl }: Props) 
                 className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
               />
             </Field>
-            <Field label="End">
+            <Field label={t('tcEditor.lblEnd')}>
               <input
                 type="time"
                 value={entryEnd}
@@ -247,19 +241,19 @@ export function TimeCardEditor({ initial, employees, jobs, apiBaseUrl }: Props) 
                 onClick={addEntry}
                 className="w-full rounded bg-yge-blue-500 px-3 py-1 text-sm font-medium text-white hover:bg-yge-blue-700"
               >
-                Add
+                {t('tcEditor.add')}
               </button>
             </div>
           </div>
           <div className="mt-2 grid gap-2 sm:grid-cols-2">
-            <Field label="Cost code (optional)">
+            <Field label={t('tcEditor.lblCostCode')}>
               <input
                 value={entryCostCode}
                 onChange={(e) => setEntryCostCode(e.target.value)}
                 className="w-full rounded border border-gray-300 px-2 py-1 text-sm font-mono"
               />
             </Field>
-            <Field label="Note">
+            <Field label={t('tcEditor.lblNote')}>
               <input
                 value={entryNote}
                 onChange={(e) => setEntryNote(e.target.value)}
@@ -272,9 +266,9 @@ export function TimeCardEditor({ initial, employees, jobs, apiBaseUrl }: Props) 
 
       {/* Entry list */}
       <section>
-        <h2 className="mb-2 text-lg font-semibold text-gray-900">Entries</h2>
+        <h2 className="mb-2 text-lg font-semibold text-gray-900">{t('tcEditor.entriesHeader')}</h2>
         {card.entries.length === 0 ? (
-          <p className="text-sm text-gray-500">No entries yet.</p>
+          <p className="text-sm text-gray-500">{t('tcEditor.entriesEmpty')}</p>
         ) : (
           <ul className="divide-y divide-gray-100 rounded border border-gray-200 bg-white text-sm">
             {[...card.entries]
@@ -293,31 +287,31 @@ export function TimeCardEditor({ initial, employees, jobs, apiBaseUrl }: Props) 
                         {e.startTime}–{e.endTime}
                         {e.lunchOut && e.lunchIn && (
                           <>
-                            {' '} (lunch {e.lunchOut}–{e.lunchIn})
+                            {t('tcEditor.lunchSuffix', { out: e.lunchOut, in: e.lunchIn })}
                           </>
                         )}
                         {e.costCode && (
                           <>
-                            {' '} \u00b7 cost code {e.costCode}
+                            {t('tcEditor.costCodeSuffix', { code: e.costCode })}
                           </>
                         )}
                         {e.note && (
                           <>
-                            {' '} \u00b7 {e.note}
+                            {t('tcEditor.noteSuffix', { note: e.note })}
                           </>
                         )}
                       </div>
                     </div>
                     <div className="flex items-center gap-3 text-sm">
                       <span className="font-mono font-medium tabular-nums">
-                        {hours.toFixed(2)} hr
+                        {t('tcEditor.entryHours', { hr: hours.toFixed(2) })}
                       </span>
                       <button
                         type="button"
                         onClick={() => removeEntry(i)}
                         className="text-xs text-red-600 hover:underline"
                       >
-                        Remove
+                        {t('tcEditor.removeEntry')}
                       </button>
                     </div>
                   </li>
@@ -327,7 +321,7 @@ export function TimeCardEditor({ initial, employees, jobs, apiBaseUrl }: Props) 
         )}
       </section>
 
-      <Field label="Notes">
+      <Field label={t('tcEditor.lblNotes')}>
         <textarea
           rows={3}
           value={notes}
