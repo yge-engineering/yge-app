@@ -10,6 +10,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 
 interface InitialFields {
   agencyName: string;
@@ -38,6 +39,7 @@ function parseDollars(raw: string): number | null {
 
 export function BidTabCoreEdit({ apiBaseUrl, tabId, initial }: Props) {
   const router = useRouter();
+  const t = useTranslator();
   const [editing, setEditing] = useState(false);
   const [agencyName, setAgencyName] = useState(initial.agencyName);
   const [projectName, setProjectName] = useState(initial.projectName);
@@ -68,12 +70,12 @@ export function BidTabCoreEdit({ apiBaseUrl, tabId, initial }: Props) {
     if (busy) return;
     setError(null);
     if (!agencyName.trim() || !projectName.trim() || !bidOpenedAt) {
-      setError('Agency name, project name, and bid-opened date are required.');
+      setError(t('bidTabCore.errRequired'));
       return;
     }
     const ee = eeDollars.trim().length === 0 ? null : parseDollars(eeDollars);
     if (ee === null && eeDollars.trim().length > 0) {
-      setError('Engineer’s estimate must be a dollar amount (or empty).');
+      setError(t('bidTabCore.errEe'));
       return;
     }
     setBusy(true);
@@ -95,7 +97,7 @@ export function BidTabCoreEdit({ apiBaseUrl, tabId, initial }: Props) {
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? `Save failed (${res.status})`);
+        setError(body.error ?? t('bidTabCore.errSave', { status: res.status }));
         return;
       }
       setEditing(false);
@@ -114,7 +116,7 @@ export function BidTabCoreEdit({ apiBaseUrl, tabId, initial }: Props) {
         onClick={() => setEditing(true)}
         className="text-[11px] text-yge-blue-500 hover:underline"
       >
-        Edit core fields →
+        {t('bidTabCore.editAction')}
       </button>
     );
   }
@@ -122,7 +124,7 @@ export function BidTabCoreEdit({ apiBaseUrl, tabId, initial }: Props) {
   return (
     <div className="mt-3 rounded-md border border-yge-blue-500 bg-yge-blue-50 p-3">
       <div className="grid gap-2 sm:grid-cols-2 text-xs">
-        <Field label="Agency name *">
+        <Field label={t('bidTabCore.lblAgency')}>
           <input
             type="text"
             value={agencyName}
@@ -130,7 +132,7 @@ export function BidTabCoreEdit({ apiBaseUrl, tabId, initial }: Props) {
             className="w-full rounded border border-gray-300 px-2 py-1 text-xs"
           />
         </Field>
-        <Field label="County">
+        <Field label={t('bidTabCore.lblCounty')}>
           <input
             type="text"
             value={county}
@@ -138,7 +140,7 @@ export function BidTabCoreEdit({ apiBaseUrl, tabId, initial }: Props) {
             className="w-full rounded border border-gray-300 px-2 py-1 text-xs"
           />
         </Field>
-        <Field label="Project name *" full>
+        <Field label={t('bidTabCore.lblProjectName')} full>
           <input
             type="text"
             value={projectName}
@@ -146,7 +148,7 @@ export function BidTabCoreEdit({ apiBaseUrl, tabId, initial }: Props) {
             className="w-full rounded border border-gray-300 px-2 py-1 text-xs"
           />
         </Field>
-        <Field label="Project / contract number">
+        <Field label={t('bidTabCore.lblProjectNum')}>
           <input
             type="text"
             value={projectNumber}
@@ -154,7 +156,7 @@ export function BidTabCoreEdit({ apiBaseUrl, tabId, initial }: Props) {
             className="w-full rounded border border-gray-300 px-2 py-1 text-xs"
           />
         </Field>
-        <Field label="Bid opened *">
+        <Field label={t('bidTabCore.lblBidOpened')}>
           <input
             type="date"
             value={bidOpenedAt}
@@ -162,16 +164,16 @@ export function BidTabCoreEdit({ apiBaseUrl, tabId, initial }: Props) {
             className="w-full rounded border border-gray-300 px-2 py-1 text-xs"
           />
         </Field>
-        <Field label="Engineer's estimate ($)">
+        <Field label={t('bidTabCore.lblEe')}>
           <input
             type="text"
             value={eeDollars}
             onChange={(e) => setEeDollars(e.target.value)}
-            placeholder="e.g. 4,250,000"
+            placeholder={t('bidTabCore.phEe')}
             className="w-full rounded border border-gray-300 px-2 py-1 font-mono text-xs"
           />
         </Field>
-        <Field label="Awarded to (name)">
+        <Field label={t('bidTabCore.lblAwardedTo')}>
           <input
             type="text"
             value={awardedTo}
@@ -179,7 +181,7 @@ export function BidTabCoreEdit({ apiBaseUrl, tabId, initial }: Props) {
             className="w-full rounded border border-gray-300 px-2 py-1 text-xs"
           />
         </Field>
-        <Field label="Awarded date">
+        <Field label={t('bidTabCore.lblAwardedAt')}>
           <input
             type="date"
             value={awardedAt}
@@ -187,12 +189,12 @@ export function BidTabCoreEdit({ apiBaseUrl, tabId, initial }: Props) {
             className="w-full rounded border border-gray-300 px-2 py-1 text-xs"
           />
         </Field>
-        <Field label="Source URL" full>
+        <Field label={t('bidTabCore.lblSourceUrl')} full>
           <input
             type="url"
             value={sourceUrl}
             onChange={(e) => setSourceUrl(e.target.value)}
-            placeholder="https://agency.gov/.../bid-tab.pdf"
+            placeholder={t('bidTabCore.phSourceUrl')}
             className="w-full rounded border border-gray-300 px-2 py-1 text-xs"
           />
         </Field>
@@ -205,7 +207,7 @@ export function BidTabCoreEdit({ apiBaseUrl, tabId, initial }: Props) {
           disabled={busy}
           className="rounded bg-yge-blue-500 px-3 py-1 text-xs font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50"
         >
-          {busy ? 'Saving…' : 'Save'}
+          {busy ? t('bidTabCore.busy') : t('bidTabCore.save')}
         </button>
         <button
           type="button"
@@ -216,7 +218,7 @@ export function BidTabCoreEdit({ apiBaseUrl, tabId, initial }: Props) {
           disabled={busy}
           className="rounded border border-gray-300 bg-white px-3 py-1 text-xs text-gray-700 hover:bg-gray-100 disabled:opacity-50"
         >
-          Cancel
+          {t('bidTabCore.cancel')}
         </button>
         {error && <span className="text-[11px] text-red-700">⚠ {error}</span>}
       </div>
