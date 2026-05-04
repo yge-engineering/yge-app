@@ -4,6 +4,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 import {
   vendorKindLabel,
   vendorPaymentTermsLabel,
@@ -105,6 +106,7 @@ export function VendorEditor({
   vendor?: Vendor;
 }) {
   const router = useRouter();
+  const t = useTranslator();
   const [form, setForm] = useState<FormState>(defaults(vendor));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -182,8 +184,8 @@ export function VendorEditor({
         </div>
       )}
 
-      <Section title="Identity">
-        <Field label="Legal name" required>
+      <Section title={t('vendorEditor.secIdentity')}>
+        <Field label={t('vendorEditor.lblLegalName')} required>
           <input
             className={inputCls}
             value={form.legalName}
@@ -191,14 +193,14 @@ export function VendorEditor({
             required
           />
         </Field>
-        <Field label="DBA / display name">
+        <Field label={t('vendorEditor.lblDba')}>
           <input
             className={inputCls}
             value={form.dbaName}
             onChange={(e) => setField('dbaName', e.target.value)}
           />
         </Field>
-        <Field label="Kind">
+        <Field label={t('vendorEditor.lblKind')}>
           <select
             className={inputCls}
             value={form.kind}
@@ -211,7 +213,7 @@ export function VendorEditor({
             ))}
           </select>
         </Field>
-        <Field label="Payment terms">
+        <Field label={t('vendorEditor.lblPaymentTerms')}>
           <select
             className={inputCls}
             value={form.paymentTerms}
@@ -228,30 +230,30 @@ export function VendorEditor({
         </Field>
       </Section>
 
-      <Section title="Tax + 1099">
-        <Field label="Federal Tax ID (EIN or SSN)">
+      <Section title={t('vendorEditor.secTax')}>
+        <Field label={t('vendorEditor.lblTaxId')}>
           <input
             className={inputCls}
             value={form.taxId}
             onChange={(e) => setField('taxId', e.target.value)}
-            placeholder="12-3456789 or 123-45-6789"
+            placeholder={t('vendorEditor.phTaxId')}
           />
         </Field>
-        <Field label="1099-NEC reportable">
+        <Field label={t('vendorEditor.lbl1099')}>
           <Checkbox
             checked={form.is1099Reportable}
             onChange={(b) => setField('is1099Reportable', b)}
-            label="Payments to this vendor count toward 1099-NEC"
+            label={t('vendorEditor.cb1099')}
           />
         </Field>
-        <Field label="W-9 on file">
+        <Field label={t('vendorEditor.lblW9')}>
           <Checkbox
             checked={form.w9OnFile}
             onChange={(b) => setField('w9OnFile', b)}
-            label="Current W-9 received"
+            label={t('vendorEditor.cbW9')}
           />
         </Field>
-        <Field label="W-9 collected on">
+        <Field label={t('vendorEditor.lblW9Date')}>
           <input
             type="date"
             className={inputCls}
@@ -261,15 +263,15 @@ export function VendorEditor({
         </Field>
       </Section>
 
-      <Section title="Insurance + License (subs)">
-        <Field label="COI on file">
+      <Section title={t('vendorEditor.secInsurance')}>
+        <Field label={t('vendorEditor.lblCoi')}>
           <Checkbox
             checked={form.coiOnFile}
             onChange={(b) => setField('coiOnFile', b)}
-            label="Certificate of Insurance received"
+            label={t('vendorEditor.cbCoi')}
           />
         </Field>
-        <Field label="COI expires on">
+        <Field label={t('vendorEditor.lblCoiExpires')}>
           <input
             type="date"
             className={inputCls}
@@ -277,14 +279,14 @@ export function VendorEditor({
             onChange={(e) => setField('coiExpiresOn', e.target.value)}
           />
         </Field>
-        <Field label="CSLB license #">
+        <Field label={t('vendorEditor.lblCslb')}>
           <input
             className={inputCls}
             value={form.cslbLicense}
             onChange={(e) => setField('cslbLicense', e.target.value)}
           />
         </Field>
-        <Field label="DIR registration #">
+        <Field label={t('vendorEditor.lblDir')}>
           <input
             className={inputCls}
             value={form.dirRegistration}
@@ -293,29 +295,29 @@ export function VendorEditor({
         </Field>
       </Section>
 
-      <Section title="Address">
-        <Field label="Address line">
+      <Section title={t('vendorEditor.secAddress')}>
+        <Field label={t('vendorEditor.lblAddrLine')}>
           <input
             className={inputCls}
             value={form.addressLine}
             onChange={(e) => setField('addressLine', e.target.value)}
           />
         </Field>
-        <Field label="City">
+        <Field label={t('vendorEditor.lblCity')}>
           <input
             className={inputCls}
             value={form.city}
             onChange={(e) => setField('city', e.target.value)}
           />
         </Field>
-        <Field label="State">
+        <Field label={t('vendorEditor.lblState')}>
           <input
             className={inputCls}
             value={form.state}
             onChange={(e) => setField('state', e.target.value)}
           />
         </Field>
-        <Field label="ZIP">
+        <Field label={t('vendorEditor.lblZip')}>
           <input
             className={inputCls}
             value={form.zip}
@@ -324,22 +326,22 @@ export function VendorEditor({
         </Field>
       </Section>
 
-      <Section title="Contact">
-        <Field label="Contact name">
+      <Section title={t('vendorEditor.secContact')}>
+        <Field label={t('vendorEditor.lblContactName')}>
           <input
             className={inputCls}
             value={form.contactName}
             onChange={(e) => setField('contactName', e.target.value)}
           />
         </Field>
-        <Field label="Phone">
+        <Field label={t('vendorEditor.lblPhone')}>
           <input
             className={inputCls}
             value={form.phone}
             onChange={(e) => setField('phone', e.target.value)}
           />
         </Field>
-        <Field label="Email">
+        <Field label={t('vendorEditor.lblEmail')}>
           <input
             className={inputCls}
             value={form.email}
@@ -348,15 +350,15 @@ export function VendorEditor({
         </Field>
       </Section>
 
-      <Section title="Accounting">
-        <Field label="Account # (their side)">
+      <Section title={t('vendorEditor.secAccounting')}>
+        <Field label={t('vendorEditor.lblAccountNum')}>
           <input
             className={inputCls}
             value={form.accountNumber}
             onChange={(e) => setField('accountNumber', e.target.value)}
           />
         </Field>
-        <Field label="Default GL code">
+        <Field label={t('vendorEditor.lblDefaultGl')}>
           <input
             className={inputCls}
             value={form.defaultGlCode}
@@ -365,15 +367,15 @@ export function VendorEditor({
         </Field>
       </Section>
 
-      <Section title="Status">
-        <Field label="On hold">
+      <Section title={t('vendorEditor.secStatus')}>
+        <Field label={t('vendorEditor.lblOnHold')}>
           <Checkbox
             checked={form.onHold}
             onChange={(b) => setField('onHold', b)}
-            label="Block payments to this vendor"
+            label={t('vendorEditor.cbOnHold')}
           />
         </Field>
-        <Field label="On-hold reason">
+        <Field label={t('vendorEditor.lblOnHoldReason')}>
           <input
             className={inputCls}
             value={form.onHoldReason}
@@ -382,8 +384,8 @@ export function VendorEditor({
         </Field>
       </Section>
 
-      <Section title="Notes">
-        <Field label="Notes" full>
+      <Section title={t('vendorEditor.secNotes')}>
+        <Field label={t('vendorEditor.lblNotes')} full>
           <textarea
             className={`${inputCls} min-h-[100px]`}
             value={form.notes}
@@ -398,7 +400,7 @@ export function VendorEditor({
           disabled={saving}
           className="rounded bg-yge-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-yge-blue-700 disabled:opacity-50"
         >
-          {saving ? 'Saving…' : mode === 'create' ? 'Create vendor' : 'Save changes'}
+          {saving ? t('vendorEditor.busy') : mode === 'create' ? t('vendorEditor.create') : t('vendorEditor.save')}
         </button>
       </div>
     </form>
