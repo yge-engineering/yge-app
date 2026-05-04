@@ -15,6 +15,7 @@ import {
   buildCrewRoster,
   certKindLabel,
   classificationLabel,
+  coerceLocale,
   fullName,
   renderCrewRosterText,
   roleLabel,
@@ -22,6 +23,8 @@ import {
   type Employee,
   type Tool,
 } from '@yge/shared';
+import { getTranslator } from '../../../lib/locale';
+import { cookies } from 'next/headers';
 import { PrintButton } from '@/components/print-button';
 import { Letterhead } from '@/components/letterhead';
 
@@ -58,6 +61,9 @@ export default async function CrewPrintPage({
 }: {
   searchParams: { foreman?: string };
 }) {
+  const t = getTranslator();
+  const localeCookie = cookies().get('yge-locale')?.value;
+  const locale = coerceLocale(localeCookie);
   const [employees, tools] = await Promise.all([fetchEmployees(), fetchTools()]);
   const fullRoster = buildCrewRoster({ employees, tools });
 
@@ -101,23 +107,23 @@ export default async function CrewPrintPage({
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-4">
             <Link href="/crew" className="text-yge-blue-500 hover:underline">
-              &larr; Back to crew
+              {t('newEmployee.back')}
             </Link>
           </div>
           <div className="flex items-center gap-2">
             <a
               href={mailto}
               className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50"
-              title="Open your default mail app with the roster prefilled"
+              title={t('crewPrint.emailTooltip')}
             >
-              Email to {targetForeman ? fullName(targetForeman) : 'foreman'}
+              {t('crewPrint.emailTo', { name: targetForeman ? fullName(targetForeman) : t('crewPrint.foremanWord') })}
             </a>
             <PrintButton />
           </div>
         </div>
         {!foremanFilter && fullRoster.groups.some((g) => g.foreman) && (
           <div className="mx-auto mt-2 max-w-5xl text-xs text-gray-600">
-            Filter to a single foreman:{' '}
+            {t('crewPrint.filterPrompt')}{' '}
             {fullRoster.groups
               .filter((g) => g.foreman)
               .map((g, i, arr) => (
@@ -141,11 +147,11 @@ export default async function CrewPrintPage({
           rightBlock={
             <>
               <div className="font-semibold uppercase tracking-wide">
-                Crew Roster
+                {t('crewPrint.docTitle')}
               </div>
               <div>{generatedDate}</div>
               <div>
-                {totalActive} active &middot; {fullRoster.totalInactive} inactive
+                {t('crewPrint.activeInactive', { active: totalActive, inactive: fullRoster.totalInactive })}
               </div>
             </>
           }
@@ -153,23 +159,17 @@ export default async function CrewPrintPage({
 
         {fullRoster.expiredCertCount > 0 && !foremanFilter && (
           <div className="mt-4 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-800">
-            <strong>{fullRoster.expiredCertCount}</strong> expired cert
-            {fullRoster.expiredCertCount === 1 ? '' : 's'} on the active roster
-            {fullRoster.expiringSoonCertCount > 0 && (
-              <>
-                {' '}\u2014 plus <strong>{fullRoster.expiringSoonCertCount}</strong>{' '}
-                expiring within 30 days
-              </>
-            )}
-            . Replace or renew before next pay period.
+            {fullRoster.expiringSoonCertCount > 0
+              ? t('crewPrint.expiredPlus', { expired: fullRoster.expiredCertCount, soon: fullRoster.expiringSoonCertCount })
+              : t('crewPrint.expiredOnly', { expired: fullRoster.expiredCertCount })}
           </div>
         )}
 
         {groups.length === 0 && (
           <div className="mt-6 rounded border border-gray-200 bg-gray-50 p-6 text-sm text-gray-600">
             {foremanFilter
-              ? 'No crew currently assigned to that foreman.'
-              : 'No employees on file.'}
+              ? t('crewPrint.noCrewForeman')
+              : t('crewPrint.noEmployees')}
           </div>
         )}
 
@@ -182,12 +182,12 @@ export default async function CrewPrintPage({
               <table className="mt-2 w-full text-left text-sm">
                 <thead className="text-xs uppercase tracking-wide text-gray-500">
                   <tr>
-                    <th className="py-1 pr-4">Name</th>
-                    <th className="py-1 pr-4">Role</th>
-                    <th className="py-1 pr-4">Phone</th>
-                    <th className="py-1 pr-4">Classification</th>
-                    <th className="py-1 pr-4">Certs</th>
-                    <th className="py-1">Tools out</th>
+                    <th className="py-1 pr-4">{t('crewPrint.thName')}</th>
+                    <th className="py-1 pr-4">{t('crewPrint.thRole')}</th>
+                    <th className="py-1 pr-4">{t('crewPrint.thPhone')}</th>
+                    <th className="py-1 pr-4">{t('crewPrint.thClassification')}</th>
+                    <th className="py-1 pr-4">{t('crewPrint.thCerts')}</th>
+                    <th className="py-1">{t('crewPrint.thToolsOut')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -199,13 +199,13 @@ export default async function CrewPrintPage({
                           {fullName(e)}
                         </td>
                         <td className="py-2 pr-4 align-top text-xs text-gray-600">
-                          {roleLabel(e.role)}
+                          {roleLabel(e.role, locale)}
                         </td>
                         <td className="py-2 pr-4 align-top text-gray-700">
                           {e.phone ?? ''}
                         </td>
                         <td className="py-2 pr-4 align-top text-xs text-gray-600">
-                          {classificationLabel(e.classification)}
+                          {classificationLabel(e.classification, locale)}
                         </td>
                         <td className="py-2 pr-4 align-top text-xs text-gray-700">
                           {m.certs.length === 0 ? (
@@ -223,11 +223,11 @@ export default async function CrewPrintPage({
                                         : ''
                                   }
                                 >
-                                  {certKindLabel(c.cert.kind)}
+                                  {certKindLabel(c.cert.kind, locale)}
                                   {c.cert.expiresOn && (
                                     <> &middot; {c.cert.expiresOn}</>
                                   )}
-                                  {c.status === 'expired' && ' (EXPIRED)'}
+                                  {c.status === 'expired' && ' ' + t('crewPrint.expiredSuffix')}
                                 </li>
                               ))}
                             </ul>
@@ -254,9 +254,7 @@ export default async function CrewPrintPage({
         </div>
 
         <footer className="mt-10 border-t border-gray-200 pt-3 text-xs text-gray-500">
-          Generated {generatedDate} &middot; {company.legalName} &middot;{' '}
-          {company.address.street}, {company.address.city}, {company.address.state}{' '}
-          {company.address.zip}
+          {t('crewPrint.footer', { date: generatedDate, name: company.legalName, addr: `${company.address.street}, ${company.address.city}, ${company.address.state} ${company.address.zip}` })}
         </footer>
       </main>
     </>
