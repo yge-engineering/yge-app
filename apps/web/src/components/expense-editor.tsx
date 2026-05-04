@@ -4,6 +4,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 import {
   defaultGlAccountForCategory,
   dollarsToCents,
@@ -79,6 +80,7 @@ export function ExpenseEditor({
   expense?: Expense;
 }) {
   const router = useRouter();
+  const t = useTranslator();
   const [form, setForm] = useState<FormState>(defaults(expense));
   const [glManual, setGlManual] = useState(mode === 'edit' && !!expense?.glAccountNumber);
   const [saving, setSaving] = useState(false);
@@ -154,23 +156,21 @@ export function ExpenseEditor({
 
       {form.paidWithCompanyCard && (
         <div className="rounded border border-purple-300 bg-purple-50 p-3 text-sm text-purple-900">
-          <strong>Company card:</strong> this receipt is informational. The
-          actual cash flow goes through the AP invoice on the card vendor's
-          monthly statement; not reimbursable to the employee.
+          <strong>{t('expense.cardLeader')}</strong>{t('expense.cardBody')}
         </div>
       )}
 
-      <Section title="Employee + receipt">
-        <Field label="Employee ID" required>
+      <Section title={t('expense.secEmployee')}>
+        <Field label={t('expense.lblEmpId')} required>
           <input
             className={inputCls}
             value={form.employeeId}
             onChange={(e) => setField('employeeId', e.target.value)}
-            placeholder="emp-xxxxxxxx"
+            placeholder={t('expense.phEmpId')}
             required
           />
         </Field>
-        <Field label="Employee name" required>
+        <Field label={t('expense.lblEmpName')} required>
           <input
             className={inputCls}
             value={form.employeeName}
@@ -178,7 +178,7 @@ export function ExpenseEditor({
             required
           />
         </Field>
-        <Field label="Receipt date" required>
+        <Field label={t('expense.lblReceiptDate')} required>
           <input
             type="date"
             className={inputCls}
@@ -187,7 +187,7 @@ export function ExpenseEditor({
             required
           />
         </Field>
-        <Field label="Amount ($)" required>
+        <Field label={t('expense.lblAmount')} required>
           <input
             type="number"
             step="0.01"
@@ -198,28 +198,28 @@ export function ExpenseEditor({
             required
           />
         </Field>
-        <Field label="Vendor / merchant" required>
+        <Field label={t('expense.lblVendor')} required>
           <input
             className={inputCls}
             value={form.vendor}
             onChange={(e) => setField('vendor', e.target.value)}
-            placeholder="Holiday Inn Redding"
+            placeholder={t('expense.phVendor')}
             required
           />
         </Field>
-        <Field label="Description" required>
+        <Field label={t('expense.lblDescription')} required>
           <input
             className={inputCls}
             value={form.description}
             onChange={(e) => setField('description', e.target.value)}
-            placeholder="2 nights — Sulphur Springs trip"
+            placeholder={t('expense.phDescription')}
             required
           />
         </Field>
       </Section>
 
-      <Section title="Coding">
-        <Field label="Category">
+      <Section title={t('expense.secCoding')}>
+        <Field label={t('expense.lblCategory')}>
           <select
             className={inputCls}
             value={form.category}
@@ -232,7 +232,7 @@ export function ExpenseEditor({
             ))}
           </select>
         </Field>
-        <Field label="GL account #">
+        <Field label={t('expense.lblGl')}>
           <input
             className={inputCls}
             value={form.glAccountNumber}
@@ -242,43 +242,43 @@ export function ExpenseEditor({
             }}
           />
         </Field>
-        <Field label="Job ID">
+        <Field label={t('expense.lblJobId')}>
           <input
             className={inputCls}
             value={form.jobId}
             onChange={(e) => setField('jobId', e.target.value)}
-            placeholder="job-YYYY-MM-DD-..."
+            placeholder={t('expense.phJobId')}
           />
         </Field>
-        <Field label="Paid with company card?">
+        <Field label={t('expense.lblCard')}>
           <Checkbox
             checked={form.paidWithCompanyCard}
             onChange={(b) => setField('paidWithCompanyCard', b)}
-            label="Excludes from employee reimbursement"
+            label={t('expense.cbCard')}
           />
         </Field>
       </Section>
 
-      <Section title="Receipt file">
-        <Field label="Receipt reference (filename / URL)" full>
+      <Section title={t('expense.secReceipt')}>
+        <Field label={t('expense.lblReceiptRef')} full>
           <input
             className={inputCls}
             value={form.receiptRef}
             onChange={(e) => setField('receiptRef', e.target.value)}
-            placeholder="receipt_2026-04-15_holiday-inn.pdf"
+            placeholder={t('expense.phReceiptRef')}
           />
         </Field>
       </Section>
 
-      <Section title="Reimbursement">
-        <Field label="Reimbursed">
+      <Section title={t('expense.secReimb')}>
+        <Field label={t('expense.lblReimb')}>
           <Checkbox
             checked={form.reimbursed}
             onChange={(b) => setField('reimbursed', b)}
-            label="Already paid back to employee"
+            label={t('expense.cbReimb')}
           />
         </Field>
-        <Field label="Reimbursed on">
+        <Field label={t('expense.lblReimbOn')}>
           <input
             type="date"
             className={inputCls}
@@ -288,8 +288,8 @@ export function ExpenseEditor({
         </Field>
       </Section>
 
-      <Section title="Notes">
-        <Field label="Notes" full>
+      <Section title={t('expense.secNotes')}>
+        <Field label={t('expense.lblNotes')} full>
           <textarea
             className={`${inputCls} min-h-[80px]`}
             value={form.notes}
@@ -304,7 +304,7 @@ export function ExpenseEditor({
           disabled={saving}
           className="rounded bg-yge-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-yge-blue-700 disabled:opacity-50"
         >
-          {saving ? 'Saving…' : mode === 'create' ? 'Log expense' : 'Save changes'}
+          {saving ? t('expense.busy') : mode === 'create' ? t('expense.create') : t('expense.save')}
         </button>
       </div>
     </form>
