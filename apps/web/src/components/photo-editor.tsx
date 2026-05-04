@@ -4,6 +4,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 import {
   photoCategoryLabel,
   type Photo,
@@ -79,6 +80,7 @@ export function PhotoEditor({
   photo?: Photo;
 }) {
   const router = useRouter();
+  const t = useTranslator();
   const [form, setForm] = useState<FormState>(defaults(photo));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -153,17 +155,17 @@ export function PhotoEditor({
         </div>
       )}
 
-      <Section title="Photo">
-        <Field label="Job ID" required>
+      <Section title={t('photo.secPhoto')}>
+        <Field label={t('photo.lblJobId')} required>
           <input
             className={inputCls}
             value={form.jobId}
             onChange={(e) => setField('jobId', e.target.value)}
-            placeholder="job-YYYY-MM-DD-..."
+            placeholder={t('photo.phJobId')}
             required
           />
         </Field>
-        <Field label="Category">
+        <Field label={t('photo.lblCategory')}>
           <select
             className={inputCls}
             value={form.category}
@@ -176,7 +178,7 @@ export function PhotoEditor({
             ))}
           </select>
         </Field>
-        <Field label="Date taken" required>
+        <Field label={t('photo.lblTakenOn')} required>
           <input
             type="date"
             className={inputCls}
@@ -185,31 +187,31 @@ export function PhotoEditor({
             required
           />
         </Field>
-        <Field label="Time (HH:MM)">
+        <Field label={t('photo.lblTakenAt')}>
           <input
             className={inputCls}
             value={form.takenAt}
             onChange={(e) => setField('takenAt', e.target.value)}
-            placeholder="14:30"
+            placeholder={t('photo.phTakenAt')}
           />
         </Field>
-        <Field label="Location" required>
+        <Field label={t('photo.lblLocation')} required>
           <input
             className={inputCls}
             value={form.location}
             onChange={(e) => setField('location', e.target.value)}
-            placeholder="Sta. 12+50 LT, basin #3"
+            placeholder={t('photo.phLocation')}
             required
           />
         </Field>
-        <Field label="Photographer">
+        <Field label={t('photo.lblPhotographer')}>
           <input
             className={inputCls}
             value={form.photographerName}
             onChange={(e) => setField('photographerName', e.target.value)}
           />
         </Field>
-        <Field label="Caption" required full>
+        <Field label={t('photo.lblCaption')} required full>
           <textarea
             className={`${inputCls} min-h-[60px]`}
             value={form.caption}
@@ -219,94 +221,94 @@ export function PhotoEditor({
         </Field>
       </Section>
 
-      <Section title="File reference">
-        <Field label="Reference (filename, drive path, URL)" required full>
+      <Section title={t('photo.secFile')}>
+        <Field label={t('photo.lblReference')} required full>
           <input
             className={inputCls}
             value={form.reference}
             onChange={(e) => setField('reference', e.target.value)}
-            placeholder="IMG_2026-04-25-01.jpg"
+            placeholder={t('photo.phReference')}
             required
           />
         </Field>
       </Section>
 
-      <Section title="GPS (optional)">
-        <Field label="Latitude (decimal)">
+      <Section title={t('photo.secGps')}>
+        <Field label={t('photo.lblLat')}>
           <input
             type="number"
             step="0.000001"
             className={inputCls}
             value={form.latitude}
             onChange={(e) => setField('latitude', e.target.value)}
-            placeholder="40.385"
+            placeholder={t('photo.phLat')}
           />
         </Field>
-        <Field label="Longitude (decimal)">
+        <Field label={t('photo.lblLng')}>
           <input
             type="number"
             step="0.000001"
             className={inputCls}
             value={form.longitude}
             onChange={(e) => setField('longitude', e.target.value)}
-            placeholder="-122.275"
+            placeholder={t('photo.phLng')}
           />
         </Field>
       </Section>
 
-      <Section title="Cross-references (optional)">
-        <Field label="RFI ID">
+      <Section title={t('photo.secXref')}>
+        <Field label={t('photo.lblRfiId')}>
           <input
             className={inputCls}
             value={form.rfiId}
             onChange={(e) => setField('rfiId', e.target.value)}
-            placeholder="rfi-xxxxxxxx"
+            placeholder={t('photo.phRfiId')}
           />
         </Field>
-        <Field label="Change order ID">
+        <Field label={t('photo.lblCoId')}>
           <input
             className={inputCls}
             value={form.changeOrderId}
             onChange={(e) => setField('changeOrderId', e.target.value)}
-            placeholder="co-xxxxxxxx"
+            placeholder={t('photo.phCoId')}
           />
         </Field>
-        <Field label="SWPPP inspection ID">
+        <Field label={t('photo.lblSwpId')}>
           <input
             className={inputCls}
             value={form.swpppInspectionId}
             onChange={(e) => setField('swpppInspectionId', e.target.value)}
-            placeholder="swp-xxxxxxxx"
+            placeholder={t('photo.phSwpId')}
           />
         </Field>
-        <Field label="Incident ID">
+        <Field label={t('photo.lblIncId')}>
           <input
             className={inputCls}
             value={form.incidentId}
             onChange={(e) => setField('incidentId', e.target.value)}
-            placeholder="inc-xxxxxxxx"
+            placeholder={t('photo.phIncId')}
           />
         </Field>
-        <Field label="Punch item ID">
+        <Field label={t('photo.lblPiId')}>
           <input
             className={inputCls}
             value={form.punchItemId}
             onChange={(e) => setField('punchItemId', e.target.value)}
-            placeholder="pi-xxxxxxxx"
+            placeholder={t('photo.phPiId')}
           />
         </Field>
-        <Field label="Daily report ID">
+        <Field label={t('photo.lblDrId')}>
           <input
             className={inputCls}
             value={form.dailyReportId}
             onChange={(e) => setField('dailyReportId', e.target.value)}
-            placeholder="dr-xxxxxxxx"
+            placeholder={t('photo.phDrId')}
           />
         </Field>
       </Section>
 
-      <Section title="Notes">
-        <Field label="Internal notes" full>
+      <Section title={t('photo.secNotes')}>
+        <Field label={t('photo.lblNotes')} full>
           <textarea
             className={`${inputCls} min-h-[80px]`}
             value={form.notes}
@@ -321,7 +323,7 @@ export function PhotoEditor({
           disabled={saving}
           className="rounded bg-yge-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-yge-blue-700 disabled:opacity-50"
         >
-          {saving ? 'Saving…' : mode === 'create' ? 'Log photo' : 'Save changes'}
+          {saving ? t('photo.busy') : mode === 'create' ? t('photo.create') : t('photo.save')}
         </button>
       </div>
     </form>
