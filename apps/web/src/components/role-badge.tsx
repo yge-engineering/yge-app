@@ -4,29 +4,23 @@
 // 'Laborer'. Uses the StatusPill primitive for consistency.
 
 import { StatusPill } from './status-pill';
+import { getTranslator } from '../lib/locale';
 
 interface Props {
   role: string;
   size?: 'sm' | 'md';
 }
 
+const ROLE_KEYS = new Set([
+  'PRESIDENT', 'VP', 'OFFICE', 'SAFETY_DIRECTOR', 'FOREMAN', 'OPERATOR',
+  'DRIVER', 'LABORER', 'APPRENTICE', 'CARPENTER', 'IRONWORKER',
+  'CEMENT_MASON', 'OTHER',
+]);
+
 function roleLabel(role: string): string {
-  switch (role) {
-    case 'PRESIDENT': return 'President';
-    case 'VP': return 'VP';
-    case 'OFFICE': return 'Office';
-    case 'SAFETY_DIRECTOR': return 'Safety Dir';
-    case 'FOREMAN': return 'Foreman';
-    case 'OPERATOR': return 'Operator';
-    case 'DRIVER': return 'Driver';
-    case 'LABORER': return 'Laborer';
-    case 'APPRENTICE': return 'Apprentice';
-    case 'CARPENTER': return 'Carpenter';
-    case 'IRONWORKER': return 'Ironworker';
-    case 'CEMENT_MASON': return 'Cement Mason';
-    case 'OTHER': return 'Other';
-    default: return role;
-  }
+  if (!ROLE_KEYS.has(role)) return role;
+  const t = getTranslator();
+  return t(`role.${role}`);
 }
 
 function roleTone(role: string): 'success' | 'warn' | 'info' | 'neutral' | 'muted' {
