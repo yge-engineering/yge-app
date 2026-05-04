@@ -14,6 +14,7 @@ import {
   type MaterialCategory,
 } from '@yge/shared';
 import { ApiError, postJson } from '@/lib/api';
+import { useTranslator, useLocale } from '../../../lib/use-translator';
 
 const CATEGORIES: MaterialCategory[] = [
   'AGGREGATE',
@@ -37,6 +38,8 @@ const CATEGORIES: MaterialCategory[] = [
 ];
 
 export default function NewMaterialPage() {
+  const t = useTranslator();
+  const locale = useLocale();
   const router = useRouter();
   const [name, setName] = useState('');
   const [category, setCategory] = useState<MaterialCategory>('OTHER');
@@ -54,7 +57,7 @@ export default function NewMaterialPage() {
     e.preventDefault();
     setError(null);
     if (name.trim().length === 0) {
-      setError('Name is required.');
+      setError(t('newMaterial.errName'));
       return;
     }
     setSaving(true);
@@ -76,9 +79,9 @@ export default function NewMaterialPage() {
       const res = await postJson<{ material: Material }>('/api/materials', body);
       router.push(`/materials/${res.material.id}`);
     } catch (err) {
-      if (err instanceof ApiError) setError(`${err.message} (HTTP ${err.status})`);
+      if (err instanceof ApiError) setError(t('newMaterial.errHttp', { msg: err.message, status: err.status }));
       else if (err instanceof Error) setError(err.message);
-      else setError('Unknown error');
+      else setError(t('newMaterial.errUnknown'));
       setSaving(false);
     }
   }
@@ -88,24 +91,24 @@ export default function NewMaterialPage() {
     <main className="mx-auto max-w-2xl p-8">
       <div className="mb-6">
         <Link href="/materials" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Back to materials
+          {t('newMaterial.back')}
         </Link>
       </div>
 
-      <h1 className="text-3xl font-bold text-yge-blue-500">Add material</h1>
+      <h1 className="text-3xl font-bold text-yge-blue-500">{t('newMaterial.title')}</h1>
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-4">
-        <Field label="Name *">
+        <Field label={t('newMaterial.lblName')}>
           <input
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder='e.g. "1.5\" Class 2 Aggregate Base"'
+            placeholder={t('newMaterial.phName')}
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
         <div className="grid gap-4 sm:grid-cols-3">
-          <Field label="Category">
+          <Field label={t('newMaterial.lblCategory')}>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value as MaterialCategory)}
@@ -113,19 +116,19 @@ export default function NewMaterialPage() {
             >
               {CATEGORIES.map((c) => (
                 <option key={c} value={c}>
-                  {materialCategoryLabel(c)}
+                  {materialCategoryLabel(c, locale)}
                 </option>
               ))}
             </select>
           </Field>
-          <Field label="Unit (EA, TON, CY, GAL)">
+          <Field label={t('newMaterial.lblUnit')}>
             <input
               value={unit}
               onChange={(e) => setUnit(e.target.value)}
               className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
             />
           </Field>
-          <Field label="Internal SKU">
+          <Field label={t('newMaterial.lblSku')}>
             <input
               value={sku}
               onChange={(e) => setSku(e.target.value)}
@@ -134,7 +137,7 @@ export default function NewMaterialPage() {
           </Field>
         </div>
         <div className="grid gap-4 sm:grid-cols-3">
-          <Field label="Opening qty on hand">
+          <Field label={t('newMaterial.lblOpeningQty')}>
             <input
               type="number"
               min="0"
@@ -144,7 +147,7 @@ export default function NewMaterialPage() {
               className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
             />
           </Field>
-          <Field label="Reorder point">
+          <Field label={t('newMaterial.lblReorderPoint')}>
             <input
               type="number"
               min="0"
@@ -154,7 +157,7 @@ export default function NewMaterialPage() {
               className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
             />
           </Field>
-          <Field label="Unit cost ($)">
+          <Field label={t('newMaterial.lblUnitCost')}>
             <input
               type="number"
               min="0"
@@ -166,15 +169,15 @@ export default function NewMaterialPage() {
           </Field>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Location">
+          <Field label={t('newMaterial.lblLocation')}>
             <input
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              placeholder="Yard - Bin 14"
+              placeholder={t('newMaterial.phLocation')}
               className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
             />
           </Field>
-          <Field label="Preferred vendor">
+          <Field label={t('newMaterial.lblVendor')}>
             <input
               value={preferredVendor}
               onChange={(e) => setPreferredVendor(e.target.value)}
@@ -193,10 +196,10 @@ export default function NewMaterialPage() {
             disabled={saving}
             className="rounded bg-yge-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50"
           >
-            {saving ? 'Saving…' : 'Save material'}
+            {saving ? t('newMaterial.busy') : t('newMaterial.action')}
           </button>
           <Link href="/materials" className="text-sm text-gray-600 hover:underline">
-            Cancel
+            {t('newMaterial.cancel')}
           </Link>
         </div>
       </form>

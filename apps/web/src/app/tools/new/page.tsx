@@ -13,6 +13,7 @@ import {
   type ToolCategory,
 } from '@yge/shared';
 import { ApiError, postJson } from '@/lib/api';
+import { useTranslator, useLocale } from '../../../lib/use-translator';
 
 const CATEGORIES: ToolCategory[] = [
   'IMPACT_DRIVER',
@@ -54,6 +55,8 @@ const INITIAL: FormState = {
 };
 
 export default function NewToolPage() {
+  const t = useTranslator();
+  const locale = useLocale();
   const router = useRouter();
   const [form, setForm] = useState<FormState>(INITIAL);
   const [saving, setSaving] = useState(false);
@@ -67,7 +70,7 @@ export default function NewToolPage() {
     ev.preventDefault();
     setError(null);
     if (form.name.trim().length === 0) {
-      setError('Tool name is required.');
+      setError(t('newTool.errName'));
       return;
     }
 
@@ -87,11 +90,11 @@ export default function NewToolPage() {
       router.push(`/tools/${res.tool.id}`);
     } catch (err) {
       if (err instanceof ApiError) {
-        setError(`${err.message} (HTTP ${err.status})`);
+        setError(t('newTool.errHttp', { msg: err.message, status: err.status }));
       } else if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError('Unknown error');
+        setError(t('newTool.errUnknown'));
       }
       setSaving(false);
     }
@@ -102,27 +105,26 @@ export default function NewToolPage() {
     <main className="mx-auto max-w-2xl p-8">
       <div className="mb-6">
         <Link href="/tools" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Back to tools
+          {t('newTool.back')}
         </Link>
       </div>
 
-      <h1 className="text-3xl font-bold text-yge-blue-500">Add power tool</h1>
+      <h1 className="text-3xl font-bold text-yge-blue-500">{t('newTool.title')}</h1>
       <p className="mt-2 text-gray-700">
-        Add the tool to inventory. Once saved you can dispatch it out to a
-        crew member from the tool list.
+        {t('newTool.subtitle')}
       </p>
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-4">
-        <Field label="Tool name *">
+        <Field label={t('newTool.lblName')}>
           <input
             required
             value={form.name}
             onChange={(e) => update('name', e.target.value)}
-            placeholder='e.g. "Milwaukee 18V Impact Driver"'
+            placeholder={t('newTool.phName')}
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Category">
+        <Field label={t('newTool.lblCategory')}>
           <select
             value={form.category}
             onChange={(e) => update('category', e.target.value as ToolCategory)}
@@ -130,13 +132,13 @@ export default function NewToolPage() {
           >
             {CATEGORIES.map((c) => (
               <option key={c} value={c}>
-                {categoryLabel(c)}
+                {categoryLabel(c, locale)}
               </option>
             ))}
           </select>
         </Field>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Make">
+          <Field label={t('newTool.lblMake')}>
             <input
               value={form.make}
               onChange={(e) => update('make', e.target.value)}
@@ -144,7 +146,7 @@ export default function NewToolPage() {
               className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
             />
           </Field>
-          <Field label="Model">
+          <Field label={t('newTool.lblModel')}>
             <input
               value={form.model}
               onChange={(e) => update('model', e.target.value)}
@@ -154,14 +156,14 @@ export default function NewToolPage() {
           </Field>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Serial number">
+          <Field label={t('newTool.lblSerial')}>
             <input
               value={form.serialNumber}
               onChange={(e) => update('serialNumber', e.target.value)}
               className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
             />
           </Field>
-          <Field label="Asset tag">
+          <Field label={t('newTool.lblAssetTag')}>
             <input
               value={form.assetTag}
               onChange={(e) => update('assetTag', e.target.value)}
@@ -170,7 +172,7 @@ export default function NewToolPage() {
             />
           </Field>
         </div>
-        <Field label="Notes">
+        <Field label={t('newTool.lblNotes')}>
           <textarea
             rows={3}
             value={form.notes}
@@ -189,10 +191,10 @@ export default function NewToolPage() {
             disabled={saving}
             className="rounded bg-yge-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50"
           >
-            {saving ? 'Saving…' : 'Save tool'}
+            {saving ? t('newTool.busy') : t('newTool.action')}
           </button>
           <Link href="/tools" className="text-sm text-gray-600 hover:underline">
-            Cancel
+            {t('newTool.cancel')}
           </Link>
         </div>
       </form>
