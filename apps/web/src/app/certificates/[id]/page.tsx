@@ -5,6 +5,7 @@ import { AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { Certificate } from '@yge/shared';
 import { CertificateEditor } from '@/components/certificate-editor';
+import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
   return (
@@ -31,6 +32,7 @@ export default async function CertificateDetailPage({
 }: {
   params: { id: string };
 }) {
+  const t = getTranslator();
   const cert = await fetchCert(params.id);
   if (!cert) notFound();
 
@@ -38,7 +40,7 @@ export default async function CertificateDetailPage({
     <main className="mx-auto max-w-3xl p-8">
       <div className="mb-6">
         <Link href="/certificates" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Back to certificates
+          {t('certPg.back')}
         </Link>
       </div>
 

@@ -17,6 +17,7 @@ import {
   computeHeadToHead,
   type BidTab,
 } from '@yge/shared';
+import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
   return (
@@ -76,6 +77,7 @@ export default async function CompetitorDetailPage({
   const me = rows.find((r) => r.nameNormalized === nameNormalized);
   if (!me) notFound();
 
+  const t = getTranslator();
   const h2h = computeHeadToHead({ tabs, competitorNameNormalized: nameNormalized });
 
   // Per-appearance rows.
@@ -107,49 +109,48 @@ export default async function CompetitorDetailPage({
     <AppShell>
       <main className="mx-auto max-w-6xl p-8">
         <Link href="/competitors" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; All competitors
+          {t('compPg.back')}
         </Link>
 
         <PageHeader
           title={me.displayName}
-          subtitle={`${me.appearances} appearance${me.appearances === 1 ? '' : 's'} across ${me.topAgencies.length} agenc${me.topAgencies.length === 1 ? 'y' : 'ies'} · active ${me.firstSeenAt} → ${me.lastSeenAt}`}
+          subtitle={t('compPg.subtitle', { appearances: me.appearances, appearancesWord: me.appearances === 1 ? t('compPg.appearanceOne') : t('compPg.appearanceMany'), agencies: me.topAgencies.length, agenciesWord: me.topAgencies.length === 1 ? t('compPg.agencyOne') : t('compPg.agencyMany'), first: me.firstSeenAt, last: me.lastSeenAt })}
         />
 
         <section className="mt-4 grid gap-3 sm:grid-cols-4">
-          <Tile label="Apparent low" value={`${me.apparentLowCount} / ${me.appearances}`} sub={`${((me.apparentLowCount / me.appearances) * 100).toFixed(0)}% of bids`} />
-          <Tile label="Awarded" value={String(me.awardCount)} />
-          <Tile label="Avg bid" value={formatMoney(me.avgBidCents)} sub={`${formatMoney(me.minBidCents)} – ${formatMoney(me.maxBidCents)}`} />
-          <Tile label="Avg rank" value={me.avgRank.toFixed(2)} sub="1.00 = always low" />
+          <Tile label={t('compPg.tileApparentLow')} value={`${me.apparentLowCount} / ${me.appearances}`} sub={t('compPg.pctOfBids', { pct: ((me.apparentLowCount / me.appearances) * 100).toFixed(0) })} />
+          <Tile label={t('compPg.tileAwarded')} value={String(me.awardCount)} />
+          <Tile label={t('compPg.tileAvgBid')} value={formatMoney(me.avgBidCents)} sub={`${formatMoney(me.minBidCents)} – ${formatMoney(me.maxBidCents)}`} />
+          <Tile label={t('compPg.tileAvgRank')} value={me.avgRank.toFixed(2)} sub={t('compPg.avgRankSub')} />
         </section>
 
         <section className="mt-4 grid gap-3 sm:grid-cols-2">
           <BreakdownTile
-            label="Top agencies"
+            label={t('compPg.tileTopAgencies')}
             rows={me.topAgencies.map((a) => ({ key: a.agencyName, count: a.count }))}
           />
           <BreakdownTile
-            label="Counties"
+            label={t('compPg.tileCounties')}
             rows={me.topCounties.map((c) => ({ key: c.county, count: c.count }))}
-            empty="No county data captured."
+            empty={t('compPg.noCounty')}
           />
         </section>
 
         {h2h.events > 0 && (
           <section className="mt-4 rounded-md border border-yge-blue-500 bg-yge-blue-50 p-4 shadow-sm">
             <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-yge-blue-500">
-              Head-to-head with YGE
+              {t('compPg.h2hHeader')}
             </h2>
             <p className="mb-3 text-xs text-gray-700">
-              Tabs where both YGE and {me.displayName} bid:{' '}
-              {h2h.firstSeenAt} → {h2h.lastSeenAt}
+              {t('compPg.h2hRange', { name: me.displayName, first: h2h.firstSeenAt ?? '', last: h2h.lastSeenAt ?? '' })}
             </p>
             <dl className="grid gap-3 text-xs sm:grid-cols-4">
               <div>
-                <dt className="text-[10px] uppercase tracking-wide text-gray-500">Events</dt>
+                <dt className="text-[10px] uppercase tracking-wide text-gray-500">{t('compPg.h2hEvents')}</dt>
                 <dd className="mt-0.5 text-2xl font-bold text-gray-900">{h2h.events}</dd>
               </div>
               <div>
-                <dt className="text-[10px] uppercase tracking-wide text-gray-500">YGE lower</dt>
+                <dt className="text-[10px] uppercase tracking-wide text-gray-500">{t('compPg.h2hYgeLower')}</dt>
                 <dd className="mt-0.5 text-2xl font-bold text-emerald-700">
                   {h2h.ygeLowerCount}
                 </dd>
@@ -158,7 +159,7 @@ export default async function CompetitorDetailPage({
                 </dd>
               </div>
               <div>
-                <dt className="text-[10px] uppercase tracking-wide text-gray-500">{me.displayName} lower</dt>
+                <dt className="text-[10px] uppercase tracking-wide text-gray-500">{t('compPg.h2hCompLower', { name: me.displayName })}</dt>
                 <dd className="mt-0.5 text-2xl font-bold text-red-700">
                   {h2h.competitorLowerCount}
                 </dd>
@@ -167,19 +168,18 @@ export default async function CompetitorDetailPage({
                 </dd>
               </div>
               <div>
-                <dt className="text-[10px] uppercase tracking-wide text-gray-500">Avg YGE Δ</dt>
+                <dt className="text-[10px] uppercase tracking-wide text-gray-500">{t('compPg.h2hAvgDelta')}</dt>
                 <dd className="mt-0.5 font-mono text-base text-gray-900">
                   {h2h.avgYgeMinusCompetitorCents >= 0 ? '+' : ''}
                   {(h2h.avgYgeMinusCompetitorCents / 100).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                 </dd>
                 <dd className="text-[10px] text-gray-600">
-                  {(h2h.avgYgeMinusCompetitorPct * 100).toFixed(1)}% vs. their bid
+                  {t('compPg.h2hVsTheirBid', { pct: (h2h.avgYgeMinusCompetitorPct * 100).toFixed(1) })}
                 </dd>
               </div>
             </dl>
             <p className="mt-3 text-[11px] text-gray-600">
-              Awards: YGE took {h2h.ygeAwardedCount}, {me.displayName} took {h2h.competitorAwardedCount}.
-              Apparent low: YGE {h2h.ygeApparentLowCount}, {me.displayName} {h2h.competitorApparentLowCount}.
+              {t('compPg.h2hSummary', { name: me.displayName, ygeAwards: h2h.ygeAwardedCount, compAwards: h2h.competitorAwardedCount, ygeLow: h2h.ygeApparentLowCount, compLow: h2h.competitorApparentLowCount })}
             </p>
           </section>
         )}
@@ -189,8 +189,8 @@ export default async function CompetitorDetailPage({
             <div className="flex flex-wrap gap-2 text-xs">
               {me.everDbe && <StatusPill label="DBE" tone="info" size="sm" />}
               {me.everSbe && <StatusPill label="SBE" tone="info" size="sm" />}
-              {me.everWithdrawn && <StatusPill label="Withdrew on a tab" tone="warn" size="sm" />}
-              {me.everRejected && <StatusPill label="Rejected on a tab" tone="danger" size="sm" />}
+              {me.everWithdrawn && <StatusPill label={t('compPg.pillWithdrew')} tone="warn" size="sm" />}
+              {me.everRejected && <StatusPill label={t('compPg.pillRejected')} tone="danger" size="sm" />}
               {me.cslbLicense && <span className="font-mono text-[11px] text-gray-700">CSLB {me.cslbLicense}</span>}
               {me.dirRegistration && <span className="font-mono text-[11px] text-gray-700">DIR {me.dirRegistration}</span>}
             </div>
@@ -199,18 +199,18 @@ export default async function CompetitorDetailPage({
 
         <section className="mt-6 overflow-hidden rounded-md border border-gray-200 bg-white shadow-sm">
           <header className="border-b border-gray-200 bg-gray-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-700">
-            Appearance history
+            {t('compPg.tableHeader')}
           </header>
           <table className="w-full text-sm">
             <thead className="bg-white text-xs uppercase tracking-wide text-gray-500">
               <tr>
-                <th className="px-3 py-2 text-left">Opened</th>
-                <th className="px-3 py-2 text-left">Project</th>
-                <th className="px-3 py-2 text-left">Agency</th>
-                <th className="px-3 py-2 text-right">Rank</th>
-                <th className="px-3 py-2 text-right">Their bid</th>
-                <th className="px-3 py-2 text-right">vs. low</th>
-                <th className="px-3 py-2 text-left">Outcome</th>
+                <th className="px-3 py-2 text-left">{t('compPg.thOpened')}</th>
+                <th className="px-3 py-2 text-left">{t('compPg.thProject')}</th>
+                <th className="px-3 py-2 text-left">{t('compPg.thAgency')}</th>
+                <th className="px-3 py-2 text-right">{t('compPg.thRank')}</th>
+                <th className="px-3 py-2 text-right">{t('compPg.thTheirBid')}</th>
+                <th className="px-3 py-2 text-right">{t('compPg.thVsLow')}</th>
+                <th className="px-3 py-2 text-left">{t('compPg.thOutcome')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -237,14 +237,14 @@ export default async function CompetitorDetailPage({
                     <td className="px-3 py-2 align-top text-right font-mono">{a.rank}</td>
                     <td className="px-3 py-2 align-top text-right font-mono">{formatMoney(a.totalCents)}</td>
                     <td className="px-3 py-2 align-top text-right font-mono text-xs text-gray-700">
-                      {a.rank === 1 ? '—' : `+${overshoot.toFixed(1)}%`}
+                      {a.rank === 1 ? '—' : t('compPg.overshootPct', { pct: overshoot.toFixed(1) })}
                     </td>
                     <td className="px-3 py-2 align-top">
-                      {a.awarded && <StatusPill label="awarded" tone="success" size="sm" />}
-                      {a.withdrawn && <StatusPill label="withdrew" tone="warn" size="sm" />}
-                      {a.rejected && <StatusPill label="rejected" tone="danger" size="sm" />}
+                      {a.awarded && <StatusPill label={t('compPg.outAwarded')} tone="success" size="sm" />}
+                      {a.withdrawn && <StatusPill label={t('compPg.outWithdrew')} tone="warn" size="sm" />}
+                      {a.rejected && <StatusPill label={t('compPg.outRejected')} tone="danger" size="sm" />}
                       {a.rank > 1 && !a.awarded && !a.withdrawn && !a.rejected && (
-                        <span className="text-xs text-gray-500">lost</span>
+                        <span className="text-xs text-gray-500">{t('compPg.outLost')}</span>
                       )}
                     </td>
                   </tr>
