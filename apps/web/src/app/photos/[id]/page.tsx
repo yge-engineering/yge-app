@@ -5,6 +5,7 @@ import { AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { Photo } from '@yge/shared';
 import { PhotoEditor } from '../../../components/photo-editor';
+import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
   return (
@@ -23,6 +24,7 @@ export default async function PhotoDetailPage({
 }: {
   params: { id: string };
 }) {
+  const t = getTranslator();
   const photo = await fetchPhoto(params.id);
   if (!photo) notFound();
 
@@ -30,14 +32,14 @@ export default async function PhotoDetailPage({
     <main className="mx-auto max-w-3xl p-8">
       <div className="mb-6">
         <Link href="/photos" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Photo Log
+          {t('newPhotoPg.back')}
         </Link>
       </div>
       <h1 className="text-3xl font-bold text-yge-blue-500">{photo.caption}</h1>
       <p className="mt-1 text-sm text-gray-600">
         {photo.takenOn} · {photo.location}
       </p>
-      <p className="mt-1 text-xs text-gray-500">ID: {photo.id}</p>
+      <p className="mt-1 text-xs text-gray-500">{t('photoPg.idLabel', { id: photo.id })}</p>
       <div className="mt-6">
         <PhotoEditor mode="edit" photo={photo} />
       </div>
