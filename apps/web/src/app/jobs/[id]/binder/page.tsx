@@ -15,6 +15,7 @@ import {
 } from '../../../../components';
 import {
   arInvoiceStatusLabel,
+  coerceLocale,
   computeArPaymentRollup,
   computeArRollup,
   computeLienWaiverRollup,
@@ -35,6 +36,8 @@ import {
   type SwpppInspection,
   type WeatherLog,
 } from '@yge/shared';
+import { getTranslator } from '../../../../lib/locale';
+import { cookies } from 'next/headers';
 
 function apiBaseUrl(): string {
   return (
@@ -67,6 +70,9 @@ export default async function JobBinderPage({
 }: {
   params: { id: string };
 }) {
+  const t = getTranslator();
+  const localeCookie = cookies().get('yge-locale')?.value;
+  const locale = coerceLocale(localeCookie);
   const job = await fetchJob(params.id);
   if (!job) notFound();
 
@@ -123,42 +129,46 @@ export default async function JobBinderPage({
       <main className="mx-auto max-w-6xl">
         <PageHeader
           title={job.projectName}
-          subtitle={`${job.ownerAgency ?? 'Customer TBD'} · ${job.id}`}
+          subtitle={`${job.ownerAgency ?? t('binderPg.customerTbd')} · ${job.id}`}
           back={{ href: `/jobs/${job.id}`, label: `← ${job.projectName}` }}
         />
 
         <section className="mb-4 grid gap-3 sm:grid-cols-4">
-          <Tile label="Billed" value={<Money cents={arRollup.paidCents + arRollup.outstandingCents} />} />
-          <Tile label="Collected" value={<Money cents={arPaymentRollup.totalCents} />} />
-          <Tile label="Costs (AP)" value={<Money cents={apTotalCents} />} />
-          <Tile label="CO total" value={<Money cents={coTotalCents} />} />
+          <Tile label={t('binderPg.tileBilled')} value={<Money cents={arRollup.paidCents + arRollup.outstandingCents} />} />
+          <Tile label={t('binderPg.tileCollected')} value={<Money cents={arPaymentRollup.totalCents} />} />
+          <Tile label={t('binderPg.tileCostsAp')} value={<Money cents={apTotalCents} />} />
+          <Tile label={t('binderPg.tileCoTotal')} value={<Money cents={coTotalCents} />} />
         </section>
 
         <SectionPanel
-          title="AR Invoices"
+          title={t('binderPg.sectAr')}
           count={arInvoices.length}
           href={`/ar-invoices?jobId=${encodeURIComponent(job.id)}`}
           empty={arInvoices.length === 0}
+          openAllLabel={t('binderPg.openAll')}
+          noneLabel={t('binderPg.noneYet')}
         >
           {arInvoices.slice(0, 5).map((i) => (
             <Row
               key={i.id}
               href={`/ar-invoices/${i.id}`}
               primary={`#${i.invoiceNumber} · ${i.invoiceDate}`}
-              secondary={arInvoiceStatusLabel(i.status)}
+              secondary={arInvoiceStatusLabel(i.status, locale)}
               value={<Money cents={i.totalCents} />}
             />
           ))}
           {arInvoices.length > 5 ? (
-            <MoreLink count={arInvoices.length - 5} href={`/ar-invoices?jobId=${encodeURIComponent(job.id)}`} />
+            <MoreLink count={arInvoices.length - 5} href={`/ar-invoices?jobId=${encodeURIComponent(job.id)}`} label={t('binderPg.moreLabel', { count: arInvoices.length - 5 })} />
           ) : null}
         </SectionPanel>
 
         <SectionPanel
-          title="Customer Payments"
+          title={t('binderPg.sectArPayments')}
           count={arPayments.length}
           href={`/ar-payments?jobId=${encodeURIComponent(job.id)}`}
           empty={arPayments.length === 0}
+          openAllLabel={t('binderPg.openAll')}
+          noneLabel={t('binderPg.noneYet')}
         >
           {arPayments.slice(0, 5).map((p) => (
             <Row
@@ -172,10 +182,12 @@ export default async function JobBinderPage({
         </SectionPanel>
 
         <SectionPanel
-          title="AP Invoices (job costs)"
+          title={t('binderPg.sectAp')}
           count={apInvoices.length}
           href={`/ap-invoices?jobId=${encodeURIComponent(job.id)}`}
           empty={apInvoices.length === 0}
+          openAllLabel={t('binderPg.openAll')}
+          noneLabel={t('binderPg.noneYet')}
         >
           {apInvoices.slice(0, 5).map((ap) => (
             <Row
@@ -189,10 +201,12 @@ export default async function JobBinderPage({
         </SectionPanel>
 
         <SectionPanel
-          title="Change Orders"
+          title={t('binderPg.sectCo')}
           count={changeOrders.length}
           href={`/change-orders?jobId=${encodeURIComponent(job.id)}`}
           empty={changeOrders.length === 0}
+          openAllLabel={t('binderPg.openAll')}
+          noneLabel={t('binderPg.noneYet')}
         >
           {changeOrders.slice(0, 5).map((co) => (
             <Row
@@ -206,42 +220,48 @@ export default async function JobBinderPage({
         </SectionPanel>
 
         <SectionPanel
-          title="Daily Reports"
+          title={t('binderPg.sectDr')}
           count={dailyReports.length}
           href={`/daily-reports?jobId=${encodeURIComponent(job.id)}`}
           empty={dailyReports.length === 0}
+          openAllLabel={t('binderPg.openAll')}
+          noneLabel={t('binderPg.noneYet')}
         >
           {dailyReports.slice(0, 5).map((dr) => (
             <Row
               key={dr.id}
               href={`/daily-reports/${dr.id}`}
               primary={dr.date}
-              secondary={`${dr.crewOnSite.length} crew${dr.scopeCompleted ? ' · scope logged' : ''}`}
+              secondary={`${dr.crewOnSite.length} ${t('binderPg.crewWord')}${dr.scopeCompleted ? ' · ' + t('binderPg.scopeLogged') : ''}`}
             />
           ))}
         </SectionPanel>
 
         <SectionPanel
-          title="RFIs"
+          title={t('binderPg.sectRfi')}
           count={rfis.length}
           href={`/rfis?jobId=${encodeURIComponent(job.id)}`}
           empty={rfis.length === 0}
+          openAllLabel={t('binderPg.openAll')}
+          noneLabel={t('binderPg.noneYet')}
         >
           {rfis.slice(0, 5).map((r) => (
             <Row
               key={r.id}
               href={`/rfis/${r.id}`}
               primary={`#${r.rfiNumber} · ${r.subject}`}
-              secondary={`${r.status} · sent ${r.sentAt ?? '—'}`}
+              secondary={`${r.status} · ${t('binderPg.sentLabel', { date: r.sentAt ?? '—' })}`}
             />
           ))}
         </SectionPanel>
 
         <SectionPanel
-          title="Submittals"
+          title={t('binderPg.sectSubmittals')}
           count={submittals.length}
           href={`/submittals?jobId=${encodeURIComponent(job.id)}`}
           empty={submittals.length === 0}
+          openAllLabel={t('binderPg.openAll')}
+          noneLabel={t('binderPg.noneYet')}
         >
           {submittals.slice(0, 5).map((s) => (
             <Row
@@ -254,18 +274,20 @@ export default async function JobBinderPage({
         </SectionPanel>
 
         <SectionPanel
-          title="Lien Waivers"
+          title={t('binderPg.sectLienWaivers')}
           count={lienWaivers.length}
           href={`/lien-waivers?jobId=${encodeURIComponent(job.id)}`}
           empty={lienWaivers.length === 0}
           warningCount={lwRollup.unsignedUnconditional}
-          warningLabel="unsigned uncond."
+          warningLabel={t('binderPg.warnUnsignedUncond')}
+          openAllLabel={t('binderPg.openAll')}
+          noneLabel={t('binderPg.noneYet')}
         >
           {lienWaivers.slice(0, 5).map((w) => (
             <Row
               key={w.id}
               href={`/lien-waivers/${w.id}`}
-              primary={`through ${w.throughDate}`}
+              primary={t('binderPg.throughLabel', { date: w.throughDate })}
               secondary={`${w.kind} · ${w.status}`}
               value={<Money cents={w.paymentAmountCents} />}
             />
@@ -273,46 +295,52 @@ export default async function JobBinderPage({
         </SectionPanel>
 
         <SectionPanel
-          title="Punch List"
+          title={t('binderPg.sectPunch')}
           count={punchItems.length}
           href={`/punch-list?jobId=${encodeURIComponent(job.id)}`}
           empty={punchItems.length === 0}
           warningCount={punchRollup.openSafety + punchRollup.overdue}
-          warningLabel={punchRollup.openSafety > 0 ? 'open safety / overdue' : 'overdue'}
+          warningLabel={punchRollup.openSafety > 0 ? t('binderPg.warnOpenSafety') : t('binderPg.warnOverdue')}
+          openAllLabel={t('binderPg.openAll')}
+          noneLabel={t('binderPg.noneYet')}
         >
           {punchItems.slice(0, 5).map((p) => (
             <Row
               key={p.id}
               href={`/punch-list/${p.id}`}
               primary={p.location}
-              secondary={`${p.severity} · ${p.status}${p.dueOn ? ' · due ' + p.dueOn : ''}`}
+              secondary={`${p.severity} · ${p.status}${p.dueOn ? ' · ' + t('binderPg.dueLabel', { date: p.dueOn }) : ''}`}
             />
           ))}
         </SectionPanel>
 
         <SectionPanel
-          title="Dispatches"
+          title={t('binderPg.sectDispatches')}
           count={dispatches.length}
           href={`/dispatch?jobId=${encodeURIComponent(job.id)}`}
           empty={dispatches.length === 0}
+          openAllLabel={t('binderPg.openAll')}
+          noneLabel={t('binderPg.noneYet')}
         >
           {dispatches.slice(0, 5).map((d) => (
             <Row
               key={d.id}
               href={`/dispatch/${d.id}`}
               primary={`${d.scheduledFor} · ${d.foremanName}`}
-              secondary={`${d.crew.length} crew · ${d.equipment.length} equip · ${d.status}`}
+              secondary={`${d.crew.length} ${t('binderPg.crewWord')} · ${d.equipment.length} ${t('binderPg.equipWord')} · ${d.status}`}
             />
           ))}
         </SectionPanel>
 
         <SectionPanel
-          title="Weather Log"
+          title={t('binderPg.sectWeather')}
           count={weatherLogs.length}
           href={`/weather?jobId=${encodeURIComponent(job.id)}`}
           empty={weatherLogs.length === 0}
           warningCount={wxRollup.heatComplianceGaps}
-          warningLabel="§3395 gaps"
+          warningLabel={t('binderPg.warnHeatGaps')}
+          openAllLabel={t('binderPg.openAll')}
+          noneLabel={t('binderPg.noneYet')}
         >
           {weatherLogs.slice(0, 5).map((w) => (
             <Row
@@ -325,19 +353,21 @@ export default async function JobBinderPage({
         </SectionPanel>
 
         <SectionPanel
-          title="SWPPP Inspections"
+          title={t('binderPg.sectSwppp')}
           count={swpppInspections.length}
           href={`/swppp?jobId=${encodeURIComponent(job.id)}`}
           empty={swpppInspections.length === 0}
           warningCount={swpppRollup.openDeficiencies}
-          warningLabel="open deficiencies"
+          warningLabel={t('binderPg.warnOpenDef')}
+          openAllLabel={t('binderPg.openAll')}
+          noneLabel={t('binderPg.noneYet')}
         >
           {swpppInspections.slice(0, 5).map((s) => (
             <Row
               key={s.id}
               href={`/swppp/${s.id}`}
               primary={s.inspectedOn}
-              secondary={`${s.trigger} · ${s.bmpChecks.length} BMPs`}
+              secondary={`${s.trigger} · ${s.bmpChecks.length} ${t('binderPg.bmpsWord')}`}
             />
           ))}
         </SectionPanel>
@@ -353,6 +383,8 @@ function SectionPanel({
   empty,
   warningCount,
   warningLabel,
+  openAllLabel,
+  noneLabel,
   children,
 }: {
   title: string;
@@ -361,6 +393,8 @@ function SectionPanel({
   empty: boolean;
   warningCount?: number;
   warningLabel?: string;
+  openAllLabel: string;
+  noneLabel: string;
   children?: React.ReactNode;
 }) {
   return (
@@ -376,12 +410,12 @@ function SectionPanel({
             </span>
           ) : null}
           <Link href={href} className="text-xs text-blue-700 hover:underline">
-            Open all →
+            {openAllLabel}
           </Link>
         </div>
       </div>
       {empty ? (
-        <p className="text-xs text-gray-400">None yet.</p>
+        <p className="text-xs text-gray-400">{noneLabel}</p>
       ) : (
         <div className="divide-y divide-gray-100">{children}</div>
       )}
@@ -415,13 +449,13 @@ function Row({
   );
 }
 
-function MoreLink({ count, href }: { count: number; href: string }) {
+function MoreLink({ href, label }: { count: number; href: string; label: string }) {
   return (
     <Link
       href={href}
       className="block py-2 text-center text-xs text-blue-700 hover:underline"
     >
-      + {count} more
+      {label}
     </Link>
   );
 }
