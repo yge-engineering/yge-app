@@ -6,6 +6,7 @@ import { AppShell, AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { CertifiedPayroll, Employee, Job } from '@yge/shared';
 import { CertifiedPayrollEditor } from '@/components/certified-payroll-editor';
+import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
   return (
@@ -36,6 +37,7 @@ async function fetchJobs(): Promise<Job[]> {
 }
 
 export default async function CprDetailPage({ params }: { params: { id: string } }) {
+  const t = getTranslator();
   const [cpr, employees, jobs] = await Promise.all([
     fetchCpr(params.id),
     fetchEmployees(),
@@ -48,7 +50,7 @@ export default async function CprDetailPage({ params }: { params: { id: string }
     <main className="mx-auto max-w-6xl p-8">
       <div className="mb-6">
         <Link href="/certified-payrolls" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Back to CPRs
+          {t('newCpr.back')}
         </Link>
       </div>
 

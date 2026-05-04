@@ -7,6 +7,7 @@ import { Alert, AppShell } from '../../../components';
 import { useRouter } from 'next/navigation';
 import { mondayOfWeek, type CertifiedPayroll, type Job } from '@yge/shared';
 import { ApiError, postJson } from '@/lib/api';
+import { useTranslator } from '../../../lib/use-translator';
 
 function sundayOfWeek(monday: string): string {
   const d = new Date(monday + 'T00:00:00');
@@ -16,6 +17,7 @@ function sundayOfWeek(monday: string): string {
 }
 
 export default function NewCprPage() {
+  const t = useTranslator();
   const router = useRouter();
   const [jobId, setJobId] = useState('');
   const [weekStarting, setWeekStarting] = useState(mondayOfWeek(new Date().toISOString().slice(0, 10)));
@@ -39,7 +41,7 @@ export default function NewCprPage() {
     e.preventDefault();
     setError(null);
     if (!jobId) {
-      setError('Pick a job.');
+      setError(t('newCpr.errPickJob'));
       return;
     }
     const week = mondayOfWeek(weekStarting);
@@ -59,9 +61,9 @@ export default function NewCprPage() {
       );
       router.push(`/certified-payrolls/${res.certifiedPayroll.id}`);
     } catch (err) {
-      if (err instanceof ApiError) setError(`${err.message} (HTTP ${err.status})`);
+      if (err instanceof ApiError) setError(t('newCpr.errHttp', { msg: err.message, status: err.status }));
       else if (err instanceof Error) setError(err.message);
-      else setError('Unknown error');
+      else setError(t('newCpr.errUnknown'));
       setSaving(false);
     }
   }
@@ -71,21 +73,21 @@ export default function NewCprPage() {
     <main className="mx-auto max-w-xl p-8">
       <div className="mb-6">
         <Link href="/certified-payrolls" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Back to CPRs
+          {t('newCpr.back')}
         </Link>
       </div>
 
-      <h1 className="text-3xl font-bold text-yge-blue-500">New certified payroll</h1>
+      <h1 className="text-3xl font-bold text-yge-blue-500">{t('newCpr.title')}</h1>
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-4">
-        <Field label="Job *">
+        <Field label={t('newCpr.lblJob')}>
           <select
             required
             value={jobId}
             onChange={(e) => setJobId(e.target.value)}
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           >
-            <option value="">— Pick a job —</option>
+            <option value="">{t('newCpr.pickJob')}</option>
             {jobs.map((j) => (
               <option key={j.id} value={j.id}>
                 {j.projectName}
@@ -93,7 +95,7 @@ export default function NewCprPage() {
             ))}
           </select>
         </Field>
-        <Field label="Week starting (Monday)">
+        <Field label={t('newCpr.lblWeekStarting')}>
           <input
             type="date"
             value={weekStarting}
@@ -101,10 +103,10 @@ export default function NewCprPage() {
             className="rounded border border-gray-300 px-3 py-2 text-sm"
           />
           <p className="mt-1 text-xs text-gray-500">
-            Will snap to Monday automatically. Sunday end-date is computed.
+            {t('newCpr.weekHint')}
           </p>
         </Field>
-        <Field label="Payroll number">
+        <Field label={t('newCpr.lblPayrollNumber')}>
           <input
             type="number"
             min="1"
@@ -124,10 +126,10 @@ export default function NewCprPage() {
             disabled={saving}
             className="rounded bg-yge-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50"
           >
-            {saving ? 'Saving…' : 'Create CPR'}
+            {saving ? t('newCpr.busy') : t('newCpr.action')}
           </button>
           <Link href="/certified-payrolls" className="text-sm text-gray-600 hover:underline">
-            Cancel
+            {t('newCpr.cancel')}
           </Link>
         </div>
       </form>
