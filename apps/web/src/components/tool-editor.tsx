@@ -4,6 +4,7 @@
 // metadata fields, plus the same dispatch controls used on the list page.
 
 import { useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 import {
   categoryLabel,
   fullName,
@@ -49,6 +50,7 @@ interface Props {
 }
 
 export function ToolEditor({ initial, employees, apiBaseUrl }: Props) {
+  const t = useTranslator();
   const [tool, setTool] = useState<Tool>(initial);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -69,11 +71,11 @@ export function ToolEditor({ initial, employees, apiBaseUrl }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-      if (!res.ok) throw new Error(`Save failed: ${res.status}`);
+      if (!res.ok) throw new Error(t('toolEditor.errSaveStatus', { status: res.status }));
       const json = (await res.json()) as { tool: Tool };
       setTool(json.tool);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Save failed');
+      setError(err instanceof Error ? err.message : t('toolEditor.errFallback'));
     } finally {
       setSaving(false);
     }
@@ -103,7 +105,7 @@ export function ToolEditor({ initial, employees, apiBaseUrl }: Props) {
             {categoryLabel(tool.category)} &middot; {toolStatusLabel(tool.status)}
             {assignee && (
               <>
-                {' '}&middot; held by {fullName(assignee)}
+                {t('toolEditor.heldBy', { name: fullName(assignee) })}
               </>
             )}
           </p>
@@ -121,7 +123,7 @@ export function ToolEditor({ initial, employees, apiBaseUrl }: Props) {
               </option>
             ))}
           </select>
-          {saving && <span className="text-gray-500">Saving&hellip;</span>}
+          {saving && <span className="text-gray-500">{t('toolEditor.saving')}</span>}
         </div>
       </div>
 
@@ -133,13 +135,13 @@ export function ToolEditor({ initial, employees, apiBaseUrl }: Props) {
 
       <section>
         <h2 className="mb-2 text-sm font-semibold text-gray-700">
-          Dispatch
+          {t('toolEditor.dispatchHeader')}
         </h2>
         <ToolDispatchControls tool={tool} employees={employees.filter((e) => e.status === 'ACTIVE')} apiBaseUrl={apiBaseUrl} />
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2">
-        <Field label="Tool name">
+        <Field label={t('toolEditor.lblName')}>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -147,7 +149,7 @@ export function ToolEditor({ initial, employees, apiBaseUrl }: Props) {
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Category">
+        <Field label={t('toolEditor.lblCategory')}>
           <select
             value={tool.category}
             onChange={(e) => void patch({ category: e.target.value as ToolCategory })}
@@ -160,7 +162,7 @@ export function ToolEditor({ initial, employees, apiBaseUrl }: Props) {
             ))}
           </select>
         </Field>
-        <Field label="Make">
+        <Field label={t('toolEditor.lblMake')}>
           <input
             value={make}
             onChange={(e) => setMake(e.target.value)}
@@ -168,7 +170,7 @@ export function ToolEditor({ initial, employees, apiBaseUrl }: Props) {
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Model">
+        <Field label={t('toolEditor.lblModel')}>
           <input
             value={model}
             onChange={(e) => setModel(e.target.value)}
@@ -176,7 +178,7 @@ export function ToolEditor({ initial, employees, apiBaseUrl }: Props) {
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Serial #">
+        <Field label={t('toolEditor.lblSerial')}>
           <input
             value={serialNumber}
             onChange={(e) => setSerialNumber(e.target.value)}
@@ -184,7 +186,7 @@ export function ToolEditor({ initial, employees, apiBaseUrl }: Props) {
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Asset tag">
+        <Field label={t('toolEditor.lblAssetTag')}>
           <input
             value={assetTag}
             onChange={(e) => setAssetTag(e.target.value)}
@@ -195,7 +197,7 @@ export function ToolEditor({ initial, employees, apiBaseUrl }: Props) {
       </section>
 
       <section>
-        <Field label="Notes">
+        <Field label={t('toolEditor.lblNotes')}>
           <textarea
             rows={4}
             value={notes}
