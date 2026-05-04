@@ -15,6 +15,7 @@ import {
   type EquipmentUsageMetric,
 } from '@yge/shared';
 import { ApiError, postJson } from '@/lib/api';
+import { useTranslator } from '../../../lib/use-translator';
 
 const CATEGORIES: EquipmentCategory[] = [
   'TRUCK',
@@ -67,6 +68,7 @@ const INITIAL: FormState = {
 };
 
 export default function NewEquipmentPage() {
+  const t = useTranslator();
   const router = useRouter();
   const [form, setForm] = useState<FormState>(INITIAL);
   const [saving, setSaving] = useState(false);
@@ -93,14 +95,14 @@ export default function NewEquipmentPage() {
     e.preventDefault();
     setError(null);
     if (form.name.trim().length === 0) {
-      setError('Unit name is required.');
+      setError(t('newEquip.errName'));
       return;
     }
     let yearNum: number | undefined;
     if (form.year.trim().length > 0) {
       const n = Number(form.year);
       if (!Number.isFinite(n) || n < 1900 || n > 2100) {
-        setError('Year must be a 4-digit number.');
+        setError(t('newEquip.errYear'));
         return;
       }
       yearNum = n;
@@ -109,7 +111,7 @@ export default function NewEquipmentPage() {
     if (form.currentUsage.trim().length > 0) {
       const n = Number(form.currentUsage);
       if (!Number.isFinite(n) || n < 0) {
-        setError('Current usage must be a non-negative number.');
+        setError(t('newEquip.errUsage'));
         return;
       }
       currentUsageNum = Math.round(n);
@@ -118,7 +120,7 @@ export default function NewEquipmentPage() {
     if (form.serviceIntervalUsage.trim().length > 0) {
       const n = Number(form.serviceIntervalUsage);
       if (!Number.isFinite(n) || n <= 0) {
-        setError('Service interval must be a positive number.');
+        setError(t('newEquip.errInterval'));
         return;
       }
       intervalNum = Math.round(n);
@@ -146,11 +148,11 @@ export default function NewEquipmentPage() {
       router.push(`/equipment/${res.equipment.id}`);
     } catch (err) {
       if (err instanceof ApiError) {
-        setError(`${err.message} (HTTP ${err.status})`);
+        setError(t('newEquip.errHttp', { msg: err.message, status: err.status }));
       } else if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError('Unknown error');
+        setError(t('newEquip.errUnknown'));
       }
       setSaving(false);
     }
@@ -161,28 +163,27 @@ export default function NewEquipmentPage() {
     <main className="mx-auto max-w-2xl p-8">
       <div className="mb-6">
         <Link href="/equipment" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Back to equipment
+          {t('newEquip.back')}
         </Link>
       </div>
 
-      <h1 className="text-3xl font-bold text-yge-blue-500">Add equipment / vehicle</h1>
+      <h1 className="text-3xl font-bold text-yge-blue-500">{t('newEquip.title')}</h1>
       <p className="mt-2 text-gray-700">
-        Adds a unit to inventory. After save you can log maintenance entries
-        and assign the unit to a job.
+        {t('newEquip.subtitle')}
       </p>
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-4">
-        <Field label="Unit name *">
+        <Field label={t('newEquip.lblName')}>
           <input
             required
             value={form.name}
             onChange={(e) => update('name', e.target.value)}
-            placeholder='e.g. "F-450 Service Truck", "Cat D6T"'
+            placeholder={t('newEquip.phName')}
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Category">
+          <Field label={t('newEquip.lblCategory')}>
             <select
               value={form.category}
               onChange={(e) => setCategory(e.target.value as EquipmentCategory)}
@@ -195,7 +196,7 @@ export default function NewEquipmentPage() {
               ))}
             </select>
           </Field>
-          <Field label="Usage metric">
+          <Field label={t('newEquip.lblUsageMetric')}>
             <select
               value={form.usageMetric}
               onChange={(e) =>
@@ -203,28 +204,28 @@ export default function NewEquipmentPage() {
               }
               className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
             >
-              <option value="MILES">Miles (odometer)</option>
-              <option value="HOURS">Hours (engine)</option>
+              <option value="MILES">{t('newEquip.optMiles')}</option>
+              <option value="HOURS">{t('newEquip.optHours')}</option>
             </select>
           </Field>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">
-          <Field label="Make">
+          <Field label={t('newEquip.lblMake')}>
             <input
               value={form.make}
               onChange={(e) => update('make', e.target.value)}
               className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
             />
           </Field>
-          <Field label="Model">
+          <Field label={t('newEquip.lblModel')}>
             <input
               value={form.model}
               onChange={(e) => update('model', e.target.value)}
               className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
             />
           </Field>
-          <Field label="Year">
+          <Field label={t('newEquip.lblYear')}>
             <input
               value={form.year}
               onChange={(e) => update('year', e.target.value)}
@@ -235,21 +236,21 @@ export default function NewEquipmentPage() {
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="VIN (trucks / trailers)">
+          <Field label={t('newEquip.lblVin')}>
             <input
               value={form.vin}
               onChange={(e) => update('vin', e.target.value)}
               className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
             />
           </Field>
-          <Field label="Serial / PIN (heavy iron)">
+          <Field label={t('newEquip.lblSerial')}>
             <input
               value={form.serialNumber}
               onChange={(e) => update('serialNumber', e.target.value)}
               className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
             />
           </Field>
-          <Field label="Plate number">
+          <Field label={t('newEquip.lblPlate')}>
             <input
               value={form.plateNumber}
               onChange={(e) => update('plateNumber', e.target.value)}
@@ -257,7 +258,7 @@ export default function NewEquipmentPage() {
               className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
             />
           </Field>
-          <Field label="Asset tag">
+          <Field label={t('newEquip.lblAssetTag')}>
             <input
               value={form.assetTag}
               onChange={(e) => update('assetTag', e.target.value)}
@@ -269,7 +270,7 @@ export default function NewEquipmentPage() {
 
         <div className="grid gap-4 sm:grid-cols-2">
           <Field
-            label={`Current ${form.usageMetric === 'MILES' ? 'odometer (mi)' : 'engine hours'}`}
+            label={form.usageMetric === 'MILES' ? t('newEquip.lblCurrentMiles') : t('newEquip.lblCurrentHours')}
           >
             <input
               type="number"
@@ -280,7 +281,7 @@ export default function NewEquipmentPage() {
             />
           </Field>
           <Field
-            label={`Service interval (${form.usageMetric === 'MILES' ? 'miles' : 'hours'})`}
+            label={form.usageMetric === 'MILES' ? t('newEquip.lblIntervalMiles') : t('newEquip.lblIntervalHours')}
           >
             <input
               type="number"
@@ -293,7 +294,7 @@ export default function NewEquipmentPage() {
           </Field>
         </div>
 
-        <Field label="Notes">
+        <Field label={t('newEquip.lblNotes')}>
           <textarea
             rows={3}
             value={form.notes}
@@ -312,10 +313,10 @@ export default function NewEquipmentPage() {
             disabled={saving}
             className="rounded bg-yge-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50"
           >
-            {saving ? 'Saving…' : 'Save unit'}
+            {saving ? t('newEquip.busy') : t('newEquip.action')}
           </button>
           <Link href="/equipment" className="text-sm text-gray-600 hover:underline">
-            Cancel
+            {t('newEquip.cancel')}
           </Link>
         </div>
       </form>
