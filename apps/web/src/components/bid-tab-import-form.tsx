@@ -13,6 +13,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslator } from '../lib/use-translator';
 import {
   BidTabSourceSchema,
   type BidTabSource,
@@ -82,6 +83,7 @@ function parseBidderLines(raw: string): ParsedBidder[] {
 
 export function BidTabImportForm({ apiBaseUrl }: Props) {
   const router = useRouter();
+  const t = useTranslator();
 
   const [source, setSource] = useState<BidTabSource>('CALTRANS');
   const [agencyName, setAgencyName] = useState('');
@@ -105,11 +107,11 @@ export function BidTabImportForm({ apiBaseUrl }: Props) {
     if (busy) return;
     setError(null);
     if (ok.length === 0) {
-      setError('Paste at least one parseable bidder line ("Name | $Amount").');
+      setError(t('bidTabImport.errEmpty'));
       return;
     }
     if (!projectName.trim() || !agencyName.trim() || !bidOpenedAt) {
-      setError('Project name, agency name, and bid-opened date are required.');
+      setError(t('bidTabImport.errRequired'));
       return;
     }
     setBusy(true);
@@ -141,7 +143,7 @@ export function BidTabImportForm({ apiBaseUrl }: Props) {
       });
       if (!res.ok) {
         const reply = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(reply.error ?? `Import failed (${res.status})`);
+        setError(reply.error ?? t('bidTabImport.errFail', { status: res.status }));
         return;
       }
       const json = (await res.json()) as { tab: { id: string } };
@@ -161,7 +163,7 @@ export function BidTabImportForm({ apiBaseUrl }: Props) {
     >
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block">
-          <span className="text-xs font-medium uppercase tracking-wide text-gray-600">Source</span>
+          <span className="text-xs font-medium uppercase tracking-wide text-gray-600">{t('bidTabImport.lblSource')}</span>
           <select
             value={source}
             onChange={(e) => setSource(e.target.value as BidTabSource)}
@@ -171,7 +173,7 @@ export function BidTabImportForm({ apiBaseUrl }: Props) {
           </select>
         </label>
         <label className="block">
-          <span className="text-xs font-medium uppercase tracking-wide text-gray-600">Owner type</span>
+          <span className="text-xs font-medium uppercase tracking-wide text-gray-600">{t('bidTabImport.lblOwnerType')}</span>
           <select
             value={ownerType}
             onChange={(e) => setOwnerType(e.target.value as typeof OWNER_TYPES[number])}
@@ -181,47 +183,47 @@ export function BidTabImportForm({ apiBaseUrl }: Props) {
           </select>
         </label>
         <label className="block sm:col-span-2">
-          <span className="text-xs font-medium uppercase tracking-wide text-gray-600">Agency name</span>
+          <span className="text-xs font-medium uppercase tracking-wide text-gray-600">{t('bidTabImport.lblAgency')}</span>
           <input
             type="text"
             value={agencyName}
             onChange={(e) => setAgencyName(e.target.value)}
             className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm"
-            placeholder="Caltrans District 2"
+            placeholder={t('bidTabImport.phAgency')}
           />
         </label>
         <label className="block sm:col-span-2">
-          <span className="text-xs font-medium uppercase tracking-wide text-gray-600">Project name</span>
+          <span className="text-xs font-medium uppercase tracking-wide text-gray-600">{t('bidTabImport.lblProject')}</span>
           <input
             type="text"
             value={projectName}
             onChange={(e) => setProjectName(e.target.value)}
             className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm"
-            placeholder="SR-299 Buckhorn Summit pavement rehabilitation"
+            placeholder={t('bidTabImport.phProject')}
           />
         </label>
         <label className="block">
-          <span className="text-xs font-medium uppercase tracking-wide text-gray-600">Project / contract number</span>
+          <span className="text-xs font-medium uppercase tracking-wide text-gray-600">{t('bidTabImport.lblProjNum')}</span>
           <input
             type="text"
             value={projectNumber}
             onChange={(e) => setProjectNumber(e.target.value)}
             className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm"
-            placeholder="02-1H4404"
+            placeholder={t('bidTabImport.phProjNum')}
           />
         </label>
         <label className="block">
-          <span className="text-xs font-medium uppercase tracking-wide text-gray-600">County</span>
+          <span className="text-xs font-medium uppercase tracking-wide text-gray-600">{t('bidTabImport.lblCounty')}</span>
           <input
             type="text"
             value={county}
             onChange={(e) => setCounty(e.target.value)}
             className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm"
-            placeholder="Trinity"
+            placeholder={t('bidTabImport.phCounty')}
           />
         </label>
         <label className="block">
-          <span className="text-xs font-medium uppercase tracking-wide text-gray-600">Bid opened</span>
+          <span className="text-xs font-medium uppercase tracking-wide text-gray-600">{t('bidTabImport.lblBidOpened')}</span>
           <input
             type="date"
             value={bidOpenedAt}
@@ -231,58 +233,73 @@ export function BidTabImportForm({ apiBaseUrl }: Props) {
         </label>
         <label className="block">
           <span className="text-xs font-medium uppercase tracking-wide text-gray-600">
-            Engineer&rsquo;s estimate (optional)
+            {t('bidTabImport.lblEngEst')}
           </span>
           <input
             type="text"
             value={engineersEstimate}
             onChange={(e) => setEngineersEstimate(e.target.value)}
             className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm font-mono"
-            placeholder="$4,250,000"
+            placeholder={t('bidTabImport.phEngEst')}
           />
         </label>
       </div>
 
       <label className="mt-4 block">
         <span className="text-xs font-medium uppercase tracking-wide text-gray-600">
-          Bidders — one per line, "Name | $Amount"
+          {t('bidTabImport.lblBidders')}
         </span>
         <textarea
           value={biddersRaw}
           onChange={(e) => setBiddersRaw(e.target.value)}
           rows={6}
           className="mt-1 w-full rounded border border-gray-300 px-3 py-2 font-mono text-sm"
-          placeholder={`Granite Construction Inc. | $4,123,456.78\nKnife River Construction | $4,287,500.00\nMercer-Fraser Co. | $4,395,200.50`}
+          placeholder={t('bidTabImport.phBidders')}
         />
       </label>
 
       {biddersRaw.length > 0 && (
         <div className="mt-2 rounded border border-gray-200 bg-gray-50 p-3 text-xs">
           <p className="mb-1 text-gray-600">
-            Parsed {ok.length} bidder{ok.length === 1 ? '' : 's'}
+            {ok.length === 1
+              ? t('bidTabImport.parsedOne')
+              : t('bidTabImport.parsedMany', { count: ok.length })}
             {parsed.length > ok.length && (
               <span className="ml-2 text-amber-700">
-                ({parsed.length - ok.length} unparseable line{parsed.length - ok.length === 1 ? '' : 's'})
+                {parsed.length - ok.length === 1
+                  ? t('bidTabImport.unparseableOne')
+                  : t('bidTabImport.unparseableMany', { count: parsed.length - ok.length })}
               </span>
             )}
           </p>
-          {apparentLow && (
-            <p className="text-gray-700">
-              Apparent low: <strong className="font-semibold">{apparentLow.name}</strong> @{' '}
-              <span className="font-mono">${(apparentLow.totalCents / 100).toLocaleString()}</span>
-            </p>
-          )}
+          {apparentLow && (() => {
+            const tpl = t('bidTabImport.apparentLow', { name: '__NAME__', amount: '__AMT__' });
+            const parts = tpl.split('__NAME__');
+            const before = parts[0] ?? '';
+            const after = (parts[1] ?? '').split('__AMT__');
+            const middle = after[0] ?? '';
+            const tail = after[1] ?? '';
+            return (
+              <p className="text-gray-700">
+                {before}
+                <strong className="font-semibold">{apparentLow.name}</strong>
+                {middle}
+                <span className="font-mono">${(apparentLow.totalCents / 100).toLocaleString()}</span>
+                {tail}
+              </p>
+            );
+          })()}
         </div>
       )}
 
       <label className="mt-4 block">
-        <span className="text-xs font-medium uppercase tracking-wide text-gray-600">Notes (optional)</span>
+        <span className="text-xs font-medium uppercase tracking-wide text-gray-600">{t('bidTabImport.lblNotes')}</span>
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           rows={2}
           className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm"
-          placeholder="Pre-bid attendance: 12. Addenda: 3. Late bid rejected (Mercer)."
+          placeholder={t('bidTabImport.phNotes')}
         />
       </label>
 
@@ -297,7 +314,7 @@ export function BidTabImportForm({ apiBaseUrl }: Props) {
         disabled={busy}
         className="mt-4 rounded bg-yge-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50"
       >
-        {busy ? 'Importing…' : 'Import bid tab'}
+        {busy ? t('bidTabImport.busy') : t('bidTabImport.action')}
       </button>
     </form>
   );
