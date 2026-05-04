@@ -4,7 +4,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { useTranslator } from '../lib/use-translator';
+import { useTranslator, useLocale } from '../lib/use-translator';
 import {
   punchItemSeverityLabel,
   punchItemStatusLabel,
@@ -72,6 +72,7 @@ export function PunchItemEditor({
 }) {
   const router = useRouter();
   const t = useTranslator();
+  const locale = useLocale();
   const [form, setForm] = useState<FormState>(defaults(item));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -180,7 +181,7 @@ export function PunchItemEditor({
           >
             {SEVERITIES.map((s) => (
               <option key={s} value={s}>
-                {punchItemSeverityLabel(s)}
+                {punchItemSeverityLabel(s, locale)}
               </option>
             ))}
           </select>
@@ -228,7 +229,7 @@ export function PunchItemEditor({
           >
             {STATUSES.map((s) => (
               <option key={s} value={s}>
-                {punchItemStatusLabel(s)}
+                {punchItemStatusLabel(s, locale)}
               </option>
             ))}
           </select>

@@ -18,7 +18,8 @@ import {
   StatusPill,
 } from '../../components';
 import { getTranslator } from '../../lib/locale';
-import { punchItemStatusLabel, punchItemSeverityLabel, type PunchItem } from '@yge/shared';
+import { coerceLocale, punchItemStatusLabel, punchItemSeverityLabel, type PunchItem } from '@yge/shared';
+import { cookies } from 'next/headers';
 
 function apiBaseUrl(): string {
   return (
@@ -60,6 +61,8 @@ export default async function PunchListsPage() {
   open.sort((a, b) => a.identifiedOn.localeCompare(b.identifiedOn));
   const overdueCount = open.filter((i) => i.dueOn && i.dueOn < today).length;
   const t = getTranslator();
+  const localeCookie = cookies().get('yge-locale')?.value;
+  const locale = coerceLocale(localeCookie);
 
   return (
     <AppShell>
@@ -113,7 +116,7 @@ export default async function PunchListsPage() {
               {
                 key: 'severity',
                 header: t('punchLists.col.severity'),
-                cell: (i) => <StatusPill label={punchItemSeverityLabel(i.severity)} tone={severityTone(i.severity)} />,
+                cell: (i) => <StatusPill label={punchItemSeverityLabel(i.severity, locale)} tone={severityTone(i.severity)} />,
               },
               { key: 'description', header: t('punchLists.col.description'), cell: (i) => i.description },
               {
@@ -146,7 +149,7 @@ export default async function PunchListsPage() {
                   <span>{i.location}</span>
                   <span>·</span>
                   <span className="line-clamp-1">{i.description}</span>
-                  <span className="ml-auto text-xs text-gray-500">{punchItemStatusLabel(i.status)}</span>
+                  <span className="ml-auto text-xs text-gray-500">{punchItemStatusLabel(i.status, locale)}</span>
                 </li>
               ))}
             </ul>

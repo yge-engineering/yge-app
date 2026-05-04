@@ -18,6 +18,7 @@ import {
 } from '../../components';
 import { getTranslator } from '../../lib/locale';
 import {
+  coerceLocale,
   computePunchListRollup,
   isOverdue,
   punchItemSeverityLabel,
@@ -25,6 +26,7 @@ import {
   type PunchItem,
   type PunchItemStatus,
 } from '@yge/shared';
+import { cookies } from 'next/headers';
 
 const STATUSES: PunchItemStatus[] = [
   'OPEN',
@@ -96,6 +98,8 @@ export default async function PunchListPage({
     return q ? `/punch-list?${q}` : '/punch-list';
   }
   const t = getTranslator();
+  const localeCookie = cookies().get('yge-locale')?.value;
+  const locale = coerceLocale(localeCookie);
 
   return (
     <AppShell>
@@ -140,7 +144,7 @@ export default async function PunchListPage({
               href={buildHref({ status: s })}
               className={`rounded px-2 py-1 text-xs ${searchParams.status === s ? 'bg-blue-700 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
             >
-              {punchItemStatusLabel(s)}
+              {punchItemStatusLabel(s, locale)}
             </Link>
           ))}
         </section>
@@ -159,7 +163,7 @@ export default async function PunchListPage({
               {
                 key: 'severity',
                 header: t('punch.col.severity'),
-                cell: (it) => <StatusPill label={punchItemSeverityLabel(it.severity)} tone={severityTone(it.severity)} />,
+                cell: (it) => <StatusPill label={punchItemSeverityLabel(it.severity, locale)} tone={severityTone(it.severity)} />,
               },
               { key: 'location', header: t('punch.col.location'), cell: (it) => <span className="text-xs text-gray-700">{it.location}</span> },
               {
@@ -188,7 +192,7 @@ export default async function PunchListPage({
               {
                 key: 'status',
                 header: t('punch.col.status'),
-                cell: (it) => <StatusPill label={punchItemStatusLabel(it.status)} tone={statusTone(it.status)} />,
+                cell: (it) => <StatusPill label={punchItemStatusLabel(it.status, locale)} tone={statusTone(it.status)} />,
               },
             ]}
           />

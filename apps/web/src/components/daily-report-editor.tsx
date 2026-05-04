@@ -9,7 +9,7 @@
 // UI so the foreman can either fix the times or add a written waiver.
 
 import { useMemo, useState } from 'react';
-import { useTranslator } from '../lib/use-translator';
+import { useTranslator, useLocale } from '../lib/use-translator';
 import {
   crewRowViolations,
   crewRowWorkedHours,
@@ -32,6 +32,7 @@ interface Props {
 
 export function DailyReportEditor({ initial, employees, jobs, apiBaseUrl }: Props) {
   const t = useTranslator();
+  const locale = useLocale();
   const [report, setReport] = useState<DailyReport>(initial);
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -310,7 +311,7 @@ export function DailyReportEditor({ initial, employees, jobs, apiBaseUrl }: Prop
                     <div className="mt-2 text-xs text-red-700">
                       <ul className="list-inside list-disc">
                         {violations.map((v, j) => (
-                          <li key={j}>{violationLabel(v)}</li>
+                          <li key={j}>{violationLabel(v, locale)}</li>
                         ))}
                       </ul>
                       <Field label={t('dre.lblWaiver')}>
