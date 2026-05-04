@@ -10,6 +10,7 @@
 
 import { useState } from 'react';
 import type { PtoEOutput, PtoEBidItem, PtoEItemConfidence } from '@yge/shared';
+import { useTranslator, type Translator } from '../lib/use-translator';
 import { bidItemsToCsv } from '@yge/shared';
 
 // CSV row generation lives in @yge/shared/csv so the API can emit the same
@@ -43,6 +44,7 @@ export function DraftView({
   usage,
   elapsedMs,
 }: DraftViewProps) {
+  const t = useTranslator();
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'error'>('idle');
 
   function handleDownloadCsv() {
@@ -77,23 +79,23 @@ export function DraftView({
         <h2 className="text-xl font-semibold text-gray-900">{draft.projectName}</h2>
         <p className="text-sm text-gray-600">
           {draft.projectType.replace(/_/g, ' ')}
-          {draft.location && <> · {draft.location}</>}
-          {draft.ownerAgency && <> · {draft.ownerAgency}</>}
+          {draft.location && t('draftView.subtitleSep', { value: draft.location })}
+          {draft.ownerAgency && t('draftView.subtitleSep', { value: draft.ownerAgency })}
         </p>
         <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-600">
           {draft.bidDueDate && (
             <>
-              <dt className="font-medium">Bid due</dt>
+              <dt className="font-medium">{t('draftView.lblBidDue')}</dt>
               <dd>{draft.bidDueDate}</dd>
             </>
           )}
           {draft.prebidMeeting && (
             <>
-              <dt className="font-medium">Pre-bid</dt>
+              <dt className="font-medium">{t('draftView.lblPrebid')}</dt>
               <dd>{draft.prebidMeeting}</dd>
             </>
           )}
-          <dt className="font-medium">Overall confidence</dt>
+          <dt className="font-medium">{t('draftView.lblConfidence')}</dt>
           <dd>
             <ConfidencePill value={draft.overallConfidence} />
           </dd>
@@ -102,31 +104,31 @@ export function DraftView({
 
       <div>
         <div className="flex items-center justify-between gap-3">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">Bid items</h3>
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">{t('draftView.bidItemsHeader')}</h3>
           <div className="flex items-center gap-2">
             <button
               onClick={handleDownloadCsv}
               className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-700 hover:bg-yge-blue-100"
-              title="Download all bid items as a CSV file you can open in Excel"
+              title={t('draftView.downloadCsvTip')}
             >
-              Download CSV
+              {t('draftView.downloadCsv')}
             </button>
             <button
               onClick={handleCopyCsv}
               className="rounded border border-gray-300 px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
-              title="Copy CSV text to clipboard — paste straight into Excel"
+              title={t('draftView.copyCsvTip')}
             >
               {copyState === 'copied'
-                ? 'Copied!'
+                ? t('draftView.copyCopied')
                 : copyState === 'error'
-                  ? 'Copy failed'
-                  : 'Copy CSV'}
+                  ? t('draftView.copyError')
+                  : t('draftView.copyCsv')}
             </button>
           </div>
         </div>
         <ul className="mt-2 divide-y divide-gray-100">
           {draft.bidItems.map((item, i) => (
-            <BidItemRow key={i} item={item} />
+            <BidItemRow key={i} item={item} t={t} />
           ))}
         </ul>
       </div>
@@ -134,7 +136,7 @@ export function DraftView({
       {draft.assumptions.length > 0 && (
         <div>
           <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
-            Assumptions
+            {t('draftView.assumptionsHeader')}
           </h3>
           <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-gray-700">
             {draft.assumptions.map((a, i) => (
@@ -147,7 +149,7 @@ export function DraftView({
       {draft.questionsForEstimator.length > 0 && (
         <div>
           <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
-            Open questions
+            {t('draftView.questionsHeader')}
           </h3>
           <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-gray-700">
             {draft.questionsForEstimator.map((q, i) => (
@@ -158,15 +160,14 @@ export function DraftView({
       )}
 
       <footer className="border-t border-gray-100 pt-3 text-xs text-gray-400">
-        Model: {modelUsed} · Prompt: {promptVersion} ·{' '}
-        {usage.inputTokens.toLocaleString()} in / {usage.outputTokens.toLocaleString()} out tokens
-        {elapsedMs != null && <> · {(elapsedMs / 1000).toFixed(1)}s</>}
+        {t('draftView.footer', { model: modelUsed, prompt: promptVersion, input: usage.inputTokens.toLocaleString(), output: usage.outputTokens.toLocaleString() })}
+        {elapsedMs != null && t('draftView.footerElapsed', { seconds: (elapsedMs / 1000).toFixed(1) })}
       </footer>
     </div>
   );
 }
 
-function BidItemRow({ item }: { item: PtoEBidItem }) {
+function BidItemRow({ item, t }: { item: PtoEBidItem; t: Translator }) {
   return (
     <li className="py-3">
       <div className="flex items-baseline justify-between gap-3">
@@ -176,7 +177,7 @@ function BidItemRow({ item }: { item: PtoEBidItem }) {
           </p>
           <p className="mt-0.5 text-xs text-gray-600">
             {item.quantity.toLocaleString()} {item.unit}
-            {item.pageReference && <> · {item.pageReference}</>}
+            {item.pageReference && t('draftView.itemUnitSep', { ref: item.pageReference })}
           </p>
           {item.notes && <p className="mt-1 text-xs italic text-gray-500">{item.notes}</p>}
         </div>
