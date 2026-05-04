@@ -9,6 +9,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 
 interface Props {
   apiBaseUrl: string;
@@ -45,6 +46,7 @@ const SAMPLE_BODY = `{
 
 export function DirRateManualImportForm({ apiBaseUrl }: Props) {
   const router = useRouter();
+  const t = useTranslator();
   const [bodyText, setBodyText] = useState(SAMPLE_BODY);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,7 +62,7 @@ export function DirRateManualImportForm({ apiBaseUrl }: Props) {
     try {
       parsed = JSON.parse(bodyText);
     } catch (err) {
-      setError(`JSON parse failed: ${err instanceof Error ? err.message : String(err)}`);
+      setError(t('dirImport.errParse', { message: err instanceof Error ? err.message : String(err) }));
       setBusy(false);
       return;
     }
@@ -74,7 +76,7 @@ export function DirRateManualImportForm({ apiBaseUrl }: Props) {
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string; issues?: unknown };
         const issues = body.issues ? ` — ${JSON.stringify(body.issues).slice(0, 300)}` : '';
-        setError((body.error ?? `Import failed (${res.status})`) + issues);
+        setError((body.error ?? t('dirImport.errStatus', { status: res.status })) + issues);
         return;
       }
       const json = (await res.json()) as ImportResponse;
@@ -91,14 +93,10 @@ export function DirRateManualImportForm({ apiBaseUrl }: Props) {
     <section className="mt-8 rounded-md border border-gray-200 bg-white p-4 shadow-sm">
       <header className="mb-3">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-700">
-          Manual import
+          {t('dirImport.title')}
         </h2>
         <p className="mt-1 text-xs text-gray-600">
-          Paste a JSON body of proposed rate updates from the DIR website.
-          Each entry creates one staged proposal under a fresh sync run.
-          The existingRateId is auto-resolved against the live rate set per
-          (classification, county); brand-new determinations land with
-          existingRateId=null.
+          {t('dirImport.intro')}
         </p>
       </header>
 
@@ -117,14 +115,14 @@ export function DirRateManualImportForm({ apiBaseUrl }: Props) {
           disabled={busy}
           className="rounded bg-yge-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50"
         >
-          {busy ? 'Importing…' : 'Import as draft proposals'}
+          {busy ? t('dirImport.busy') : t('dirImport.action')}
         </button>
         <button
           type="button"
           onClick={() => setBodyText(SAMPLE_BODY)}
           className="rounded border border-gray-300 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
         >
-          Reset to sample
+          {t('dirImport.reset')}
         </button>
       </div>
 
@@ -136,11 +134,12 @@ export function DirRateManualImportForm({ apiBaseUrl }: Props) {
 
       {result && (
         <div className="mt-3 rounded border border-emerald-300 bg-emerald-50 p-3 text-xs text-emerald-900">
-          Created run <code className="font-mono">{result.run.id}</code> ({result.run.status}):
-          {' '}{result.created} proposal{result.created === 1 ? '' : 's'} created
-          {result.failed > 0 && ` · ${result.failed} failed`}.
+          {t('dirImport.resultLeader')} <code className="font-mono">{result.run.id}</code> {t('dirImport.resultStatus', { status: result.run.status })}
+          {' '}{result.created === 1 ? t('dirImport.resultOne') : t('dirImport.resultMany', { count: result.created })}
+          {result.failed > 0 && t('dirImport.resultFailed', { count: result.failed })}
+          {t('dirImport.resultDone')}
           {result.proposalIds.length > 0 && (
-            <span> Scroll up — they should appear in the table above.</span>
+            <span> {t('dirImport.resultScroll')}</span>
           )}
         </div>
       )}
