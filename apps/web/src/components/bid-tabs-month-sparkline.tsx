@@ -6,6 +6,8 @@
 // keeping up with imports? Are we covering the agencies that
 // matter? Pure inline SVG (no chart library) so no new deps.
 
+import { getTranslator } from '../lib/locale';
+
 interface Props {
   bidOpenedAtIsoDates: string[];
   /** Number of months to display, ending on the most recent
@@ -42,13 +44,14 @@ function buildBuckets(dates: string[], monthCount: number): MonthBucket[] {
 export function BidTabsMonthSparkline({ bidOpenedAtIsoDates, monthCount = 12 }: Props) {
   const buckets = buildBuckets(bidOpenedAtIsoDates, monthCount);
   const max = Math.max(1, ...buckets.map((b) => b.count));
+  const t = getTranslator();
   const w = 320;
   const h = 56;
   const barWidth = w / buckets.length - 2;
 
   return (
     <div className="flex items-end gap-2">
-      <svg width={w} height={h} className="overflow-visible" role="img" aria-label="Tabs imported by month">
+      <svg width={w} height={h} className="overflow-visible" role="img" aria-label={t('sparkline.aria')}>
         {buckets.map((b, i) => {
           const barH = (b.count / max) * (h - 12);
           const x = i * (w / buckets.length) + 1;
@@ -63,7 +66,7 @@ export function BidTabsMonthSparkline({ bidOpenedAtIsoDates, monthCount = 12 }: 
                 fill={b.count > 0 ? '#2563eb' : '#e5e7eb'}
                 rx={2}
               >
-                <title>{`${b.ym}: ${b.count} tab${b.count === 1 ? '' : 's'}`}</title>
+                <title>{b.count === 1 ? t('sparkline.tooltipOne', { ym: b.ym }) : t('sparkline.tooltipMany', { ym: b.ym, count: b.count })}</title>
               </rect>
               {b.count > 0 && (
                 <text
@@ -84,7 +87,7 @@ export function BidTabsMonthSparkline({ bidOpenedAtIsoDates, monthCount = 12 }: 
         <div>{buckets[0]?.ym ?? ''}</div>
         <div>→ {buckets[buckets.length - 1]?.ym ?? ''}</div>
         <div className="mt-1 font-mono text-gray-700">
-          peak {max}
+          {t('sparkline.peak', { n: max })}
         </div>
       </div>
     </div>
