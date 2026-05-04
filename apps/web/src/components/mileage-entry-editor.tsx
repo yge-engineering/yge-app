@@ -4,6 +4,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 import {
   formatUSD,
   mileagePurposeLabel,
@@ -79,6 +80,7 @@ export function MileageEntryEditor({
   entry?: MileageEntry;
 }) {
   const router = useRouter();
+  const t = useTranslator();
   const [form, setForm] = useState<FormState>(defaults(entry));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -172,22 +174,21 @@ export function MileageEntryEditor({
 
       {form.isPersonalVehicle && previewReimburse > 0 && (
         <div className="rounded border border-blue-300 bg-blue-50 p-3 text-sm text-blue-900">
-          <strong>Reimbursement preview:</strong> {previewMiles.toFixed(1)} mi ×{' '}
-          {previewRate}¢ = {formatUSD(previewReimburse)}
+          <strong>{t('mileage.previewLeader')}</strong>{t('mileage.previewBody', { miles: previewMiles.toFixed(1), rate: previewRate, total: formatUSD(previewReimburse) })}
         </div>
       )}
 
-      <Section title="Trip">
-        <Field label="Employee ID" required>
+      <Section title={t('mileage.secTrip')}>
+        <Field label={t('mileage.lblEmpId')} required>
           <input
             className={inputCls}
             value={form.employeeId}
             onChange={(e) => setField('employeeId', e.target.value)}
-            placeholder="emp-xxxxxxxx"
+            placeholder={t('mileage.phEmpId')}
             required
           />
         </Field>
-        <Field label="Employee name" required>
+        <Field label={t('mileage.lblEmpName')} required>
           <input
             className={inputCls}
             value={form.employeeName}
@@ -195,7 +196,7 @@ export function MileageEntryEditor({
             required
           />
         </Field>
-        <Field label="Trip date" required>
+        <Field label={t('mileage.lblTripDate')} required>
           <input
             type="date"
             className={inputCls}
@@ -204,7 +205,7 @@ export function MileageEntryEditor({
             required
           />
         </Field>
-        <Field label="Purpose">
+        <Field label={t('mileage.lblPurpose')}>
           <select
             className={inputCls}
             value={form.purpose}
@@ -217,53 +218,53 @@ export function MileageEntryEditor({
             ))}
           </select>
         </Field>
-        <Field label="Job ID">
+        <Field label={t('mileage.lblJobId')}>
           <input
             className={inputCls}
             value={form.jobId}
             onChange={(e) => setField('jobId', e.target.value)}
-            placeholder="job-YYYY-MM-DD-..."
+            placeholder={t('mileage.phJobId')}
           />
         </Field>
-        <Field label="Description / route" full>
+        <Field label={t('mileage.lblDescription')} full>
           <input
             className={inputCls}
             value={form.description}
             onChange={(e) => setField('description', e.target.value)}
-            placeholder="Yard → Sulphur Springs Rd Sta 12+50"
+            placeholder={t('mileage.phDescription')}
           />
         </Field>
       </Section>
 
-      <Section title="Vehicle">
-        <Field label="Vehicle description" required>
+      <Section title={t('mileage.secVehicle')}>
+        <Field label={t('mileage.lblVehicle')} required>
           <input
             className={inputCls}
             value={form.vehicleDescription}
             onChange={(e) => setField('vehicleDescription', e.target.value)}
-            placeholder="2022 Ford F-250 (YGE-04)"
+            placeholder={t('mileage.phVehicle')}
             required
           />
         </Field>
-        <Field label="Equipment ID (company)">
+        <Field label={t('mileage.lblEquipId')}>
           <input
             className={inputCls}
             value={form.equipmentId}
             onChange={(e) => setField('equipmentId', e.target.value)}
-            placeholder="eq-xxxxxxxx"
+            placeholder={t('mileage.phEquipId')}
           />
         </Field>
-        <Field label="Personal vehicle?">
+        <Field label={t('mileage.lblPersonal')}>
           <Checkbox
             checked={form.isPersonalVehicle}
             onChange={(b) => setField('isPersonalVehicle', b)}
-            label="Reimbursable at IRS rate"
+            label={t('mileage.cbPersonal')}
           />
         </Field>
       </Section>
 
-      <Section title="Miles">
-        <Field label="Odometer start">
+      <Section title={t('mileage.secMiles')}>
+        <Field label={t('mileage.lblOdoStart')}>
           <input
             type="number"
             min="0"
@@ -272,7 +273,7 @@ export function MileageEntryEditor({
             onChange={(e) => setField('odometerStart', e.target.value)}
           />
         </Field>
-        <Field label="Odometer end">
+        <Field label={t('mileage.lblOdoEnd')}>
           <input
             type="number"
             min="0"
@@ -281,7 +282,7 @@ export function MileageEntryEditor({
             onChange={(e) => setField('odometerEnd', e.target.value)}
           />
         </Field>
-        <Field label="Business miles" required>
+        <Field label={t('mileage.lblBusinessMiles')} required>
           <div className="flex items-center gap-2">
             <input
               type="number"
@@ -298,32 +299,32 @@ export function MileageEntryEditor({
                 className="rounded border border-yge-blue-500 px-2 py-1 text-xs text-yge-blue-500 hover:bg-yge-blue-50"
                 onClick={() => setField('businessMiles', computedMiles.toFixed(1))}
               >
-                Use {computedMiles.toFixed(1)}
+                {t('mileage.useComputed', { miles: computedMiles.toFixed(1) })}
               </button>
             )}
           </div>
         </Field>
-        <Field label="IRS rate (¢/mile)">
+        <Field label={t('mileage.lblIrsRate')}>
           <input
             type="number"
             min="0"
             className={inputCls}
             value={form.irsRateCentsPerMile}
             onChange={(e) => setField('irsRateCentsPerMile', e.target.value)}
-            placeholder="67"
+            placeholder={t('mileage.phIrsRate')}
           />
         </Field>
       </Section>
 
-      <Section title="Reimbursement">
-        <Field label="Reimbursed">
+      <Section title={t('mileage.secReimb')}>
+        <Field label={t('mileage.lblReimbursed')}>
           <Checkbox
             checked={form.reimbursed}
             onChange={(b) => setField('reimbursed', b)}
-            label="Already paid out to employee"
+            label={t('mileage.cbReimbursed')}
           />
         </Field>
-        <Field label="Reimbursed on">
+        <Field label={t('mileage.lblReimbOn')}>
           <input
             type="date"
             className={inputCls}
@@ -333,8 +334,8 @@ export function MileageEntryEditor({
         </Field>
       </Section>
 
-      <Section title="Notes">
-        <Field label="Notes" full>
+      <Section title={t('mileage.secNotes')}>
+        <Field label={t('mileage.lblNotes')} full>
           <textarea
             className={`${inputCls} min-h-[80px]`}
             value={form.notes}
@@ -349,7 +350,7 @@ export function MileageEntryEditor({
           disabled={saving}
           className="rounded bg-yge-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-yge-blue-700 disabled:opacity-50"
         >
-          {saving ? 'Saving…' : mode === 'create' ? 'Log mileage' : 'Save changes'}
+          {saving ? t('mileage.busy') : mode === 'create' ? t('mileage.create') : t('mileage.save')}
         </button>
       </div>
     </form>
