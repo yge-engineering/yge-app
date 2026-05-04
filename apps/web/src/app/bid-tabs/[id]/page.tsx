@@ -9,6 +9,7 @@ import { BidTabMarkAwarded } from '../../../components/bid-tab-mark-awarded';
 import { BidTabNotesEdit } from '../../../components/bid-tab-notes-edit';
 import { BidTabYgeLinkForm } from '../../../components/bid-tab-yge-link-form';
 import { BidTabYgeUnlinkButton } from '../../../components/bid-tab-yge-unlink-button';
+import { getTranslator } from '../../../lib/locale';
 import { YGE_NORMALIZED_NAME_DEFAULT, type BidTab, type Job } from '@yge/shared';
 
 interface BidResult {
@@ -64,6 +65,7 @@ export default async function BidTabPage({
 }: {
   params: { id: string };
 }) {
+  const t = getTranslator();
   const tab = await fetchTab(params.id);
   if (!tab) notFound();
 
@@ -97,12 +99,12 @@ export default async function BidTabPage({
     <AppShell>
       <main className="mx-auto max-w-5xl p-8">
         <Link href="/bid-tabs" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; All bid tabs
+          {t('bidTabPg.back')}
         </Link>
 
         <PageHeader
           title={tab.projectName}
-          subtitle={`${tab.agencyName} · ${tab.source} · opened ${tab.bidOpenedAt.slice(0, 10)}`}
+          subtitle={t('bidTabPg.subtitle', { agency: tab.agencyName, source: tab.source, date: tab.bidOpenedAt.slice(0, 10) })}
         />
 
         <div className="mt-2 flex flex-wrap items-center gap-3">
@@ -152,37 +154,37 @@ export default async function BidTabPage({
 
         <section className="mt-4 grid gap-3 sm:grid-cols-3">
           <Tile
-            label="Apparent low"
+            label={t('bidResultPg.lblApparentLow')}
             value={apparent ? formatMoney(apparent.totalCents) : '—'}
             sub={apparent?.name}
           />
           <Tile
-            label="Engineer's estimate"
+            label={t('bidResultPg.lblEngineerEst')}
             value={ee ? formatMoney(ee) : '—'}
-            sub={apparent && ee ? `low ${apparent.totalCents > ee ? '+' : ''}${(((apparent.totalCents - ee) / ee) * 100).toFixed(1)}%` : undefined}
+            sub={apparent && ee ? (apparent.totalCents > ee ? t('bidResultPg.lowDeltaPositive', { pct: (((apparent.totalCents - ee) / ee) * 100).toFixed(1) }) : t('bidResultPg.lowDeltaNegative', { pct: (((apparent.totalCents - ee) / ee) * 100).toFixed(1) })) : undefined}
           />
           <Tile
-            label="Bidders on tab"
+            label={t('bidResultPg.lblBidders')}
             value={String(tab.bidders.length)}
-            sub={tab.county ? `${tab.county} County` : undefined}
+            sub={tab.county ? t('bidResultPg.countySuffix', { county: tab.county }) : undefined}
           />
         </section>
 
         {(tab.ygeJobId || tab.ygeBidResultId) && (
           <section className="mt-4 rounded-md border border-yge-blue-500 bg-yge-blue-50 p-3 text-xs text-gray-800">
             <div className="flex items-center justify-between gap-3">
-              <strong className="font-semibold text-yge-blue-500">YGE was a bidder</strong>
+              <strong className="font-semibold text-yge-blue-500">{t('bidTabPg.ygeWasBidder')}</strong>
               <BidTabYgeUnlinkButton apiBaseUrl={publicApiBaseUrl()} tabId={tab.id} />
             </div>
             <div className="mt-1 flex flex-wrap gap-3">
               {tab.ygeJobId && (
                 <Link href={`/jobs/${tab.ygeJobId}`} className="text-yge-blue-500 hover:underline">
-                  → YGE Job {tab.ygeJobId}
+                  {t('bidTabPg.linkYgeJob', { id: tab.ygeJobId })}
                 </Link>
               )}
               {tab.ygeBidResultId && (
                 <Link href={`/bid-results/${tab.ygeBidResultId}`} className="text-yge-blue-500 hover:underline">
-                  → BidResult {tab.ygeBidResultId}
+                  {t('bidTabPg.linkBidResult', { id: tab.ygeBidResultId })}
                 </Link>
               )}
             </div>
@@ -191,12 +193,9 @@ export default async function BidTabPage({
 
         {needsManualLink && (
           <section className="mt-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-xs text-gray-800">
-            <strong className="font-semibold text-amber-800">YGE was on this tab — link to a bid result</strong>
+            <strong className="font-semibold text-amber-800">{t('bidTabPg.needsLinkHeader')}</strong>
             <p className="mt-1 text-gray-700">
-              The auto-linker didn&rsquo;t find a matching YGE BidResult
-              (project name drift, bid-open date off by &gt;1 day, or no
-              BidResult was logged). Pick the right one below to wire up
-              the cross-link.
+              {t('bidTabPg.needsLinkBlurb')}
             </p>
             <div className="mt-2">
               <BidTabYgeLinkForm
@@ -209,7 +208,7 @@ export default async function BidTabPage({
         )}
 
         <section className="mt-4 rounded-md border border-gray-200 bg-gray-50 p-3 text-xs text-gray-700">
-          <strong className="font-semibold text-gray-900">Notes</strong>
+          <strong className="font-semibold text-gray-900">{t('bidTabPg.notesHeader')}</strong>
           <BidTabNotesEdit
             apiBaseUrl={publicApiBaseUrl()}
             tabId={tab.id}
@@ -221,11 +220,11 @@ export default async function BidTabPage({
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
               <tr>
-                <th className="px-3 py-2 text-left">Rank</th>
-                <th className="px-3 py-2 text-left">Bidder</th>
-                <th className="px-3 py-2 text-right">Total</th>
-                <th className="px-3 py-2 text-right">vs. low</th>
-                <th className="px-3 py-2 text-left">Flags</th>
+                <th className="px-3 py-2 text-left">{t('bidTabPg.thRank')}</th>
+                <th className="px-3 py-2 text-left">{t('bidTabPg.thBidder')}</th>
+                <th className="px-3 py-2 text-right">{t('bidTabPg.thTotal')}</th>
+                <th className="px-3 py-2 text-right">{t('bidTabPg.thVsLow')}</th>
+                <th className="px-3 py-2 text-left">{t('bidTabPg.thFlags')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -247,14 +246,14 @@ export default async function BidTabPage({
                       {formatMoney(b.totalCents)}
                     </td>
                     <td className="px-3 py-2 align-top text-right font-mono text-xs text-gray-700">
-                      {b.rank === 1 ? '—' : `+${deltaPct.toFixed(1)}%`}
+                      {b.rank === 1 ? '—' : t('bidTabPg.deltaPct', { pct: deltaPct.toFixed(1) })}
                     </td>
                     <td className="px-3 py-2 align-top">
-                      {b.awardedTo && <StatusPill label="awarded" tone="success" size="sm" />}
+                      {b.awardedTo && <StatusPill label={t('bidTabPg.pillAwarded')} tone="success" size="sm" />}
                       {b.dbe && <StatusPill label="DBE" tone="info" size="sm" />}
                       {b.sbe && <StatusPill label="SBE" tone="info" size="sm" />}
-                      {b.withdrawn && <StatusPill label="withdrawn" tone="warn" size="sm" />}
-                      {b.rejected && <StatusPill label="rejected" tone="danger" size="sm" />}
+                      {b.withdrawn && <StatusPill label={t('bidTabPg.pillWithdrawn')} tone="warn" size="sm" />}
+                      {b.rejected && <StatusPill label={t('bidTabPg.pillRejected')} tone="danger" size="sm" />}
                     </td>
                   </tr>
                 );
@@ -264,7 +263,7 @@ export default async function BidTabPage({
         </section>
 
         <p className="mt-6 text-xs text-gray-500">
-          Source URL{' '}
+          {t('bidTabPg.sourceUrlLabel')}{' '}
           {tab.sourceUrl ? (
             <a
               href={tab.sourceUrl}
@@ -272,13 +271,13 @@ export default async function BidTabPage({
               target="_blank"
               rel="noreferrer"
             >
-              open ↗
+              {t('bidTabPg.sourceUrlOpen')}
             </a>
           ) : (
-            <span className="italic">not captured</span>
+            <span className="italic">{t('bidTabPg.sourceUrlMissing')}</span>
           )}{' '}
-          · scraped {tab.scrapedAt.replace('T', ' ').slice(0, 16)} ·{' '}
-          {tab.scraperJobId ? `job ${tab.scraperJobId}` : 'manual import'}
+          {t('bidTabPg.scrapedAt', { time: tab.scrapedAt.replace('T', ' ').slice(0, 16) })}{' · '}
+          {tab.scraperJobId ? t('bidTabPg.scrapeJobOrigin', { id: tab.scraperJobId }) : t('bidTabPg.scrapeManual')}
         </p>
       </main>
     </AppShell>
