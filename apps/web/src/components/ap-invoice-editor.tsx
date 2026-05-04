@@ -6,6 +6,7 @@
 // records the action separately from a generic PATCH.
 
 import { useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 import {
   apStatusLabel,
   formatUSD,
@@ -34,6 +35,7 @@ interface Props {
 }
 
 export function ApInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
+  const t = useTranslator();
   const [inv, setInv] = useState<ApInvoice>(initial);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -144,7 +146,7 @@ export function ApInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
   function pay() {
     const amount = Math.round(Number(paymentAmount) * 100);
     if (!Number.isFinite(amount) || amount <= 0) {
-      setError('Payment amount must be a positive number.');
+      setError(t('apInv.errPaymentAmount'));
       return;
     }
     void action('pay', {
@@ -159,7 +161,7 @@ export function ApInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
 
   function reject() {
     if (rejectReason.trim().length === 0) {
-      setError('Reason is required.');
+      setError(t('apInv.errReason'));
       return;
     }
     void action('reject', { reason: rejectReason.trim() });
@@ -178,14 +180,10 @@ export function ApInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
           </p>
           <h1 className="mt-1 text-2xl font-bold text-yge-blue-500">{inv.vendorName}</h1>
           <p className="mt-1 text-sm text-gray-600">
-            {inv.invoiceNumber && <>#{inv.invoiceNumber} \u00b7 </>}
-            invoice {inv.invoiceDate}
-            {inv.dueDate && <> \u00b7 due {inv.dueDate}</>}
-            {job && (
-              <>
-                {' '}\u00b7 {job.projectName}
-              </>
-            )}
+            {inv.invoiceNumber && t('apInv.headerInvNumPrefix', { number: inv.invoiceNumber })}
+            {t('apInv.headerInvDate', { date: inv.invoiceDate })}
+            {inv.dueDate && t('apInv.headerDueSep', { date: inv.dueDate })}
+            {job && t('apInv.headerJobSep', { project: job.projectName })}
           </p>
         </div>
         <div className="text-right">
@@ -193,9 +191,9 @@ export function ApInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
             {formatUSD(inv.totalCents)}
           </div>
           <div className="text-xs text-gray-500">
-            {formatUSD(inv.paidCents)} paid &middot; {formatUSD(balance)} balance
+            {t('apInv.paidBalance', { paid: formatUSD(inv.paidCents), balance: formatUSD(balance) })}
           </div>
-          {saving && <div className="text-xs text-gray-500">Saving&hellip;</div>}
+          {saving && <div className="text-xs text-gray-500">{t('apInv.saving')}</div>}
         </div>
       </header>
 
@@ -208,7 +206,7 @@ export function ApInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
       {/* Workflow actions */}
       <section className="rounded-lg border border-gray-200 bg-gray-50 p-4">
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-700">
-          Workflow
+          {t('apInv.workflowHeader')}
         </h2>
         <div className="flex flex-wrap items-center gap-2">
           {(inv.status === 'DRAFT' || inv.status === 'PENDING') && (
@@ -217,16 +215,16 @@ export function ApInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
               onClick={approve}
               className="rounded bg-yge-blue-500 px-3 py-1 text-sm font-medium text-white hover:bg-yge-blue-700"
             >
-              Approve
+              {t('apInv.approve')}
             </button>
           )}
           {(inv.status === 'APPROVED' || inv.status === 'DRAFT' || inv.status === 'PENDING') && balance > 0 && (
             <details className="relative">
               <summary className="cursor-pointer rounded bg-green-600 px-3 py-1 text-sm font-medium text-white hover:bg-green-700">
-                Record payment
+                {t('apInv.recordPayment')}
               </summary>
               <div className="absolute z-10 mt-2 grid w-80 gap-2 rounded border border-gray-200 bg-white p-3 text-sm shadow-lg">
-                <Field label="Date">
+                <Field label={t('apInv.lblPaymentDate')}>
                   <input
                     type="date"
                     value={paymentDate}
@@ -234,7 +232,7 @@ export function ApInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
                     className="rounded border border-gray-300 px-2 py-1 text-sm"
                   />
                 </Field>
-                <Field label="Method">
+                <Field label={t('apInv.lblPaymentMethod')}>
                   <select
                     value={paymentMethod}
                     onChange={(e) => setPaymentMethod(e.target.value as ApPaymentMethod)}
@@ -247,15 +245,15 @@ export function ApInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
                     ))}
                   </select>
                 </Field>
-                <Field label="Reference">
+                <Field label={t('apInv.lblPaymentRef')}>
                   <input
                     value={paymentRef}
                     onChange={(e) => setPaymentRef(e.target.value)}
-                    placeholder="check #, ACH ID"
+                    placeholder={t('apInv.phPaymentRef')}
                     className="w-full rounded border border-gray-300 px-2 py-1 text-sm font-mono"
                   />
                 </Field>
-                <Field label="Amount ($)">
+                <Field label={t('apInv.lblPaymentAmount')}>
                   <input
                     type="number"
                     min="0"
@@ -271,7 +269,7 @@ export function ApInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
                   onClick={pay}
                   className="rounded bg-green-600 px-3 py-1 text-sm font-medium text-white hover:bg-green-700"
                 >
-                  Apply payment
+                  {t('apInv.applyPayment')}
                 </button>
               </div>
             </details>
@@ -279,10 +277,10 @@ export function ApInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
           {inv.status !== 'PAID' && inv.status !== 'REJECTED' && (
             <details className="relative">
               <summary className="cursor-pointer rounded border border-red-300 px-3 py-1 text-sm font-medium text-red-700 hover:bg-red-50">
-                Reject
+                {t('apInv.reject')}
               </summary>
               <div className="absolute z-10 mt-2 grid w-80 gap-2 rounded border border-gray-200 bg-white p-3 text-sm shadow-lg">
-                <Field label="Reason">
+                <Field label={t('apInv.lblReason')}>
                   <textarea
                     rows={3}
                     value={rejectReason}
@@ -295,7 +293,7 @@ export function ApInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
                   onClick={reject}
                   className="rounded bg-red-600 px-3 py-1 text-sm font-medium text-white hover:bg-red-700"
                 >
-                  Reject
+                  {t('apInv.reject')}
                 </button>
               </div>
             </details>
@@ -303,25 +301,25 @@ export function ApInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
         </div>
         {inv.approvedAt && (
           <p className="mt-2 text-xs text-gray-500">
-            Approved {new Date(inv.approvedAt).toLocaleString()}
-            {inv.approvedByEmployeeId && <> by {inv.approvedByEmployeeId}</>}
+            {t('apInv.approvedNote', { when: new Date(inv.approvedAt).toLocaleString() })}
+            {inv.approvedByEmployeeId && t('apInv.approvedBy', { who: inv.approvedByEmployeeId })}
           </p>
         )}
         {inv.paidAt && (
           <p className="mt-1 text-xs text-gray-500">
-            Last payment {inv.paidAt}
-            {inv.paymentMethod && <> via {paymentMethodLabel(inv.paymentMethod)}</>}
-            {inv.paymentReference && <> (ref {inv.paymentReference})</>}
+            {t('apInv.lastPayment', { date: inv.paidAt })}
+            {inv.paymentMethod && t('apInv.viaMethod', { method: paymentMethodLabel(inv.paymentMethod) })}
+            {inv.paymentReference && t('apInv.refSep', { ref: inv.paymentReference })}
           </p>
         )}
         {inv.rejectedReason && (
-          <p className="mt-1 text-xs text-red-700">Rejected: {inv.rejectedReason}</p>
+          <p className="mt-1 text-xs text-red-700">{t('apInv.rejectedNote', { reason: inv.rejectedReason })}</p>
         )}
       </section>
 
       {/* Header fields */}
       <section className="grid gap-4 sm:grid-cols-2">
-        <Field label="Vendor">
+        <Field label={t('apInv.lblVendor')}>
           <input
             value={vendorName}
             onChange={(e) => setVendorName(e.target.value)}
@@ -329,7 +327,7 @@ export function ApInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Vendor invoice #">
+        <Field label={t('apInv.lblInvoiceNum')}>
           <input
             value={invoiceNumber}
             onChange={(e) => setInvoiceNumber(e.target.value)}
@@ -337,13 +335,13 @@ export function ApInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm font-mono"
           />
         </Field>
-        <Field label="Job">
+        <Field label={t('apInv.lblJob')}>
           <select
             value={inv.jobId ?? ''}
             onChange={(e) => void patch({ jobId: e.target.value || undefined })}
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           >
-            <option value="">— Not job-specific —</option>
+            <option value="">{t('apInv.notJobSpecific')}</option>
             {jobs.map((j) => (
               <option key={j.id} value={j.id}>
                 {j.projectName}
@@ -351,7 +349,7 @@ export function ApInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
             ))}
           </select>
         </Field>
-        <Field label="Invoice date">
+        <Field label={t('apInv.lblInvoiceDate')}>
           <input
             type="date"
             value={invoiceDate}
@@ -360,7 +358,7 @@ export function ApInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
             className="rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Due date">
+        <Field label={t('apInv.lblDueDate')}>
           <input
             type="date"
             value={dueDate}
@@ -369,7 +367,7 @@ export function ApInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
             className="rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Total ($)">
+        <Field label={t('apInv.lblTotal')}>
           <input
             type="number"
             min="0"
@@ -384,25 +382,23 @@ export function ApInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
 
       {/* Line items */}
       <section>
-        <h2 className="mb-2 text-lg font-semibold text-gray-900">Line items</h2>
+        <h2 className="mb-2 text-lg font-semibold text-gray-900">{t('apInv.lineItemsHeader')}</h2>
         {inv.lineItems.length > 0 && Math.abs(lineSum - inv.totalCents) > 0 && (
           <div className="mb-3 rounded border border-yellow-300 bg-yellow-50 p-2 text-xs text-yellow-800">
-            Lines sum to {formatUSD(lineSum)} but invoice total is{' '}
-            {formatUSD(inv.totalCents)}. Tax / freight / discount is the
-            usual reason — add a line for it or update the header total.
+            {t('apInv.lineSumWarn', { sum: formatUSD(lineSum), total: formatUSD(inv.totalCents) })}
           </div>
         )}
 
         <div className="rounded border border-gray-200 bg-gray-50 p-3">
           <div className="grid gap-2 sm:grid-cols-5">
-            <Field label="Description">
+            <Field label={t('apInv.lblDescription')}>
               <input
                 value={newDesc}
                 onChange={(e) => setNewDesc(e.target.value)}
                 className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
               />
             </Field>
-            <Field label="Qty">
+            <Field label={t('apInv.lblQty')}>
               <input
                 type="number"
                 min="0"
@@ -412,7 +408,7 @@ export function ApInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
                 className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
               />
             </Field>
-            <Field label="Unit ($)">
+            <Field label={t('apInv.lblUnitDollar')}>
               <input
                 type="number"
                 min="0"
@@ -422,13 +418,13 @@ export function ApInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
                 className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
               />
             </Field>
-            <Field label="Job">
+            <Field label={t('apInv.lblJob')}>
               <select
                 value={newJobId}
                 onChange={(e) => setNewJobId(e.target.value)}
                 className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
               >
-                <option value="">— inherit —</option>
+                <option value="">{t('apInv.inheritJob')}</option>
                 {jobs.map((j) => (
                   <option key={j.id} value={j.id}>
                     {j.projectName}
@@ -442,14 +438,14 @@ export function ApInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
                 onClick={addLine}
                 className="rounded bg-yge-blue-500 px-3 py-1 text-sm font-medium text-white hover:bg-yge-blue-700"
               >
-                Add line
+                {t('apInv.addLine')}
               </button>
             </div>
           </div>
         </div>
 
         {inv.lineItems.length === 0 ? (
-          <p className="mt-4 text-sm text-gray-500">No line items yet.</p>
+          <p className="mt-4 text-sm text-gray-500">{t('apInv.lineItemsEmpty')}</p>
         ) : (
           <ul className="mt-4 divide-y divide-gray-100 rounded border border-gray-200 bg-white text-sm">
             {inv.lineItems.map((li, i) => (
@@ -462,11 +458,7 @@ export function ApInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
                   <div className="text-xs text-gray-500">
                     {li.quantity} {li.unit ?? 'ea'} &middot;{' '}
                     {formatUSD(li.unitPriceCents)}
-                    {li.jobId && (
-                      <>
-                        {' '}\u00b7 job {jobs.find((j) => j.id === li.jobId)?.projectName ?? li.jobId}
-                      </>
-                    )}
+                    {li.jobId && t('apInv.lineJobSep', { project: jobs.find((j) => j.id === li.jobId)?.projectName ?? li.jobId })}
                   </div>
                 </div>
                 <div className="flex items-center gap-3 text-sm">
@@ -478,7 +470,7 @@ export function ApInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
                     onClick={() => removeLine(i)}
                     className="text-xs text-red-600 hover:underline"
                   >
-                    Remove
+                    {t('apInv.removeLine')}
                   </button>
                 </div>
               </li>
@@ -487,7 +479,7 @@ export function ApInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
         )}
       </section>
 
-      <Field label="Notes">
+      <Field label={t('apInv.lblNotes')}>
         <textarea
           rows={3}
           value={notes}
