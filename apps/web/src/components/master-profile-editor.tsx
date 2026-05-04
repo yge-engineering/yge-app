@@ -12,6 +12,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import type { MasterProfile } from '@yge/shared';
+import { useTranslator } from '../lib/use-translator';
 
 interface Props {
   apiBaseUrl: string;
@@ -24,6 +25,7 @@ type Patch = Partial<MasterProfile> & {
 
 export function MasterProfileEditor({ apiBaseUrl, initial }: Props) {
   const router = useRouter();
+  const t = useTranslator();
   const [draft, setDraft] = useState<MasterProfile>(initial);
   const [busy, setBusy] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
@@ -86,7 +88,7 @@ export function MasterProfileEditor({ apiBaseUrl, initial }: Props) {
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? `API returned ${res.status}`);
+        setError(body.error ?? t('masterProfile.errApi', { status: res.status }));
         return;
       }
       setSavedAt(new Date().toISOString());
@@ -101,11 +103,11 @@ export function MasterProfileEditor({ apiBaseUrl, initial }: Props) {
   return (
     <section className="rounded-md border border-gray-200 bg-white p-4 shadow-sm">
       <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-700">
-        Edit profile
+        {t('masterProfile.title')}
       </h2>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Legal name">
+        <Field label={t('masterProfile.lblLegalName')}>
           <input
             type="text"
             value={draft.legalName}
@@ -113,7 +115,7 @@ export function MasterProfileEditor({ apiBaseUrl, initial }: Props) {
             className={inputClass}
           />
         </Field>
-        <Field label="Short name">
+        <Field label={t('masterProfile.lblShortName')}>
           <input
             type="text"
             value={draft.shortName}
@@ -121,7 +123,7 @@ export function MasterProfileEditor({ apiBaseUrl, initial }: Props) {
             className={inputClass}
           />
         </Field>
-        <Field label="CSLB license #" required>
+        <Field label={t('masterProfile.lblCslb')} required>
           <input
             type="text"
             value={draft.cslbLicense}
@@ -129,7 +131,7 @@ export function MasterProfileEditor({ apiBaseUrl, initial }: Props) {
             className={inputClass}
           />
         </Field>
-        <Field label="CSLB expires (yyyy-mm-dd)">
+        <Field label={t('masterProfile.lblCslbExpires')}>
           <input
             type="date"
             value={draft.cslbExpiresOn ?? ''}
@@ -137,7 +139,7 @@ export function MasterProfileEditor({ apiBaseUrl, initial }: Props) {
             className={inputClass}
           />
         </Field>
-        <Field label="CSLB classifications (comma-separated)">
+        <Field label={t('masterProfile.lblCslbClass')}>
           <input
             type="text"
             value={draft.cslbClassifications.join(', ')}
@@ -148,10 +150,10 @@ export function MasterProfileEditor({ apiBaseUrl, initial }: Props) {
               )
             }
             className={inputClass}
-            placeholder="A, C-12"
+            placeholder={t('masterProfile.phCslbClass')}
           />
         </Field>
-        <Field label="DIR registration #" required>
+        <Field label={t('masterProfile.lblDir')} required>
           <input
             type="text"
             value={draft.dirNumber}
@@ -159,7 +161,7 @@ export function MasterProfileEditor({ apiBaseUrl, initial }: Props) {
             className={inputClass}
           />
         </Field>
-        <Field label="DIR expires">
+        <Field label={t('masterProfile.lblDirExpires')}>
           <input
             type="date"
             value={draft.dirExpiresOn ?? ''}
@@ -167,7 +169,7 @@ export function MasterProfileEditor({ apiBaseUrl, initial }: Props) {
             className={inputClass}
           />
         </Field>
-        <Field label="DOT #">
+        <Field label={t('masterProfile.lblDot')}>
           <input
             type="text"
             value={draft.dotNumber ?? ''}
@@ -175,16 +177,16 @@ export function MasterProfileEditor({ apiBaseUrl, initial }: Props) {
             className={inputClass}
           />
         </Field>
-        <Field label="Federal EIN (XX-XXXXXXX)">
+        <Field label={t('masterProfile.lblEin')}>
           <input
             type="text"
             value={draft.federalEin ?? ''}
             onChange={(e) => setField('federalEin', e.target.value || undefined)}
             className={inputClass}
-            placeholder="12-3456789"
+            placeholder={t('masterProfile.phEin')}
           />
         </Field>
-        <Field label="CA SOS entity #">
+        <Field label={t('masterProfile.lblCaSos')}>
           <input
             type="text"
             value={draft.caEntityNumber ?? ''}
@@ -192,7 +194,7 @@ export function MasterProfileEditor({ apiBaseUrl, initial }: Props) {
             className={inputClass}
           />
         </Field>
-        <Field label="CA employer account #">
+        <Field label={t('masterProfile.lblCaEmployer')}>
           <input
             type="text"
             value={draft.caEmployerAccountNumber ?? ''}
@@ -200,7 +202,7 @@ export function MasterProfileEditor({ apiBaseUrl, initial }: Props) {
             className={inputClass}
           />
         </Field>
-        <Field label="CA MCP #">
+        <Field label={t('masterProfile.lblCaMcp')}>
           <input
             type="text"
             value={draft.caMcpNumber ?? ''}
@@ -208,7 +210,7 @@ export function MasterProfileEditor({ apiBaseUrl, initial }: Props) {
             className={inputClass}
           />
         </Field>
-        <Field label="NAICS codes (comma-separated)">
+        <Field label={t('masterProfile.lblNaics')}>
           <input
             type="text"
             value={draft.naicsCodes.join(', ')}
@@ -219,10 +221,10 @@ export function MasterProfileEditor({ apiBaseUrl, initial }: Props) {
               )
             }
             className={inputClass}
-            placeholder="115310"
+            placeholder={t('masterProfile.phNaics')}
           />
         </Field>
-        <Field label="PSC codes (comma-separated)">
+        <Field label={t('masterProfile.lblPsc')}>
           <input
             type="text"
             value={draft.pscCodes.join(', ')}
@@ -233,16 +235,16 @@ export function MasterProfileEditor({ apiBaseUrl, initial }: Props) {
               )
             }
             className={inputClass}
-            placeholder="F003, F004"
+            placeholder={t('masterProfile.phPsc')}
           />
         </Field>
       </div>
 
       <h3 className="mt-6 mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
-        Address + contact
+        {t('masterProfile.headerAddress')}
       </h3>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Street" required>
+        <Field label={t('masterProfile.lblStreet')} required>
           <input
             type="text"
             value={draft.address.street}
@@ -250,7 +252,7 @@ export function MasterProfileEditor({ apiBaseUrl, initial }: Props) {
             className={inputClass}
           />
         </Field>
-        <Field label="Suite / unit">
+        <Field label={t('masterProfile.lblSuite')}>
           <input
             type="text"
             value={draft.address.street2 ?? ''}
@@ -258,7 +260,7 @@ export function MasterProfileEditor({ apiBaseUrl, initial }: Props) {
             className={inputClass}
           />
         </Field>
-        <Field label="City" required>
+        <Field label={t('masterProfile.lblCity')} required>
           <input
             type="text"
             value={draft.address.city}
@@ -266,7 +268,7 @@ export function MasterProfileEditor({ apiBaseUrl, initial }: Props) {
             className={inputClass}
           />
         </Field>
-        <Field label="State (2 letters)" required>
+        <Field label={t('masterProfile.lblState')} required>
           <input
             type="text"
             value={draft.address.state}
@@ -275,7 +277,7 @@ export function MasterProfileEditor({ apiBaseUrl, initial }: Props) {
             className={inputClass}
           />
         </Field>
-        <Field label="ZIP" required>
+        <Field label={t('masterProfile.lblZip')} required>
           <input
             type="text"
             value={draft.address.zip}
@@ -283,7 +285,7 @@ export function MasterProfileEditor({ apiBaseUrl, initial }: Props) {
             className={inputClass}
           />
         </Field>
-        <Field label="County">
+        <Field label={t('masterProfile.lblCounty')}>
           <input
             type="text"
             value={draft.address.county ?? ''}
@@ -291,7 +293,7 @@ export function MasterProfileEditor({ apiBaseUrl, initial }: Props) {
             className={inputClass}
           />
         </Field>
-        <Field label="Phone" required>
+        <Field label={t('masterProfile.lblPhone')} required>
           <input
             type="tel"
             value={draft.primaryPhone}
@@ -299,7 +301,7 @@ export function MasterProfileEditor({ apiBaseUrl, initial }: Props) {
             className={inputClass}
           />
         </Field>
-        <Field label="Fax">
+        <Field label={t('masterProfile.lblFax')}>
           <input
             type="tel"
             value={draft.primaryFax ?? ''}
@@ -307,7 +309,7 @@ export function MasterProfileEditor({ apiBaseUrl, initial }: Props) {
             className={inputClass}
           />
         </Field>
-        <Field label="Email" required>
+        <Field label={t('masterProfile.lblEmail')} required>
           <input
             type="email"
             value={draft.primaryEmail}
@@ -315,19 +317,19 @@ export function MasterProfileEditor({ apiBaseUrl, initial }: Props) {
             className={inputClass}
           />
         </Field>
-        <Field label="Website">
+        <Field label={t('masterProfile.lblWebsite')}>
           <input
             type="url"
             value={draft.websiteUrl ?? ''}
             onChange={(e) => setField('websiteUrl', e.target.value || undefined)}
             className={inputClass}
-            placeholder="https://youngge.com"
+            placeholder={t('masterProfile.phWebsite')}
           />
         </Field>
       </div>
 
       <h3 className="mt-6 mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
-        Diversity certifications
+        {t('masterProfile.headerDiversity')}
       </h3>
       <div className="flex flex-wrap gap-4">
         <CheckboxField label="DBE" checked={draft.isDbe} onChange={(v) => setField('isDbe', v)} />
@@ -349,22 +351,19 @@ export function MasterProfileEditor({ apiBaseUrl, initial }: Props) {
           disabled={!dirty || busy}
           className="rounded bg-yge-blue-500 px-4 py-1.5 text-sm font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50"
         >
-          {busy ? 'Saving…' : 'Save'}
+          {busy ? t('masterProfile.busy') : t('masterProfile.action')}
         </button>
         {savedAt && (
           <span className="text-xs text-emerald-700">
-            ✓ Saved at {savedAt.replace('T', ' ').slice(0, 16)} UTC
+            {t('masterProfile.savedAt', { at: savedAt.replace('T', ' ').slice(0, 16) })}
           </span>
         )}
         {dirty && !busy && !savedAt && (
-          <span className="text-xs text-gray-500">Unsaved changes.</span>
+          <span className="text-xs text-gray-500">{t('masterProfile.unsaved')}</span>
         )}
       </div>
       <p className="mt-3 text-xs text-gray-500">
-        Officers, bonding, and insurance edit through dedicated forms in
-        subsequent commits — those are list-of-rows shapes that need add /
-        remove affordances. Today they edit through PATCH /api/master-profile
-        directly.
+        {t('masterProfile.help')}
       </p>
     </section>
   );
