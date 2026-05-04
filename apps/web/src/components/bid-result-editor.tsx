@@ -7,6 +7,7 @@
 // advances the linked Job's pursuit status.
 
 import { useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 import {
   bidOutcomeLabel,
   formatUSD,
@@ -31,6 +32,7 @@ interface Props {
 }
 
 export function BidResultEditor({ initial, job, apiBaseUrl }: Props) {
+  const t = useTranslator();
   const [r, setR] = useState<BidResult>(initial);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,11 +62,11 @@ export function BidResultEditor({ initial, job, apiBaseUrl }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-      if (!res.ok) throw new Error(`Save failed: ${res.status}`);
+      if (!res.ok) throw new Error(t('bidResult.errSaveStatus', { status: res.status }));
       const json = (await res.json()) as { result: BidResult };
       setR(json.result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Save failed');
+      setError(err instanceof Error ? err.message : t('bidResult.errSave'));
     } finally {
       setSaving(false);
     }
@@ -85,7 +87,7 @@ export function BidResultEditor({ initial, job, apiBaseUrl }: Props) {
   function addBidder() {
     const amt = Math.round(Number(newAmount) * 100);
     if (!newBidderName.trim() || !Number.isFinite(amt) || amt < 0) {
-      setError('Bidder name + valid amount are required.');
+      setError(t('bidResult.errBidderRequired'));
       return;
     }
     const next: BidResultBidder = {
@@ -127,10 +129,10 @@ export function BidResultEditor({ initial, job, apiBaseUrl }: Props) {
             {job?.projectName ?? r.jobId}
           </h1>
           <p className="mt-1 text-sm text-gray-500">
-            Bids opened {r.bidOpenedAt}
+            {t('bidResult.subtitle', { date: r.bidOpenedAt })}
             {r.awardedAt && (
               <>
-                {' '}&middot; awarded {r.awardedAt}
+                {t('bidResult.awardedSuffix', { date: r.awardedAt })}
               </>
             )}
           </p>
@@ -147,7 +149,7 @@ export function BidResultEditor({ initial, job, apiBaseUrl }: Props) {
               </option>
             ))}
           </select>
-          {saving && <span className="text-gray-500">Saving&hellip;</span>}
+          {saving && <span className="text-gray-500">{t('bidResult.saving')}</span>}
         </div>
       </header>
 
@@ -161,29 +163,29 @@ export function BidResultEditor({ initial, job, apiBaseUrl }: Props) {
       {yge && (
         <section className="grid gap-3 sm:grid-cols-3">
           <Stat
-            label="YGE bid"
+            label={t('bidResult.statYge')}
             value={formatUSD(yge.amountCents)}
-            subtitle={rank ? `Rank ${rank} of ${r.bidders.length}` : undefined}
+            subtitle={rank ? t('bidResult.rankOf', { rank, total: r.bidders.length }) : undefined}
           />
           <Stat
-            label="Winning bid"
+            label={t('bidResult.statWin')}
             value={win !== undefined ? formatUSD(win) : '—'}
             subtitle={
               dWin !== undefined && dWin > 0
-                ? `YGE +${formatUSD(dWin)}`
+                ? t('bidResult.ygePlus', { amount: formatUSD(dWin) })
                 : dWin === 0
-                  ? 'YGE was the winner'
+                  ? t('bidResult.ygeWinner')
                   : undefined
             }
           />
           <Stat
-            label="Engineer's est"
+            label={t('bidResult.statEng')}
             value={r.engineersEstimateCents ? formatUSD(r.engineersEstimateCents) : '—'}
             subtitle={
               dEng !== undefined
                 ? dEng < 0
-                  ? `YGE ${formatUSD(dEng)} under`
-                  : `YGE +${formatUSD(dEng)} over`
+                  ? t('bidResult.ygeUnder', { amount: formatUSD(dEng) })
+                  : t('bidResult.ygeOver', { amount: formatUSD(dEng) })
                 : undefined
             }
           />
@@ -192,7 +194,7 @@ export function BidResultEditor({ initial, job, apiBaseUrl }: Props) {
 
       {/* Meta */}
       <section className="grid gap-4 sm:grid-cols-2">
-        <Field label="Bid-open date">
+        <Field label={t('bidResult.lblBidOpen')}>
           <input
             type="date"
             value={bidOpenedAt}
@@ -201,7 +203,7 @@ export function BidResultEditor({ initial, job, apiBaseUrl }: Props) {
             className="rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Awarded date">
+        <Field label={t('bidResult.lblAwarded')}>
           <input
             type="date"
             value={awardedAt}
@@ -210,7 +212,7 @@ export function BidResultEditor({ initial, job, apiBaseUrl }: Props) {
             className="rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Engineer's estimate ($)">
+        <Field label={t('bidResult.lblEngEst')}>
           <input
             type="number"
             min="0"
@@ -221,12 +223,12 @@ export function BidResultEditor({ initial, job, apiBaseUrl }: Props) {
             className="rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Bid tab URL">
+        <Field label={t('bidResult.lblBidTabUrl')}>
           <input
             value={bidTabUrl}
             onChange={(e) => setBidTabUrl(e.target.value)}
             onBlur={saveMeta}
-            placeholder="https://agency.gov/projects/123/bids"
+            placeholder={t('bidResult.phBidTabUrl')}
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
@@ -234,19 +236,19 @@ export function BidResultEditor({ initial, job, apiBaseUrl }: Props) {
 
       {/* Bidder list */}
       <section>
-        <h2 className="mb-2 text-lg font-semibold text-gray-900">Bidders</h2>
+        <h2 className="mb-2 text-lg font-semibold text-gray-900">{t('bidResult.bidders')}</h2>
 
         <div className="rounded border border-gray-200 bg-gray-50 p-3">
           <div className="grid gap-3 sm:grid-cols-4">
-            <Field label="Bidder name">
+            <Field label={t('bidResult.lblName')}>
               <input
                 value={newBidderName}
                 onChange={(e) => setNewBidderName(e.target.value)}
-                placeholder="Acme Construction"
+                placeholder={t('bidResult.phName')}
                 className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
               />
             </Field>
-            <Field label="Amount ($)">
+            <Field label={t('bidResult.lblAmount')}>
               <input
                 type="number"
                 min="0"
@@ -256,7 +258,7 @@ export function BidResultEditor({ initial, job, apiBaseUrl }: Props) {
                 className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
               />
             </Field>
-            <Field label="Is YGE?">
+            <Field label={t('bidResult.lblIsYge')}>
               <div className="flex h-9 items-center">
                 <input
                   type="checkbox"
@@ -272,14 +274,14 @@ export function BidResultEditor({ initial, job, apiBaseUrl }: Props) {
                 onClick={addBidder}
                 className="rounded bg-yge-blue-500 px-3 py-1 text-sm font-medium text-white hover:bg-yge-blue-700"
               >
-                Add bidder
+                {t('bidResult.addBidder')}
               </button>
             </div>
           </div>
         </div>
 
         {sorted.length === 0 ? (
-          <p className="mt-4 text-sm text-gray-500">No bidders logged yet.</p>
+          <p className="mt-4 text-sm text-gray-500">{t('bidResult.empty')}</p>
         ) : (
           <ol className="mt-4 divide-y divide-gray-100 rounded border border-gray-200 bg-white">
             {sorted.map((b, i) => {
@@ -308,14 +310,14 @@ export function BidResultEditor({ initial, job, apiBaseUrl }: Props) {
                       onClick={() => toggleYge(originalIdx)}
                       className="text-yge-blue-500 hover:underline"
                     >
-                      {b.isYge ? 'Unmark YGE' : 'Mark as YGE'}
+                      {b.isYge ? t('bidResult.unmarkYge') : t('bidResult.markYge')}
                     </button>
                     <button
                       type="button"
                       onClick={() => removeBidder(originalIdx)}
                       className="text-red-600 hover:underline"
                     >
-                      Remove
+                      {t('bidResult.remove')}
                     </button>
                   </div>
                 </li>
@@ -326,13 +328,13 @@ export function BidResultEditor({ initial, job, apiBaseUrl }: Props) {
       </section>
 
       <section>
-        <Field label="Pursuit notes">
+        <Field label={t('bidResult.lblNotes')}>
           <textarea
             rows={4}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             onBlur={saveMeta}
-            placeholder="What to remember for next time you bid against these guys."
+            placeholder={t('bidResult.phNotes')}
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
