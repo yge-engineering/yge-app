@@ -4,6 +4,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 import {
   dollarsToCents,
   isConditional,
@@ -82,6 +83,7 @@ export function LienWaiverEditor({
   waiver?: LienWaiver;
 }) {
   const router = useRouter();
+  const t = useTranslator();
   const [form, setForm] = useState<FormState>(defaults(waiver));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -159,13 +161,12 @@ export function LienWaiverEditor({
 
       {!conditional && (
         <div className="rounded border border-yellow-300 bg-yellow-50 p-3 text-sm text-yellow-900">
-          <strong>Caution:</strong> Unconditional waivers are effective
-          immediately on signing — sign only AFTER funds have cleared the bank.
+          <strong>{t('lienWaiver.cautionLeader')}</strong>{t('lienWaiver.cautionBody')}
         </div>
       )}
 
-      <Section title="Form + status">
-        <Field label="Statutory form">
+      <Section title={t('lienWaiver.secForm')}>
+        <Field label={t('lienWaiver.lblKind')}>
           <select
             className={inputCls}
             value={form.kind}
@@ -178,7 +179,7 @@ export function LienWaiverEditor({
             ))}
           </select>
         </Field>
-        <Field label="Status">
+        <Field label={t('lienWaiver.lblStatus')}>
           <select
             className={inputCls}
             value={form.status}
@@ -191,35 +192,35 @@ export function LienWaiverEditor({
             ))}
           </select>
         </Field>
-        <Field label="Job ID" required>
+        <Field label={t('lienWaiver.lblJobId')} required>
           <input
             className={inputCls}
             value={form.jobId}
             onChange={(e) => setField('jobId', e.target.value)}
-            placeholder="job-YYYY-MM-DD-..."
+            placeholder={t('lienWaiver.phJobId')}
             required
           />
         </Field>
-        <Field label="AR invoice ID (optional)">
+        <Field label={t('lienWaiver.lblArInvId')}>
           <input
             className={inputCls}
             value={form.arInvoiceId}
             onChange={(e) => setField('arInvoiceId', e.target.value)}
-            placeholder="ar-xxxxxxxx"
+            placeholder={t('lienWaiver.phArInvId')}
           />
         </Field>
-        <Field label="AR payment ID (optional)">
+        <Field label={t('lienWaiver.lblArPaymentId')}>
           <input
             className={inputCls}
             value={form.arPaymentId}
             onChange={(e) => setField('arPaymentId', e.target.value)}
-            placeholder="arp-xxxxxxxx"
+            placeholder={t('lienWaiver.phArPaymentId')}
           />
         </Field>
       </Section>
 
-      <Section title="Form header">
-        <Field label="Owner / customer" required>
+      <Section title={t('lienWaiver.secHeader')}>
+        <Field label={t('lienWaiver.lblOwner')} required>
           <input
             className={inputCls}
             value={form.ownerName}
@@ -227,7 +228,7 @@ export function LienWaiverEditor({
             required
           />
         </Field>
-        <Field label="Claimant (you)" required>
+        <Field label={t('lienWaiver.lblClaimant')} required>
           <input
             className={inputCls}
             value={form.claimantName}
@@ -235,7 +236,7 @@ export function LienWaiverEditor({
             required
           />
         </Field>
-        <Field label="Job name" required>
+        <Field label={t('lienWaiver.lblJobName')} required>
           <input
             className={inputCls}
             value={form.jobName}
@@ -243,7 +244,7 @@ export function LienWaiverEditor({
             required
           />
         </Field>
-        <Field label="Job address">
+        <Field label={t('lienWaiver.lblJobAddress')}>
           <input
             className={inputCls}
             value={form.jobAddress}
@@ -252,8 +253,8 @@ export function LienWaiverEditor({
         </Field>
       </Section>
 
-      <Section title="Money + dates">
-        <Field label="Payment amount ($)" required>
+      <Section title={t('lienWaiver.secMoney')}>
+        <Field label={t('lienWaiver.lblPaymentAmount')} required>
           <input
             type="number"
             step="0.01"
@@ -264,7 +265,7 @@ export function LienWaiverEditor({
             required
           />
         </Field>
-        <Field label="Through date" required>
+        <Field label={t('lienWaiver.lblThroughDate')} required>
           <input
             type="date"
             className={inputCls}
@@ -273,7 +274,7 @@ export function LienWaiverEditor({
             required
           />
         </Field>
-        <Field label="Disputed amount excluded ($)">
+        <Field label={t('lienWaiver.lblDisputedAmount')}>
           <input
             type="number"
             step="0.01"
@@ -283,18 +284,18 @@ export function LienWaiverEditor({
             onChange={(e) => setField('disputedAmountDollars', e.target.value)}
           />
         </Field>
-        <Field label="Disputed items">
+        <Field label={t('lienWaiver.lblDisputedItems')}>
           <input
             className={inputCls}
             value={form.disputedItems}
             onChange={(e) => setField('disputedItems', e.target.value)}
-            placeholder="e.g. Retention, CO #3"
+            placeholder={t('lienWaiver.phDisputedItems')}
           />
         </Field>
       </Section>
 
-      <Section title="Signing">
-        <Field label="Signed on">
+      <Section title={t('lienWaiver.secSigning')}>
+        <Field label={t('lienWaiver.lblSignedOn')}>
           <input
             type="date"
             className={inputCls}
@@ -302,22 +303,22 @@ export function LienWaiverEditor({
             onChange={(e) => setField('signedOn', e.target.value)}
           />
         </Field>
-        <Field label="Signed by (name)">
+        <Field label={t('lienWaiver.lblSignedByName')}>
           <input
             className={inputCls}
             value={form.signedByName}
             onChange={(e) => setField('signedByName', e.target.value)}
           />
         </Field>
-        <Field label="Signed by (title)">
+        <Field label={t('lienWaiver.lblSignedByTitle')}>
           <input
             className={inputCls}
             value={form.signedByTitle}
             onChange={(e) => setField('signedByTitle', e.target.value)}
-            placeholder="Vice President"
+            placeholder={t('lienWaiver.phSignedByTitle')}
           />
         </Field>
-        <Field label="Delivered on">
+        <Field label={t('lienWaiver.lblDeliveredOn')}>
           <input
             type="date"
             className={inputCls}
@@ -327,8 +328,8 @@ export function LienWaiverEditor({
         </Field>
       </Section>
 
-      <Section title="Notes">
-        <Field label="Notes" full>
+      <Section title={t('lienWaiver.secNotes')}>
+        <Field label={t('lienWaiver.lblNotes')} full>
           <textarea
             className={`${inputCls} min-h-[100px]`}
             value={form.notes}
@@ -343,7 +344,7 @@ export function LienWaiverEditor({
           disabled={saving}
           className="rounded bg-yge-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-yge-blue-700 disabled:opacity-50"
         >
-          {saving ? 'Saving…' : mode === 'create' ? 'Create waiver' : 'Save changes'}
+          {saving ? t('lienWaiver.busy') : mode === 'create' ? t('lienWaiver.create') : t('lienWaiver.save')}
         </button>
       </div>
     </form>
