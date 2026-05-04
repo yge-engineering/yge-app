@@ -15,6 +15,7 @@ import {
 } from '@yge/shared';
 import { PrintButton } from '@/components/print-button';
 import { Letterhead } from '@/components/letterhead';
+import { getTranslator } from '../../../../lib/locale';
 
 function apiBaseUrl(): string {
   return (
@@ -41,6 +42,7 @@ export default async function EnvelopeChecklistPage({
 }: {
   params: { id: string };
 }) {
+  const t = getTranslator();
   const data = await fetchEstimate(params.id);
   if (!data) notFound();
   const { estimate } = data;
@@ -65,19 +67,19 @@ export default async function EnvelopeChecklistPage({
               href={`/estimates/${estimate.id}`}
               className="text-yge-blue-500 hover:underline"
             >
-              &larr; Back to editor
+              {t('envelopePg.backEditor')}
             </Link>
             <Link
               href={`/estimates/${estimate.id}/print`}
               className="text-yge-blue-500 hover:underline"
             >
-              Bid summary
+              {t('envelopePg.bidSummary')}
             </Link>
             <Link
               href={`/estimates/${estimate.id}/transmittal`}
               className="text-yge-blue-500 hover:underline"
             >
-              Cover letter
+              {t('estPg.coverLetter')}
             </Link>
           </div>
           <PrintButton />
@@ -91,13 +93,13 @@ export default async function EnvelopeChecklistPage({
           rightBlock={
             <>
               <div className="font-semibold uppercase tracking-wide">
-                Bid envelope checklist
+                {t('envelopePg.docTitle')}
               </div>
               <div>{estimate.projectName}</div>
               {estimate.ownerAgency && <div>{estimate.ownerAgency}</div>}
               {estimate.bidDueDate && (
                 <div className="mt-1">
-                  Due:{' '}
+                  {t('envelopePg.dueLabel')}{' '}
                   <span className="font-semibold">{estimate.bidDueDate}</span>
                 </div>
               )}
@@ -108,20 +110,18 @@ export default async function EnvelopeChecklistPage({
         {/* ------- Status banner ------- */}
         {checklist.allRequiredAccountedFor ? (
           <div className="mt-4 rounded border border-green-300 bg-green-50 p-3 text-sm text-green-800">
-            All required items are accounted for. Walk down the list as you
-            stuff the envelope &mdash; tick each box once it&rsquo;s in.
+            {t('envelopePg.allOk')}
           </div>
         ) : (
           <div className="mt-4 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-800">
-            One or more required items are missing or unresolved. Fix the
-            flagged rows before sealing the envelope.
+            {t('envelopePg.missing')}
           </div>
         )}
 
         {/* ------- Required items ------- */}
         <section className="mt-6">
           <h2 className="text-xs font-bold uppercase tracking-wide text-gray-500">
-            Required for a responsive bid
+            {t('envelopePg.requiredHeader')}
           </h2>
           <ul className="mt-2 divide-y divide-gray-200 border-y border-gray-200">
             {checklist.items
@@ -159,7 +159,7 @@ export default async function EnvelopeChecklistPage({
         {/* ------- Recommended items ------- */}
         <section className="mt-8">
           <h2 className="text-xs font-bold uppercase tracking-wide text-gray-500">
-            Recommended
+            {t('envelopePg.recommendedHeader')}
           </h2>
           <ul className="mt-2 divide-y divide-gray-200 border-y border-gray-200">
             {checklist.items
@@ -190,12 +190,12 @@ export default async function EnvelopeChecklistPage({
         <section className="mt-10 grid grid-cols-2 gap-8 text-sm">
           <div>
             <p className="border-t border-gray-400 pt-1 text-gray-700">
-              Assembled by
+              {t('envelopePg.assembledBy')}
             </p>
           </div>
           <div>
             <p className="border-t border-gray-400 pt-1 text-gray-700">
-              Date / time
+              {t('envelopePg.dateTime')}
             </p>
           </div>
         </section>

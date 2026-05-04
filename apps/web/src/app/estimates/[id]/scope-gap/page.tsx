@@ -16,6 +16,7 @@ import {
 } from '../../../../components';
 import { ScopeGapForm } from '@/components/scope-gap-form';
 import type { PricedEstimate, PricedEstimateTotals } from '@yge/shared';
+import { getTranslator } from '../../../../lib/locale';
 
 function apiBaseUrl(): string {
   return (
@@ -46,6 +47,7 @@ export default async function ScopeGapPage({
 }: {
   params: { id: string };
 }) {
+  const t = getTranslator();
   const data = await fetchEstimate(params.id);
   if (!data) notFound();
 
@@ -73,20 +75,17 @@ export default async function ScopeGapPage({
             href={`/estimates/${data.estimate.id}`}
             className="text-sm text-yge-blue-500 hover:underline"
           >
-            &larr; Back to bid
+            {t('coachPg.back')}
           </Link>
         </div>
 
         <PageHeader
-          title="AI scope-gap check"
-          subtitle={`Reads the technical spec for ${data.estimate.projectName} against this draft and flags items the spec calls for that the bid doesn't cover.`}
+          title={t('scopeGapPg.title')}
+          subtitle={t('scopeGapPg.subtitle', { project: data.estimate.projectName })}
         />
 
         <Alert tone="info" className="mt-4">
-          Paste the spec text below. The AI runs against your current draft
-          ({data.estimate.bidItems.length} items) and returns a severity-sorted
-          gap report. Each HIGH gap blocks submit; MEDIUM / LOW are advisory.
-          Cost is roughly one Claude call per check.
+          {t('scopeGapPg.infoBlurb', { count: data.estimate.bidItems.length })}
         </Alert>
 
         <ScopeGapForm
