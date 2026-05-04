@@ -4,6 +4,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 import {
   classificationLabel,
   dollarsToCents,
@@ -79,6 +80,7 @@ export function DirRateEditor({
   rate?: DirRate;
 }) {
   const router = useRouter();
+  const t = useTranslator();
   const [form, setForm] = useState<FormState>(defaults(rate));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -155,8 +157,8 @@ export function DirRateEditor({
         </div>
       )}
 
-      <Section title="Classification + dates">
-        <Field label="Classification" required>
+      <Section title={t('dirRate.secClassDates')}>
+        <Field label={t('dirRate.lblClassification')} required>
           <select
             className={inputCls}
             value={form.classification}
@@ -169,16 +171,16 @@ export function DirRateEditor({
             ))}
           </select>
         </Field>
-        <Field label="County" required>
+        <Field label={t('dirRate.lblCounty')} required>
           <input
             className={inputCls}
             value={form.county}
             onChange={(e) => setField('county', e.target.value)}
-            placeholder="Shasta or STATEWIDE"
+            placeholder={t('dirRate.phCounty')}
             required
           />
         </Field>
-        <Field label="Effective date" required>
+        <Field label={t('dirRate.lblEffective')} required>
           <input
             type="date"
             className={inputCls}
@@ -187,7 +189,7 @@ export function DirRateEditor({
             required
           />
         </Field>
-        <Field label="Expires on">
+        <Field label={t('dirRate.lblExpires')}>
           <input
             type="date"
             className={inputCls}
@@ -197,8 +199,8 @@ export function DirRateEditor({
         </Field>
       </Section>
 
-      <Section title="Wage components ($/hr)">
-        <Field label="Basic hourly" required>
+      <Section title={t('dirRate.secWageComponents')}>
+        <Field label={t('dirRate.lblBasic')} required>
           <input
             type="number"
             step="0.01"
@@ -209,7 +211,7 @@ export function DirRateEditor({
             required
           />
         </Field>
-        <Field label="Health & welfare">
+        <Field label={t('dirRate.lblHw')}>
           <input
             type="number"
             step="0.01"
@@ -219,7 +221,7 @@ export function DirRateEditor({
             onChange={(e) => setField('healthAndWelfare', e.target.value)}
           />
         </Field>
-        <Field label="Pension">
+        <Field label={t('dirRate.lblPension')}>
           <input
             type="number"
             step="0.01"
@@ -229,7 +231,7 @@ export function DirRateEditor({
             onChange={(e) => setField('pension', e.target.value)}
           />
         </Field>
-        <Field label="Vacation / holiday">
+        <Field label={t('dirRate.lblVacation')}>
           <input
             type="number"
             step="0.01"
@@ -239,7 +241,7 @@ export function DirRateEditor({
             onChange={(e) => setField('vacationHoliday', e.target.value)}
           />
         </Field>
-        <Field label="Training">
+        <Field label={t('dirRate.lblTraining')}>
           <input
             type="number"
             step="0.01"
@@ -249,7 +251,7 @@ export function DirRateEditor({
             onChange={(e) => setField('training', e.target.value)}
           />
         </Field>
-        <Field label="Other fringe">
+        <Field label={t('dirRate.lblOtherFringe')}>
           <input
             type="number"
             step="0.01"
@@ -264,19 +266,19 @@ export function DirRateEditor({
       <div className="rounded-lg border border-gray-200 bg-blue-50 p-4 text-sm">
         <div className="grid gap-2 sm:grid-cols-3">
           <div>
-            <div className="text-xs uppercase tracking-wide text-gray-600">Basic</div>
+            <div className="text-xs uppercase tracking-wide text-gray-600">{t('dirRate.previewBasic')}</div>
             <div className="text-lg font-bold text-yge-blue-500">
               {formatUSD(previewBasic)}
             </div>
           </div>
           <div>
-            <div className="text-xs uppercase tracking-wide text-gray-600">Total Fringe</div>
+            <div className="text-xs uppercase tracking-wide text-gray-600">{t('dirRate.previewFringe')}</div>
             <div className="text-lg font-bold text-yge-blue-500">
               {formatUSD(previewFringe)}
             </div>
           </div>
           <div>
-            <div className="text-xs uppercase tracking-wide text-gray-600">Total Prevailing</div>
+            <div className="text-xs uppercase tracking-wide text-gray-600">{t('dirRate.previewTotal')}</div>
             <div className="text-lg font-bold text-yge-blue-500">
               {formatUSD(previewTotal)}
             </div>
@@ -284,16 +286,16 @@ export function DirRateEditor({
         </div>
       </div>
 
-      <Section title="Source + notes">
-        <Field label="DIR source URL" full>
+      <Section title={t('dirRate.secSourceNotes')}>
+        <Field label={t('dirRate.lblSourceUrl')} full>
           <input
             className={inputCls}
             value={form.sourceUrl}
             onChange={(e) => setField('sourceUrl', e.target.value)}
-            placeholder="https://www.dir.ca.gov/..."
+            placeholder={t('dirRate.phSourceUrl')}
           />
         </Field>
-        <Field label="Notes (overtime, doubletime, shift differential)" full>
+        <Field label={t('dirRate.lblNotes')} full>
           <textarea
             className={`${inputCls} min-h-[80px]`}
             value={form.notes}
@@ -308,7 +310,7 @@ export function DirRateEditor({
           disabled={saving}
           className="rounded bg-yge-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-yge-blue-700 disabled:opacity-50"
         >
-          {saving ? 'Saving…' : mode === 'create' ? 'Create rate' : 'Save changes'}
+          {saving ? t('dirRate.busy') : mode === 'create' ? t('dirRate.create') : t('dirRate.save')}
         </button>
       </div>
     </form>
