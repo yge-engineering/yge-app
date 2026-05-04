@@ -10,6 +10,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslator } from '../lib/use-translator';
 import {
   equipmentCategoryLabel,
   equipmentStatusLabel,
@@ -79,6 +80,7 @@ interface Props {
 
 export function EquipmentEditor({ initial, employees, jobs, apiBaseUrl }: Props) {
   const router = useRouter();
+  const t = useTranslator();
   const [, startTransition] = useTransition();
   const [eq, setEq] = useState<Equipment>(initial);
   const [saving, setSaving] = useState(false);
@@ -122,11 +124,11 @@ export function EquipmentEditor({ initial, employees, jobs, apiBaseUrl }: Props)
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-      if (!res.ok) throw new Error(`Save failed: ${res.status}`);
+      if (!res.ok) throw new Error(t('eqEditor.errSaveStatus', { status: res.status }));
       const json = (await res.json()) as { equipment: Equipment };
       setEq(json.equipment);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Save failed');
+      setError(err instanceof Error ? err.message : t('eqEditor.errFallback'));
     } finally {
       setSaving(false);
     }
@@ -162,12 +164,12 @@ export function EquipmentEditor({ initial, employees, jobs, apiBaseUrl }: Props)
           assignedOperatorEmployeeId: assignOpId || undefined,
         }),
       });
-      if (!res.ok) throw new Error(`Assign failed: ${res.status}`);
+      if (!res.ok) throw new Error(t('eqEditor.errAssignStatus', { status: res.status }));
       const json = (await res.json()) as { equipment: Equipment };
       setEq(json.equipment);
       startTransition(() => router.refresh());
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Assign failed');
+      setError(err instanceof Error ? err.message : t('eqEditor.errAssignFallback'));
     } finally {
       setSaving(false);
     }
@@ -184,12 +186,12 @@ export function EquipmentEditor({ initial, employees, jobs, apiBaseUrl }: Props)
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ destination }),
       });
-      if (!res.ok) throw new Error(`Return failed: ${res.status}`);
+      if (!res.ok) throw new Error(t('eqEditor.errReturnStatus', { status: res.status }));
       const json = (await res.json()) as { equipment: Equipment };
       setEq(json.equipment);
       startTransition(() => router.refresh());
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Return failed');
+      setError(err instanceof Error ? err.message : t('eqEditor.errReturnFallback'));
     } finally {
       setSaving(false);
     }
@@ -197,7 +199,7 @@ export function EquipmentEditor({ initial, employees, jobs, apiBaseUrl }: Props)
 
   async function logService() {
     if (logDescription.trim().length === 0) {
-      setError('Description is required for a maintenance log entry.');
+      setError(t('eqEditor.errLogDescription'));
       return;
     }
     const usageNum = Number(logUsageStr || eq.currentUsage);
@@ -230,7 +232,7 @@ export function EquipmentEditor({ initial, employees, jobs, apiBaseUrl }: Props)
       setLogCostStr('');
       setLogVendor('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Log failed');
+      setError(err instanceof Error ? err.message : t('eqEditor.errLogFallback'));
     } finally {
       setSaving(false);
     }
@@ -250,14 +252,8 @@ export function EquipmentEditor({ initial, employees, jobs, apiBaseUrl }: Props)
         <div>
           <h1 className="text-2xl font-bold text-yge-blue-500">{eq.name}</h1>
           <p className="mt-1 text-sm text-gray-500">
-            {equipmentCategoryLabel(eq.category)} &middot; {equipmentStatusLabel(eq.status)}
-            {' '}&middot; {formatUsage(eq)}
-            {next !== undefined && (
-              <>
-                {' '}&middot; Next service at {next.toLocaleString('en-US')}{' '}
-                {eq.usageMetric === 'MILES' ? 'mi' : 'hr'}
-              </>
-            )}
+            {t('eqEditor.subtitle', { category: equipmentCategoryLabel(eq.category), status: equipmentStatusLabel(eq.status), usage: formatUsage(eq) })}
+            {next !== undefined && t('eqEditor.subtitleNext', { usage: next.toLocaleString('en-US'), unit: eq.usageMetric === 'MILES' ? t('eqEditor.unitMi') : t('eqEditor.unitHr') })}
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs">
@@ -273,7 +269,7 @@ export function EquipmentEditor({ initial, employees, jobs, apiBaseUrl }: Props)
               </option>
             ))}
           </select>
-          {saving && <span className="text-gray-500">Saving&hellip;</span>}
+          {saving && <span className="text-gray-500">{t('eqEditor.saving')}</span>}
         </div>
       </header>
 
@@ -285,31 +281,29 @@ export function EquipmentEditor({ initial, employees, jobs, apiBaseUrl }: Props)
 
       {lvl === 'overdue' && (
         <div className="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-800">
-          <strong>Service overdue.</strong> This unit is past its next-service
-          reading. Schedule shop time before re-dispatch.
+          <strong>{t('eqEditor.overdueLeader')}</strong>{t('eqEditor.overdueBody')}
         </div>
       )}
       {lvl === 'warn' && (
         <div className="rounded border border-yellow-300 bg-yellow-50 p-3 text-sm text-yellow-800">
-          <strong>Service coming up.</strong> Within 10% of the interval &mdash;
-          plan the next stop now.
+          <strong>{t('eqEditor.warnLeader')}</strong>{t('eqEditor.warnBody')}
         </div>
       )}
 
       {/* Dispatch */}
       <section>
-        <h2 className="mb-2 text-lg font-semibold text-gray-900">Dispatch</h2>
+        <h2 className="mb-2 text-lg font-semibold text-gray-900">{t('eqEditor.dispatchHeader')}</h2>
         {eq.status === 'ASSIGNED' ? (
           <div className="rounded border border-blue-200 bg-blue-50 p-4 text-sm">
-            Currently on{' '}
+            {t('eqEditor.currentlyOnPrefix')}
             <strong>{assignedJob?.projectName ?? eq.assignedJobId}</strong>
             {assignedOp && (
               <>
-                {' '}with operator <strong>{fullName(assignedOp)}</strong>
+                {t('eqEditor.withOperator')}<strong>{fullName(assignedOp)}</strong>
               </>
             )}
             {eq.assignedAt && (
-              <span className="text-gray-600"> &middot; since {new Date(eq.assignedAt).toLocaleDateString()}</span>
+              <span className="text-gray-600">{t('eqEditor.sinceSuffix', { date: new Date(eq.assignedAt).toLocaleDateString() })}</span>
             )}
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <button
@@ -317,37 +311,37 @@ export function EquipmentEditor({ initial, employees, jobs, apiBaseUrl }: Props)
                 onClick={() => void returnUnit('IN_YARD')}
                 className="rounded border border-gray-300 bg-white px-2 py-1 text-xs hover:bg-gray-50"
               >
-                Return to yard
+                {t('eqEditor.returnYard')}
               </button>
               <button
                 type="button"
                 onClick={() => void returnUnit('IN_SERVICE')}
                 className="rounded border border-gray-300 bg-white px-2 py-1 text-xs hover:bg-gray-50"
               >
-                Send to shop
+                {t('eqEditor.sendShop')}
               </button>
               <button
                 type="button"
                 onClick={() => void returnUnit('OUT_FOR_REPAIR')}
                 className="rounded border border-orange-300 bg-white px-2 py-1 text-xs text-orange-700 hover:bg-orange-50"
               >
-                Out for repair
+                {t('eqEditor.outRepair')}
               </button>
             </div>
           </div>
         ) : eq.status === 'RETIRED' || eq.status === 'SOLD' ? (
           <p className="text-sm text-gray-500">
-            Unit is {equipmentStatusLabel(eq.status).toLowerCase()} &mdash; not dispatchable.
+            {t('eqEditor.notDispatchable', { status: equipmentStatusLabel(eq.status).toLowerCase() })}
           </p>
         ) : (
           <div className="grid gap-3 sm:grid-cols-3">
-            <Field label="Job">
+            <Field label={t('eqEditor.lblJob')}>
               <select
                 value={assignJobId}
                 onChange={(e) => setAssignJobId(e.target.value)}
                 className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
               >
-                {jobs.length === 0 && <option value="">No jobs</option>}
+                {jobs.length === 0 && <option value="">{t('eqEditor.noJobs')}</option>}
                 {jobs.map((j) => (
                   <option key={j.id} value={j.id}>
                     {j.projectName}
@@ -355,13 +349,13 @@ export function EquipmentEditor({ initial, employees, jobs, apiBaseUrl }: Props)
                 ))}
               </select>
             </Field>
-            <Field label="Operator (optional)">
+            <Field label={t('eqEditor.lblOperator')}>
               <select
                 value={assignOpId}
                 onChange={(e) => setAssignOpId(e.target.value)}
                 className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
               >
-                <option value="">— None —</option>
+                <option value="">{t('eqEditor.noneOption')}</option>
                 {operatorOptions.map((x) => (
                   <option key={x.id} value={x.id}>
                     {fullName(x)}
@@ -376,7 +370,7 @@ export function EquipmentEditor({ initial, employees, jobs, apiBaseUrl }: Props)
                 disabled={!assignJobId}
                 className="rounded bg-yge-blue-500 px-3 py-1 text-sm font-medium text-white hover:bg-yge-blue-700 disabled:opacity-50"
               >
-                Assign to job
+                {t('eqEditor.assignBtn')}
               </button>
             </div>
           </div>
@@ -385,7 +379,7 @@ export function EquipmentEditor({ initial, employees, jobs, apiBaseUrl }: Props)
 
       {/* Identification */}
       <section className="grid gap-4 sm:grid-cols-2">
-        <Field label="Unit name">
+        <Field label={t('eqEditor.lblName')}>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -393,7 +387,7 @@ export function EquipmentEditor({ initial, employees, jobs, apiBaseUrl }: Props)
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Category">
+        <Field label={t('eqEditor.lblCategory')}>
           <select
             value={eq.category}
             onChange={(e) =>
@@ -408,7 +402,7 @@ export function EquipmentEditor({ initial, employees, jobs, apiBaseUrl }: Props)
             ))}
           </select>
         </Field>
-        <Field label="Usage metric">
+        <Field label={t('eqEditor.lblUsageMetric')}>
           <select
             value={eq.usageMetric}
             onChange={(e) =>
@@ -416,11 +410,11 @@ export function EquipmentEditor({ initial, employees, jobs, apiBaseUrl }: Props)
             }
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           >
-            <option value="MILES">Miles (odometer)</option>
-            <option value="HOURS">Hours (engine)</option>
+            <option value="MILES">{t('eqEditor.usageMiles')}</option>
+            <option value="HOURS">{t('eqEditor.usageHours')}</option>
           </select>
         </Field>
-        <Field label="Year">
+        <Field label={t('eqEditor.lblYear')}>
           <input
             value={yearStr}
             onChange={(e) => setYearStr(e.target.value)}
@@ -428,7 +422,7 @@ export function EquipmentEditor({ initial, employees, jobs, apiBaseUrl }: Props)
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Make">
+        <Field label={t('eqEditor.lblMake')}>
           <input
             value={make}
             onChange={(e) => setMake(e.target.value)}
@@ -436,7 +430,7 @@ export function EquipmentEditor({ initial, employees, jobs, apiBaseUrl }: Props)
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Model">
+        <Field label={t('eqEditor.lblModel')}>
           <input
             value={model}
             onChange={(e) => setModel(e.target.value)}
@@ -444,7 +438,7 @@ export function EquipmentEditor({ initial, employees, jobs, apiBaseUrl }: Props)
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="VIN">
+        <Field label={t('eqEditor.lblVin')}>
           <input
             value={vin}
             onChange={(e) => setVin(e.target.value)}
@@ -452,7 +446,7 @@ export function EquipmentEditor({ initial, employees, jobs, apiBaseUrl }: Props)
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Serial / PIN">
+        <Field label={t('eqEditor.lblSerial')}>
           <input
             value={serialNumber}
             onChange={(e) => setSerialNumber(e.target.value)}
@@ -460,7 +454,7 @@ export function EquipmentEditor({ initial, employees, jobs, apiBaseUrl }: Props)
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Plate number">
+        <Field label={t('eqEditor.lblPlate')}>
           <input
             value={plateNumber}
             onChange={(e) => setPlateNumber(e.target.value)}
@@ -468,7 +462,7 @@ export function EquipmentEditor({ initial, employees, jobs, apiBaseUrl }: Props)
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Asset tag">
+        <Field label={t('eqEditor.lblAssetTag')}>
           <input
             value={assetTag}
             onChange={(e) => setAssetTag(e.target.value)}
@@ -480,7 +474,7 @@ export function EquipmentEditor({ initial, employees, jobs, apiBaseUrl }: Props)
 
       {/* Usage + service */}
       <section className="grid gap-4 sm:grid-cols-3">
-        <Field label={`Current ${eq.usageMetric === 'MILES' ? 'odometer' : 'hours'}`}>
+        <Field label={eq.usageMetric === 'MILES' ? t('eqEditor.lblCurrentOdo') : t('eqEditor.lblCurrentHr')}>
           <input
             type="number"
             min="0"
@@ -490,7 +484,7 @@ export function EquipmentEditor({ initial, employees, jobs, apiBaseUrl }: Props)
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label={`Last service at ${eq.usageMetric === 'MILES' ? 'mi' : 'hr'}`}>
+        <Field label={eq.usageMetric === 'MILES' ? t('eqEditor.lblLastServiceMi') : t('eqEditor.lblLastServiceHr')}>
           <input
             type="number"
             min="0"
@@ -500,7 +494,7 @@ export function EquipmentEditor({ initial, employees, jobs, apiBaseUrl }: Props)
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label={`Service interval (${eq.usageMetric === 'MILES' ? 'mi' : 'hr'})`}>
+        <Field label={eq.usageMetric === 'MILES' ? t('eqEditor.lblIntervalMi') : t('eqEditor.lblIntervalHr')}>
           <input
             type="number"
             min="1"
@@ -514,11 +508,11 @@ export function EquipmentEditor({ initial, employees, jobs, apiBaseUrl }: Props)
 
       {/* Maintenance log */}
       <section>
-        <h2 className="mb-2 text-lg font-semibold text-gray-900">Maintenance log</h2>
+        <h2 className="mb-2 text-lg font-semibold text-gray-900">{t('eqEditor.maintHeader')}</h2>
 
         <div className="rounded border border-gray-200 bg-gray-50 p-4">
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Kind">
+            <Field label={t('eqEditor.lblLogKind')}>
               <select
                 value={logKind}
                 onChange={(e) => setLogKind(e.target.value as MaintenanceKind)}
@@ -531,7 +525,7 @@ export function EquipmentEditor({ initial, employees, jobs, apiBaseUrl }: Props)
                 ))}
               </select>
             </Field>
-            <Field label={`Usage at service (${eq.usageMetric === 'MILES' ? 'mi' : 'hr'})`}>
+            <Field label={eq.usageMetric === 'MILES' ? t('eqEditor.lblLogUsageMi') : t('eqEditor.lblLogUsageHr')}>
               <input
                 type="number"
                 min="0"
@@ -541,22 +535,22 @@ export function EquipmentEditor({ initial, employees, jobs, apiBaseUrl }: Props)
                 className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
               />
             </Field>
-            <Field label="Description">
+            <Field label={t('eqEditor.lblLogDescription')}>
               <input
                 value={logDescription}
                 onChange={(e) => setLogDescription(e.target.value)}
-                placeholder="Oil change + air filter"
+                placeholder={t('eqEditor.phLogDescription')}
                 className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
               />
             </Field>
-            <Field label="Vendor / mechanic">
+            <Field label={t('eqEditor.lblLogVendor')}>
               <input
                 value={logVendor}
                 onChange={(e) => setLogVendor(e.target.value)}
                 className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
               />
             </Field>
-            <Field label="Cost ($)">
+            <Field label={t('eqEditor.lblLogCost')}>
               <input
                 type="number"
                 min="0"
@@ -572,14 +566,14 @@ export function EquipmentEditor({ initial, employees, jobs, apiBaseUrl }: Props)
                 onClick={logService}
                 className="rounded bg-yge-blue-500 px-3 py-1 text-sm font-medium text-white hover:bg-yge-blue-700"
               >
-                Log entry
+                {t('eqEditor.logEntryBtn')}
               </button>
             </div>
           </div>
         </div>
 
         {eq.maintenanceLog.length === 0 ? (
-          <p className="mt-4 text-sm text-gray-500">No maintenance entries yet.</p>
+          <p className="mt-4 text-sm text-gray-500">{t('eqEditor.maintEmpty')}</p>
         ) : (
           <ul className="mt-4 divide-y divide-gray-100 rounded border border-gray-200 bg-white">
             {[...eq.maintenanceLog]
@@ -591,14 +585,12 @@ export function EquipmentEditor({ initial, employees, jobs, apiBaseUrl }: Props)
                       {maintenanceKindLabel(entry.kind)}
                     </div>
                     <div className="text-xs text-gray-500">
-                      {new Date(entry.performedAt).toLocaleDateString()} &middot;{' '}
-                      {entry.usageAtService.toLocaleString('en-US')}{' '}
-                      {eq.usageMetric === 'MILES' ? 'mi' : 'hr'}
+                      {t('eqEditor.entrySubtitle', { date: new Date(entry.performedAt).toLocaleDateString(), usage: entry.usageAtService.toLocaleString('en-US'), unit: eq.usageMetric === 'MILES' ? t('eqEditor.unitMi') : t('eqEditor.unitHr') })}
                     </div>
                   </div>
                   <div className="mt-1 text-gray-700">{entry.description}</div>
                   <div className="mt-1 text-xs text-gray-500">
-                    {entry.performedBy && <>by {entry.performedBy}</>}
+                    {entry.performedBy && <>{t('eqEditor.entryByPrefix')}{entry.performedBy}</>}
                     {entry.costCents !== undefined && (
                       <>
                         {entry.performedBy ? ' \u00b7 ' : ''}
@@ -613,7 +605,7 @@ export function EquipmentEditor({ initial, employees, jobs, apiBaseUrl }: Props)
       </section>
 
       <section>
-        <Field label="Notes">
+        <Field label={t('eqEditor.lblNotes')}>
           <textarea
             rows={4}
             value={notes}
