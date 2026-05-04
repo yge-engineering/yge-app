@@ -22,6 +22,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { sha256Hex } from '@yge/shared';
+import { useTranslator } from '../lib/use-translator';
 
 interface Props {
   apiBaseUrl: string;
@@ -58,6 +59,7 @@ export function SignFormOtp({
   affirmationText,
 }: Props) {
   const router = useRouter();
+  const t = useTranslator();
   const [typedName, setTypedName] = useState('');
   const [agreed, setAgreed] = useState(false);
   const [code, setCode] = useState('');
@@ -89,7 +91,7 @@ export function SignFormOtp({
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? `OTP request failed (${res.status})`);
+        setError(body.error ?? t('signOtp.errOtpRequest', { status: res.status }));
         return;
       }
       const json = (await res.json()) as OtpRequestResponse;
@@ -115,25 +117,25 @@ export function SignFormOtp({
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? `OTP verify failed (${res.status})`);
+        setError(body.error ?? t('signOtp.errOtpVerify', { status: res.status }));
         return;
       }
       const json = (await res.json()) as OtpVerifyResponse;
       if (json.outcome.result === 'WRONG_CODE') {
-        setError(`Wrong code. ${json.outcome.attemptsRemaining} attempts remaining.`);
+        setError(t('signOtp.errWrongCode', { remaining: json.outcome.attemptsRemaining }));
         return;
       }
       if (json.outcome.result === 'EXPIRED') {
-        setError('Code expired. Click "Send code" to issue a new one.');
+        setError(t('signOtp.errExpired'));
         setStage('AFFIRM');
         return;
       }
       if (json.outcome.result === 'EXHAUSTED') {
-        setError('Too many wrong codes. Start a new signing session.');
+        setError(t('signOtp.errExhausted'));
         return;
       }
       if (json.outcome.result === 'NOT_PENDING') {
-        setError(`Challenge already ${json.outcome.status.toLowerCase()}. Start a new signing session.`);
+        setError(t('signOtp.errChallenge', { status: json.outcome.status.toLowerCase() }));
         return;
       }
       // OK — proceed to /sign
@@ -163,7 +165,7 @@ export function SignFormOtp({
       });
       if (!signRes.ok) {
         const body = (await signRes.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? `Sign failed (${signRes.status})`);
+        setError(body.error ?? t('signOtp.errSign', { status: signRes.status }));
         return;
       }
       setStage('SIGNED');
@@ -178,12 +180,12 @@ export function SignFormOtp({
   return (
     <section className="mt-4 rounded-md border border-gray-200 bg-white p-6 shadow-sm">
       <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-700">
-        Affirm + verify
+        {t('signOtp.affirmHeading')}
       </h2>
 
       <label className="mb-3 block text-sm">
         <span className="mb-1 block font-medium text-gray-700">
-          Type your full name as it appears on the document
+          {t('sign.typeNameLabel')}
         </span>
         <input
           type="text"
@@ -205,10 +207,10 @@ export function SignFormOtp({
           }`}
         >
           {typedName.length === 0
-            ? `Expected: ${expectedSignerName}`
+            ? t('sign.expectedHint', { name: expectedSignerName })
             : namesMatch
-              ? '✓ Matches the name on this signature row'
-              : `Doesn't match "${expectedSignerName}".`}
+              ? t('sign.matches')
+              : t('sign.noMatch', { name: expectedSignerName })}
         </span>
       </label>
 
@@ -230,20 +232,31 @@ export function SignFormOtp({
           disabled={!affirmReady || busy != null}
           className="rounded bg-yge-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-yge-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {busy === 'request' ? 'Sending code…' : `Send code to ${signerEmail}`}
+          {busy === 'request' ? t('signOtp.sendingCode') : t('signOtp.sendCodeTo', { email: signerEmail })}
         </button>
       )}
 
       {stage === 'CODE_ISSUED' && (
         <div className="mt-2 rounded border border-yge-blue-500 bg-yge-blue-50 p-3">
-          <p className="mb-2 text-sm text-gray-900">
-            We sent a 6-digit code to <strong>{signerEmail}</strong>. Type it below.
-          </p>
-          {devCode && (
-            <p className="mb-2 text-xs text-gray-500">
-              Dev mode: code is <code className="font-mono text-sm text-gray-900">{devCode}</code>.
-            </p>
-          )}
+          {(() => {
+            const tpl = t('signOtp.codeIssuedBlurb', { email: '__EMAIL__' });
+            const [pre, post] = tpl.split('__EMAIL__');
+            return (
+              <p className="mb-2 text-sm text-gray-900">
+                {pre}<strong>{signerEmail}</strong>{post}
+              </p>
+            );
+          })()}
+          {devCode &&
+            (() => {
+              const tpl = t('signOtp.devModeBlurb', { code: '__CODE__' });
+              const [pre, post] = tpl.split('__CODE__');
+              return (
+                <p className="mb-2 text-xs text-gray-500">
+                  {pre}<code className="font-mono text-sm text-gray-900">{devCode}</code>{post}
+                </p>
+              );
+            })()}
           <div className="flex items-center gap-3">
             <input
               type="text"
@@ -262,7 +275,7 @@ export function SignFormOtp({
               disabled={code.length !== 6 || busy != null}
               className="rounded bg-yge-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50"
             >
-              {busy === 'verify' ? 'Verifying…' : busy === 'sign' ? 'Signing…' : 'Verify + sign'}
+              {busy === 'verify' ? t('signOtp.verifying') : busy === 'sign' ? t('sign.busy') : t('signOtp.verifyAndSign')}
             </button>
           </div>
         </div>
@@ -270,7 +283,7 @@ export function SignFormOtp({
 
       {stage === 'SIGNED' && (
         <div className="mt-2 rounded border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-900">
-          ✓ Signed and verified at {verifiedAt}.
+          {t('signOtp.signedAt', { at: verifiedAt ?? '' })}
         </div>
       )}
 
@@ -281,10 +294,7 @@ export function SignFormOtp({
       )}
 
       <p className="mt-4 text-xs text-gray-500">
-        The OTP confirms control of the signer&rsquo;s email — the
-        attribution element of the ESIGN/UETA proof bundle. The challenge
-        id, the verified-at timestamp, and the auth method land on the
-        signature row's auditContext.
+        {t('signOtp.disclosure')}
       </p>
     </section>
   );

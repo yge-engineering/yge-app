@@ -10,6 +10,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { sha256Hex } from '@yge/shared';
+import { useTranslator } from '../lib/use-translator';
 
 interface Props {
   apiBaseUrl: string;
@@ -28,6 +29,7 @@ export function SignFormTyped({
   affirmationText,
 }: Props) {
   const router = useRouter();
+  const t = useTranslator();
   const [typedName, setTypedName] = useState('');
   const [agreed, setAgreed] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -68,7 +70,7 @@ export function SignFormTyped({
       );
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? `API returned ${res.status}`);
+        setError(body.error ?? t('sign.errApi', { status: res.status }));
         setBusy(null != null ? false : false);
         return;
       }
@@ -86,12 +88,12 @@ export function SignFormTyped({
       className="mt-4 rounded-md border border-gray-200 bg-white p-6 shadow-sm"
     >
       <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-700">
-        Affirm
+        {t('signTyped.affirmHeading')}
       </h2>
 
       <label className="mb-3 block text-sm">
         <span className="mb-1 block font-medium text-gray-700">
-          Type your full name as it appears on the document
+          {t('sign.typeNameLabel')}
         </span>
         <input
           type="text"
@@ -112,10 +114,10 @@ export function SignFormTyped({
           }`}
         >
           {typedName.length === 0
-            ? `Expected: ${expectedSignerName}`
+            ? t('sign.expectedHint', { name: expectedSignerName })
             : namesMatch
-              ? '✓ Matches the name on this signature row'
-              : `Doesn't match "${expectedSignerName}". Capitalization is ignored.`}
+              ? t('sign.matches')
+              : t('sign.noMatch', { name: expectedSignerName })}
         </span>
       </label>
 
@@ -140,13 +142,11 @@ export function SignFormTyped({
         disabled={!ready || busy}
         className="rounded bg-yge-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-yge-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {busy ? 'Signing…' : 'Sign'}
+        {busy ? t('sign.busy') : t('sign.action')}
       </button>
 
       <p className="mt-3 text-xs text-gray-500">
-        Clicking Sign records your typed name, the affirmation above,
-        the SHA-256 of the disclosure text you saw, your user agent, your
-        IP address (captured server-side), and the signing timestamp.
+        {t('signTyped.disclosure')}
       </p>
     </form>
   );

@@ -15,6 +15,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { sha256Hex } from '@yge/shared';
+import { useTranslator } from '../lib/use-translator';
 
 interface Props {
   apiBaseUrl: string;
@@ -35,6 +36,7 @@ export function SignFormDrawn({
   affirmationText,
 }: Props) {
   const router = useRouter();
+  const t = useTranslator();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const drawingRef = useRef<boolean>(false);
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
@@ -146,7 +148,7 @@ export function SignFormDrawn({
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? `Sign failed (${res.status})`);
+        setError(body.error ?? t('signDrawn.errSign', { status: res.status }));
         return;
       }
       setSigned(true);
@@ -161,13 +163,20 @@ export function SignFormDrawn({
   return (
     <section className="mt-4 rounded-md border border-gray-200 bg-white p-6 shadow-sm">
       <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-700">
-        Sign — drawn
+        {t('signDrawn.heading')}
       </h2>
 
-      <p className="mb-2 text-sm text-gray-700">
-        Sign as <strong className="font-medium text-gray-900">{expectedSignerName}</strong>.
-        Use a finger / stylus on touch screens or click-and-drag with a mouse.
-      </p>
+      {(() => {
+        const tpl = t('signDrawn.signAsBlurb', { name: '__NAME__' });
+        const [pre, post] = tpl.split('__NAME__');
+        return (
+          <p className="mb-2 text-sm text-gray-700">
+            {pre}
+            <strong className="font-medium text-gray-900">{expectedSignerName}</strong>
+            {post}
+          </p>
+        );
+      })()}
 
       <div className="mb-3 inline-block rounded border-2 border-dashed border-gray-300 bg-white">
         <canvas
@@ -195,10 +204,10 @@ export function SignFormDrawn({
           disabled={busy || signed || !hasInk}
           className="rounded border border-gray-300 bg-white px-3 py-1 text-xs text-gray-700 hover:bg-gray-100 disabled:opacity-50"
         >
-          Clear
+          {t('signDrawn.clear')}
         </button>
         <span className="text-xs text-gray-500">
-          {hasInk ? '✓ Captured' : 'Empty — draw above to enable submit'}
+          {hasInk ? t('signDrawn.captured') : t('signDrawn.empty')}
         </span>
       </div>
 
@@ -221,8 +230,7 @@ export function SignFormDrawn({
 
       {signed ? (
         <div className="rounded border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-900">
-          ✓ Signed. The drawn-signature image and audit context have been
-          recorded on the signature row.
+          {t('signDrawn.signed')}
         </div>
       ) : (
         <button
@@ -231,15 +239,12 @@ export function SignFormDrawn({
           disabled={!hasInk || !agreed || busy}
           className="rounded bg-yge-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-yge-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {busy ? 'Signing…' : 'Sign'}
+          {busy ? t('sign.busy') : t('sign.action')}
         </button>
       )}
 
       <p className="mt-4 text-xs text-gray-500">
-        The PNG of your drawn signature, the SHA-256 of the disclosure text
-        you saw, the affirmation line above, your user agent, your IP
-        address (captured server-side), and the signing timestamp are all
-        bound to this signature row when you click Sign.
+        {t('signDrawn.disclosure')}
       </p>
     </section>
   );
