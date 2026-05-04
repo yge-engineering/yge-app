@@ -5,11 +5,14 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
   buildEmployeeReimbursementSummary,
+  coerceLocale,
   expenseCategoryLabel,
   formatUSD,
   type Expense,
   type MileageEntry,
 } from '@yge/shared';
+import { getTranslator } from '../../../../lib/locale';
+import { cookies } from 'next/headers';
 import { PrintButton } from '@/components/print-button';
 import { Letterhead } from '@/components/letterhead';
 
@@ -55,6 +58,10 @@ export default async function ReimbursementPrintPage({
     notFound();
   }
 
+  const t = getTranslator();
+  const localeCookie = cookies().get('yge-locale')?.value;
+  const locale = coerceLocale(localeCookie);
+
   return (
     <main className="mx-auto max-w-3xl p-8 text-black">
       <div className="mb-6 flex items-center justify-between print:hidden">
@@ -62,7 +69,7 @@ export default async function ReimbursementPrintPage({
           href={`/reimbursements/${summary.employeeId}`}
           className="text-sm text-yge-blue-500 hover:underline"
         >
-          &larr; Back
+          {t('handoutPg.back')}
         </Link>
         <PrintButton />
       </div>
@@ -72,27 +79,27 @@ export default async function ReimbursementPrintPage({
 
         <header className="mb-4 mt-4 border-b-2 border-black pb-2">
           <div className="text-xs uppercase tracking-wide">
-            Employee Reimbursement Summary
+            {t('reimbPrint.docTitle')}
           </div>
           <h1 className="text-2xl font-bold">{summary.employeeName}</h1>
           <p className="text-xs text-gray-600">
-            Generated {new Date().toISOString().slice(0, 10)}
+            {t('prequalPg.generated', { date: new Date().toISOString().slice(0, 10) })}
           </p>
         </header>
 
         {summary.mileageRows.length > 0 && (
           <section className="mb-4">
             <h2 className="rounded bg-gray-200 px-2 py-1 text-xs font-bold uppercase">
-              Mileage ({summary.totalMiles.toFixed(1)} mi)
+              {t('reimbPrint.mileageHeader', { miles: summary.totalMiles.toFixed(1) })}
             </h2>
             <table className="mt-2 w-full border-collapse text-xs">
               <thead>
                 <tr className="border-b border-gray-400 text-left">
-                  <th className="px-1 py-1">Date</th>
-                  <th className="px-1 py-1">Vehicle / route</th>
-                  <th className="w-16 px-1 py-1 text-right">Miles</th>
-                  <th className="w-12 px-1 py-1 text-right">Rate</th>
-                  <th className="w-20 px-1 py-1 text-right">Reimburse</th>
+                  <th className="px-1 py-1">{t('reimbPg.thDate')}</th>
+                  <th className="px-1 py-1">{t('reimbPg.thVehicle')}</th>
+                  <th className="w-16 px-1 py-1 text-right">{t('reimbPg.thMiles')}</th>
+                  <th className="w-12 px-1 py-1 text-right">{t('reimbPg.thRate')}</th>
+                  <th className="w-20 px-1 py-1 text-right">{t('reimbPg.thReimburse')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -115,7 +122,7 @@ export default async function ReimbursementPrintPage({
                   </tr>
                 ))}
                 <tr className="border-t border-black font-semibold">
-                  <td colSpan={4} className="px-1 py-1">Mileage subtotal</td>
+                  <td colSpan={4} className="px-1 py-1">{t('reimbPrint.mileageSubtotal')}</td>
                   <td className="px-1 py-1 text-right font-mono">
                     {formatUSD(summary.totalMileageCents)}
                   </td>
@@ -128,16 +135,16 @@ export default async function ReimbursementPrintPage({
         {summary.expenseRows.length > 0 && (
           <section className="mb-4">
             <h2 className="rounded bg-gray-200 px-2 py-1 text-xs font-bold uppercase">
-              Expense receipts ({summary.expenseRows.length})
+              {t('reimbPg.expensesHeader', { count: summary.expenseRows.length })}
             </h2>
             <table className="mt-2 w-full border-collapse text-xs">
               <thead>
                 <tr className="border-b border-gray-400 text-left">
-                  <th className="px-1 py-1">Date</th>
-                  <th className="px-1 py-1">Vendor</th>
-                  <th className="px-1 py-1">Description</th>
-                  <th className="w-24 px-1 py-1">Category</th>
-                  <th className="w-20 px-1 py-1 text-right">Amount</th>
+                  <th className="px-1 py-1">{t('reimbPg.thDate')}</th>
+                  <th className="px-1 py-1">{t('reimbPg.thVendor')}</th>
+                  <th className="px-1 py-1">{t('reimbPg.thDescription')}</th>
+                  <th className="w-24 px-1 py-1">{t('reimbPg.thCategory')}</th>
+                  <th className="w-20 px-1 py-1 text-right">{t('reimbPg.thAmount')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -146,14 +153,14 @@ export default async function ReimbursementPrintPage({
                     <td className="px-1 py-1 font-mono">{r.receiptDate}</td>
                     <td className="px-1 py-1">{r.vendor}</td>
                     <td className="px-1 py-1">{r.description}</td>
-                    <td className="px-1 py-1">{expenseCategoryLabel(r.category)}</td>
+                    <td className="px-1 py-1">{expenseCategoryLabel(r.category, locale)}</td>
                     <td className="px-1 py-1 text-right font-mono">
                       {formatUSD(r.amountCents)}
                     </td>
                   </tr>
                 ))}
                 <tr className="border-t border-black font-semibold">
-                  <td colSpan={4} className="px-1 py-1">Expenses subtotal</td>
+                  <td colSpan={4} className="px-1 py-1">{t('reimbPrint.expenseSubtotal')}</td>
                   <td className="px-1 py-1 text-right font-mono">
                     {formatUSD(summary.totalExpenseCents)}
                   </td>
@@ -165,27 +172,25 @@ export default async function ReimbursementPrintPage({
 
         <div className="mt-6 rounded border-2 border-black p-3 text-base font-bold">
           <div className="flex items-center justify-between">
-            <span className="uppercase tracking-wide">Total Reimbursable</span>
+            <span className="uppercase tracking-wide">{t('reimbPrint.totalReimbursable')}</span>
             <span className="font-mono text-lg">{formatUSD(summary.totalCents)}</span>
           </div>
         </div>
 
         <section className="mt-6 grid grid-cols-2 gap-6 text-xs">
           <div>
-            <div className="font-semibold uppercase">Employee acknowledgement</div>
+            <div className="font-semibold uppercase">{t('reimbPrint.empAck')}</div>
             <div className="mt-6 border-b border-gray-400">&nbsp;</div>
             <div className="mt-1 text-gray-600">{summary.employeeName}</div>
           </div>
           <div>
-            <div className="font-semibold uppercase">Date paid</div>
+            <div className="font-semibold uppercase">{t('reimbPrint.datePaid')}</div>
             <div className="mt-6 border-b border-gray-400">&nbsp;</div>
           </div>
         </section>
 
         <p className="mt-6 text-[10px] italic text-gray-600">
-          Reimbursable amounts are not subject to payroll tax under IRS
-          Accountable Plan rules (Pub. 463, Treas. Reg. §1.62-2). Mileage at
-          IRS standard rate; out-of-pocket expense at receipted amount.
+          {t('reimbPrint.taxNote')}
         </p>
       </article>
     </main>
