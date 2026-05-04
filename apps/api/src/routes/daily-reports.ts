@@ -96,7 +96,7 @@ dailyReportsRouter.post('/:id/submit', async (req, res, next) => {
         error: 'Meal-break violations must be resolved before submission',
         violations: violations.map((v) => ({
           employeeId: v.row.employeeId,
-          messages: v.violations.map(violationLabel),
+          messages: v.violations.map((vv) => violationLabel(vv)),
         })),
       });
     }
