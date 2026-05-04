@@ -10,6 +10,7 @@
 // arithmetic.
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslator, type Translator } from '../lib/use-translator';
 import {
   computeEstimateTotals,
   formatUSD,
@@ -31,6 +32,7 @@ interface Props {
 }
 
 export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: Props) {
+  const t = useTranslator();
   const [estimate, setEstimate] = useState<PricedEstimate>(initialEstimate);
   const [totals, setTotals] = useState<PricedEstimateTotals>(initialTotals);
   const [savingLine, setSavingLine] = useState<number | null>(null);
@@ -56,7 +58,7 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
           body: JSON.stringify({ unitPriceCents }),
         },
       );
-      if (!res.ok) throw new Error(`API ${res.status}`);
+      if (!res.ok) throw new Error(t('estEditor.errSaveStatus', { status: res.status }));
       const json = (await res.json()) as {
         estimate: PricedEstimate;
         totals: PricedEstimateTotals;
@@ -64,7 +66,7 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
       setEstimate(json.estimate);
       setTotals(json.totals);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Save failed');
+      setError(err instanceof Error ? err.message : t('estEditor.errFallback'));
     } finally {
       setSavingLine(null);
     }
@@ -79,7 +81,7 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ oppPercent }),
       });
-      if (!res.ok) throw new Error(`API ${res.status}`);
+      if (!res.ok) throw new Error(t('estEditor.errSaveStatus', { status: res.status }));
       const json = (await res.json()) as {
         estimate: PricedEstimate;
         totals: PricedEstimateTotals;
@@ -87,7 +89,7 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
       setEstimate(json.estimate);
       setTotals(json.totals);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Save failed');
+      setError(err instanceof Error ? err.message : t('estEditor.errFallback'));
     } finally {
       setSavingOpp(false);
     }
@@ -122,60 +124,60 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
           <h1 className="text-2xl font-bold text-gray-900">{estimate.projectName}</h1>
           <p className="mt-1 text-sm text-gray-600">
             {estimate.projectType.replace(/_/g, ' ')}
-            {estimate.ownerAgency && <> &middot; {estimate.ownerAgency}</>}
-            {estimate.location && <> &middot; {estimate.location}</>}
-            {estimate.bidDueDate && <> &middot; bid due {estimate.bidDueDate}</>}
+            {estimate.ownerAgency && t('estEditor.subtitleAgency', { agency: estimate.ownerAgency })}
+            {estimate.location && t('estEditor.subtitleLocation', { location: estimate.location })}
+            {estimate.bidDueDate && t('estEditor.subtitleBidDue', { date: estimate.bidDueDate })}
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <button
               onClick={handleDownloadCsv}
               className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-700 hover:bg-yge-blue-100"
-              title="Download priced bid items + totals as a CSV"
+              title={t('estEditor.downloadCsvTip')}
             >
-              Download CSV
+              {t('estEditor.downloadCsv')}
             </button>
             <a
               href={`${apiBaseUrl}/api/priced-estimates/${estimate.id}/export.csv`}
               className="rounded border border-gray-300 px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
-              title="Same CSV via direct API link — useful for emailing or scripted pulls"
+              title={t('estEditor.csvDirectTip')}
             >
-              CSV direct link
+              {t('estEditor.csvDirect')}
             </a>
             <a
               href={`/estimates/${estimate.id}/print`}
               className="rounded border border-yge-blue-500 bg-yge-blue-500 px-3 py-1 text-xs font-medium text-white hover:bg-yge-blue-700"
-              title="Open the print-ready bid summary in a new tab"
+              title={t('estEditor.printSummaryTip')}
               target="_blank"
               rel="noopener noreferrer"
             >
-              Print bid summary
+              {t('estEditor.printSummary')}
             </a>
             <a
               href={`/estimates/${estimate.id}/transmittal`}
               className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50"
-              title="Open the printable cover letter for the bid envelope"
+              title={t('estEditor.coverLetterTip')}
               target="_blank"
               rel="noopener noreferrer"
             >
-              Cover letter
+              {t('estEditor.coverLetter')}
             </a>
             <a
               href={`/estimates/${estimate.id}/envelope`}
               className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50"
-              title="Open the printable bid envelope checklist (sealed bid form, license, DIR, security, addenda...)"
+              title={t('estEditor.envelopeTip')}
               target="_blank"
               rel="noopener noreferrer"
             >
-              Envelope checklist
+              {t('estEditor.envelope')}
             </a>
           </div>
         </div>
-        <TotalsCard totals={totals} oppPercent={estimate.oppPercent} />
+        <TotalsCard totals={totals} oppPercent={estimate.oppPercent} t={t} />
       </header>
 
       {error && (
         <div className="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700">
-          Couldn&rsquo;t save: {error}
+          {t('estEditor.errSave', { error })}
         </div>
       )}
 
@@ -183,19 +185,19 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
 
       <section>
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-500">
-          Bid items
+          {t('estEditor.bidItemsHeader')}
         </h2>
         <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
           <table className="w-full text-left text-sm">
             <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
               <tr>
-                <th className="px-3 py-2">#</th>
-                <th className="px-3 py-2">Description</th>
-                <th className="px-3 py-2 text-right">Qty</th>
-                <th className="px-3 py-2">Unit</th>
-                <th className="px-3 py-2 text-right">Unit price</th>
-                <th className="px-3 py-2 text-right">Extended</th>
-                <th className="px-3 py-2">Conf.</th>
+                <th className="px-3 py-2">{t('estEditor.thNum')}</th>
+                <th className="px-3 py-2">{t('estEditor.thDescription')}</th>
+                <th className="px-3 py-2 text-right">{t('estEditor.thQty')}</th>
+                <th className="px-3 py-2">{t('estEditor.thUnit')}</th>
+                <th className="px-3 py-2 text-right">{t('estEditor.thUnitPrice')}</th>
+                <th className="px-3 py-2 text-right">{t('estEditor.thExtended')}</th>
+                <th className="px-3 py-2">{t('estEditor.thConf')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -203,6 +205,7 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
                 <BidItemRow
                   key={i}
                   index={i}
+                  t={t}
                   item={item}
                   saving={savingLine === i}
                   onPriceCommit={(cents) => {
@@ -224,18 +227,21 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
         </div>
         <p className="mt-2 text-xs text-gray-500">
           {totals.unpricedLineCount > 0
-            ? `${totals.unpricedLineCount} line${totals.unpricedLineCount === 1 ? '' : 's'} still need pricing.`
-            : 'All lines priced.'}
+            ? totals.unpricedLineCount === 1
+              ? t('estEditor.unpricedOne')
+              : t('estEditor.unpricedMany', { count: totals.unpricedLineCount })
+            : t('estEditor.allPriced')}
         </p>
       </section>
 
       <section className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">
-          Overhead &amp; profit
+          {t('estEditor.opHeader')}
         </h2>
         <OppEditor
           oppPercent={estimate.oppPercent}
           saving={savingOpp}
+          t={t}
           onCommit={(pct) => {
             const next = { ...estimate, oppPercent: pct };
             setEstimate(next);
@@ -281,23 +287,25 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
 function TotalsCard({
   totals,
   oppPercent,
+  t,
 }: {
   totals: PricedEstimateTotals;
   oppPercent: number;
+  t: Translator;
 }) {
   return (
     <div className="rounded-lg border border-yge-blue-500 bg-yge-blue-50 p-4 text-right shadow-sm">
       <dl className="text-xs text-gray-700">
         <div className="flex justify-between gap-4">
-          <dt>Direct cost</dt>
+          <dt>{t('estEditor.totalsDirect')}</dt>
           <dd className="font-mono">{formatUSD(totals.directCents)}</dd>
         </div>
         <div className="flex justify-between gap-4">
-          <dt>O&amp;P ({(oppPercent * 100).toFixed(1)}%)</dt>
+          <dt>{t('estEditor.totalsOpp', { percent: (oppPercent * 100).toFixed(1) })}</dt>
           <dd className="font-mono">{formatUSD(totals.oppCents)}</dd>
         </div>
         <div className="mt-1 flex justify-between gap-4 border-t border-yge-blue-500 pt-1 text-base font-bold text-yge-blue-700">
-          <dt>Bid total</dt>
+          <dt>{t('estEditor.totalsBid')}</dt>
           <dd className="font-mono">{formatUSD(totals.bidTotalCents)}</dd>
         </div>
       </dl>
@@ -316,11 +324,13 @@ function BidItemRow({
   item,
   saving,
   onPriceCommit,
+  t,
 }: {
   index: number;
   item: PricedEstimate['bidItems'][number];
   saving: boolean;
   onPriceCommit: (cents: number | null) => void;
+  t: Translator;
 }) {
   const [text, setText] = useState<string>(
     item.unitPriceCents == null ? '' : (item.unitPriceCents / 100).toFixed(2),
@@ -378,7 +388,7 @@ function BidItemRow({
         <div className="flex items-center justify-end gap-1">
           <span className="text-xs text-gray-500">$</span>
           <input
-            aria-label={`Unit price for item ${item.itemNumber}`}
+            aria-label={t('estEditor.unitPriceAria', { itemNumber: item.itemNumber })}
             type="text"
             inputMode="decimal"
             value={text}
@@ -394,7 +404,7 @@ function BidItemRow({
             className="w-24 rounded border border-gray-300 px-2 py-1 text-right font-mono text-sm focus:border-yge-blue-500 focus:outline-none focus:ring-1 focus:ring-yge-blue-500"
           />
         </div>
-        {saving && <div className="mt-0.5 text-[10px] text-gray-400">saving…</div>}
+        {saving && <div className="mt-0.5 text-[10px] text-gray-400">{t('estEditor.savingShort')}</div>}
       </td>
       <td className="px-3 py-2 text-right align-top font-mono text-sm text-gray-900">
         {item.unitPriceCents == null ? (
@@ -418,10 +428,12 @@ function OppEditor({
   oppPercent,
   saving,
   onCommit,
+  t,
 }: {
   oppPercent: number;
   saving: boolean;
   onCommit: (pct: number) => void;
+  t: Translator;
 }) {
   const [text, setText] = useState((oppPercent * 100).toFixed(1));
 
@@ -443,7 +455,7 @@ function OppEditor({
   return (
     <div className="flex items-center gap-3">
       <label htmlFor="opp-pct" className="text-sm text-gray-700">
-        Markup
+        {t('estEditor.lblMarkup')}
       </label>
       <input
         id="opp-pct"
@@ -461,9 +473,9 @@ function OppEditor({
         className="w-20 rounded border border-gray-300 px-2 py-1 text-right font-mono text-sm focus:border-yge-blue-500 focus:outline-none focus:ring-1 focus:ring-yge-blue-500"
       />
       <span className="text-sm text-gray-700">%</span>
-      {saving && <span className="text-xs text-gray-400">saving…</span>}
+      {saving && <span className="text-xs text-gray-400">{t('estEditor.savingShort')}</span>}
       <p className="ml-4 text-xs text-gray-500">
-        Applied on top of every priced line. Adjust freely while bidding.
+        {t('estEditor.markupHelp')}
       </p>
     </div>
   );
