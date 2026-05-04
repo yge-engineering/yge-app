@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 import {
   changeOrderReasonLabel,
   changeOrderStatusLabel,
@@ -41,6 +42,7 @@ interface Props {
 }
 
 export function ChangeOrderEditor({ initial, jobs, rfis, apiBaseUrl }: Props) {
+  const t = useTranslator();
   const [co, setCo] = useState<ChangeOrder>(initial);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,11 +77,11 @@ export function ChangeOrderEditor({ initial, jobs, rfis, apiBaseUrl }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-      if (!res.ok) throw new Error(`Save failed: ${res.status}`);
+      if (!res.ok) throw new Error(t('changeOrder.errSaveStatus', { status: res.status }));
       const json = (await res.json()) as { changeOrder: ChangeOrder };
       setCo(json.changeOrder);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Save failed');
+      setError(err instanceof Error ? err.message : t('changeOrder.errFallback'));
     } finally {
       setSaving(false);
     }
@@ -105,7 +107,7 @@ export function ChangeOrderEditor({ initial, jobs, rfis, apiBaseUrl }: Props) {
 
   function addLine() {
     if (newDesc.trim().length === 0) {
-      setError('Line description is required.');
+      setError(t('changeOrder.errLineDesc'));
       return;
     }
     const amountCents = Math.round(Number(newAmount || '0') * 100);
@@ -132,12 +134,12 @@ export function ChangeOrderEditor({ initial, jobs, rfis, apiBaseUrl }: Props) {
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs font-mono font-bold uppercase tracking-wide text-gray-500">
-            Change Order #{co.changeOrderNumber}
+            {t('changeOrder.heading', { number: co.changeOrderNumber })}
           </p>
           <h1 className="mt-1 text-2xl font-bold text-yge-blue-500">{co.subject}</h1>
           <p className="mt-1 text-sm text-gray-600">
             {job ? job.projectName : co.jobId}
-            {' '}\u00b7 {changeOrderReasonLabel(co.reason)}
+            {' '}· {changeOrderReasonLabel(co.reason)}
           </p>
         </div>
         <div className="text-right">
@@ -146,10 +148,14 @@ export function ChangeOrderEditor({ initial, jobs, rfis, apiBaseUrl }: Props) {
           </div>
           <div className="text-xs text-gray-500">
             {co.totalScheduleImpactDays === 0
-              ? 'no schedule impact'
+              ? t('changeOrder.noScheduleImpact')
               : co.totalScheduleImpactDays > 0
-                ? `+${co.totalScheduleImpactDays} day${co.totalScheduleImpactDays === 1 ? '' : 's'}`
-                : `${co.totalScheduleImpactDays} day${co.totalScheduleImpactDays === -1 ? '' : 's'}`}
+                ? co.totalScheduleImpactDays === 1
+                  ? t('changeOrder.daysPlusOne')
+                  : t('changeOrder.daysPlusMany', { days: co.totalScheduleImpactDays })
+                : co.totalScheduleImpactDays === -1
+                  ? t('changeOrder.daysMinusOne')
+                  : t('changeOrder.daysMinusMany', { days: co.totalScheduleImpactDays })}
           </div>
           <div className="mt-2 flex justify-end gap-2 text-xs">
             <select
@@ -175,7 +181,7 @@ export function ChangeOrderEditor({ initial, jobs, rfis, apiBaseUrl }: Props) {
               ))}
             </select>
           </div>
-          {saving && <div className="text-xs text-gray-500">Saving&hellip;</div>}
+          {saving && <div className="text-xs text-gray-500">{t('changeOrder.saving')}</div>}
         </div>
       </header>
 
@@ -188,16 +194,16 @@ export function ChangeOrderEditor({ initial, jobs, rfis, apiBaseUrl }: Props) {
       {/* Origin link */}
       {rfis.length > 0 && (
         <section>
-          <Field label="Originating RFI">
+          <Field label={t('changeOrder.lblOriginRfi')}>
             <select
               value={co.originRfiId ?? ''}
               onChange={(e) => void patch({ originRfiId: e.target.value || undefined })}
               className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
             >
-              <option value="">— Not linked —</option>
+              <option value="">{t('changeOrder.notLinked')}</option>
               {rfis.map((r) => (
                 <option key={r.id} value={r.id}>
-                  RFI #{r.rfiNumber} — {r.subject}
+                  {t('changeOrder.rfiOption', { number: r.rfiNumber, subject: r.subject })}
                 </option>
               ))}
             </select>
@@ -206,7 +212,7 @@ export function ChangeOrderEditor({ initial, jobs, rfis, apiBaseUrl }: Props) {
       )}
 
       <section className="grid gap-4 sm:grid-cols-2">
-        <Field label="CO number">
+        <Field label={t('changeOrder.lblNumber')}>
           <input
             value={changeOrderNumber}
             onChange={(e) => setChangeOrderNumber(e.target.value)}
@@ -214,7 +220,7 @@ export function ChangeOrderEditor({ initial, jobs, rfis, apiBaseUrl }: Props) {
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm font-mono"
           />
         </Field>
-        <Field label="Subject">
+        <Field label={t('changeOrder.lblSubject')}>
           <input
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
@@ -222,7 +228,7 @@ export function ChangeOrderEditor({ initial, jobs, rfis, apiBaseUrl }: Props) {
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Proposed">
+        <Field label={t('changeOrder.lblProposed')}>
           <input
             type="date"
             value={proposedAt}
@@ -231,7 +237,7 @@ export function ChangeOrderEditor({ initial, jobs, rfis, apiBaseUrl }: Props) {
             className="rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Approved">
+        <Field label={t('changeOrder.lblApproved')}>
           <input
             type="date"
             value={approvedAt}
@@ -240,7 +246,7 @@ export function ChangeOrderEditor({ initial, jobs, rfis, apiBaseUrl }: Props) {
             className="rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Executed">
+        <Field label={t('changeOrder.lblExecuted')}>
           <input
             type="date"
             value={executedAt}
@@ -249,7 +255,7 @@ export function ChangeOrderEditor({ initial, jobs, rfis, apiBaseUrl }: Props) {
             className="rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="New contract amount ($)">
+        <Field label={t('changeOrder.lblNewContract')}>
           <input
             type="number"
             min="0"
@@ -260,7 +266,7 @@ export function ChangeOrderEditor({ initial, jobs, rfis, apiBaseUrl }: Props) {
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="New completion date">
+        <Field label={t('changeOrder.lblNewCompletion')}>
           <input
             type="date"
             value={newCompletionDate}
@@ -271,7 +277,7 @@ export function ChangeOrderEditor({ initial, jobs, rfis, apiBaseUrl }: Props) {
         </Field>
       </section>
 
-      <Field label="Description (full narrative)">
+      <Field label={t('changeOrder.lblDescription')}>
         <textarea
           rows={5}
           value={description}
@@ -283,19 +289,19 @@ export function ChangeOrderEditor({ initial, jobs, rfis, apiBaseUrl }: Props) {
 
       {/* Line items */}
       <section>
-        <h2 className="mb-2 text-lg font-semibold text-gray-900">Cost breakdown</h2>
+        <h2 className="mb-2 text-lg font-semibold text-gray-900">{t('changeOrder.costBreakdown')}</h2>
 
         <div className="rounded border border-gray-200 bg-gray-50 p-3">
           <div className="grid gap-2 sm:grid-cols-5">
-            <Field label="Description">
+            <Field label={t('changeOrder.lblLineDesc')}>
               <input
                 value={newDesc}
                 onChange={(e) => setNewDesc(e.target.value)}
-                placeholder="Additional rip-rap at STA 14+50"
+                placeholder={t('changeOrder.phLineDesc')}
                 className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
               />
             </Field>
-            <Field label="Amount ($, negative = deduct)">
+            <Field label={t('changeOrder.lblLineAmount')}>
               <input
                 type="number"
                 step="0.01"
@@ -304,7 +310,7 @@ export function ChangeOrderEditor({ initial, jobs, rfis, apiBaseUrl }: Props) {
                 className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
               />
             </Field>
-            <Field label="Schedule impact (days)">
+            <Field label={t('changeOrder.lblLineSchedule')}>
               <input
                 type="number"
                 value={newDays}
@@ -318,14 +324,14 @@ export function ChangeOrderEditor({ initial, jobs, rfis, apiBaseUrl }: Props) {
                 onClick={addLine}
                 className="rounded bg-yge-blue-500 px-3 py-1 text-sm font-medium text-white hover:bg-yge-blue-700"
               >
-                Add line
+                {t('changeOrder.addLine')}
               </button>
             </div>
           </div>
         </div>
 
         {co.lineItems.length === 0 ? (
-          <p className="mt-4 text-sm text-gray-500">No cost lines yet.</p>
+          <p className="mt-4 text-sm text-gray-500">{t('changeOrder.emptyLines')}</p>
         ) : (
           <ul className="mt-4 divide-y divide-gray-100 rounded border border-gray-200 bg-white text-sm">
             {co.lineItems.map((li, i) => (
@@ -337,7 +343,7 @@ export function ChangeOrderEditor({ initial, jobs, rfis, apiBaseUrl }: Props) {
                   <div className="font-medium text-gray-900">{li.description}</div>
                   {li.scheduleDays !== undefined && li.scheduleDays !== 0 && (
                     <div className="text-xs text-gray-500">
-                      {li.scheduleDays > 0 ? `+${li.scheduleDays}` : li.scheduleDays} day{Math.abs(li.scheduleDays) === 1 ? '' : 's'}
+                      {Math.abs(li.scheduleDays) === 1 ? (li.scheduleDays > 0 ? t('changeOrder.daysPlusOne') : t('changeOrder.daysMinusOne')) : (li.scheduleDays > 0 ? t('changeOrder.daysPlusMany', { days: li.scheduleDays }) : t('changeOrder.daysMinusMany', { days: li.scheduleDays }))}
                     </div>
                   )}
                 </div>
@@ -354,7 +360,7 @@ export function ChangeOrderEditor({ initial, jobs, rfis, apiBaseUrl }: Props) {
                     onClick={() => removeLine(i)}
                     className="text-xs text-red-600 hover:underline"
                   >
-                    Remove
+                    {t('changeOrder.removeLine')}
                   </button>
                 </div>
               </li>
@@ -364,7 +370,7 @@ export function ChangeOrderEditor({ initial, jobs, rfis, apiBaseUrl }: Props) {
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2">
-        <Field label="Proposal PDF URL">
+        <Field label={t('changeOrder.lblProposalPdf')}>
           <input
             value={proposalPdfUrl}
             onChange={(e) => setProposalPdfUrl(e.target.value)}
@@ -372,7 +378,7 @@ export function ChangeOrderEditor({ initial, jobs, rfis, apiBaseUrl }: Props) {
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Executed PDF URL">
+        <Field label={t('changeOrder.lblExecutedPdf')}>
           <input
             value={executedPdfUrl}
             onChange={(e) => setExecutedPdfUrl(e.target.value)}
@@ -382,7 +388,7 @@ export function ChangeOrderEditor({ initial, jobs, rfis, apiBaseUrl }: Props) {
         </Field>
       </section>
 
-      <Field label="Internal notes">
+      <Field label={t('changeOrder.lblNotes')}>
         <textarea
           rows={3}
           value={notes}
