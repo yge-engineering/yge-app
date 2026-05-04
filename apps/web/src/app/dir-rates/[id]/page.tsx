@@ -3,8 +3,10 @@
 import Link from 'next/link';
 import { AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
-import { classificationLabel, type DirRate } from '@yge/shared';
+import { classificationLabel, coerceLocale, type DirRate } from '@yge/shared';
 import { DirRateEditor } from '../../../components/dir-rate-editor';
+import { getTranslator } from '../../../lib/locale';
+import { cookies } from 'next/headers';
 
 function apiBaseUrl(): string {
   return (
@@ -23,6 +25,9 @@ export default async function DirRateDetailPage({
 }: {
   params: { id: string };
 }) {
+  const t = getTranslator();
+  const localeCookie = cookies().get('yge-locale')?.value;
+  const locale = coerceLocale(localeCookie);
   const rate = await fetchRate(params.id);
   if (!rate) notFound();
 
@@ -30,16 +35,16 @@ export default async function DirRateDetailPage({
     <main className="mx-auto max-w-3xl p-8">
       <div className="mb-6">
         <Link href="/dir-rates" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; DIR Rates
+          {t('newDirRate.back')}
         </Link>
       </div>
       <h1 className="text-3xl font-bold text-yge-blue-500">
-        {classificationLabel(rate.classification)}
+        {classificationLabel(rate.classification, locale)}
       </h1>
       <p className="mt-1 text-sm text-gray-600">
-        {rate.county} · effective {rate.effectiveDate}
+        {t('dirRatePg.subtitle', { county: rate.county, date: rate.effectiveDate })}
       </p>
-      <p className="mt-1 text-xs text-gray-500">ID: {rate.id}</p>
+      <p className="mt-1 text-xs text-gray-500">{t('photoPg.idLabel', { id: rate.id })}</p>
       <div className="mt-6">
         <DirRateEditor mode="edit" rate={rate} />
       </div>

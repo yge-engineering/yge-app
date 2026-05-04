@@ -4,20 +4,21 @@ import Link from 'next/link';
 
 import { AppShell } from '../../../components/app-shell';
 import { DirRateEditor } from '../../../components/dir-rate-editor';
+import { getTranslator } from '../../../lib/locale';
 
 export default function NewDirRatePage() {
+  const t = getTranslator();
   return (
     <AppShell>
     <main className="mx-auto max-w-3xl p-8">
       <div className="mb-6">
         <Link href="/dir-rates" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; DIR Rates
+          {t('newDirRate.back')}
         </Link>
       </div>
-      <h1 className="text-3xl font-bold text-yge-blue-500">New DIR rate</h1>
+      <h1 className="text-3xl font-bold text-yge-blue-500">{t('newDirRate.title')}</h1>
       <p className="mt-2 text-gray-700">
-        Enter a single craft + county prevailing wage determination off the DIR
-        general determination sheet.
+        {t('newDirRate.subtitle')}
       </p>
       <div className="mt-6">
         <DirRateEditor mode="create" />
