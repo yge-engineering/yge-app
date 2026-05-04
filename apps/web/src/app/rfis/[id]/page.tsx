@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { AuditBinderPanel } from '../../../components';
 import type { Job, Rfi } from '@yge/shared';
 import { RfiEditor } from '@/components/rfi-editor';
+import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
   return (
@@ -34,6 +35,7 @@ export default async function RfiDetailPage({
 }: {
   params: { id: string };
 }) {
+  const t = getTranslator();
   const [rfi, jobs] = await Promise.all([fetchRfi(params.id), fetchJobs()]);
   if (!rfi) notFound();
 
@@ -41,7 +43,7 @@ export default async function RfiDetailPage({
     <main className="mx-auto max-w-4xl p-8">
       <div className="mb-6">
         <Link href="/rfis" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Back to RFIs
+          {t('newRfi.back')}
         </Link>
       </div>
 

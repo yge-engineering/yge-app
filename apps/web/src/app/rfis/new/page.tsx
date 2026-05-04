@@ -7,8 +7,10 @@ import { Alert, AppShell } from '../../../components';
 import { useRouter } from 'next/navigation';
 import type { Job, Rfi } from '@yge/shared';
 import { ApiError, postJson } from '@/lib/api';
+import { useTranslator } from '../../../lib/use-translator';
 
 export default function NewRfiPage() {
+  const t = useTranslator();
   const router = useRouter();
   const [jobId, setJobId] = useState('');
   const [rfiNumber, setRfiNumber] = useState('');
@@ -32,7 +34,7 @@ export default function NewRfiPage() {
     e.preventDefault();
     setError(null);
     if (!jobId || !rfiNumber.trim() || !subject.trim()) {
-      setError('Job, RFI number, and subject are required.');
+      setError(t('newRfi.errRequired'));
       return;
     }
     setSaving(true);
@@ -44,9 +46,9 @@ export default function NewRfiPage() {
       });
       router.push(`/rfis/${res.rfi.id}`);
     } catch (err) {
-      if (err instanceof ApiError) setError(`${err.message} (HTTP ${err.status})`);
+      if (err instanceof ApiError) setError(t('newRfi.errHttp', { msg: err.message, status: err.status }));
       else if (err instanceof Error) setError(err.message);
-      else setError('Unknown error');
+      else setError(t('newRfi.errUnknown'));
       setSaving(false);
     }
   }
@@ -56,25 +58,24 @@ export default function NewRfiPage() {
     <main className="mx-auto max-w-xl p-8">
       <div className="mb-6">
         <Link href="/rfis" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Back to RFIs
+          {t('newRfi.back')}
         </Link>
       </div>
 
-      <h1 className="text-3xl font-bold text-yge-blue-500">New RFI</h1>
+      <h1 className="text-3xl font-bold text-yge-blue-500">{t('newRfi.title')}</h1>
       <p className="mt-2 text-gray-700">
-        Pick the job, give it a number + subject. Question text + answer
-        + status workflow live on the edit page after saving.
+        {t('newRfi.subtitle')}
       </p>
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-4">
-        <Field label="Job *">
+        <Field label={t('newRfi.lblJob')}>
           <select
             required
             value={jobId}
             onChange={(e) => setJobId(e.target.value)}
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           >
-            <option value="">— Pick a job —</option>
+            <option value="">{t('newRfi.pickJob')}</option>
             {jobs.map((j) => (
               <option key={j.id} value={j.id}>
                 {j.projectName}
@@ -82,7 +83,7 @@ export default function NewRfiPage() {
             ))}
           </select>
         </Field>
-        <Field label="RFI number *">
+        <Field label={t('newRfi.lblNumber')}>
           <input
             required
             value={rfiNumber}
@@ -91,12 +92,12 @@ export default function NewRfiPage() {
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm font-mono"
           />
         </Field>
-        <Field label="Subject *">
+        <Field label={t('newRfi.lblSubject')}>
           <input
             required
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
-            placeholder='e.g. "Conflict between section detail and base depth callout"'
+            placeholder={t('newRfi.phSubject')}
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
@@ -111,10 +112,10 @@ export default function NewRfiPage() {
             disabled={saving}
             className="rounded bg-yge-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50"
           >
-            {saving ? 'Saving…' : 'Create RFI'}
+            {saving ? t('newRfi.busy') : t('newRfi.action')}
           </button>
           <Link href="/rfis" className="text-sm text-gray-600 hover:underline">
-            Cancel
+            {t('newRfi.cancel')}
           </Link>
         </div>
       </form>
