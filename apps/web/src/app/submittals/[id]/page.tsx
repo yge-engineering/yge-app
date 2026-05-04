@@ -5,6 +5,7 @@ import { AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { Job, Submittal } from '@yge/shared';
 import { SubmittalEditor } from '@/components/submittal-editor';
+import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
   return (
@@ -34,6 +35,7 @@ export default async function SubmittalDetailPage({
 }: {
   params: { id: string };
 }) {
+  const t = getTranslator();
   const [submittal, jobs] = await Promise.all([fetchSubmittal(params.id), fetchJobs()]);
   if (!submittal) notFound();
 
@@ -41,7 +43,7 @@ export default async function SubmittalDetailPage({
     <main className="mx-auto max-w-4xl p-8">
       <div className="mb-6">
         <Link href="/submittals" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Back to submittals
+          {t('newSubmittal.back')}
         </Link>
       </div>
 
