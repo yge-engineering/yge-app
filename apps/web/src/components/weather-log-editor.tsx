@@ -4,6 +4,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 import {
   HEAT_THRESHOLD_F,
   HIGH_HEAT_THRESHOLD_F,
@@ -87,6 +88,7 @@ export function WeatherLogEditor({
   log?: WeatherLog;
 }) {
   const router = useRouter();
+  const t = useTranslator();
   const [form, setForm] = useState<FormState>(defaults(log));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -173,17 +175,17 @@ export function WeatherLogEditor({
         </div>
       )}
 
-      <Section title="Day + job">
-        <Field label="Job ID" required>
+      <Section title={t('weather.secDay')}>
+        <Field label={t('weather.lblJobId')} required>
           <input
             className={inputCls}
             value={form.jobId}
             onChange={(e) => setField('jobId', e.target.value)}
-            placeholder="job-YYYY-MM-DD-..."
+            placeholder={t('weather.phJobId')}
             required
           />
         </Field>
-        <Field label="Observed on" required>
+        <Field label={t('weather.lblObservedOn')} required>
           <input
             type="date"
             className={inputCls}
@@ -192,14 +194,14 @@ export function WeatherLogEditor({
             required
           />
         </Field>
-        <Field label="Location (optional)">
+        <Field label={t('weather.lblLocation')}>
           <input
             className={inputCls}
             value={form.location}
             onChange={(e) => setField('location', e.target.value)}
           />
         </Field>
-        <Field label="Recorded by">
+        <Field label={t('weather.lblRecordedBy')}>
           <input
             className={inputCls}
             value={form.recordedByName}
@@ -208,8 +210,8 @@ export function WeatherLogEditor({
         </Field>
       </Section>
 
-      <Section title="Observations">
-        <Field label="High temp (°F)">
+      <Section title={t('weather.secObs')}>
+        <Field label={t('weather.lblHigh')}>
           <input
             type="number"
             className={inputCls}
@@ -217,7 +219,7 @@ export function WeatherLogEditor({
             onChange={(e) => setField('highF', e.target.value)}
           />
         </Field>
-        <Field label="Low temp (°F)">
+        <Field label={t('weather.lblLow')}>
           <input
             type="number"
             className={inputCls}
@@ -225,7 +227,7 @@ export function WeatherLogEditor({
             onChange={(e) => setField('lowF', e.target.value)}
           />
         </Field>
-        <Field label="Precipitation (inches)">
+        <Field label={t('weather.lblPrecip')}>
           <input
             type="number"
             step="0.01"
@@ -235,7 +237,7 @@ export function WeatherLogEditor({
             onChange={(e) => setField('precipInches', e.target.value)}
           />
         </Field>
-        <Field label="Sustained wind (mph)">
+        <Field label={t('weather.lblWind')}>
           <input
             type="number"
             min="0"
@@ -244,7 +246,7 @@ export function WeatherLogEditor({
             onChange={(e) => setField('windMph', e.target.value)}
           />
         </Field>
-        <Field label="Peak gust (mph)">
+        <Field label={t('weather.lblGust')}>
           <input
             type="number"
             min="0"
@@ -253,7 +255,7 @@ export function WeatherLogEditor({
             onChange={(e) => setField('gustMph', e.target.value)}
           />
         </Field>
-        <Field label="Primary condition">
+        <Field label={t('weather.lblPrimary')}>
           <select
             className={inputCls}
             value={form.primaryCondition}
@@ -276,32 +278,32 @@ export function WeatherLogEditor({
               : 'border-yellow-300 bg-yellow-50 text-yellow-900'
           }`}
         >
-          <strong>§3395 trigger:</strong>{' '}
+          <strong>{t('weather.triggerLeader')}</strong>
           {highHeatTrigger
-            ? `High temp ${previewHighF}°F is at or above the ${HIGH_HEAT_THRESHOLD_F}°F HIGH-HEAT threshold — mandatory rest, observer, and pre-shift meeting required.`
-            : `High temp ${previewHighF}°F is at or above the ${HEAT_THRESHOLD_F}°F base threshold — water, shade, training, and acclimatization required.`}
+            ? t('weather.triggerHigh', { temp: previewHighF ?? '', threshold: HIGH_HEAT_THRESHOLD_F })
+            : t('weather.triggerBase', { temp: previewHighF ?? '', threshold: HEAT_THRESHOLD_F })}
         </div>
       )}
 
-      <Section title="§3395 procedures activated">
-        <Field label="Heat procedures">
+      <Section title={t('weather.secProcedures')}>
+        <Field label={t('weather.lblHeatProc')}>
           <Checkbox
             checked={form.heatProceduresActivated}
             onChange={(b) => setField('heatProceduresActivated', b)}
-            label={`Activated base heat-illness procedures (≥ ${HEAT_THRESHOLD_F}°F)`}
+            label={t('weather.cbHeatProc', { temp: HEAT_THRESHOLD_F })}
           />
         </Field>
-        <Field label="High-heat procedures">
+        <Field label={t('weather.lblHighHeatProc')}>
           <Checkbox
             checked={form.highHeatProceduresActivated}
             onChange={(b) => setField('highHeatProceduresActivated', b)}
-            label={`Activated HIGH-HEAT procedures (≥ ${HIGH_HEAT_THRESHOLD_F}°F)`}
+            label={t('weather.cbHighHeatProc', { temp: HIGH_HEAT_THRESHOLD_F })}
           />
         </Field>
       </Section>
 
-      <Section title="Impact">
-        <Field label="Impact">
+      <Section title={t('weather.secImpact')}>
+        <Field label={t('weather.lblImpact')}>
           <select
             className={inputCls}
             value={form.impact}
@@ -314,7 +316,7 @@ export function WeatherLogEditor({
             ))}
           </select>
         </Field>
-        <Field label="Hours lost (all crews)">
+        <Field label={t('weather.lblLostHours')}>
           <input
             type="number"
             step="0.25"
@@ -326,8 +328,8 @@ export function WeatherLogEditor({
         </Field>
       </Section>
 
-      <Section title="Notes">
-        <Field label="Free-form notes" full>
+      <Section title={t('weather.secNotes')}>
+        <Field label={t('weather.lblNotes')} full>
           <textarea
             className={`${inputCls} min-h-[100px]`}
             value={form.notes}
@@ -342,7 +344,7 @@ export function WeatherLogEditor({
           disabled={saving}
           className="rounded bg-yge-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-yge-blue-700 disabled:opacity-50"
         >
-          {saving ? 'Saving…' : mode === 'create' ? 'Log day' : 'Save changes'}
+          {saving ? t('weather.busy') : mode === 'create' ? t('weather.create') : t('weather.save')}
         </button>
       </div>
     </form>
