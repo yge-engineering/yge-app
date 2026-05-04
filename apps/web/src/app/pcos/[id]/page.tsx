@@ -5,6 +5,7 @@ import { AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { Pco } from '@yge/shared';
 import { PcoEditor } from '../../../components/pco-editor';
+import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
   return (
@@ -23,6 +24,7 @@ export default async function PcoDetailPage({
 }: {
   params: { id: string };
 }) {
+  const t = getTranslator();
   const pco = await fetchPco(params.id);
   if (!pco) notFound();
 
@@ -30,14 +32,14 @@ export default async function PcoDetailPage({
     <main className="mx-auto max-w-3xl p-8">
       <div className="mb-6">
         <Link href="/pcos" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; PCOs
+          {t('newPcoPg.back')}
         </Link>
       </div>
       <h1 className="text-3xl font-bold text-yge-blue-500">{pco.title}</h1>
       <p className="mt-1 text-sm text-gray-600">
         {pco.pcoNumber} · {pco.jobId}
       </p>
-      <p className="mt-1 text-xs text-gray-500">ID: {pco.id}</p>
+      <p className="mt-1 text-xs text-gray-500">{t('photoPg.idLabel', { id: pco.id })}</p>
       <div className="mt-6">
         <PcoEditor mode="edit" pco={pco} />
       </div>
