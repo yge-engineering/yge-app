@@ -19,6 +19,7 @@ import {
 } from '@yge/shared';
 import { PrintButton } from '@/components/print-button';
 import { Letterhead } from '@/components/letterhead';
+import { getTranslator } from '../../../../lib/locale';
 
 // Whom to print as the signer at the bottom of the cover letter.
 // `vp` (Ryan) is the default — matches the existing buildTransmittal default
@@ -59,6 +60,7 @@ export default async function TransmittalPage({
   params: { id: string };
   searchParams: { signer?: string };
 }) {
+  const t = getTranslator();
   const data = await fetchEstimate(params.id);
   if (!data) notFound();
   const { estimate } = data;
@@ -90,24 +92,24 @@ export default async function TransmittalPage({
               href={`/estimates/${estimate.id}`}
               className="text-yge-blue-500 hover:underline"
             >
-              &larr; Back to editor
+              {t('envelopePg.backEditor')}
             </Link>
             <Link
               href={`/estimates/${estimate.id}/print`}
               className="text-yge-blue-500 hover:underline"
             >
-              Bid summary
+              {t('envelopePg.bidSummary')}
             </Link>
             <Link
               href={`/estimates/${estimate.id}/envelope`}
               className="text-yge-blue-500 hover:underline"
             >
-              Envelope checklist
+              {t('estPg.envelope')}
             </Link>
           </div>
           <div className="flex items-center gap-3">
             <span className="text-xs uppercase tracking-wide text-gray-500">
-              Signer:
+              {t('transmittalPg.signerLabel')}
             </span>
             <Link
               href={`/estimates/${estimate.id}/transmittal?signer=vp`}
@@ -117,7 +119,7 @@ export default async function TransmittalPage({
                   : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
               }`}
             >
-              {YGE_COMPANY_INFO.vicePresident.name.split(' ')[0]} &mdash; VP
+              {t('transmittalPg.signerVp', { name: YGE_COMPANY_INFO.vicePresident.name.split(' ')[0] ?? '' })}
             </Link>
             <Link
               href={`/estimates/${estimate.id}/transmittal?signer=president`}
@@ -127,7 +129,7 @@ export default async function TransmittalPage({
                   : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
               }`}
             >
-              {YGE_COMPANY_INFO.president.name.split(' ')[0]} &mdash; President
+              {t('transmittalPg.signerPresident', { name: YGE_COMPANY_INFO.president.name.split(' ')[0] ?? '' })}
             </Link>
             <PrintButton />
           </div>
