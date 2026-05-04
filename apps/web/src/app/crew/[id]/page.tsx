@@ -8,6 +8,7 @@ import { AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { Employee } from '@yge/shared';
 import { EmployeeEditor } from '@/components/employee-editor';
+import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
   return (
@@ -40,6 +41,7 @@ export default async function EmployeeDetailPage({
 }: {
   params: { id: string };
 }) {
+  const t = getTranslator();
   const [employee, all] = await Promise.all([
     fetchEmployee(params.id),
     fetchAllEmployees(),
@@ -54,7 +56,7 @@ export default async function EmployeeDetailPage({
     <main className="mx-auto max-w-4xl p-8">
       <div className="mb-6">
         <Link href="/crew" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Back to crew
+          {t('newEmployee.back')}
         </Link>
       </div>
 

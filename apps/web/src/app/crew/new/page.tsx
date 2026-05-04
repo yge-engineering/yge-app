@@ -18,6 +18,7 @@ import {
   type EmployeeRole,
 } from '@yge/shared';
 import { ApiError, postJson } from '@/lib/api';
+import { useTranslator, useLocale } from '../../../lib/use-translator';
 
 const ROLES: EmployeeRole[] = [
   'FOREMAN',
@@ -78,6 +79,8 @@ const INITIAL: FormState = {
 };
 
 export default function NewEmployeePage() {
+  const t = useTranslator();
+  const locale = useLocale();
   const router = useRouter();
   const [form, setForm] = useState<FormState>(INITIAL);
   const [saving, setSaving] = useState(false);
@@ -106,7 +109,7 @@ export default function NewEmployeePage() {
     ev.preventDefault();
     setError(null);
     if (form.firstName.trim().length === 0 || form.lastName.trim().length === 0) {
-      setError('First and last name are required.');
+      setError(t('newEmployee.errName'));
       return;
     }
 
@@ -129,11 +132,11 @@ export default function NewEmployeePage() {
       router.push(`/crew/${res.employee.id}`);
     } catch (err) {
       if (err instanceof ApiError) {
-        setError(`${err.message} (HTTP ${err.status})`);
+        setError(t('newEmployee.errHttp', { msg: err.message, status: err.status }));
       } else if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError('Unknown error');
+        setError(t('newEmployee.errUnknown'));
       }
       setSaving(false);
     }
@@ -144,19 +147,18 @@ export default function NewEmployeePage() {
     <main className="mx-auto max-w-3xl p-8">
       <div className="mb-6">
         <Link href="/crew" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Back to crew
+          {t('newEmployee.back')}
         </Link>
       </div>
 
-      <h1 className="text-3xl font-bold text-yge-blue-500">Add employee</h1>
+      <h1 className="text-3xl font-bold text-yge-blue-500">{t('newEmployee.title')}</h1>
       <p className="mt-2 text-gray-700">
-        Fill in the basics. You can add certifications, hire details, and notes
-        on the edit page after saving.
+        {t('newEmployee.subtitle')}
       </p>
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-6">
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="First name *">
+          <Field label={t('newEmployee.lblFirstName')}>
             <input
               required
               value={form.firstName}
@@ -164,7 +166,7 @@ export default function NewEmployeePage() {
               className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
             />
           </Field>
-          <Field label="Last name *">
+          <Field label={t('newEmployee.lblLastName')}>
             <input
               required
               value={form.lastName}
@@ -174,17 +176,17 @@ export default function NewEmployeePage() {
           </Field>
         </div>
 
-        <Field label="Display / nickname (optional)">
+        <Field label={t('newEmployee.lblDisplayName')}>
           <input
             value={form.displayName}
             onChange={(e) => update('displayName', e.target.value)}
-            placeholder='e.g. "Skip" — printed on the roster instead of the legal first name'
+            placeholder={t('newEmployee.phDisplayName')}
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Phone">
+          <Field label={t('newEmployee.lblPhone')}>
             <input
               value={form.phone}
               onChange={(e) => update('phone', e.target.value)}
@@ -192,7 +194,7 @@ export default function NewEmployeePage() {
               className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
             />
           </Field>
-          <Field label="Email">
+          <Field label={t('newEmployee.lblEmail')}>
             <input
               type="email"
               value={form.email}
@@ -203,7 +205,7 @@ export default function NewEmployeePage() {
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Role">
+          <Field label={t('newEmployee.lblRole')}>
             <select
               value={form.role}
               onChange={(e) => update('role', e.target.value as EmployeeRole)}
@@ -211,12 +213,12 @@ export default function NewEmployeePage() {
             >
               {ROLES.map((r) => (
                 <option key={r} value={r}>
-                  {roleLabel(r)}
+                  {roleLabel(r, locale)}
                 </option>
               ))}
             </select>
           </Field>
-          <Field label="DIR classification">
+          <Field label={t('newEmployee.lblClassification')}>
             <select
               value={form.classification}
               onChange={(e) =>
@@ -226,21 +228,21 @@ export default function NewEmployeePage() {
             >
               {CLASSIFICATIONS.map((c) => (
                 <option key={c} value={c}>
-                  {classificationLabel(c)}
+                  {classificationLabel(c, locale)}
                 </option>
               ))}
             </select>
           </Field>
         </div>
 
-        <Field label="Reports to (foreman)">
+        <Field label={t('newEmployee.lblForeman')}>
           <select
             value={form.foremanId}
             onChange={(e) => update('foremanId', e.target.value)}
             disabled={form.role === 'FOREMAN'}
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm disabled:bg-gray-100"
           >
-            <option value="">— None / office staff —</option>
+            <option value="">{t('newEmployee.noneForeman')}</option>
             {foremen.map((f) => (
               <option key={f.id} value={f.id}>
                 {fullName(f)}
@@ -249,12 +251,12 @@ export default function NewEmployeePage() {
           </select>
           {form.role === 'FOREMAN' && (
             <p className="mt-1 text-xs text-gray-500">
-              Foremen don&rsquo;t report to another foreman.
+              {t('newEmployee.foremanNote')}
             </p>
           )}
         </Field>
 
-        <Field label="Hired on (optional)">
+        <Field label={t('newEmployee.lblHiredOn')}>
           <input
             type="date"
             value={form.hiredOn}
@@ -263,7 +265,7 @@ export default function NewEmployeePage() {
           />
         </Field>
 
-        <Field label="Notes">
+        <Field label={t('newEmployee.lblNotes')}>
           <textarea
             rows={3}
             value={form.notes}
@@ -282,10 +284,10 @@ export default function NewEmployeePage() {
             disabled={saving}
             className="rounded bg-yge-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50"
           >
-            {saving ? 'Saving\u2026' : 'Save employee'}
+            {saving ? t('newEmployee.busy') : t('newEmployee.action')}
           </button>
           <Link href="/crew" className="text-sm text-gray-600 hover:underline">
-            Cancel
+            {t('newEmployee.cancel')}
           </Link>
         </div>
       </form>
