@@ -5,6 +5,7 @@ import { AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { ToolboxTalk } from '@yge/shared';
 import { ToolboxTalkEditor } from '../../../components/toolbox-talk-editor';
+import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
   return (
@@ -23,6 +24,7 @@ export default async function ToolboxTalkDetailPage({
 }: {
   params: { id: string };
 }) {
+  const t = getTranslator();
   const talk = await fetchTalk(params.id);
   if (!talk) notFound();
 
@@ -30,20 +32,20 @@ export default async function ToolboxTalkDetailPage({
     <main className="mx-auto max-w-3xl p-8">
       <div className="mb-6 flex items-center justify-between">
         <Link href="/toolbox-talks" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Toolbox Talks
+          {t('newToolboxPg.back')}
         </Link>
         <Link
           href={`/toolbox-talks/${talk.id}/sign-in`}
           className="rounded bg-yge-blue-500 px-3 py-1 text-sm font-medium text-white hover:bg-yge-blue-700"
         >
-          Print sign-in sheet
+          {t('toolboxPg.printSignIn')}
         </Link>
       </div>
       <h1 className="text-3xl font-bold text-yge-blue-500">{talk.topic}</h1>
       <p className="mt-1 text-sm text-gray-600">
-        {talk.heldOn} · led by {talk.leaderName}
+        {t('toolboxPg.subtitle', { date: talk.heldOn, leader: talk.leaderName })}
       </p>
-      <p className="mt-1 text-xs text-gray-500">ID: {talk.id}</p>
+      <p className="mt-1 text-xs text-gray-500">{t('photoPg.idLabel', { id: talk.id })}</p>
       <div className="mt-6">
         <ToolboxTalkEditor mode="edit" talk={talk} />
       </div>
