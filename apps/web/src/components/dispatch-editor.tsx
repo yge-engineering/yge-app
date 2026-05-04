@@ -4,6 +4,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 import {
   dispatchStatusLabel,
   type Dispatch,
@@ -61,6 +62,7 @@ export function DispatchEditor({
   dispatch?: Dispatch;
 }) {
   const router = useRouter();
+  const t = useTranslator();
   const [form, setForm] = useState<FormState>(defaults(dispatch));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -164,17 +166,17 @@ export function DispatchEditor({
         </div>
       )}
 
-      <Section title="Day + job">
-        <Field label="Job ID" required>
+      <Section title={t('dispatchEditor.secDay')}>
+        <Field label={t('dispatchEditor.lblJobId')} required>
           <input
             className={inputCls}
             value={form.jobId}
             onChange={(e) => setField('jobId', e.target.value)}
-            placeholder="job-YYYY-MM-DD-..."
+            placeholder={t('dispatchEditor.phJobId')}
             required
           />
         </Field>
-        <Field label="Scheduled for" required>
+        <Field label={t('dispatchEditor.lblScheduled')} required>
           <input
             type="date"
             className={inputCls}
@@ -183,7 +185,7 @@ export function DispatchEditor({
             required
           />
         </Field>
-        <Field label="Status">
+        <Field label={t('dispatchEditor.lblStatus')}>
           <select
             className={inputCls}
             value={form.status}
@@ -198,8 +200,8 @@ export function DispatchEditor({
         </Field>
       </Section>
 
-      <Section title="Foreman + meet">
-        <Field label="Foreman name" required>
+      <Section title={t('dispatchEditor.secForeman')}>
+        <Field label={t('dispatchEditor.lblForemanName')} required>
           <input
             className={inputCls}
             value={form.foremanName}
@@ -207,22 +209,22 @@ export function DispatchEditor({
             required
           />
         </Field>
-        <Field label="Foreman phone">
+        <Field label={t('dispatchEditor.lblForemanPhone')}>
           <input
             className={inputCls}
             value={form.foremanPhone}
             onChange={(e) => setField('foremanPhone', e.target.value)}
           />
         </Field>
-        <Field label="Meet time">
+        <Field label={t('dispatchEditor.lblMeetTime')}>
           <input
             className={inputCls}
             value={form.meetTime}
             onChange={(e) => setField('meetTime', e.target.value)}
-            placeholder="06:00"
+            placeholder={t('dispatchEditor.phMeetTime')}
           />
         </Field>
-        <Field label="Meet location">
+        <Field label={t('dispatchEditor.lblMeetLoc')}>
           <input
             className={inputCls}
             value={form.meetLocation}
@@ -231,8 +233,8 @@ export function DispatchEditor({
         </Field>
       </Section>
 
-      <Section title="Scope + instructions">
-        <Field label="Scope of work" required full>
+      <Section title={t('dispatchEditor.secScope')}>
+        <Field label={t('dispatchEditor.lblScope')} required full>
           <textarea
             className={`${inputCls} min-h-[80px]`}
             value={form.scopeOfWork}
@@ -240,7 +242,7 @@ export function DispatchEditor({
             required
           />
         </Field>
-        <Field label="Special instructions / safety topic" full>
+        <Field label={t('dispatchEditor.lblSpecial')} full>
           <textarea
             className={`${inputCls} min-h-[60px]`}
             value={form.specialInstructions}
@@ -250,21 +252,21 @@ export function DispatchEditor({
       </Section>
 
       <RowList
-        title={`Crew (${form.crew.length})`}
-        addLabel="+ Add crew member"
+        title={t('dispatchEditor.crewTitle', { count: form.crew.length })}
+        addLabel={t('dispatchEditor.crewAdd')}
         onAdd={addCrewMember}
       >
         {form.crew.length === 0 ? (
           <p className="mt-3 text-xs text-gray-500">
-            No crew assigned yet.
+            {t('dispatchEditor.crewEmpty')}
           </p>
         ) : (
           <table className="mt-3 w-full text-left text-sm">
             <thead className="text-xs uppercase tracking-wide text-gray-500">
               <tr>
-                <th className="py-1">Name</th>
-                <th className="py-1">Role</th>
-                <th className="py-1">Note</th>
+                <th className="py-1">{t('dispatchEditor.thName')}</th>
+                <th className="py-1">{t('dispatchEditor.thRole')}</th>
+                <th className="py-1">{t('dispatchEditor.thNote')}</th>
                 <th className="py-1"></th>
               </tr>
             </thead>
@@ -283,7 +285,7 @@ export function DispatchEditor({
                       className={inputCls}
                       value={c.role ?? ''}
                       onChange={(e) => updateCrewMember(i, { role: e.target.value })}
-                      placeholder="Operator"
+                      placeholder={t('dispatchEditor.phRole')}
                     />
                   </td>
                   <td className="py-1 pr-2">
@@ -299,7 +301,7 @@ export function DispatchEditor({
                       onClick={() => removeCrewMember(i)}
                       className="text-xs text-red-600 hover:underline"
                     >
-                      Remove
+                      {t('dispatchEditor.remove')}
                     </button>
                   </td>
                 </tr>
@@ -310,19 +312,19 @@ export function DispatchEditor({
       </RowList>
 
       <RowList
-        title={`Equipment (${form.equipment.length})`}
-        addLabel="+ Add equipment"
+        title={t('dispatchEditor.equipTitle', { count: form.equipment.length })}
+        addLabel={t('dispatchEditor.equipAdd')}
         onAdd={addEquipment}
       >
         {form.equipment.length === 0 ? (
-          <p className="mt-3 text-xs text-gray-500">No equipment assigned yet.</p>
+          <p className="mt-3 text-xs text-gray-500">{t('dispatchEditor.equipEmpty')}</p>
         ) : (
           <table className="mt-3 w-full text-left text-sm">
             <thead className="text-xs uppercase tracking-wide text-gray-500">
               <tr>
-                <th className="py-1">Equipment</th>
-                <th className="py-1">Operator</th>
-                <th className="py-1">Note</th>
+                <th className="py-1">{t('dispatchEditor.thEquipment')}</th>
+                <th className="py-1">{t('dispatchEditor.thOperator')}</th>
+                <th className="py-1">{t('dispatchEditor.thNote')}</th>
                 <th className="py-1"></th>
               </tr>
             </thead>
@@ -334,7 +336,7 @@ export function DispatchEditor({
                       className={inputCls}
                       value={e.name}
                       onChange={(ev) => updateEquipment(i, { name: ev.target.value })}
-                      placeholder="CAT 320E"
+                      placeholder={t('dispatchEditor.phEquipment')}
                     />
                   </td>
                   <td className="py-1 pr-2">
@@ -357,7 +359,7 @@ export function DispatchEditor({
                       onClick={() => removeEquipment(i)}
                       className="text-xs text-red-600 hover:underline"
                     >
-                      Remove
+                      {t('dispatchEditor.remove')}
                     </button>
                   </td>
                 </tr>
@@ -367,8 +369,8 @@ export function DispatchEditor({
         )}
       </RowList>
 
-      <Section title="Notes">
-        <Field label="Internal notes" full>
+      <Section title={t('dispatchEditor.secNotes')}>
+        <Field label={t('dispatchEditor.lblNotes')} full>
           <textarea
             className={`${inputCls} min-h-[80px]`}
             value={form.notes}
@@ -383,7 +385,7 @@ export function DispatchEditor({
           disabled={saving}
           className="rounded bg-yge-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-yge-blue-700 disabled:opacity-50"
         >
-          {saving ? 'Saving…' : mode === 'create' ? 'Create dispatch' : 'Save changes'}
+          {saving ? t('dispatchEditor.busy') : mode === 'create' ? t('dispatchEditor.create') : t('dispatchEditor.save')}
         </button>
       </div>
     </form>
