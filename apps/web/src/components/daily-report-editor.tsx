@@ -9,6 +9,7 @@
 // UI so the foreman can either fix the times or add a written waiver.
 
 import { useMemo, useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 import {
   crewRowViolations,
   crewRowWorkedHours,
@@ -30,6 +31,7 @@ interface Props {
 }
 
 export function DailyReportEditor({ initial, employees, jobs, apiBaseUrl }: Props) {
+  const t = useTranslator();
   const [report, setReport] = useState<DailyReport>(initial);
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -69,11 +71,11 @@ export function DailyReportEditor({ initial, employees, jobs, apiBaseUrl }: Prop
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-      if (!res.ok) throw new Error(`Save failed: ${res.status}`);
+      if (!res.ok) throw new Error(t('dre.errSaveStatus', { status: res.status }));
       const json = (await res.json()) as { report: DailyReport };
       setReport(json.report);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Save failed');
+      setError(err instanceof Error ? err.message : t('dre.errFallback'));
     } finally {
       setSaving(false);
     }
@@ -123,16 +125,14 @@ export function DailyReportEditor({ initial, employees, jobs, apiBaseUrl }: Prop
       if (res.status === 409) {
         // The violations are also surfaced inline next to each crew row, so
         // we don't need to parse the body — just give the foreman the gist.
-        setError(
-          'Submission blocked by meal-break violations. Fix the times or add a waiver note on the affected rows.',
-        );
+        setError(t('dre.errSubmitBlocked'));
         return;
       }
-      if (!res.ok) throw new Error(`Submit failed: ${res.status}`);
+      if (!res.ok) throw new Error(t('dre.errSubmitStatus', { status: res.status }));
       const json = (await res.json()) as { report: DailyReport };
       setReport(json.report);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Submit failed');
+      setError(err instanceof Error ? err.message : t('dre.errSubmitFallback'));
     } finally {
       setSubmitting(false);
     }
@@ -146,22 +146,18 @@ export function DailyReportEditor({ initial, employees, jobs, apiBaseUrl }: Prop
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-yge-blue-500">
-            Daily report &mdash; {report.date}
+            {t('dre.heading', { date: report.date })}
           </h1>
           <p className="mt-1 text-sm text-gray-600">
             {job ? job.projectName : report.jobId}
-            {foreman && (
-              <>
-                {' '}&middot; Foreman: {fullName(foreman)}
-              </>
-            )}
-            {' '}&middot; Total: {total.toFixed(2)} hr
+            {foreman && t('dre.foremanSuffix', { name: fullName(foreman) })}
+            {t('dre.totalSuffix', { hr: total.toFixed(2) })}
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs">
           {report.submitted ? (
             <span className="rounded bg-green-100 px-2 py-1 font-semibold uppercase tracking-wide text-green-800">
-              Submitted
+              {t('dre.submitted')}
             </span>
           ) : (
             <button
@@ -170,10 +166,10 @@ export function DailyReportEditor({ initial, employees, jobs, apiBaseUrl }: Prop
               disabled={submitting}
               className="rounded bg-yge-blue-500 px-3 py-1 font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50"
             >
-              {submitting ? 'Submitting\u2026' : 'Submit report'}
+              {submitting ? t('dre.submitting') : t('dre.submit')}
             </button>
           )}
-          {saving && <span className="text-gray-500">Saving&hellip;</span>}
+          {saving && <span className="text-gray-500">{t('dre.saving')}</span>}
         </div>
       </header>
 
@@ -185,26 +181,22 @@ export function DailyReportEditor({ initial, employees, jobs, apiBaseUrl }: Prop
 
       {violatedRows.length > 0 && (
         <div className="rounded border border-red-300 bg-red-50 p-4 text-sm text-red-800">
-          <strong>Meal-break violations on {violatedRows.length} row(s).</strong>{' '}
-          California Labor Code 512 requires a 30-minute meal break before the
-          6th hour, plus a second one before the 11th hour for shifts over 10
-          hours. Either fix the times below or add a written waiver note on
-          the affected row.
+          <strong>{t('dre.violationsLeader', { count: violatedRows.length })}</strong>{t('dre.violationsBody')}
         </div>
       )}
 
       {/* Weather + temp */}
       <section className="grid gap-4 sm:grid-cols-3">
-        <Field label="Weather">
+        <Field label={t('dre.lblWeather')}>
           <input
             value={weather}
             onChange={(e) => setWeather(e.target.value)}
             onBlur={saveText}
-            placeholder="Clear, hot, gusty"
+            placeholder={t('dre.phWeather')}
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Temperature (°F)">
+        <Field label={t('dre.lblTemp')}>
           <input
             type="number"
             value={tempStr}
@@ -218,18 +210,18 @@ export function DailyReportEditor({ initial, employees, jobs, apiBaseUrl }: Prop
       {/* Crew rows */}
       <section>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Crew on site</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{t('dre.crewHeader')}</h2>
           <button
             type="button"
             onClick={addCrewRow}
             className="rounded bg-yge-blue-500 px-3 py-1 text-sm font-medium text-white hover:bg-yge-blue-700"
           >
-            + Add crew row
+            {t('dre.addCrewRow')}
           </button>
         </div>
 
         {report.crewOnSite.length === 0 ? (
-          <p className="text-sm text-gray-500">No crew added yet.</p>
+          <p className="text-sm text-gray-500">{t('dre.crewEmpty')}</p>
         ) : (
           <ul className="space-y-3">
             {report.crewOnSite.map((row, i) => {
@@ -242,7 +234,7 @@ export function DailyReportEditor({ initial, employees, jobs, apiBaseUrl }: Prop
                   className={`rounded border p-3 text-sm ${showRed ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-gray-50'}`}
                 >
                   <div className="grid gap-3 sm:grid-cols-6">
-                    <Field label="Employee">
+                    <Field label={t('dre.lblEmployee')}>
                       <select
                         value={row.employeeId}
                         onChange={(e) =>
@@ -260,37 +252,37 @@ export function DailyReportEditor({ initial, employees, jobs, apiBaseUrl }: Prop
                       </select>
                     </Field>
                     <TimeField
-                      label="Start"
+                      label={t('dre.lblStart')}
                       value={row.startTime}
                       onChange={(v) => updateCrewRow(i, { startTime: v })}
                     />
                     <TimeField
-                      label="Lunch out"
+                      label={t('dre.lblLunchOut')}
                       value={row.lunchOut ?? ''}
                       onChange={(v) =>
                         updateCrewRow(i, { lunchOut: v || undefined })
                       }
                     />
                     <TimeField
-                      label="Lunch in"
+                      label={t('dre.lblLunchIn')}
                       value={row.lunchIn ?? ''}
                       onChange={(v) =>
                         updateCrewRow(i, { lunchIn: v || undefined })
                       }
                     />
                     <TimeField
-                      label="End"
+                      label={t('dre.lblEnd')}
                       value={row.endTime}
                       onChange={(v) => updateCrewRow(i, { endTime: v })}
                     />
                     <div className="self-end pb-1 text-right text-xs text-gray-700">
-                      <div>{crewRowWorkedHours(row).toFixed(2)} hr</div>
+                      <div>{t('dre.rowHours', { hr: crewRowWorkedHours(row).toFixed(2) })}</div>
                       <button
                         type="button"
                         onClick={() => removeCrewRow(i)}
                         className="mt-1 text-red-600 hover:underline"
                       >
-                        Remove
+                        {t('dre.removeRow')}
                       </button>
                     </div>
                   </div>
@@ -298,14 +290,14 @@ export function DailyReportEditor({ initial, employees, jobs, apiBaseUrl }: Prop
                   {(row.secondMealOut || row.secondMealIn || violations.some((v) => v.kind === 'second-meal-missing')) && (
                     <div className="mt-2 grid gap-3 sm:grid-cols-3">
                       <TimeField
-                        label="2nd meal out"
+                        label={t('dre.lblSecondMealOut')}
                         value={row.secondMealOut ?? ''}
                         onChange={(v) =>
                           updateCrewRow(i, { secondMealOut: v || undefined })
                         }
                       />
                       <TimeField
-                        label="2nd meal in"
+                        label={t('dre.lblSecondMealIn')}
                         value={row.secondMealIn ?? ''}
                         onChange={(v) =>
                           updateCrewRow(i, { secondMealIn: v || undefined })
@@ -321,7 +313,7 @@ export function DailyReportEditor({ initial, employees, jobs, apiBaseUrl }: Prop
                           <li key={j}>{violationLabel(v)}</li>
                         ))}
                       </ul>
-                      <Field label="Waiver note (resolves all violations on this row)">
+                      <Field label={t('dre.lblWaiver')}>
                         <input
                           value={row.mealBreakWaiverNote ?? ''}
                           onChange={(e) =>
@@ -329,7 +321,7 @@ export function DailyReportEditor({ initial, employees, jobs, apiBaseUrl }: Prop
                               mealBreakWaiverNote: e.target.value || undefined,
                             })
                           }
-                          placeholder='e.g. "Employee signed waiver — on file."'
+                          placeholder={t('dre.phWaiver')}
                           className="w-full rounded border border-red-300 bg-white px-2 py-1 text-sm"
                         />
                       </Field>
@@ -344,7 +336,7 @@ export function DailyReportEditor({ initial, employees, jobs, apiBaseUrl }: Prop
 
       {/* Free-form sections */}
       <section className="grid gap-4 sm:grid-cols-2">
-        <Field label="Scope completed">
+        <Field label={t('dre.lblScopeCompleted')}>
           <textarea
             rows={4}
             value={scopeCompleted}
@@ -353,7 +345,7 @@ export function DailyReportEditor({ initial, employees, jobs, apiBaseUrl }: Prop
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Issues / delays / accidents">
+        <Field label={t('dre.lblIssues')}>
           <textarea
             rows={4}
             value={issues}
@@ -362,7 +354,7 @@ export function DailyReportEditor({ initial, employees, jobs, apiBaseUrl }: Prop
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Visitors (inspector, owner, etc.)">
+        <Field label={t('dre.lblVisitors')}>
           <textarea
             rows={2}
             value={visitors}
@@ -371,7 +363,7 @@ export function DailyReportEditor({ initial, employees, jobs, apiBaseUrl }: Prop
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Subcontractors on site">
+        <Field label={t('dre.lblSubsOnSite')}>
           <textarea
             rows={2}
             value={subsOnSite}
@@ -380,7 +372,7 @@ export function DailyReportEditor({ initial, employees, jobs, apiBaseUrl }: Prop
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Materials consumed">
+        <Field label={t('dre.lblMaterials')}>
           <textarea
             rows={3}
             value={materialsConsumed}
@@ -389,7 +381,7 @@ export function DailyReportEditor({ initial, employees, jobs, apiBaseUrl }: Prop
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Next day's plan">
+        <Field label={t('dre.lblNextDay')}>
           <textarea
             rows={3}
             value={nextDayPlan}
