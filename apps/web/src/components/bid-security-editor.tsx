@@ -13,6 +13,7 @@
 // strips the field from the on-disk record.
 
 import { useEffect, useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 import {
   bidSecurityAmountCents,
   defaultBidSecurity,
@@ -30,11 +31,11 @@ interface Props {
   onUpdated: (estimate: PricedEstimate, totals: PricedEstimateTotals) => void;
 }
 
-const TYPE_OPTIONS: { value: BidSecurityType; label: string }[] = [
-  { value: 'BID_BOND', label: 'Bid bond' },
-  { value: 'CASHIERS_CHECK', label: "Cashier's check" },
-  { value: 'CERTIFIED_CHECK', label: 'Certified check' },
-  { value: 'OTHER', label: 'Other' },
+const TYPE_OPTIONS: { value: BidSecurityType; labelKey: string }[] = [
+  { value: 'BID_BOND', labelKey: 'bidSecurity.typeBond' },
+  { value: 'CASHIERS_CHECK', labelKey: 'bidSecurity.typeCashiers' },
+  { value: 'CERTIFIED_CHECK', labelKey: 'bidSecurity.typeCertified' },
+  { value: 'OTHER', labelKey: 'bidSecurity.typeOther' },
 ];
 
 export function BidSecurityEditor({
@@ -43,6 +44,7 @@ export function BidSecurityEditor({
   apiBaseUrl,
   onUpdated,
 }: Props) {
+  const t = useTranslator();
   const [security, setSecurity] = useState<BidSecurity | null>(
     estimate.bidSecurity ?? null,
   );
@@ -74,14 +76,14 @@ export function BidSecurityEditor({
           body: JSON.stringify({ bidSecurity: next }),
         },
       );
-      if (!res.ok) throw new Error(`API ${res.status}`);
+      if (!res.ok) throw new Error(t('bidSecurity.errStatus', { status: res.status }));
       const json = (await res.json()) as {
         estimate: PricedEstimate;
         totals: PricedEstimateTotals;
       };
       onUpdated(json.estimate, json.totals);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Save failed');
+      setError(err instanceof Error ? err.message : t('bidSecurity.errFallback'));
     } finally {
       setSaving(false);
     }
@@ -123,11 +125,10 @@ export function BidSecurityEditor({
       <header className="mb-3 flex items-baseline justify-between gap-4">
         <div>
           <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
-            Bid security
+            {t('bidSecurity.title')}
           </h2>
           <p className="mt-1 text-xs text-gray-600">
-            What goes in the envelope on bid day. CA public works almost always
-            require 10% — without it the bid is non-responsive.
+            {t('bidSecurity.intro')}
           </p>
         </div>
         {security ? (
@@ -135,47 +136,45 @@ export function BidSecurityEditor({
             onClick={turnOff}
             className="text-xs text-gray-500 hover:text-red-700"
           >
-            No security required
+            {t('bidSecurity.noneRequired')}
           </button>
         ) : (
           <button
             onClick={turnOn}
             className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-700 hover:bg-yge-blue-100"
           >
-            Add bid security
+            {t('bidSecurity.add')}
           </button>
         )}
       </header>
 
       {error && (
         <div className="mb-2 rounded border border-red-300 bg-red-50 p-2 text-xs text-red-700">
-          Couldn&rsquo;t save bid security: {error}
+          {t('bidSecurity.errSave', { error })}
         </div>
       )}
 
       {!security ? (
         <p className="text-xs italic text-gray-500">
-          No bid security configured. Most public works bids need 10% — click
-          &ldquo;Add bid security&rdquo; above to start.
+          {t('bidSecurity.empty')}
         </p>
       ) : (
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <div className="rounded border border-yge-blue-200 bg-yge-blue-50 p-3">
             <div className="text-[10px] uppercase tracking-wide text-gray-500">
-              Required amount
+              {t('bidSecurity.requiredAmount')}
             </div>
             <div className="font-mono text-2xl font-bold text-yge-blue-700">
               {formatUSD(requiredCents)}
             </div>
             <div className="mt-1 text-xs text-gray-700">
-              {(security.percent * 100).toFixed(1)}% of{' '}
-              {formatUSD(bidTotalCents)}
+              {t('bidSecurity.percentOf', { percent: (security.percent * 100).toFixed(1), total: formatUSD(bidTotalCents) })}
             </div>
           </div>
 
           <div className="space-y-2">
             <label className="block text-xs text-gray-700">
-              <span className="mb-0.5 block font-medium">Type</span>
+              <span className="mb-0.5 block font-medium">{t('bidSecurity.lblType')}</span>
               <select
                 value={security.type}
                 onChange={(e) =>
@@ -185,14 +184,14 @@ export function BidSecurityEditor({
               >
                 {TYPE_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
-                    {opt.label}
+                    {t(opt.labelKey)}
                   </option>
                 ))}
               </select>
             </label>
 
             <label className="block text-xs text-gray-700">
-              <span className="mb-0.5 block font-medium">Percent of bid</span>
+              <span className="mb-0.5 block font-medium">{t('bidSecurity.lblPercent')}</span>
               <div className="flex items-center gap-1">
                 <input
                   type="text"
@@ -217,7 +216,7 @@ export function BidSecurityEditor({
             <>
               <label className="block text-xs text-gray-700 md:col-span-2">
                 <span className="mb-0.5 block font-medium">
-                  Surety company name
+                  {t('bidSecurity.lblSurety')}
                 </span>
                 <input
                   type="text"
@@ -225,13 +224,13 @@ export function BidSecurityEditor({
                   onChange={(e) =>
                     patch({ suretyName: e.target.value || undefined })
                   }
-                  placeholder="e.g. Travelers Casualty and Surety Co. of America"
+                  placeholder={t('bidSecurity.phSurety')}
                   className="w-full rounded border border-gray-300 px-2 py-1 text-sm focus:border-yge-blue-500 focus:outline-none focus:ring-1 focus:ring-yge-blue-500"
                 />
               </label>
               <label className="block text-xs text-gray-700 md:col-span-2">
                 <span className="mb-0.5 block font-medium">
-                  Surety address
+                  {t('bidSecurity.lblSuretyAddr')}
                 </span>
                 <input
                   type="text"
@@ -239,25 +238,25 @@ export function BidSecurityEditor({
                   onChange={(e) =>
                     patch({ suretyAddress: e.target.value || undefined })
                   }
-                  placeholder="e.g. One Tower Square, Hartford, CT 06183"
+                  placeholder={t('bidSecurity.phSuretyAddr')}
                   className="w-full rounded border border-gray-300 px-2 py-1 text-sm focus:border-yge-blue-500 focus:outline-none focus:ring-1 focus:ring-yge-blue-500"
                 />
               </label>
               <label className="block text-xs text-gray-700">
-                <span className="mb-0.5 block font-medium">Bond number</span>
+                <span className="mb-0.5 block font-medium">{t('bidSecurity.lblBondNum')}</span>
                 <input
                   type="text"
                   value={security.bondNumber ?? ''}
                   onChange={(e) =>
                     patch({ bondNumber: e.target.value || undefined })
                   }
-                  placeholder="e.g. 107XYZ12345"
+                  placeholder={t('bidSecurity.phBondNum')}
                   className="w-full rounded border border-gray-300 px-2 py-1 font-mono text-sm focus:border-yge-blue-500 focus:outline-none focus:ring-1 focus:ring-yge-blue-500"
                 />
               </label>
               <label className="block text-xs text-gray-700">
                 <span className="mb-0.5 block font-medium">
-                  Attorney-in-fact
+                  {t('bidSecurity.lblAttorney')}
                 </span>
                 <input
                   type="text"
@@ -265,7 +264,7 @@ export function BidSecurityEditor({
                   onChange={(e) =>
                     patch({ attorneyInFact: e.target.value || undefined })
                   }
-                  placeholder="Person who signs for the surety"
+                  placeholder={t('bidSecurity.phAttorney')}
                   className="w-full rounded border border-gray-300 px-2 py-1 text-sm focus:border-yge-blue-500 focus:outline-none focus:ring-1 focus:ring-yge-blue-500"
                 />
               </label>
@@ -274,13 +273,13 @@ export function BidSecurityEditor({
 
           <label className="block text-xs text-gray-700 md:col-span-2">
             <span className="mb-0.5 block font-medium">
-              Internal notes <span className="text-gray-400">(not printed)</span>
+              {t('bidSecurity.lblNotes')} <span className="text-gray-400">{t('bidSecurity.notesHint')}</span>
             </span>
             <input
               type="text"
               value={security.notes ?? ''}
               onChange={(e) => patch({ notes: e.target.value || undefined })}
-              placeholder='e.g. "Travelers — capacity confirmed Tuesday"'
+              placeholder={t('bidSecurity.phNotes')}
               className="w-full rounded border border-gray-300 px-2 py-1 text-sm focus:border-yge-blue-500 focus:outline-none focus:ring-1 focus:ring-yge-blue-500"
             />
           </label>
@@ -288,7 +287,7 @@ export function BidSecurityEditor({
       )}
 
       {saving && (
-        <div className="mt-2 text-right text-xs text-gray-400">saving…</div>
+        <div className="mt-2 text-right text-xs text-gray-400">{t('bidSecurity.saving')}</div>
       )}
     </section>
   );
