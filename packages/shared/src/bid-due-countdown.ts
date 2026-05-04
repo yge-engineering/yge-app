@@ -1,3 +1,5 @@
+import { translate, SEED_DICTIONARY, type Locale } from './i18n';
+
 // Bid-due countdown — how urgent is this estimate?
 //
 // Estimates carry an optional `bidDueDate` field that's free-form text in
@@ -51,7 +53,10 @@ function tryParseDueDate(raw: string): { at: Date; textOnly: boolean } | null {
 export function bidDueCountdown(
   bidDueDate: string | undefined | null,
   now: Date = new Date(),
+  locale: Locale = 'en',
 ): BidDueCountdown {
+  const tr = (key: string, vars?: Record<string, string | number>): string =>
+    translate(SEED_DICTIONARY, locale, key, vars);
   const empty: BidDueCountdown = {
     level: 'none',
     deltaMs: 0,
@@ -69,8 +74,8 @@ export function bidDueCountdown(
     return {
       level: 'red',
       deltaMs,
-      shortLabel: 'OVERDUE',
-      longLabel: 'Bid due date is in the past',
+      shortLabel: tr('bidDue.overdueShort'),
+      longLabel: tr('bidDue.overdueLong'),
       parsedFromTextOnly: parsed.textOnly,
     };
   }
@@ -84,28 +89,36 @@ export function bidDueCountdown(
   return {
     level,
     deltaMs,
-    shortLabel: formatShort(deltaMs),
-    longLabel: formatLong(deltaMs),
+    shortLabel: formatShort(deltaMs, tr),
+    longLabel: formatLong(deltaMs, tr),
     parsedFromTextOnly: parsed.textOnly,
   };
 }
 
-function formatShort(deltaMs: number): string {
+type Tr = (key: string, vars?: Record<string, string | number>) => string;
+
+function formatShort(deltaMs: number, tr: Tr): string {
   const days = Math.floor(deltaMs / DAY_MS);
   const hours = Math.floor((deltaMs % DAY_MS) / HOUR_MS);
   const minutes = Math.floor((deltaMs % HOUR_MS) / (60 * 1000));
-  if (days >= 1) return `${days}d ${hours}h`;
-  if (hours >= 1) return `${hours}h ${minutes}m`;
-  return `${minutes}m`;
+  if (days >= 1) return tr('bidDue.shortDayHr', { days, hours });
+  if (hours >= 1) return tr('bidDue.shortHrMin', { hours, minutes });
+  return tr('bidDue.shortMin', { minutes });
 }
 
-function formatLong(deltaMs: number): string {
+function formatLong(deltaMs: number, tr: Tr): string {
   const days = Math.floor(deltaMs / DAY_MS);
   const hours = Math.floor((deltaMs % DAY_MS) / HOUR_MS);
   const minutes = Math.floor((deltaMs % HOUR_MS) / (60 * 1000));
   const parts: string[] = [];
-  if (days >= 1) parts.push(`${days} day${days === 1 ? '' : 's'}`);
-  if (hours >= 1) parts.push(`${hours} hour${hours === 1 ? '' : 's'}`);
-  if (parts.length === 0) parts.push(`${minutes} minute${minutes === 1 ? '' : 's'}`);
-  return `Bid due in ${parts.join(', ')}`;
+  if (days >= 1) {
+    parts.push(days === 1 ? tr('bidDue.dayOne', { n: days }) : tr('bidDue.dayMany', { n: days }));
+  }
+  if (hours >= 1) {
+    parts.push(hours === 1 ? tr('bidDue.hrOne', { n: hours }) : tr('bidDue.hrMany', { n: hours }));
+  }
+  if (parts.length === 0) {
+    parts.push(minutes === 1 ? tr('bidDue.minOne', { n: minutes }) : tr('bidDue.minMany', { n: minutes }));
+  }
+  return tr('bidDue.longPrefix', { parts: parts.join(', ') });
 }

@@ -8,6 +8,9 @@
 //   - level=yellow / orange / red → loud coloured banner
 
 import { bidDueCountdown, type BidDueLevel } from '@yge/shared';
+import { getTranslator } from '../lib/locale';
+import { coerceLocale } from '@yge/shared';
+import { cookies } from 'next/headers';
 
 interface Props {
   bidDueDate: string | undefined | null;
@@ -25,20 +28,23 @@ const LEVEL_STYLES: Record<Exclude<BidDueLevel, 'none'>, string> = {
   red: 'border-red-500 bg-red-50 text-red-900 font-semibold',
 };
 
-const LEVEL_TITLE: Record<Exclude<BidDueLevel, 'none'>, string> = {
-  green: 'On track',
-  yellow: 'Bid week',
-  orange: 'Bid day',
-  red: 'Final hours',
+const LEVEL_KEY: Record<Exclude<BidDueLevel, 'none'>, string> = {
+  green: 'bidDueBanner.green',
+  yellow: 'bidDueBanner.yellow',
+  orange: 'bidDueBanner.orange',
+  red: 'bidDueBanner.red',
 };
 
 export function BidDueBanner({ bidDueDate, now, showWhenQuiet = false }: Props) {
-  const c = bidDueCountdown(bidDueDate, now);
+  const t = getTranslator();
+  const localeCookie = cookies().get('yge-locale')?.value;
+  const locale = coerceLocale(localeCookie);
+  const c = bidDueCountdown(bidDueDate, now, locale);
   if (c.level === 'none') return null;
   if (c.level === 'green' && !showWhenQuiet) return null;
 
   const styles = LEVEL_STYLES[c.level];
-  const title = LEVEL_TITLE[c.level];
+  const title = t(LEVEL_KEY[c.level]);
 
   return (
     <div
