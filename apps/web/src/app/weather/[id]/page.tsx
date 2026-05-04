@@ -5,6 +5,7 @@ import { AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { WeatherLog } from '@yge/shared';
 import { WeatherLogEditor } from '../../../components/weather-log-editor';
+import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
   return (
@@ -23,6 +24,7 @@ export default async function WeatherLogDetailPage({
 }: {
   params: { id: string };
 }) {
+  const t = getTranslator();
   const log = await fetchLog(params.id);
   if (!log) notFound();
 
@@ -30,14 +32,14 @@ export default async function WeatherLogDetailPage({
     <main className="mx-auto max-w-3xl p-8">
       <div className="mb-6">
         <Link href="/weather" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Weather Log
+          {t('newWeatherPg.back')}
         </Link>
       </div>
       <h1 className="text-3xl font-bold text-yge-blue-500">
         {log.observedOn}
       </h1>
       <p className="mt-1 text-sm text-gray-600">{log.jobId}</p>
-      <p className="mt-1 text-xs text-gray-500">ID: {log.id}</p>
+      <p className="mt-1 text-xs text-gray-500">{t('photoPg.idLabel', { id: log.id })}</p>
       <div className="mt-6">
         <WeatherLogEditor mode="edit" log={log} />
       </div>
