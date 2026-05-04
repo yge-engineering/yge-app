@@ -15,6 +15,7 @@
 // handler dead-simple on the server.
 
 import { useEffect, useState } from 'react';
+import { useTranslator, type Translator } from '../lib/use-translator';
 import {
   classifySubBids,
   formatUSD,
@@ -48,6 +49,7 @@ export function SubBidEditor({
   apiBaseUrl,
   onSubsUpdated,
 }: Props) {
+  const t = useTranslator();
   const [rows, setRows] = useState<DraftRow[]>(estimate.subBids);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -87,13 +89,13 @@ export function SubBidEditor({
       );
       if (!res.ok) {
         const body = await safeReadJson(res);
-        throw new Error(body?.error || `API ${res.status}`);
+        throw new Error(body?.error || t('subBid.errStatus', { status: res.status }));
       }
       // Server is source of truth — drop the isNew flags now that they're saved.
       setRows(cleaned);
       onSubsUpdated(cleaned);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Save failed');
+      setError(err instanceof Error ? err.message : t('subBid.errFallback'));
     } finally {
       setSaving(false);
     }
@@ -145,46 +147,43 @@ export function SubBidEditor({
       <header className="mb-3 flex items-baseline justify-between gap-4">
         <div>
           <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
-            Subcontractor list
+            {t('subBid.title')}
           </h2>
           <p className="mt-1 text-xs text-gray-600">
-            CA Public Contract Code §4104 — list every sub doing work over
-            the threshold below. Skipping a required sub makes the bid
-            non-responsive.
+            {t('subBid.intro')}
           </p>
         </div>
         <button
           onClick={handleAddRow}
           className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-700 hover:bg-yge-blue-100"
         >
-          + Add sub
+          {t('subBid.add')}
         </button>
       </header>
 
-      <ThresholdBanner classification={classification} />
+      <ThresholdBanner classification={classification} t={t} />
 
       {error && (
         <div className="mt-2 rounded border border-red-300 bg-red-50 p-2 text-xs text-red-700">
-          Couldn&rsquo;t save sub list: {error}
+          {t('subBid.errSave', { error })}
         </div>
       )}
 
       {rows.length === 0 ? (
         <p className="mt-3 text-xs italic text-gray-500">
-          No subs added yet. If you&rsquo;re self-performing every line,
-          that&rsquo;s fine — leave this empty.
+          {t('subBid.empty')}
         </p>
       ) : (
         <div className="mt-3 overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="text-[10px] uppercase tracking-wide text-gray-500">
               <tr>
-                <th className="px-2 py-1">Status</th>
-                <th className="px-2 py-1">Contractor</th>
-                <th className="px-2 py-1">CSLB</th>
-                <th className="px-2 py-1">DIR</th>
-                <th className="px-2 py-1">Portion of work</th>
-                <th className="px-2 py-1 text-right">Bid amount</th>
+                <th className="px-2 py-1">{t('subBid.thStatus')}</th>
+                <th className="px-2 py-1">{t('subBid.thContractor')}</th>
+                <th className="px-2 py-1">{t('subBid.thCslb')}</th>
+                <th className="px-2 py-1">{t('subBid.thDir')}</th>
+                <th className="px-2 py-1">{t('subBid.thPortion')}</th>
+                <th className="px-2 py-1 text-right">{t('subBid.thBidAmount')}</th>
                 <th className="px-2 py-1"></th>
               </tr>
             </thead>
@@ -197,6 +196,7 @@ export function SubBidEditor({
                   onChange={(patch) => handleRowChange(row.id, patch)}
                   onCommit={() => handleRowCommit(row.id)}
                   onRemove={() => handleRowRemove(row.id)}
+                  t={t}
                 />
               ))}
             </tbody>
@@ -207,10 +207,10 @@ export function SubBidEditor({
       <footer className="mt-3 flex items-center justify-between text-xs text-gray-500">
         <div>
           {classification.totalSubCents > 0 && (
-            <>Sub bids total {formatUSD(classification.totalSubCents)}.</>
+            <>{t('subBid.subTotal', { total: formatUSD(classification.totalSubCents) })}</>
           )}
         </div>
-        {saving && <span className="text-gray-400">saving…</span>}
+        {saving && <span className="text-gray-400">{t('subBid.saving')}</span>}
       </footer>
     </section>
   );
@@ -232,33 +232,31 @@ function bucketFor(
 
 function ThresholdBanner({
   classification,
+  t,
 }: {
   classification: SubBidClassification;
+  t: Translator;
 }) {
   const { thresholdCents, highwayFloor, mustList } = classification;
   return (
     <div className="rounded border border-yge-blue-200 bg-yge-blue-50 p-2 text-xs text-gray-800">
       <div>
-        <strong>§4104 threshold:</strong>{' '}
+        <strong>{t('subBid.thHeader')}</strong>{' '}
         <span className="font-mono">{formatUSD(thresholdCents)}</span>{' '}
         {highwayFloor ? (
-          <span className="text-gray-600">
-            (highway/streets/bridges $10,000 floor applies — 0.5% of bid would be
-            lower)
-          </span>
+          <span className="text-gray-600">{t('subBid.thHighway')}</span>
         ) : (
-          <span className="text-gray-600">(0.5% of current bid total)</span>
+          <span className="text-gray-600">{t('subBid.thStandard')}</span>
         )}
       </div>
       <div className="mt-1">
         {mustList.length === 0 ? (
-          <span className="text-gray-700">
-            No subs currently above the threshold.
-          </span>
+          <span className="text-gray-700">{t('subBid.noneAbove')}</span>
         ) : (
           <span className="font-semibold text-red-700">
-            {mustList.length} sub{mustList.length === 1 ? '' : 's'} MUST be
-            listed on the bid form.
+            {mustList.length === 1
+              ? t('subBid.mustListOne')
+              : t('subBid.mustListMany', { count: mustList.length })}
           </span>
         )}
       </div>
@@ -273,11 +271,11 @@ function bucketChipClasses(b: Bucket): string {
   return 'bg-gray-50 text-gray-400';
 }
 
-function bucketLabel(b: Bucket): string {
-  if (b === 'mustList') return 'Must list';
-  if (b === 'borderline') return 'Borderline';
-  if (b === 'optional') return 'Optional';
-  return 'Incomplete';
+function bucketLabel(b: Bucket, t: Translator): string {
+  if (b === 'mustList') return t('subBid.bucketMustList');
+  if (b === 'borderline') return t('subBid.bucketBorderline');
+  if (b === 'optional') return t('subBid.bucketOptional');
+  return t('subBid.bucketIncomplete');
 }
 
 function SubBidRow({
@@ -286,12 +284,14 @@ function SubBidRow({
   onChange,
   onCommit,
   onRemove,
+  t,
 }: {
   row: DraftRow;
   bucket: Bucket;
   onChange: (patch: Partial<SubBid>) => void;
   onCommit: () => void;
   onRemove: () => void;
+  t: Translator;
 }) {
   const [amountText, setAmountText] = useState<string>(
     row.bidAmountCents > 0 ? (row.bidAmountCents / 100).toFixed(2) : '',
@@ -325,7 +325,7 @@ function SubBidRow({
         <span
           className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${bucketChipClasses(bucket)}`}
         >
-          {bucketLabel(bucket)}
+          {bucketLabel(bucket, t)}
         </span>
       </td>
       <td className="px-2 py-2 align-top">
@@ -334,7 +334,7 @@ function SubBidRow({
           value={row.contractorName}
           onChange={(e) => onChange({ contractorName: e.target.value })}
           onBlur={onCommit}
-          placeholder="Acme Trucking, Inc."
+          placeholder={t('subBid.phContractor')}
           className="w-44 rounded border border-gray-300 px-2 py-1 text-sm focus:border-yge-blue-500 focus:outline-none focus:ring-1 focus:ring-yge-blue-500"
         />
         <input
@@ -342,7 +342,7 @@ function SubBidRow({
           value={row.address ?? ''}
           onChange={(e) => onChange({ address: e.target.value || undefined })}
           onBlur={onCommit}
-          placeholder="Address (optional)"
+          placeholder={t('subBid.phAddress')}
           className="mt-1 w-44 rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 focus:border-yge-blue-500 focus:outline-none focus:ring-1 focus:ring-yge-blue-500"
         />
       </td>
@@ -354,7 +354,7 @@ function SubBidRow({
             onChange({ cslbLicense: e.target.value || undefined })
           }
           onBlur={onCommit}
-          placeholder="License #"
+          placeholder={t('subBid.phLicense')}
           className="w-24 rounded border border-gray-300 px-2 py-1 font-mono text-xs focus:border-yge-blue-500 focus:outline-none focus:ring-1 focus:ring-yge-blue-500"
         />
       </td>
@@ -366,7 +366,7 @@ function SubBidRow({
             onChange({ dirRegistration: e.target.value || undefined })
           }
           onBlur={onCommit}
-          placeholder="DIR #"
+          placeholder={t('subBid.phDir')}
           className="w-28 rounded border border-gray-300 px-2 py-1 font-mono text-xs focus:border-yge-blue-500 focus:outline-none focus:ring-1 focus:ring-yge-blue-500"
         />
       </td>
@@ -376,7 +376,7 @@ function SubBidRow({
           value={row.portionOfWork}
           onChange={(e) => onChange({ portionOfWork: e.target.value })}
           onBlur={onCommit}
-          placeholder="Hauling, paving, striping…"
+          placeholder={t('subBid.phPortion')}
           className="w-56 rounded border border-gray-300 px-2 py-1 text-sm focus:border-yge-blue-500 focus:outline-none focus:ring-1 focus:ring-yge-blue-500"
         />
       </td>
@@ -404,9 +404,9 @@ function SubBidRow({
         <button
           onClick={onRemove}
           className="text-xs text-gray-500 hover:text-red-700"
-          title="Remove this sub"
+          title={t('subBid.removeTitle')}
         >
-          Remove
+          {t('subBid.remove')}
         </button>
       </td>
     </tr>
