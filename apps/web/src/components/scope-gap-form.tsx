@@ -3,6 +3,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslator, type Translator } from '../lib/use-translator';
 import {
   computeScopeGapRollup,
   sortGaps,
@@ -37,6 +38,7 @@ const SEVERITY_BADGE: Record<ScopeGapSeverity, string> = {
 };
 
 export function ScopeGapForm({ apiBaseUrl, draftJson, itemCount }: Props) {
+  const t = useTranslator();
   const [specText, setSpecText] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,7 +59,7 @@ export function ScopeGapForm({ apiBaseUrl, draftJson, itemCount }: Props) {
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? `Scope-gap check failed (${res.status})`);
+        setError(body.error ?? t('scopeGap.errFail', { status: res.status }));
         return;
       }
       const json = (await res.json()) as RunResponse;
@@ -73,18 +75,17 @@ export function ScopeGapForm({ apiBaseUrl, draftJson, itemCount }: Props) {
     <section className="mt-6">
       <label className="block text-sm">
         <span className="mb-1 block font-medium text-gray-700">
-          Paste the technical specification text
+          {t('scopeGap.lblPasteSpec')}
         </span>
         <textarea
           value={specText}
           onChange={(e) => setSpecText(e.target.value)}
           rows={14}
-          placeholder="Paste the spec section here — Caltrans Std Specs, county ATC packet, project-specific specs, etc."
+          placeholder={t('scopeGap.phPasteSpec')}
           className="w-full rounded border border-gray-300 px-3 py-2 text-sm font-mono"
         />
         <span className="mt-1 block text-xs text-gray-500">
-          {specText.length.toLocaleString()} chars · AI runs against this draft of{' '}
-          {itemCount} items.
+          {t('scopeGap.charsHint', { chars: specText.length.toLocaleString(), items: itemCount })}
         </span>
       </label>
 
@@ -95,11 +96,11 @@ export function ScopeGapForm({ apiBaseUrl, draftJson, itemCount }: Props) {
           disabled={!ready || busy}
           className="rounded bg-yge-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-yge-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {busy ? 'Running scope-gap check…' : 'Run scope-gap check'}
+          {busy ? t('scopeGap.busy') : t('scopeGap.action')}
         </button>
         {!ready && specText.length > 0 && (
           <span className="text-xs text-amber-700">
-            Paste at least 100 characters before running.
+            {t('scopeGap.minLengthHint')}
           </span>
         )}
       </div>
@@ -110,12 +111,12 @@ export function ScopeGapForm({ apiBaseUrl, draftJson, itemCount }: Props) {
         </div>
       )}
 
-      {response && <ReportView response={response} />}
+      {response && <ReportView response={response} t={t} />}
     </section>
   );
 }
 
-function ReportView({ response }: { response: RunResponse }) {
+function ReportView({ response, t }: { response: RunResponse; t: Translator }) {
   const sorted = sortGaps(response.report.gaps);
   const rollup = computeScopeGapRollup(response.report);
 
@@ -123,7 +124,7 @@ function ReportView({ response }: { response: RunResponse }) {
     <section className="mt-6">
       <header className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-700">
-          Scope-gap report
+          {t('scopeGap.reportTitle')}
         </h2>
         <span className="text-xs font-mono text-gray-500">
           {response.modelUsed} · {response.promptVersion} · {(response.durationMs / 1000).toFixed(1)}s
@@ -141,8 +142,14 @@ function ReportView({ response }: { response: RunResponse }) {
       >
         <strong>{response.report.overallStatus.replace('_', ' ')}</strong>
         {' — '}
-        {rollup.total} gap{rollup.total === 1 ? '' : 's'}{' '}
-        ({rollup.bySeverity.HIGH} HIGH · {rollup.bySeverity.MEDIUM} MEDIUM · {rollup.bySeverity.LOW} LOW)
+        {rollup.total === 1
+          ? t('scopeGap.gapOne')
+          : t('scopeGap.gapMany', { count: rollup.total })}{' '}
+        {t('scopeGap.severityBreakdown', {
+          high: rollup.bySeverity.HIGH,
+          medium: rollup.bySeverity.MEDIUM,
+          low: rollup.bySeverity.LOW,
+        })}
         {response.report.summary && (
           <p className="mt-1 text-sm">{response.report.summary}</p>
         )}
@@ -152,7 +159,7 @@ function ReportView({ response }: { response: RunResponse }) {
         <ul className="mt-3 space-y-3">
           {sorted.map((g, i) => (
             <li key={i} className={`rounded-md border p-3 ${SEVERITY_TONE[g.severity]}`}>
-              <GapRow gap={g} />
+              <GapRow gap={g} t={t} />
             </li>
           ))}
         </ul>
@@ -161,7 +168,7 @@ function ReportView({ response }: { response: RunResponse }) {
   );
 }
 
-function GapRow({ gap }: { gap: ScopeGap }) {
+function GapRow({ gap, t }: { gap: ScopeGap; t: Translator }) {
   return (
     <div>
       <div className="mb-1 flex flex-wrap items-center gap-2">
@@ -174,22 +181,22 @@ function GapRow({ gap }: { gap: ScopeGap }) {
       </div>
       <p className="text-sm text-gray-900">{gap.message}</p>
       {gap.specReference && (
-        <p className="mt-1 text-xs italic text-gray-700">Spec: {gap.specReference}</p>
+        <p className="mt-1 text-xs italic text-gray-700">{t('scopeGap.specRef', { ref: gap.specReference })}</p>
       )}
       {(gap.suggestedItemNumber || gap.suggestedDescription || gap.existingItemNumber) && (
         <div className="mt-2 rounded border border-white bg-white/60 p-2 text-xs text-gray-700">
           {gap.existingItemNumber ? (
             <span>
-              Adjust item <strong>{gap.existingItemNumber}</strong>:
-              {gap.suggestedQuantity != null && ` qty -> ${gap.suggestedQuantity}`}
+              {t('scopeGap.adjustItem')} <strong>{gap.existingItemNumber}</strong>:
+              {gap.suggestedQuantity != null && t('scopeGap.qtyArrow', { qty: gap.suggestedQuantity })}
               {gap.suggestedUnit && ` (${gap.suggestedUnit})`}
             </span>
           ) : (
             <span>
-              Add{' '}
-              <strong>{gap.suggestedItemNumber ?? '(new line)'}</strong>:{' '}
+              {t('scopeGap.add')}{' '}
+              <strong>{gap.suggestedItemNumber ?? t('scopeGap.newLine')}</strong>:{' '}
               {gap.suggestedDescription ?? ''}
-              {gap.suggestedQuantity != null && ` — qty ${gap.suggestedQuantity}`}
+              {gap.suggestedQuantity != null && t('scopeGap.qtyDash', { qty: gap.suggestedQuantity })}
               {gap.suggestedUnit && ` ${gap.suggestedUnit}`}
             </span>
           )}
