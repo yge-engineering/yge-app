@@ -10,6 +10,7 @@ import { notFound } from 'next/navigation';
 import type { PricedEstimate, PricedEstimateTotals } from '@yge/shared';
 import { EstimateEditor } from '@/components/estimate-editor';
 import { BidDueBanner } from '@/components/bid-due-banner';
+import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
   return (
@@ -40,6 +41,7 @@ export default async function EstimateDetailPage({
 }: {
   params: { id: string };
 }) {
+  const t = getTranslator();
   const data = await fetchEstimate(params.id);
   if (!data) notFound();
 
@@ -48,13 +50,13 @@ export default async function EstimateDetailPage({
     <main className="mx-auto max-w-6xl p-8">
       <div className="mb-6 flex items-center justify-between">
         <Link href="/estimates" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; All estimates
+          {t('estPg.back')}
         </Link>
         <Link
           href={`/drafts/${data.estimate.fromDraftId}`}
           className="text-sm text-yge-blue-500 hover:underline"
         >
-          View source draft &rarr;
+          {t('estPg.viewDraft')}
         </Link>
       </div>
 
@@ -63,43 +65,43 @@ export default async function EstimateDetailPage({
           href={`/estimates/${data.estimate.id}/coach`}
           className="rounded border border-amber-500 bg-amber-50 px-3 py-1 font-medium text-amber-800 hover:bg-amber-100"
         >
-          Pre-submit check
+          {t('estPg.preSubmit')}
         </Link>
         <Link
           href={`/estimates/${data.estimate.id}/scope-gap`}
           className="rounded border border-blue-500 bg-blue-50 px-3 py-1 font-medium text-blue-800 hover:bg-blue-100"
         >
-          Scope-gap check
+          {t('estPg.scopeGap')}
         </Link>
         <Link
           href={`/estimates/${data.estimate.id}/print`}
           className="rounded border border-yge-blue-500 px-3 py-1 font-medium text-yge-blue-500 hover:bg-yge-blue-50"
         >
-          Print
+          {t('estPg.print')}
         </Link>
         <Link
           href={`/estimates/${data.estimate.id}/transmittal`}
           className="rounded border border-yge-blue-500 px-3 py-1 font-medium text-yge-blue-500 hover:bg-yge-blue-50"
         >
-          Cover letter
+          {t('estPg.coverLetter')}
         </Link>
         <Link
           href={`/estimates/${data.estimate.id}/envelope`}
           className="rounded border border-yge-blue-500 px-3 py-1 font-medium text-yge-blue-500 hover:bg-yge-blue-50"
         >
-          Envelope checklist
+          {t('estPg.envelope')}
         </Link>
         <Link
           href={`/estimates/${data.estimate.id}/sub-list`}
           className="rounded border border-yge-blue-500 px-3 py-1 font-medium text-yge-blue-500 hover:bg-yge-blue-50"
         >
-          §4104 Sub list
+          {t('estPg.subList')}
         </Link>
         <Link
           href={`/estimates/${data.estimate.id}/addenda`}
           className="rounded border border-yge-blue-500 px-3 py-1 font-medium text-yge-blue-500 hover:bg-yge-blue-50"
         >
-          Addendum ack
+          {t('estPg.addenda')}
         </Link>
       </div>
 
