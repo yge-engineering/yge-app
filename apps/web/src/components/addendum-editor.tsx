@@ -16,6 +16,7 @@
 // than per-row endpoints.
 
 import { useEffect, useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 import {
   sortedAddenda,
   unacknowledgedAddenda,
@@ -44,6 +45,7 @@ function freshRow(): DraftRow {
 }
 
 export function AddendumEditor({ estimate, apiBaseUrl, onUpdated }: Props) {
+  const t = useTranslator();
   const [rows, setRows] = useState<DraftRow[]>(estimate.addenda ?? []);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,14 +75,14 @@ export function AddendumEditor({ estimate, apiBaseUrl, onUpdated }: Props) {
           body: JSON.stringify({ addenda: cleaned }),
         },
       );
-      if (!res.ok) throw new Error(`API ${res.status}`);
+      if (!res.ok) throw new Error(t('addendumEditor.errSaveStatus', { status: res.status }));
       const json = (await res.json()) as {
         estimate: PricedEstimate;
         totals: PricedEstimateTotals;
       };
       onUpdated(json.estimate, json.totals);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Save failed');
+      setError(err instanceof Error ? err.message : t('addendumEditor.errFallback'));
     } finally {
       setSaving(false);
     }
@@ -125,43 +127,40 @@ export function AddendumEditor({ estimate, apiBaseUrl, onUpdated }: Props) {
       <header className="mb-3 flex items-baseline justify-between gap-4">
         <div>
           <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
-            Addenda acknowledged
+            {t('addendumEditor.title')}
           </h2>
           <p className="mt-1 text-xs text-gray-600">
-            Every addendum issued before bid open must be acknowledged on the
-            bid form &mdash; missing one makes the bid non-responsive.
+            {t('addendumEditor.intro')}
           </p>
         </div>
         <button
           onClick={addRow}
           className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-700 hover:bg-yge-blue-100"
         >
-          + Add addendum
+          {t('addendumEditor.add')}
         </button>
       </header>
 
       {unacked.length > 0 && (
         <div className="mb-3 rounded border border-red-300 bg-red-50 p-3 text-xs text-red-800">
           <strong className="font-semibold">
-            {unacked.length} addend{unacked.length === 1 ? 'um' : 'a'} still
-            un-acknowledged.
+            {unacked.length === 1
+              ? t('addendumEditor.unackedOne')
+              : t('addendumEditor.unackedMany', { count: unacked.length })}
           </strong>{' '}
-          Tick each row before submitting the bid &mdash; the bid form has a
-          dedicated acknowledgment block and a missing one is grounds for
-          rejection at bid open.
+          {t('addendumEditor.unackedHint')}
         </div>
       )}
 
       {error && (
         <div className="mb-2 rounded border border-red-300 bg-red-50 p-2 text-xs text-red-700">
-          Couldn&rsquo;t save addenda: {error}
+          {t('addendumEditor.errSave', { error })}
         </div>
       )}
 
       {rows.length === 0 ? (
         <p className="text-xs italic text-gray-500">
-          No addenda logged yet. Click &ldquo;Add addendum&rdquo; above for each
-          one the agency issued; if the agency issued zero, leave this empty.
+          {t('addendumEditor.empty')}
         </p>
       ) : (
         <div className="space-y-2">
@@ -182,7 +181,7 @@ export function AddendumEditor({ estimate, apiBaseUrl, onUpdated }: Props) {
                 }`}
               >
                 <label className="text-xs text-gray-700">
-                  <span className="mb-0.5 block font-medium">Number</span>
+                  <span className="mb-0.5 block font-medium">{t('addendumEditor.lblNumber')}</span>
                   <input
                     type="text"
                     value={r.number}
@@ -190,13 +189,13 @@ export function AddendumEditor({ estimate, apiBaseUrl, onUpdated }: Props) {
                       patchRow(r.id, { number: e.target.value })
                     }
                     onBlur={() => commitRow(r.id)}
-                    placeholder="e.g. 1 or Addendum No. 1"
+                    placeholder={t('addendumEditor.phNumber')}
                     className="w-full rounded border border-gray-300 px-2 py-1 text-sm focus:border-yge-blue-500 focus:outline-none focus:ring-1 focus:ring-yge-blue-500"
                   />
                 </label>
 
                 <label className="text-xs text-gray-700">
-                  <span className="mb-0.5 block font-medium">Date issued</span>
+                  <span className="mb-0.5 block font-medium">{t('addendumEditor.lblDate')}</span>
                   <input
                     type="date"
                     value={r.dateIssued ?? ''}
@@ -212,8 +211,8 @@ export function AddendumEditor({ estimate, apiBaseUrl, onUpdated }: Props) {
 
                 <label className="text-xs text-gray-700">
                   <span className="mb-0.5 block font-medium">
-                    Subject{' '}
-                    <span className="text-gray-400">(what changed)</span>
+                    {t('addendumEditor.lblSubject')}{' '}
+                    <span className="text-gray-400">{t('addendumEditor.subjectHint')}</span>
                   </span>
                   <input
                     type="text"
@@ -222,7 +221,7 @@ export function AddendumEditor({ estimate, apiBaseUrl, onUpdated }: Props) {
                       patchRow(r.id, { subject: e.target.value || undefined })
                     }
                     onBlur={() => commitRow(r.id)}
-                    placeholder='e.g. "Drawing C-3 revision" or "Schedule extension to 4/30"'
+                    placeholder={t('addendumEditor.phSubject')}
                     className="w-full rounded border border-gray-300 px-2 py-1 text-sm focus:border-yge-blue-500 focus:outline-none focus:ring-1 focus:ring-yge-blue-500"
                   />
                 </label>
@@ -237,15 +236,15 @@ export function AddendumEditor({ estimate, apiBaseUrl, onUpdated }: Props) {
                     }
                     className="h-4 w-4 rounded border-gray-300 text-yge-blue-600 focus:ring-yge-blue-500"
                   />
-                  <span className="font-medium">Acknowledged</span>
+                  <span className="font-medium">{t('addendumEditor.acked')}</span>
                 </label>
 
                 <button
                   onClick={() => removeRow(r.id)}
                   className="text-xs text-gray-400 hover:text-red-700 md:self-end md:pb-1"
-                  aria-label="Remove addendum"
+                  aria-label={t('addendumEditor.removeAria')}
                 >
-                  Remove
+                  {t('addendumEditor.remove')}
                 </button>
               </div>
             );
@@ -254,7 +253,7 @@ export function AddendumEditor({ estimate, apiBaseUrl, onUpdated }: Props) {
       )}
 
       {saving && (
-        <div className="mt-2 text-right text-xs text-gray-400">saving…</div>
+        <div className="mt-2 text-right text-xs text-gray-400">{t('addendumEditor.saving')}</div>
       )}
     </section>
   );
