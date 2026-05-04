@@ -6,6 +6,7 @@
 // quantity-on-hand updates atomically with the ledger append.
 
 import { useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 import {
   formatUSD,
   isBelowReorder,
@@ -53,6 +54,7 @@ interface Props {
 }
 
 export function MaterialEditor({ initial, jobs, apiBaseUrl }: Props) {
+  const t = useTranslator();
   const [m, setM] = useState<Material>(initial);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -83,11 +85,11 @@ export function MaterialEditor({ initial, jobs, apiBaseUrl }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-      if (!res.ok) throw new Error(`Save failed: ${res.status}`);
+      if (!res.ok) throw new Error(t('materialEditor.errSaveStatus', { status: res.status }));
       const json = (await res.json()) as { material: Material };
       setM(json.material);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Save failed');
+      setError(err instanceof Error ? err.message : t('materialEditor.errFallback'));
     } finally {
       setSaving(false);
     }
@@ -111,7 +113,7 @@ export function MaterialEditor({ initial, jobs, apiBaseUrl }: Props) {
   async function recordMovement() {
     const qty = Number(movQty);
     if (!Number.isFinite(qty) || qty < 0) {
-      setError('Movement quantity must be a non-negative number.');
+      setError(t('materialEditor.errQty'));
       return;
     }
     setSaving(true);
@@ -127,13 +129,13 @@ export function MaterialEditor({ initial, jobs, apiBaseUrl }: Props) {
           ...(movNote.trim() ? { note: movNote.trim() } : {}),
         }),
       });
-      if (!res.ok) throw new Error(`Movement failed: ${res.status}`);
+      if (!res.ok) throw new Error(t('materialEditor.errMovementStatus', { status: res.status }));
       const json = (await res.json()) as { material: Material };
       setM(json.material);
       setMovQty('');
       setMovNote('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Movement failed');
+      setError(err instanceof Error ? err.message : t('materialEditor.errMovementFallback'));
     } finally {
       setSaving(false);
     }
@@ -151,13 +153,8 @@ export function MaterialEditor({ initial, jobs, apiBaseUrl }: Props) {
           </p>
           <h1 className="mt-1 text-2xl font-bold text-yge-blue-500">{m.name}</h1>
           <p className="mt-1 text-sm text-gray-600">
-            {m.quantityOnHand} {m.unit} on hand
-            {m.unitCostCents !== undefined && (
-              <>
-                {' '}\u00b7 {formatUSD(m.unitCostCents)} each \u00b7{' '}
-                {formatUSD(Math.round(m.quantityOnHand * m.unitCostCents))} total
-              </>
-            )}
+            {t('materialEditor.subtitle', { qty: m.quantityOnHand, unit: m.unit })}
+            {m.unitCostCents !== undefined && t('materialEditor.subtitleWithCost', { cost: formatUSD(m.unitCostCents), total: formatUSD(Math.round(m.quantityOnHand * m.unitCostCents)) })}
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs">
@@ -172,7 +169,7 @@ export function MaterialEditor({ initial, jobs, apiBaseUrl }: Props) {
               </option>
             ))}
           </select>
-          {saving && <span className="text-gray-500">Saving&hellip;</span>}
+          {saving && <span className="text-gray-500">{t('materialEditor.saving')}</span>}
         </div>
       </header>
 
@@ -180,9 +177,9 @@ export function MaterialEditor({ initial, jobs, apiBaseUrl }: Props) {
         <div
           className={`rounded border p-3 text-sm ${out ? 'border-red-300 bg-red-50 text-red-800' : 'border-yellow-300 bg-yellow-50 text-yellow-800'}`}
         >
-          <strong>{out ? 'Out of stock.' : 'Below reorder point.'}</strong>
-          {' '}Time to order more from{' '}
-          {m.preferredVendor ? <em>{m.preferredVendor}</em> : 'your preferred vendor'}.
+          <strong>{out ? t('materialEditor.outOfStock') : t('materialEditor.belowReorder')}</strong>
+          {t('materialEditor.timeToOrder')}
+          {m.preferredVendor ? <em>{m.preferredVendor}</em> : t('materialEditor.preferredVendorFallback')}.
         </div>
       )}
 
@@ -194,10 +191,10 @@ export function MaterialEditor({ initial, jobs, apiBaseUrl }: Props) {
 
       {/* Movement entry */}
       <section>
-        <h2 className="mb-2 text-lg font-semibold text-gray-900">Record movement</h2>
+        <h2 className="mb-2 text-lg font-semibold text-gray-900">{t('materialEditor.recordHeader')}</h2>
         <div className="rounded border border-gray-200 bg-gray-50 p-3">
           <div className="grid gap-2 sm:grid-cols-5">
-            <Field label="Kind">
+            <Field label={t('materialEditor.lblKind')}>
               <select
                 value={movKind}
                 onChange={(e) => setMovKind(e.target.value as StockMovementKind)}
@@ -210,7 +207,7 @@ export function MaterialEditor({ initial, jobs, apiBaseUrl }: Props) {
                 ))}
               </select>
             </Field>
-            <Field label={`Quantity (${m.unit})`}>
+            <Field label={t('materialEditor.lblQty', { unit: m.unit })}>
               <input
                 type="number"
                 min="0"
@@ -220,13 +217,13 @@ export function MaterialEditor({ initial, jobs, apiBaseUrl }: Props) {
                 className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
               />
             </Field>
-            <Field label="Job">
+            <Field label={t('materialEditor.lblJob')}>
               <select
                 value={movJobId}
                 onChange={(e) => setMovJobId(e.target.value)}
                 className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
               >
-                <option value="">— None —</option>
+                <option value="">{t('materialEditor.noJob')}</option>
                 {jobs.map((j) => (
                   <option key={j.id} value={j.id}>
                     {j.projectName}
@@ -234,7 +231,7 @@ export function MaterialEditor({ initial, jobs, apiBaseUrl }: Props) {
                 ))}
               </select>
             </Field>
-            <Field label="Note">
+            <Field label={t('materialEditor.lblNote')}>
               <input
                 value={movNote}
                 onChange={(e) => setMovNote(e.target.value)}
@@ -247,7 +244,7 @@ export function MaterialEditor({ initial, jobs, apiBaseUrl }: Props) {
                 onClick={recordMovement}
                 className="rounded bg-yge-blue-500 px-3 py-1 text-sm font-medium text-white hover:bg-yge-blue-700"
               >
-                Record
+                {t('materialEditor.record')}
               </button>
             </div>
           </div>
@@ -256,9 +253,9 @@ export function MaterialEditor({ initial, jobs, apiBaseUrl }: Props) {
 
       {/* Movement ledger */}
       <section>
-        <h2 className="mb-2 text-lg font-semibold text-gray-900">Movement ledger</h2>
+        <h2 className="mb-2 text-lg font-semibold text-gray-900">{t('materialEditor.ledgerHeader')}</h2>
         {m.movements.length === 0 ? (
-          <p className="text-sm text-gray-500">No movements recorded yet.</p>
+          <p className="text-sm text-gray-500">{t('materialEditor.ledgerEmpty')}</p>
         ) : (
           <ul className="divide-y divide-gray-100 rounded border border-gray-200 bg-white text-sm">
             {[...m.movements]
@@ -294,7 +291,7 @@ export function MaterialEditor({ initial, jobs, apiBaseUrl }: Props) {
 
       {/* Header fields */}
       <section className="grid gap-4 sm:grid-cols-3">
-        <Field label="Name">
+        <Field label={t('materialEditor.lblName')}>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -302,7 +299,7 @@ export function MaterialEditor({ initial, jobs, apiBaseUrl }: Props) {
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="SKU">
+        <Field label={t('materialEditor.lblSku')}>
           <input
             value={sku}
             onChange={(e) => setSku(e.target.value)}
@@ -310,7 +307,7 @@ export function MaterialEditor({ initial, jobs, apiBaseUrl }: Props) {
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm font-mono"
           />
         </Field>
-        <Field label="Unit">
+        <Field label={t('materialEditor.lblUnit')}>
           <input
             value={unit}
             onChange={(e) => setUnit(e.target.value)}
@@ -318,7 +315,7 @@ export function MaterialEditor({ initial, jobs, apiBaseUrl }: Props) {
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Reorder point">
+        <Field label={t('materialEditor.lblReorder')}>
           <input
             type="number"
             min="0"
@@ -329,7 +326,7 @@ export function MaterialEditor({ initial, jobs, apiBaseUrl }: Props) {
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Unit cost ($)">
+        <Field label={t('materialEditor.lblUnitCost')}>
           <input
             type="number"
             min="0"
@@ -340,7 +337,7 @@ export function MaterialEditor({ initial, jobs, apiBaseUrl }: Props) {
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Location">
+        <Field label={t('materialEditor.lblLocation')}>
           <input
             value={location}
             onChange={(e) => setLocation(e.target.value)}
@@ -348,7 +345,7 @@ export function MaterialEditor({ initial, jobs, apiBaseUrl }: Props) {
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Preferred vendor">
+        <Field label={t('materialEditor.lblPreferredVendor')}>
           <input
             value={preferredVendor}
             onChange={(e) => setPreferredVendor(e.target.value)}
@@ -358,7 +355,7 @@ export function MaterialEditor({ initial, jobs, apiBaseUrl }: Props) {
         </Field>
       </section>
 
-      <Field label="Notes">
+      <Field label={t('materialEditor.lblNotes')}>
         <textarea
           rows={3}
           value={notes}
