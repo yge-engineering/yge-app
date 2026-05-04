@@ -4,6 +4,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 import {
   toolboxTalkStatusLabel,
   type ToolboxTalk,
@@ -58,6 +59,7 @@ export function ToolboxTalkEditor({
   talk?: ToolboxTalk;
 }) {
   const router = useRouter();
+  const t = useTranslator();
   const [form, setForm] = useState<FormState>(defaults(talk));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -150,8 +152,8 @@ export function ToolboxTalkEditor({
         </div>
       )}
 
-      <Section title="Meeting">
-        <Field label="Held on" required>
+      <Section title={t('tbt.secMeeting')}>
+        <Field label={t('tbt.lblHeldOn')} required>
           <input
             type="date"
             className={inputCls}
@@ -160,7 +162,7 @@ export function ToolboxTalkEditor({
             required
           />
         </Field>
-        <Field label="Status">
+        <Field label={t('tbt.lblStatus')}>
           <select
             className={inputCls}
             value={form.status}
@@ -173,35 +175,35 @@ export function ToolboxTalkEditor({
             ))}
           </select>
         </Field>
-        <Field label="Job ID (optional)">
+        <Field label={t('tbt.lblJobId')}>
           <input
             className={inputCls}
             value={form.jobId}
             onChange={(e) => setField('jobId', e.target.value)}
-            placeholder="job-YYYY-MM-DD-..."
+            placeholder={t('tbt.phJobId')}
           />
         </Field>
-        <Field label="Location">
+        <Field label={t('tbt.lblLocation')}>
           <input
             className={inputCls}
             value={form.location}
             onChange={(e) => setField('location', e.target.value)}
-            placeholder="Yard, jobsite station, etc."
+            placeholder={t('tbt.phLocation')}
           />
         </Field>
       </Section>
 
-      <Section title="Topic">
-        <Field label="Topic" required full>
+      <Section title={t('tbt.secTopic')}>
+        <Field label={t('tbt.lblTopic')} required full>
           <input
             className={inputCls}
             value={form.topic}
             onChange={(e) => setField('topic', e.target.value)}
-            placeholder="Trenching safety, heat illness, hand tools..."
+            placeholder={t('tbt.phTopic')}
             required
           />
         </Field>
-        <Field label="Talking points / agenda" full>
+        <Field label={t('tbt.lblBody')} full>
           <textarea
             className={`${inputCls} min-h-[120px]`}
             value={form.body}
@@ -210,8 +212,8 @@ export function ToolboxTalkEditor({
         </Field>
       </Section>
 
-      <Section title="Leader">
-        <Field label="Leader name" required>
+      <Section title={t('tbt.secLeader')}>
+        <Field label={t('tbt.lblLeaderName')} required>
           <input
             className={inputCls}
             value={form.leaderName}
@@ -219,7 +221,7 @@ export function ToolboxTalkEditor({
             required
           />
         </Field>
-        <Field label="Leader title">
+        <Field label={t('tbt.lblLeaderTitle')}>
           <input
             className={inputCls}
             value={form.leaderTitle}
@@ -231,28 +233,28 @@ export function ToolboxTalkEditor({
       <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
-            Attendees ({form.attendees.length})
+            {t('tbt.attendeesHeader', { count: form.attendees.length })}
           </h2>
           <button
             type="button"
             onClick={addAttendee}
             className="rounded border border-yge-blue-500 px-2 py-1 text-xs text-yge-blue-500 hover:bg-yge-blue-50"
           >
-            + Add attendee
+            {t('tbt.addAttendee')}
           </button>
         </div>
         {form.attendees.length === 0 ? (
           <p className="mt-3 text-xs text-gray-500">
-            No attendees yet. Add the crew that attended the meeting.
+            {t('tbt.attendeesEmpty')}
           </p>
         ) : (
           <table className="mt-3 w-full text-left text-sm">
             <thead className="text-xs uppercase tracking-wide text-gray-500">
               <tr>
-                <th className="py-1">Name</th>
-                <th className="py-1">Classification</th>
-                <th className="py-1">Initials</th>
-                <th className="py-1">Signed</th>
+                <th className="py-1">{t('tbt.thName')}</th>
+                <th className="py-1">{t('tbt.thClassification')}</th>
+                <th className="py-1">{t('tbt.thInitials')}</th>
+                <th className="py-1">{t('tbt.thSigned')}</th>
                 <th className="py-1"></th>
               </tr>
             </thead>
@@ -296,7 +298,7 @@ export function ToolboxTalkEditor({
                       onClick={() => removeAttendee(i)}
                       className="text-xs text-red-600 hover:underline"
                     >
-                      Remove
+                      {t('tbt.removeAttendee')}
                     </button>
                   </td>
                 </tr>
@@ -306,8 +308,8 @@ export function ToolboxTalkEditor({
         )}
       </div>
 
-      <Section title="Submission">
-        <Field label="Submitted on">
+      <Section title={t('tbt.secSubmission')}>
+        <Field label={t('tbt.lblSubmittedOn')}>
           <input
             type="date"
             className={inputCls}
@@ -317,8 +319,8 @@ export function ToolboxTalkEditor({
         </Field>
       </Section>
 
-      <Section title="Notes">
-        <Field label="Notes (incidents, follow-ups, near-misses)" full>
+      <Section title={t('tbt.secNotes')}>
+        <Field label={t('tbt.lblNotes')} full>
           <textarea
             className={`${inputCls} min-h-[100px]`}
             value={form.notes}
@@ -333,7 +335,7 @@ export function ToolboxTalkEditor({
           disabled={saving}
           className="rounded bg-yge-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-yge-blue-700 disabled:opacity-50"
         >
-          {saving ? 'Saving…' : mode === 'create' ? 'Create talk' : 'Save changes'}
+          {saving ? t('tbt.busy') : mode === 'create' ? t('tbt.create') : t('tbt.save')}
         </button>
       </div>
     </form>
