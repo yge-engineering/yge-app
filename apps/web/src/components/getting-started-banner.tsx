@@ -1,11 +1,16 @@
+'use client';
+
 // Getting-started banner — shown on the dashboard when the company has
 // no data yet (zero customers, zero jobs, zero employees).
 //
 // Plain English: "you just signed in, here's what to do first" — keeps
 // new users from staring at a wall of zeros and feeling lost.
+//
+// Client component so it can be re-exported through the components
+// barrel without dragging `next/headers` into client bundles.
 
 import Link from 'next/link';
-import { getTranslator } from '../lib/locale';
+import { useTranslator } from '../lib/use-translator';
 
 interface Props {
   customers: number;
@@ -14,9 +19,9 @@ interface Props {
 }
 
 export function GettingStartedBanner({ customers, jobs, employees }: Props) {
+  const t = useTranslator();
   // Only show if everything is empty.
   if (customers > 0 || jobs > 0 || employees > 0) return null;
-  const t = getTranslator();
 
   return (
     <div className="mb-6 rounded-md border border-blue-300 bg-blue-50 p-5">

@@ -1,3 +1,5 @@
+'use client';
+
 // Long-text renderer — for RFI questions/answers, daily-report scope,
 // AP invoice notes, etc.
 //
@@ -6,8 +8,11 @@
 // dependency — just whitespace-aware HTML escaping with a couple of
 // regex passes. Trade-off: simpler, no external lib, but no headings/
 // bullets/etc. For most user-typed prose, that's fine.
+//
+// Client component so it can be re-exported through the components
+// barrel without dragging `next/headers` into client bundles.
 
-import { getTranslator } from '../lib/locale';
+import { useTranslator } from '../lib/use-translator';
 
 interface Props {
   text: string;
@@ -33,8 +38,8 @@ function linkify(escaped: string): string {
 }
 
 export function LongText({ text, truncate = 0 }: Props) {
+  const t = useTranslator();
   if (!text || text.trim().length === 0) {
-    const t = getTranslator();
     return <span className="text-xs italic text-gray-400">{t('longText.blank')}</span>;
   }
 

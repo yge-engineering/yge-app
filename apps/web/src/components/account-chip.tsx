@@ -1,19 +1,48 @@
+'use client';
+
 // Top-right account pill — shows the signed-in user + sign-out.
 //
 // Plain English: the little button in the corner of every page that
 // says who's logged in and gives them a way out.
+//
+// Implementation note: this is a client component so AppShell can be
+// rendered from `'use client'` form pages without pulling
+// `next/headers` into the client bundle. The user data is fetched from
+// `/api/me` (a Next.js route handler that reads the httpOnly session
+// cookie on the server). On first render `user` is null and the chip
+// is hidden; once the fetch resolves, it appears.
 
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 
 import { Avatar } from './avatar';
 import { signOut } from '../app/login/actions';
-import { getCurrentUser } from '../lib/auth';
-import { getTranslator } from '../lib/locale';
+import { useTranslator } from '../lib/use-translator';
+import type { YgeUser } from '../lib/auth';
 
 export function AccountChip() {
-  const user = getCurrentUser();
+  const t = useTranslator();
+  const [user, setUser] = useState<YgeUser | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const res = await fetch('/api/me', { cache: 'no-store' });
+        if (!res.ok) return;
+        const json = (await res.json()) as { user: YgeUser | null };
+        if (!cancelled) setUser(json.user);
+      } catch {
+        // network blip — chip stays hidden, no UI breakage
+      }
+    }
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   if (!user) return null;
-  const t = getTranslator();
   return (
     <div className="flex items-center gap-3">
       <Link href="/profile" className="flex items-center gap-2 hover:opacity-75">

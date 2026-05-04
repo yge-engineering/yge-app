@@ -1,14 +1,19 @@
+'use client';
+
 // Recent activity feed — what's been touched lately across the app.
 //
 // Plain English: a "what changed today" sidebar card. Shows the most
 // recently created or updated jobs, AR invoices, AP invoices, daily
 // reports, RFIs, and dispatches. One glance to see if anyone on the
 // team has been moving paper.
+//
+// Client component so it can be re-exported through the components
+// barrel without dragging `next/headers` into client bundles.
 
 import Link from 'next/link';
 
 import type { ApInvoice, ArInvoice, DailyReport, Dispatch, Job, Rfi } from '@yge/shared';
-import { getTranslator, type Translator } from '../lib/locale';
+import { useTranslator, type Translator } from '../lib/use-translator';
 
 interface ActivityItem {
   href: string;
@@ -50,7 +55,7 @@ function formatRelative(iso: string, t: Translator): string {
 }
 
 export function RecentActivity({ jobs, arInvoices, apInvoices, rfis, dailyReports, dispatches }: Props) {
-  const t = getTranslator();
+  const t = useTranslator();
   const items: ActivityItem[] = [];
   for (const j of jobs) {
     items.push({

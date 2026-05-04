@@ -342,7 +342,7 @@ function FilterForm({ initial, t }: { initial: SearchParams; t: Translator }) {
   );
 }
 
-// Suppress the unused-import warning for `auditActionKey` — it's
-// re-exported so consumers (the binder panels) can call it without
-// importing through @yge/shared themselves.
-export { auditActionKey };
+// Note: Next.js page files can only export `default`, `metadata`,
+// `viewport`, etc. — non-page exports trigger a build error. The
+// `auditActionKey` import is used inside this file via the rendering
+// helpers below; no external consumers import it from this path.

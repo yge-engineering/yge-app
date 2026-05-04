@@ -1,13 +1,15 @@
+'use client';
+
 // DateAgo — relative timestamp ('5 min ago', '3 days ago', '2 weeks
 // ago', then absolute date for older).
 //
 // Plain English: drop in `<DateAgo iso={someTimestamp} />` and get a
 // human-readable relative time. Handles missing / blank / malformed
-// inputs by rendering '—'. Server-rendered (no 'use client') so it
-// works in server components. The relative time will be calculated
-// from the SERVER's clock — close enough for our use case.
+// inputs by rendering '—'. Client-rendered (uses useTranslator) so
+// it can be re-exported through the components barrel without dragging
+// `next/headers` into client bundles.
 
-import { getTranslator, type Translator } from '../lib/locale';
+import { useTranslator, type Translator } from '../lib/use-translator';
 
 interface Props {
   /** ISO datetime string, or yyyy-mm-dd date string. */
@@ -22,11 +24,11 @@ const DAY = 24 * HOUR;
 const WEEK = 7 * DAY;
 
 export function DateAgo({ iso, showTooltip = true }: Props) {
+  const tr = useTranslator();
   if (!iso) return <span className="text-gray-400">—</span>;
   const t = new Date(iso).getTime();
   if (Number.isNaN(t)) return <span className="text-gray-400">{iso}</span>;
   const ms = Date.now() - t;
-  const tr = getTranslator();
   const text = formatRelative(ms, iso, tr);
   return (
     <time

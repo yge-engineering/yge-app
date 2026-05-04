@@ -1,8 +1,17 @@
+'use client';
+
 // AppShell — the chrome around every signed-in page.
 //
 // Plain English: the YGE-branded header + the sidebar nav. Wraps
 // children content. Hidden on /login since middleware redirects
 // unauthenticated users away from anything that uses this shell.
+//
+// Implementation note: AppShell is a client component so it can be
+// rendered from both server pages AND `'use client'` form pages
+// without dragging server-only `next/headers` into the client bundle.
+// Translations come from `useTranslator()` / `useLocale()` (which read
+// the locale cookie via `document.cookie`). The httpOnly session
+// cookie used by AccountChip is read server-side via `/api/me`.
 
 import Link from 'next/link';
 
@@ -11,7 +20,7 @@ import { KeyboardShortcuts } from './keyboard-shortcuts';
 import { LocaleSwitcher } from './locale-switcher';
 import { MobileNav } from './mobile-nav';
 import { Toaster } from './toast';
-import { getLocale, getTranslator } from '../lib/locale';
+import { useLocale, useTranslator } from '../lib/use-translator';
 
 interface NavLink {
   label: string;
@@ -116,7 +125,8 @@ const NAV_SPEC: NavGroupSpec[] = [
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const t = getTranslator();
+  const t = useTranslator();
+  const locale = useLocale();
   const NAV: NavGroup[] = NAV_SPEC.map((g) => ({
     label: t(g.key),
     links: g.links.map((l) => ({ label: t(l.key), href: l.href })),
@@ -150,7 +160,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </form>
         <div className="ml-auto flex items-center gap-3 sm:ml-0">
-          <LocaleSwitcher current={getLocale()} />
+          <LocaleSwitcher current={locale} />
           <AccountChip />
         </div>
       </header>

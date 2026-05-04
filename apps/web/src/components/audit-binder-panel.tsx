@@ -1,3 +1,5 @@
+'use client';
+
 // AuditBinderPanel — per-record audit history strip.
 //
 // Plain English: drop this component on any detail page (an estimate,
@@ -7,10 +9,14 @@
 // the most-recent N events with a 'view all' link to the global
 // screen pre-filtered to the same entity.
 //
-// Server component — fetches at request time, no client JS needed.
-// The events are read-only; recordAudit writes happen elsewhere.
+// Client component — fetches on mount via `/api/audit-events`. Used to
+// be a server component, but converting to client lets it be
+// re-exported through the components barrel without dragging
+// `next/headers` into client bundles. The events are read-only;
+// recordAudit writes happen elsewhere.
 
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import {
   changedFields,
   type AuditAction,
@@ -18,7 +24,7 @@ import {
   type AuditEvent,
 } from '@yge/shared';
 import { StatusPill } from './status-pill';
-import { getTranslator } from '../lib/locale';
+import { useTranslator } from '../lib/use-translator';
 
 interface Props {
   entityType: AuditEntityType;
@@ -30,27 +36,12 @@ interface Props {
 }
 
 function apiBaseUrl(): string {
-  return (
-    process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
-  );
+  return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 }
 
 interface ListResponse {
   events: AuditEvent[];
   total: number;
-}
-
-async function fetchEvents(entityType: string, entityId: string, limit: number): Promise<ListResponse> {
-  try {
-    const url =
-      `${apiBaseUrl()}/api/audit-events?` +
-      new URLSearchParams({ entityType, entityId, limit: String(limit) }).toString();
-    const res = await fetch(url, { cache: 'no-store' });
-    if (!res.ok) return { events: [], total: 0 };
-    return (await res.json()) as ListResponse;
-  } catch {
-    return { events: [], total: 0 };
-  }
 }
 
 const ACTION_TONE: Partial<Record<AuditAction, 'success' | 'warn' | 'danger' | 'info' | 'neutral' | 'muted'>> = {
@@ -72,15 +63,43 @@ function actionTone(a: AuditAction): 'success' | 'warn' | 'danger' | 'info' | 'n
   return ACTION_TONE[a] ?? 'neutral';
 }
 
-export async function AuditBinderPanel({
+export function AuditBinderPanel({
   entityType,
   entityId,
   limit = 8,
   className,
 }: Props) {
-  const data = await fetchEvents(entityType, entityId, limit);
-  const events = data.events;
-  const t = getTranslator();
+  const t = useTranslator();
+  const [events, setEvents] = useState<AuditEvent[]>([]);
+  const [total, setTotal] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const url =
+          `${apiBaseUrl()}/api/audit-events?` +
+          new URLSearchParams({
+            entityType,
+            entityId,
+            limit: String(limit),
+          }).toString();
+        const res = await fetch(url, { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = (await res.json()) as ListResponse;
+        if (!cancelled) {
+          setEvents(data.events);
+          setTotal(data.total);
+        }
+      } catch {
+        // network blip — panel just stays empty
+      }
+    }
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [entityType, entityId, limit]);
 
   return (
     <section className={`mt-6 rounded-md border border-gray-200 bg-white p-4 shadow-sm ${className ?? ''}`}>
@@ -92,8 +111,8 @@ export async function AuditBinderPanel({
           href={`/audit?entityType=${entityType}&entityId=${encodeURIComponent(entityId)}`}
           className="text-xs text-yge-blue-500 hover:underline"
         >
-          {data.total > limit
-            ? t('auditBinder.viewAll', { count: data.total })
+          {total > limit
+            ? t('auditBinder.viewAll', { count: total })
             : t('auditBinder.openInLog')}
         </Link>
       </header>

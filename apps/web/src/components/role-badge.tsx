@@ -1,10 +1,15 @@
+'use client';
+
 // RoleBadge — colored pill for an employee's role.
 //
 // Plain English: a tinted badge for roles like 'Foreman', 'Operator',
 // 'Laborer'. Uses the StatusPill primitive for consistency.
+//
+// Client component so it can be re-exported through the components
+// barrel without dragging `next/headers` into client bundles.
 
 import { StatusPill } from './status-pill';
-import { getTranslator } from '../lib/locale';
+import { useTranslator, type Translator } from '../lib/use-translator';
 
 interface Props {
   role: string;
@@ -17,9 +22,8 @@ const ROLE_KEYS = new Set([
   'CEMENT_MASON', 'OTHER',
 ]);
 
-function roleLabel(role: string): string {
+function roleLabel(role: string, t: Translator): string {
   if (!ROLE_KEYS.has(role)) return role;
-  const t = getTranslator();
   return t(`role.${role}`);
 }
 
@@ -41,5 +45,6 @@ function roleTone(role: string): 'success' | 'warn' | 'info' | 'neutral' | 'mute
 }
 
 export function RoleBadge({ role, size = 'sm' }: Props) {
-  return <StatusPill label={roleLabel(role)} tone={roleTone(role)} size={size} />;
+  const t = useTranslator();
+  return <StatusPill label={roleLabel(role, t)} tone={roleTone(role)} size={size} />;
 }
