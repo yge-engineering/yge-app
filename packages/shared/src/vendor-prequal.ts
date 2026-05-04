@@ -19,6 +19,7 @@
 // + DIR API data to verify each license is currently active.
 
 import { vendorCoiCurrent, vendorW9Current, type Vendor } from './vendor';
+import { translate, SEED_DICTIONARY, type Locale } from './i18n';
 
 export type VendorPrequalCheckId =
   | 'W9_CURRENT'
@@ -63,7 +64,10 @@ export const COI_EXPIRY_WARN_DAYS = 30;
 export function buildVendorPrequal(
   v: Vendor,
   now: Date = new Date(),
+  locale: Locale = 'en',
 ): VendorPrequalReport {
+  const t = (key: string, vars?: Record<string, string | number>) =>
+    translate(SEED_DICTIONARY, locale, key, vars);
   const checks: VendorPrequalCheck[] = [];
   const isSub = v.kind === 'SUBCONTRACTOR';
 
@@ -71,32 +75,30 @@ export function buildVendorPrequal(
   const w9Pass = vendorW9Current(v, now);
   checks.push({
     id: 'W9_CURRENT',
-    label: 'W-9 on file',
-    description:
-      'Form W-9 must be on file for every 1099-NEC reportable vendor and must be re-collected every 3 years per IRS guidance.',
+    label: t('vendorPrequal.w9.label'),
+    description: t('vendorPrequal.w9.description'),
     pass: !v.is1099Reportable || w9Pass,
     required: v.is1099Reportable,
     detail: v.w9CollectedOn
-      ? `Collected ${v.w9CollectedOn}`
+      ? t('vendorPrequal.w9.detailCollected', { date: v.w9CollectedOn })
       : v.w9OnFile
-        ? 'On file (date unknown)'
-        : 'Not collected',
+        ? t('vendorPrequal.w9.detailOnFile')
+        : t('vendorPrequal.w9.detailMissing'),
   });
 
   // COI on file + current.
   const coiPass = vendorCoiCurrent(v, now);
   checks.push({
     id: 'COI_CURRENT',
-    label: 'Certificate of Insurance current',
-    description:
-      'Subcontractors must carry a current COI naming Young General Engineering as additional insured.',
+    label: t('vendorPrequal.coi.label'),
+    description: t('vendorPrequal.coi.description'),
     pass: !isSub || coiPass,
     required: isSub,
     detail: v.coiExpiresOn
-      ? `Expires ${v.coiExpiresOn}`
+      ? t('vendorPrequal.coi.detailExpires', { date: v.coiExpiresOn })
       : v.coiOnFile
-        ? 'On file (no expiration tracked)'
-        : 'Not on file',
+        ? t('vendorPrequal.coi.detailOnFile')
+        : t('vendorPrequal.coi.detailMissing'),
   });
 
   // COI expiring soon — advisory only.
@@ -115,52 +117,52 @@ export function buildVendorPrequal(
   }
   checks.push({
     id: 'COI_EXPIRES_SOON',
-    label: `COI not expiring within ${COI_EXPIRY_WARN_DAYS} days`,
-    description:
-      'A COI inside the 30-day window will lapse mid-job. Renew before scheduling.',
+    label: t('vendorPrequal.coiSoon.label', { days: COI_EXPIRY_WARN_DAYS }),
+    description: t('vendorPrequal.coiSoon.description'),
     pass: !coiExpiringSoon,
     required: false,
     detail:
       daysToExpiry != null && daysToExpiry > 0
-        ? `${daysToExpiry} days remaining`
+        ? t('vendorPrequal.coiSoon.detailRemaining', { days: daysToExpiry })
         : daysToExpiry != null && daysToExpiry <= 0
-          ? 'Expired'
+          ? t('vendorPrequal.coiSoon.detailExpired')
           : '—',
   });
 
   // CSLB license on file (license # only — Phase 2 verifies active).
   checks.push({
     id: 'CSLB_ON_FILE',
-    label: 'CSLB license # on file',
-    description:
-      'Subs performing licensed work must have an active CSLB license; we record the # for reference and verification.',
+    label: t('vendorPrequal.cslb.label'),
+    description: t('vendorPrequal.cslb.description'),
     pass: !isSub || (v.cslbLicense != null && v.cslbLicense.trim().length > 0),
     required: isSub,
-    detail: v.cslbLicense ? `License #${v.cslbLicense}` : 'Not recorded',
+    detail: v.cslbLicense
+      ? t('vendorPrequal.cslb.detailLicense', { license: v.cslbLicense })
+      : t('vendorPrequal.cslb.detailMissing'),
   });
 
   // DIR registration on file.
   checks.push({
     id: 'DIR_ON_FILE',
-    label: 'DIR registration # on file',
-    description:
-      'Required to bid or perform any work on a public-works project per Labor Code §1725.5.',
+    label: t('vendorPrequal.dir.label'),
+    description: t('vendorPrequal.dir.description'),
     pass: !isSub || (v.dirRegistration != null && v.dirRegistration.trim().length > 0),
     required: isSub,
-    detail: v.dirRegistration ? `DIR #${v.dirRegistration}` : 'Not recorded',
+    detail: v.dirRegistration
+      ? t('vendorPrequal.dir.detailRegistered', { dir: v.dirRegistration })
+      : t('vendorPrequal.dir.detailMissing'),
   });
 
   // Not on hold.
   checks.push({
     id: 'NOT_ON_HOLD',
-    label: 'Vendor not on hold',
-    description:
-      'A vendor flagged on hold cannot be issued payments or scheduled.',
+    label: t('vendorPrequal.onHold.label'),
+    description: t('vendorPrequal.onHold.description'),
     pass: !v.onHold,
     required: true,
     detail: v.onHold
-      ? v.onHoldReason ?? 'On hold (no reason recorded)'
-      : 'Active',
+      ? v.onHoldReason ?? t('vendorPrequal.onHold.detailNoReason')
+      : t('vendorPrequal.onHold.detailActive'),
   });
 
   let blockingCount = 0;
@@ -199,6 +201,8 @@ export function computeVendorPrequalRollup(
   let advisoryOnly = 0;
   for (const v of vendors) {
     if (v.kind !== 'SUBCONTRACTOR') continue;
+    // Pass and counts are locale-independent — strings get localized at
+    // render time. Default 'en' locale here is fine for the rollup math.
     const r = buildVendorPrequal(v, now);
     if (r.ready && r.advisoryCount === 0) ready += 1;
     else if (!r.ready) blocked += 1;

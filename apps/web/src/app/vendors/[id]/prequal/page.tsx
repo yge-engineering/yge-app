@@ -37,7 +37,7 @@ export default async function VendorPrequalPage({
   const vendor = await fetchVendor(params.id);
   if (!vendor) notFound();
 
-  const report = buildVendorPrequal(vendor);
+  const report = buildVendorPrequal(vendor, new Date(), locale);
 
   return (
     <AppShell>
