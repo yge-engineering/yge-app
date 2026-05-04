@@ -5,6 +5,7 @@ import { AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { MileageEntry } from '@yge/shared';
 import { MileageEntryEditor } from '../../../components/mileage-entry-editor';
+import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
   return (
@@ -23,6 +24,7 @@ export default async function MileageDetailPage({
 }: {
   params: { id: string };
 }) {
+  const t = getTranslator();
   const entry = await fetchEntry(params.id);
   if (!entry) notFound();
 
@@ -30,14 +32,14 @@ export default async function MileageDetailPage({
     <main className="mx-auto max-w-3xl p-8">
       <div className="mb-6">
         <Link href="/mileage" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Mileage Log
+          {t('newMileagePg.back')}
         </Link>
       </div>
       <h1 className="text-3xl font-bold text-yge-blue-500">{entry.tripDate}</h1>
       <p className="mt-1 text-sm text-gray-600">
         {entry.employeeName} · {entry.vehicleDescription}
       </p>
-      <p className="mt-1 text-xs text-gray-500">ID: {entry.id}</p>
+      <p className="mt-1 text-xs text-gray-500">{t('photoPg.idLabel', { id: entry.id })}</p>
       <div className="mt-6">
         <MileageEntryEditor mode="edit" entry={entry} />
       </div>
