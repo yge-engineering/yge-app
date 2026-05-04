@@ -5,6 +5,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import type { LegalHoldReason } from '@yge/shared';
+import { useTranslator } from '../lib/use-translator';
 
 interface Props {
   apiBaseUrl: string;
@@ -25,6 +26,7 @@ const REASONS: LegalHoldReason[] = [
 
 export function LegalHoldCreateForm({ apiBaseUrl }: Props) {
   const router = useRouter();
+  const t = useTranslator();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [reason, setReason] = useState<LegalHoldReason>('CONTRACT_DISPUTE');
@@ -59,7 +61,7 @@ export function LegalHoldCreateForm({ apiBaseUrl }: Props) {
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string; issues?: unknown };
         const issues = body.issues ? ` — ${JSON.stringify(body.issues).slice(0, 200)}` : '';
-        setError((body.error ?? `Create failed (${res.status})`) + issues);
+        setError((body.error ?? t('legalHoldCreate.errCreate', { status: res.status })) + issues);
         return;
       }
       // Reset.
@@ -78,20 +80,20 @@ export function LegalHoldCreateForm({ apiBaseUrl }: Props) {
   return (
     <section className="mt-8 rounded-md border border-gray-200 bg-white p-4 shadow-sm">
       <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-700">
-        Create a legal hold
+        {t('legalHoldCreate.title')}
       </h2>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <Field label="Title" required>
+        <Field label={t('legalHoldCreate.titleLabel')} required>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             className={inputClass}
-            placeholder="Sulphur Springs delay claim"
+            placeholder={t('legalHoldCreate.titlePh')}
           />
         </Field>
-        <Field label="Reason">
+        <Field label={t('legalHoldCreate.reasonLabel')}>
           <select
             value={reason}
             onChange={(e) => setReason(e.target.value as LegalHoldReason)}
@@ -104,25 +106,25 @@ export function LegalHoldCreateForm({ apiBaseUrl }: Props) {
             ))}
           </select>
         </Field>
-        <Field label="Frozen entity type" required>
+        <Field label={t('legalHoldCreate.entTypeLabel')} required>
           <input
             type="text"
             value={entityType}
             onChange={(e) => setEntityType(e.target.value)}
             className={inputClass}
-            placeholder="Job / Customer / Employee / etc."
+            placeholder={t('legalHoldCreate.entTypePh')}
           />
         </Field>
-        <Field label="Frozen entity id" required>
+        <Field label={t('legalHoldCreate.entIdLabel')} required>
           <input
             type="text"
             value={entityId}
             onChange={(e) => setEntityId(e.target.value)}
             className={`${inputClass} font-mono`}
-            placeholder="job-2026-01-15-sulphur-springs-aabbccdd"
+            placeholder={t('legalHoldCreate.entIdPh')}
           />
         </Field>
-        <Field label="Matter date">
+        <Field label={t('legalHoldCreate.matterDateLabel')}>
           <input
             type="date"
             value={matterDate}
@@ -130,18 +132,18 @@ export function LegalHoldCreateForm({ apiBaseUrl }: Props) {
             className={inputClass}
           />
         </Field>
-        <Field label="Matter / docket #">
+        <Field label={t('legalHoldCreate.matterNumLabel')}>
           <input
             type="text"
             value={matterNumber}
             onChange={(e) => setMatterNumber(e.target.value)}
             className={inputClass}
-            placeholder="Optional"
+            placeholder={t('legalHoldCreate.matterNumPh')}
           />
         </Field>
       </div>
 
-      <Field label="Description / matter summary" className="mt-3">
+      <Field label={t('legalHoldCreate.descLabel')} className="mt-3">
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
@@ -162,11 +164,10 @@ export function LegalHoldCreateForm({ apiBaseUrl }: Props) {
           disabled={!ready || busy}
           className="rounded bg-red-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
         >
-          {busy ? 'Creating…' : 'Apply hold + freeze records'}
+          {busy ? t('legalHoldCreate.busy') : t('legalHoldCreate.action')}
         </button>
         <span className="text-xs text-gray-500">
-          The records-retention purge job refuses to delete anything frozen
-          by an active hold.
+          {t('legalHoldCreate.help')}
         </span>
       </div>
     </section>

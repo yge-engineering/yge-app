@@ -10,6 +10,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 
 interface PurgeRow {
   entityId: string;
@@ -36,6 +37,7 @@ export function RetentionPurgeConfirmForm({
   rows,
 }: Props) {
   const router = useRouter();
+  const t = useTranslator();
   const eligibleRows = rows.filter((r) => !r.frozen);
   const initial = Object.fromEntries(eligibleRows.map((r) => [r.entityId, true]));
 
@@ -59,11 +61,11 @@ export function RetentionPurgeConfirmForm({
       .map(([k]) => k);
 
     if (entityIds.length === 0) {
-      setError('Pick at least one row.');
+      setError(t('retentionPurge.errPick'));
       return;
     }
     if (reason.trim().length < 10) {
-      setError('Operator reason is required (at least 10 characters).');
+      setError(t('retentionPurge.errReason'));
       return;
     }
 
@@ -87,7 +89,7 @@ export function RetentionPurgeConfirmForm({
         rejectedUnknown?: string[];
       };
       if (!res.ok) {
-        setError(body.error ?? `Confirm failed (${res.status})`);
+        setError(body.error ?? t('retentionPurge.errConfirm', { status: res.status }));
         return;
       }
       const rej =
@@ -96,9 +98,11 @@ export function RetentionPurgeConfirmForm({
         (body.rejectedUnknown?.length ?? 0);
       const acceptedCount = entityIds.length - rej;
       setFeedback(
-        `Batch ${body.batch?.id ?? ''} recorded · ${acceptedCount} confirmed${
-          rej > 0 ? ` · ${rej} rejected at apply-time` : ''
-        }`,
+        t('retentionPurge.feedback', {
+          batchId: body.batch?.id ?? '',
+          accepted: acceptedCount,
+          rejection: rej > 0 ? t('retentionPurge.feedbackRejected', { rejected: rej }) : '',
+        }),
       );
       setReason('');
       router.refresh();
@@ -112,7 +116,7 @@ export function RetentionPurgeConfirmForm({
   if (eligibleRows.length === 0) {
     return (
       <div className="border-t border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-500">
-        Nothing eligible to confirm in this bucket — all rows are frozen by an active hold.
+        {t('retentionPurge.allFrozen')}
       </div>
     );
   }
@@ -122,8 +126,13 @@ export function RetentionPurgeConfirmForm({
   return (
     <div className="border-t border-gray-200 bg-gray-50 px-3 py-3">
       <div className="mb-2 text-[11px] uppercase tracking-wide text-gray-500">
-        Confirm purge — {pickedCount}/{eligibleRows.length} selected ·{' '}
-        {bucketLabel} · {retainYears}-year window via {ruleAuthority}
+        {t('retentionPurge.confirmTitle', {
+          selected: pickedCount,
+          total: eligibleRows.length,
+          bucket: bucketLabel,
+          years: retainYears,
+          authority: ruleAuthority,
+        })}
       </div>
 
       <div className="mb-2 flex flex-wrap gap-2">
@@ -132,14 +141,14 @@ export function RetentionPurgeConfirmForm({
           onClick={() => setPicks(initial)}
           className="rounded border border-gray-300 bg-white px-2 py-0.5 text-[11px] text-gray-700 hover:bg-gray-100"
         >
-          Select all
+          {t('retentionPurge.selectAll')}
         </button>
         <button
           type="button"
           onClick={() => setPicks({})}
           className="rounded border border-gray-300 bg-white px-2 py-0.5 text-[11px] text-gray-700 hover:bg-gray-100"
         >
-          Clear
+          {t('retentionPurge.clear')}
         </button>
       </div>
 
@@ -155,7 +164,7 @@ export function RetentionPurgeConfirmForm({
             <span className="flex-1">
               <span className="text-gray-900">{r.label}</span>
               <span className="ml-2 font-mono text-gray-500">{r.entityId}</span>
-              <span className="ml-2 text-gray-500">eligible {r.purgeEligibleOn}</span>
+              <span className="ml-2 text-gray-500">{t('retentionPurge.eligibleHint', { date: r.purgeEligibleOn })}</span>
             </span>
           </li>
         ))}
@@ -163,14 +172,14 @@ export function RetentionPurgeConfirmForm({
 
       <label className="mb-2 block">
         <span className="text-[11px] uppercase tracking-wide text-gray-500">
-          Operator justification (required, lands in audit log)
+          {t('retentionPurge.reasonLabel')}
         </span>
         <textarea
           value={reason}
           onChange={(e) => setReason(e.target.value)}
           rows={2}
           className="mt-1 w-full rounded border border-gray-300 bg-white p-2 text-xs"
-          placeholder={`Reviewed ${entityType} bucket; ${ruleAuthority} ${retainYears}-yr window cleared; no active disputes per Brook.`}
+          placeholder={t('retentionPurge.reasonPh', { entityType, authority: ruleAuthority, years: retainYears })}
         />
       </label>
 
@@ -181,17 +190,14 @@ export function RetentionPurgeConfirmForm({
           disabled={busy}
           className="rounded bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
         >
-          {busy ? 'Recording…' : `Record purge (${pickedCount})`}
+          {busy ? t('retentionPurge.busy') : t('retentionPurge.action', { count: pickedCount })}
         </button>
         {error && <span className="text-xs text-red-700">⚠ {error}</span>}
         {feedback && <span className="text-xs text-emerald-700">{feedback}</span>}
       </div>
 
       <p className="mt-2 text-[10px] text-gray-500">
-        Phase 1: confirming records the operator decision + per-row purge audit
-        entries. Byte-level deletion from each underlying store ships in a
-        follow-up bundle (so we never lose data behind a UI button before the
-        audit trail is durable).
+        {t('retentionPurge.help')}
       </p>
     </div>
   );
