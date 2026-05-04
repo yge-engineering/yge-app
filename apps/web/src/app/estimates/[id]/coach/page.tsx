@@ -24,6 +24,7 @@ import {
   type PricedEstimate,
   type PricedEstimateTotals,
 } from '@yge/shared';
+import { getTranslator, type Translator } from '../../../../lib/locale';
 
 function apiBaseUrl(): string {
   return (
@@ -51,17 +52,14 @@ const SEVERITY_TONE: Record<BidCoachSeverity, 'success' | 'warn' | 'danger' | 'i
   danger: 'danger',
 };
 
-const SEVERITY_LABEL: Record<BidCoachSeverity, string> = {
-  info: 'INFO',
-  warn: 'WARN',
-  danger: 'BLOCK',
-};
+// SEVERITY_LABEL is locale-aware — see severityLabel() inside the page.
 
 export default async function BidCoachPage({
   params,
 }: {
   params: { id: string };
 }) {
+  const t = getTranslator();
   const data = await fetchEstimate(params.id);
   if (!data) notFound();
 
@@ -93,79 +91,91 @@ export default async function BidCoachPage({
             href={`/estimates/${data.estimate.id}`}
             className="text-sm text-yge-blue-500 hover:underline"
           >
-            &larr; Back to bid
+            {t('coachPg.back')}
           </Link>
           <span className="text-xs text-gray-500">
-            Pre-submit check on {new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC
+            {t('coachPg.checkAt', { time: new Date().toISOString().slice(0, 16).replace('T', ' ') })}
           </span>
         </div>
 
         <PageHeader
-          title="Pre-submit check"
-          subtitle={`AI bid coach on ${data.estimate.projectName}.`}
+          title={t('coachPg.title')}
+          subtitle={t('coachPg.subtitle', { project: data.estimate.projectName })}
         />
 
-        <CoachSummary report={report} />
+        <CoachSummary report={report} t={t} />
 
         {danger.length > 0 && (
           <Section
-            title={`Blocking — ${danger.length} item${danger.length === 1 ? '' : 's'}`}
+            title={danger.length === 1
+              ? t('coachPg.blockingOne', { count: danger.length })
+              : t('coachPg.blockingMany', { count: danger.length })}
             tone="danger"
             flags={danger}
+            t={t}
           />
         )}
 
         {warn.length > 0 && (
           <Section
-            title={`Verify before submit — ${warn.length} item${warn.length === 1 ? '' : 's'}`}
+            title={warn.length === 1
+              ? t('coachPg.verifyOne', { count: warn.length })
+              : t('coachPg.verifyMany', { count: warn.length })}
             tone="warn"
             flags={warn}
+            t={t}
           />
         )}
 
         {info.length > 0 && (
           <Section
-            title={`Heads-up — ${info.length} item${info.length === 1 ? '' : 's'}`}
+            title={info.length === 1
+              ? t('coachPg.headsUpOne', { count: info.length })
+              : t('coachPg.headsUpMany', { count: info.length })}
             tone="info"
             flags={info}
+            t={t}
           />
         )}
 
         {report.cleanToSubmit && flags.length === 0 && (
-          <Alert tone="success" className="mt-6" title="Looks good — clean to submit">
-            Every pre-submit rule passed against the bid as it stands. Run this
-            check again right before you hit Send if anything changes.
+          <Alert tone="success" className="mt-6" title={t('coachPg.cleanTitle')}>
+            {t('coachPg.cleanBody')}
           </Alert>
         )}
 
         {dismissed.length > 0 && (
           <details className="mt-8 rounded-md border border-gray-200 bg-gray-50 p-3 text-sm">
             <summary className="cursor-pointer font-medium text-gray-700">
-              Dismissed earlier — {dismissed.length} item{dismissed.length === 1 ? '' : 's'}
+              {dismissed.length === 1
+                ? t('coachPg.dismissedOne', { count: dismissed.length })
+                : t('coachPg.dismissedMany', { count: dismissed.length })}
             </summary>
             <div className="mt-3 space-y-2">
               {dismissed.map((f) => (
-                <DismissedFlagRow key={f.id} flag={f} />
+                <DismissedFlagRow key={f.id} flag={f} t={t} />
               ))}
             </div>
           </details>
         )}
 
         <p className="mt-8 text-xs text-gray-500">
-          Phase 1: outlier rule and bonding rule fire only once historical
-          unit-price stats and the bonding profile are wired through the
-          API. The other four rules run on every estimate today.
+          {t('coachPg.phase1Note')}
         </p>
       </main>
     </AppShell>
   );
 }
 
-function CoachSummary({ report }: { report: ReturnType<typeof summarizeBidCoach> }) {
+function CoachSummary({ report, t }: { report: ReturnType<typeof summarizeBidCoach>; t: Translator }) {
   if (report.activeCount === 0) {
     return (
-      <Alert tone="success" className="mt-4" title="Clean to submit">
-        No active flags. {report.total > 0 && `${report.total} earlier flag${report.total === 1 ? '' : 's'} dismissed.`}
+      <Alert tone="success" className="mt-4" title={t('coachPg.cleanShortTitle')}>
+        {report.total > 0
+          ? (report.total === 1
+              ? t('coachPg.noFlagsOne', { count: report.total })
+              : t('coachPg.noFlagsMany', { count: report.total }))
+          : t('coachPg.noFlagsZero')}
       </Alert>
     );
   }
@@ -174,31 +184,45 @@ function CoachSummary({ report }: { report: ReturnType<typeof summarizeBidCoach>
       <Alert
         tone="danger"
         className="mt-4"
-        title={`${report.blockingCount} blocker${report.blockingCount === 1 ? '' : 's'} before this bid can submit`}
+        title={report.blockingCount === 1
+          ? t('coachPg.blockerTitleOne', { count: report.blockingCount })
+          : t('coachPg.blockerTitleMany', { count: report.blockingCount })}
       >
-        {report.activeCount} active flag{report.activeCount === 1 ? '' : 's'} —{' '}
-        {report.blockingCount} blocking,{' '}
-        {report.bySeverity.warn} verify, {report.bySeverity.info} heads-up.
-        Fix the blockers or dismiss them with a reason before submit.
+        {t('coachPg.blockerBody', {
+          active: report.activeCount,
+          activeWord: report.activeCount === 1 ? t('coachPg.flagOne') : t('coachPg.flagMany'),
+          blocking: report.blockingCount,
+          warn: report.bySeverity.warn,
+          info: report.bySeverity.info,
+        })}
       </Alert>
     );
   }
   return (
-    <Alert tone="warn" className="mt-4" title={`${report.activeCount} item${report.activeCount === 1 ? '' : 's'} to verify before submit`}>
-      Nothing is blocking, but read each flag below and confirm the bid still
-      reads right before sending.
+    <Alert tone="warn" className="mt-4" title={report.activeCount === 1
+      ? t('coachPg.verifyTitleOne', { count: report.activeCount })
+      : t('coachPg.verifyTitleMany', { count: report.activeCount })}>
+      {t('coachPg.verifyBody')}
     </Alert>
   );
+}
+
+function severityLabel(s: BidCoachSeverity, t: Translator): string {
+  if (s === 'info') return t('coachPg.pillInfo');
+  if (s === 'warn') return t('coachPg.pillWarn');
+  return t('coachPg.pillBlock');
 }
 
 function Section({
   title,
   tone,
   flags,
+  t,
 }: {
   title: string;
   tone: BidCoachSeverity;
   flags: BidCoachFlag[];
+  t: Translator;
 }) {
   return (
     <section className="mt-6">
@@ -212,7 +236,7 @@ function Section({
             className={`rounded-md border p-4 ${BORDER[tone]} ${BG[tone]}`}
           >
             <div className="mb-1 flex flex-wrap items-center gap-2">
-              <StatusPill label={SEVERITY_LABEL[f.severity]} tone={SEVERITY_TONE[f.severity]} />
+              <StatusPill label={severityLabel(f.severity, t)} tone={SEVERITY_TONE[f.severity]} />
               <span className="text-xs uppercase tracking-wide text-gray-500">
                 {f.category}
               </span>
@@ -221,7 +245,7 @@ function Section({
               {f.bidItemRefId && (
                 <>
                   <span className="text-xs text-gray-400">·</span>
-                  <span className="text-xs text-gray-700">item {f.bidItemRefId}</span>
+                  <span className="text-xs text-gray-700">{t('coachPg.itemRef', { id: f.bidItemRefId })}</span>
                 </>
               )}
             </div>
@@ -245,14 +269,14 @@ const BG: Record<BidCoachSeverity, string> = {
   danger: 'bg-red-50/60',
 };
 
-function DismissedFlagRow({ flag }: { flag: BidCoachFlag }) {
+function DismissedFlagRow({ flag, t }: { flag: BidCoachFlag; t: Translator }) {
   return (
     <div className="rounded border border-gray-200 bg-white p-2 text-sm">
       <div className="flex items-center gap-2 text-xs text-gray-500">
-        <StatusPill label={SEVERITY_LABEL[flag.severity]} tone={SEVERITY_TONE[flag.severity]} size="sm" />
+        <StatusPill label={severityLabel(flag.severity, t)} tone={SEVERITY_TONE[flag.severity]} size="sm" />
         <span className="font-mono">{flag.ruleId}</span>
         <span>·</span>
-        <span>dismissed {flag.dismissedAt?.slice(0, 10)}</span>
+        <span>{t('coachPg.dismissedAt', { date: flag.dismissedAt?.slice(0, 10) ?? '' })}</span>
       </div>
       <div className="font-medium text-gray-700">{flag.title}</div>
       {flag.dismissedReason && (
