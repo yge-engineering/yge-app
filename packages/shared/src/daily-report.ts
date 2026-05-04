@@ -20,6 +20,7 @@
 // extend without breaking the foreman submission flow.
 
 import { z } from 'zod';
+import { translate, SEED_DICTIONARY, type Locale } from './i18n';
 
 /** Weather summary — free-form because the agency doesn't care about a
  *  taxonomy and the foreman knows what they saw. */
@@ -214,9 +215,9 @@ export function newDailyReportId(date: string): string {
   return `dr-${date}-${hex.padStart(8, '0')}`;
 }
 
-export function violationLabel(v: MealBreakViolation): string {
-  if (v.kind === 'first-meal-missing') {
-    return `Missing first meal break (worked ${v.workedHours.toFixed(2)} hr)`;
-  }
-  return `Missing second meal break (worked ${v.workedHours.toFixed(2)} hr)`;
+export function violationLabel(v: MealBreakViolation, locale: Locale = 'en'): string {
+  const key = v.kind === 'first-meal-missing'
+    ? 'mealBreak.firstMissing'
+    : 'mealBreak.secondMissing';
+  return translate(SEED_DICTIONARY, locale, key, { hours: v.workedHours.toFixed(2) });
 }

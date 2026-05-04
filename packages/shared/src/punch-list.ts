@@ -7,6 +7,7 @@
 // due date.
 
 import { z } from 'zod';
+import { translate, SEED_DICTIONARY, type Locale } from './i18n';
 
 export const PunchItemStatusSchema = z.enum([
   'OPEN',
@@ -77,22 +78,12 @@ export type PunchItemPatch = z.infer<typeof PunchItemPatchSchema>;
 
 // ---- Helpers -------------------------------------------------------------
 
-export function punchItemStatusLabel(s: PunchItemStatus): string {
-  switch (s) {
-    case 'OPEN': return 'Open';
-    case 'IN_PROGRESS': return 'In progress';
-    case 'CLOSED': return 'Closed';
-    case 'DISPUTED': return 'Disputed';
-    case 'WAIVED': return 'Waived';
-  }
+export function punchItemStatusLabel(s: PunchItemStatus, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `punchItem.status.${s}`);
 }
 
-export function punchItemSeverityLabel(s: PunchItemSeverity): string {
-  switch (s) {
-    case 'SAFETY': return 'Safety';
-    case 'MAJOR': return 'Major';
-    case 'MINOR': return 'Minor';
-  }
+export function punchItemSeverityLabel(s: PunchItemSeverity, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `punchItem.severity.${s}`);
 }
 
 /** True iff the item is still blocking closeout (not closed or waived). */

@@ -22,6 +22,7 @@
 
 import { z } from 'zod';
 import type { Cents } from './money';
+import { translate, SEED_DICTIONARY, type Locale } from './i18n';
 
 export const BidSecurityTypeSchema = z.enum([
   'BID_BOND',
@@ -71,9 +72,6 @@ export function bidSecurityAmountCents(
 }
 
 /** Human-readable label for the security type, for prints + UI labels. */
-export function bidSecurityTypeLabel(t: BidSecurityType): string {
-  if (t === 'BID_BOND') return 'Bid bond';
-  if (t === 'CASHIERS_CHECK') return "Cashier's check";
-  if (t === 'CERTIFIED_CHECK') return 'Certified check';
-  return 'Other security';
+export function bidSecurityTypeLabel(t: BidSecurityType, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `bidSecurity.type.${t}`);
 }
