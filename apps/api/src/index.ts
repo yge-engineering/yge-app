@@ -54,6 +54,7 @@ import { legalHoldsRouter } from './routes/legal-holds';
 import { recordsRetentionRouter } from './routes/records-retention';
 import { bidTabsRouter } from './routes/bid-tabs';
 import { competitorsRouter } from './routes/competitors';
+import { credentialsRouter } from './routes/credentials';
 
 const app = express();
 
@@ -111,6 +112,7 @@ app.use('/api/legal-holds', legalHoldsRouter);
 app.use('/api/records-retention', recordsRetentionRouter);
 app.use('/api/bid-tabs', bidTabsRouter);
 app.use('/api/competitors', competitorsRouter);
+app.use('/api/credentials', credentialsRouter);
 
 // 404
 app.use((_req, res) => {
