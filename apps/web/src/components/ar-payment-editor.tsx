@@ -4,6 +4,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 import {
   arPaymentKindLabel,
   arPaymentMethodLabel,
@@ -74,6 +75,7 @@ export function ArPaymentEditor({
   payment?: ArPayment;
 }) {
   const router = useRouter();
+  const t = useTranslator();
   const [form, setForm] = useState<FormState>(defaults(payment));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -151,29 +153,29 @@ export function ArPaymentEditor({
         </div>
       )}
 
-      <Section title="Invoice + job">
-        <Field label="AR invoice ID" required>
+      <Section title={t('arPayment.secInvoice')}>
+        <Field label={t('arPayment.lblArInvId')} required>
           <input
             className={inputCls}
             value={form.arInvoiceId}
             onChange={(e) => setField('arInvoiceId', e.target.value)}
-            placeholder="ar-xxxxxxxx"
+            placeholder={t('arPayment.phArInvId')}
             required
           />
         </Field>
-        <Field label="Job ID" required>
+        <Field label={t('arPayment.lblJobId')} required>
           <input
             className={inputCls}
             value={form.jobId}
             onChange={(e) => setField('jobId', e.target.value)}
-            placeholder="job-YYYY-MM-DD-..."
+            placeholder={t('arPayment.phJobId')}
             required
           />
         </Field>
       </Section>
 
-      <Section title="Payment">
-        <Field label="Kind">
+      <Section title={t('arPayment.secPayment')}>
+        <Field label={t('arPayment.lblKind')}>
           <select
             className={inputCls}
             value={form.kind}
@@ -186,7 +188,7 @@ export function ArPaymentEditor({
             ))}
           </select>
         </Field>
-        <Field label="Method">
+        <Field label={t('arPayment.lblMethod')}>
           <select
             className={inputCls}
             value={form.method}
@@ -199,7 +201,7 @@ export function ArPaymentEditor({
             ))}
           </select>
         </Field>
-        <Field label="Received on" required>
+        <Field label={t('arPayment.lblReceivedOn')} required>
           <input
             type="date"
             className={inputCls}
@@ -208,7 +210,7 @@ export function ArPaymentEditor({
             required
           />
         </Field>
-        <Field label="Amount ($)" required>
+        <Field label={t('arPayment.lblAmount')} required>
           <input
             type="number"
             step="0.01"
@@ -219,15 +221,15 @@ export function ArPaymentEditor({
             required
           />
         </Field>
-        <Field label="Reference #">
+        <Field label={t('arPayment.lblRefNum')}>
           <input
             className={inputCls}
             value={form.referenceNumber}
             onChange={(e) => setField('referenceNumber', e.target.value)}
-            placeholder="check #, ACH trace, wire ref"
+            placeholder={t('arPayment.phRefNum')}
           />
         </Field>
-        <Field label="Payer name (override)">
+        <Field label={t('arPayment.lblPayer')}>
           <input
             className={inputCls}
             value={form.payerName}
@@ -236,16 +238,16 @@ export function ArPaymentEditor({
         </Field>
       </Section>
 
-      <Section title="Deposit">
-        <Field label="Deposit account">
+      <Section title={t('arPayment.secDeposit')}>
+        <Field label={t('arPayment.lblDepositAcct')}>
           <input
             className={inputCls}
             value={form.depositAccount}
             onChange={(e) => setField('depositAccount', e.target.value)}
-            placeholder="Operating - BoA x1234"
+            placeholder={t('arPayment.phDepositAcct')}
           />
         </Field>
-        <Field label="Deposited on">
+        <Field label={t('arPayment.lblDepositedOn')}>
           <input
             type="date"
             className={inputCls}
@@ -256,8 +258,8 @@ export function ArPaymentEditor({
       </Section>
 
       {form.kind === 'RETENTION_RELEASE' && (
-        <Section title="CA §7107 prompt-pay interest preview">
-          <Field label="Completion notice date">
+        <Section title={t('arPayment.secRetention')}>
+          <Field label={t('arPayment.lblRetCompleted')}>
             <input
               type="date"
               className={inputCls}
@@ -265,7 +267,7 @@ export function ArPaymentEditor({
               onChange={(e) => setField('retentionCompletedOn', e.target.value)}
             />
           </Field>
-          <Field label="Retention held ($)">
+          <Field label={t('arPayment.lblRetHeld')}>
             <input
               type="number"
               step="0.01"
@@ -285,33 +287,30 @@ export function ArPaymentEditor({
                 }`}
               >
                 <div>
-                  Due on (60 days from completion): <strong>{interestPreview.dueOn}</strong>
+                  {t('arPayment.dueOn')} <strong>{interestPreview.dueOn}</strong>
                 </div>
                 <div className="mt-1">
-                  Days late: <strong>{interestPreview.daysLate}</strong>
+                  {t('arPayment.daysLate')} <strong>{interestPreview.daysLate}</strong>
                 </div>
                 <div className="mt-1">
-                  Statutory interest owed (2%/mo):{' '}
+                  {t('arPayment.statInterest')}{' '}
                   <strong>{formatUSD(interestPreview.interestCents)}</strong>
                 </div>
                 <div className="mt-2 text-xs opacity-80">
-                  Per CA Public Contract Code §7107(c) + (f). Not stored on the
-                  payment record yet — print this and add as a separate
-                  collection-letter line if disputed.
+                  {t('arPayment.note7107')}
                 </div>
               </div>
             ) : (
               <p className="text-xs text-gray-500">
-                Enter completion-notice date + retention amount to preview
-                statutory interest.
+                {t('arPayment.previewHint')}
               </p>
             )}
           </div>
         </Section>
       )}
 
-      <Section title="Notes">
-        <Field label="Notes" full>
+      <Section title={t('arPayment.secNotes')}>
+        <Field label={t('arPayment.lblNotes')} full>
           <textarea
             className={`${inputCls} min-h-[100px]`}
             value={form.notes}
@@ -326,7 +325,7 @@ export function ArPaymentEditor({
           disabled={saving}
           className="rounded bg-yge-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-yge-blue-700 disabled:opacity-50"
         >
-          {saving ? 'Saving…' : mode === 'create' ? 'Record payment' : 'Save changes'}
+          {saving ? t('arPayment.busy') : mode === 'create' ? t('arPayment.create') : t('arPayment.save')}
         </button>
       </div>
     </form>
