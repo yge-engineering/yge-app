@@ -15,6 +15,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 
 interface PromptField {
   fieldId: string;
@@ -40,6 +41,7 @@ interface PreviewResponse {
 }
 
 export function PdfFormPromptForm({ apiBaseUrl, mappingId, promptFields }: Props) {
+  const t = useTranslator();
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,7 +66,7 @@ export function PdfFormPromptForm({ apiBaseUrl, mappingId, promptFields }: Props
       );
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? `API returned ${res.status}`);
+        setError(body.error ?? t('pdfPrompt.errApi', { status: res.status }));
         return;
       }
       const json = (await res.json()) as PreviewResponse;
@@ -91,7 +93,7 @@ export function PdfFormPromptForm({ apiBaseUrl, mappingId, promptFields }: Props
       );
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? `Fill failed (${res.status})`);
+        setError(body.error ?? t('pdfPrompt.errFill', { status: res.status }));
         return;
       }
       const warnCount = Number(res.headers.get('x-pdf-warning-count') ?? '0');
@@ -118,7 +120,7 @@ export function PdfFormPromptForm({ apiBaseUrl, mappingId, promptFields }: Props
   return (
     <section className="mt-6 rounded-md border border-gray-200 bg-white p-4 shadow-sm">
       <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-700">
-        Inline prompts ({promptFields.length})
+        {t('pdfPrompt.title', { count: promptFields.length })}
       </h2>
       <div className="space-y-3">
         {promptFields.map((f) => (
@@ -127,12 +129,12 @@ export function PdfFormPromptForm({ apiBaseUrl, mappingId, promptFields }: Props
               <span className="font-medium text-gray-700">{f.label}</span>
               {f.required && (
                 <span className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-red-800">
-                  required
+                  {t('pdfPrompt.required')}
                 </span>
               )}
               {f.sensitive && (
                 <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-amber-800">
-                  sensitive
+                  {t('pdfPrompt.sensitive')}
                 </span>
               )}
             </span>
@@ -156,9 +158,7 @@ export function PdfFormPromptForm({ apiBaseUrl, mappingId, promptFields }: Props
 
       {preview && (
         <div className="mt-3 rounded border border-emerald-300 bg-emerald-50 p-2 text-xs text-emerald-900">
-          Preview computed: {preview.filledCount} / {preview.total} fields filled,
-          {' '}{preview.awaitingPromptCount} still awaiting prompt,
-          {' '}{preview.requiredEmpty.length} required-empty.
+          {t('pdfPrompt.preview', { filled: preview.filledCount, total: preview.total, awaiting: preview.awaitingPromptCount, required: preview.requiredEmpty.length })}
         </div>
       )}
 
@@ -169,23 +169,23 @@ export function PdfFormPromptForm({ apiBaseUrl, mappingId, promptFields }: Props
           disabled={busy}
           className="rounded border border-yge-blue-500 px-3 py-1 text-sm font-medium text-yge-blue-500 hover:bg-yge-blue-50 disabled:opacity-50"
         >
-          {busy ? 'Previewing…' : 'Recompute preview'}
+          {busy ? t('pdfPrompt.busyPreview') : t('pdfPrompt.recompute')}
         </button>
         <button
           type="button"
           onClick={downloadFilled}
           disabled={busy || !requiredAnswered}
-          title={requiredAnswered ? 'Download the filled + flattened PDF' : 'Answer the required prompts first'}
+          title={requiredAnswered ? t('pdfPrompt.tipReady') : t('pdfPrompt.tipBlocked')}
           className="rounded bg-yge-blue-500 px-4 py-1 text-sm font-semibold text-white hover:bg-yge-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {busy ? 'Filling…' : 'Download filled PDF'}
+          {busy ? t('pdfPrompt.busyFill') : t('pdfPrompt.download')}
         </button>
         <span className="text-xs text-gray-500">
-          {requiredAnswered
-            ? 'Every required prompt is answered.'
-            : `${requiredPrompts.filter((f) => !(answers[f.fieldId] ?? '').trim()).length} required prompt${
-                requiredPrompts.length === 1 ? '' : 's'
-              } still blank.`}
+          {(() => {
+            if (requiredAnswered) return t('pdfPrompt.allReady');
+            const blanks = requiredPrompts.filter((f) => !(answers[f.fieldId] ?? '').trim()).length;
+            return blanks === 1 ? t('pdfPrompt.blankOne') : t('pdfPrompt.blankMany', { count: blanks });
+          })()}
         </span>
       </div>
     </section>
