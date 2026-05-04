@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 import {
   documentKindLabel,
   type Document,
@@ -36,6 +37,7 @@ interface Props {
 }
 
 export function DocumentEditor({ initial, jobs, apiBaseUrl }: Props) {
+  const t = useTranslator();
   const [d, setD] = useState<Document>(initial);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,13 +58,13 @@ export function DocumentEditor({ initial, jobs, apiBaseUrl }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-      if (!res.ok) throw new Error(`Save failed: ${res.status}`);
+      if (!res.ok) throw new Error(t('documentEditor.errSaveStatus', { status: res.status }));
       const json = (await res.json()) as { document: Document };
       setD(json.document);
       // Sync local mirrors that the server may have normalized (tags).
       setTagsRaw(json.document.tags.join(' '));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Save failed');
+      setError(err instanceof Error ? err.message : t('documentEditor.errFallback'));
     } finally {
       setSaving(false);
     }
@@ -100,10 +102,10 @@ export function DocumentEditor({ initial, jobs, apiBaseUrl }: Props) {
               rel="noopener noreferrer"
               className="rounded bg-yge-blue-500 px-3 py-1 font-medium text-white hover:bg-yge-blue-700"
             >
-              Open file
+              {t('documentEditor.openFile')}
             </a>
           )}
-          {saving && <span className="text-gray-500">Saving&hellip;</span>}
+          {saving && <span className="text-gray-500">{t('documentEditor.saving')}</span>}
         </div>
       </header>
 
@@ -114,7 +116,7 @@ export function DocumentEditor({ initial, jobs, apiBaseUrl }: Props) {
       )}
 
       <section className="grid gap-4 sm:grid-cols-2">
-        <Field label="Title">
+        <Field label={t('documentEditor.lblTitle')}>
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -122,7 +124,7 @@ export function DocumentEditor({ initial, jobs, apiBaseUrl }: Props) {
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Kind">
+        <Field label={t('documentEditor.lblKind')}>
           <select
             value={d.kind}
             onChange={(e) => void patch({ kind: e.target.value as DocumentKind })}
@@ -135,13 +137,13 @@ export function DocumentEditor({ initial, jobs, apiBaseUrl }: Props) {
             ))}
           </select>
         </Field>
-        <Field label="Job">
+        <Field label={t('documentEditor.lblJob')}>
           <select
             value={d.jobId ?? ''}
             onChange={(e) => void patch({ jobId: e.target.value || undefined })}
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           >
-            <option value="">— Not job-specific —</option>
+            <option value="">{t('documentEditor.notJobSpecific')}</option>
             {jobs.map((j) => (
               <option key={j.id} value={j.id}>
                 {j.projectName}
@@ -149,7 +151,7 @@ export function DocumentEditor({ initial, jobs, apiBaseUrl }: Props) {
             ))}
           </select>
         </Field>
-        <Field label="Document date">
+        <Field label={t('documentEditor.lblDate')}>
           <input
             type="date"
             value={documentDate}
@@ -158,7 +160,7 @@ export function DocumentEditor({ initial, jobs, apiBaseUrl }: Props) {
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="URL / path">
+        <Field label={t('documentEditor.lblUrl')}>
           <input
             value={url}
             onChange={(e) => setUrl(e.target.value)}
@@ -166,7 +168,7 @@ export function DocumentEditor({ initial, jobs, apiBaseUrl }: Props) {
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Page count">
+        <Field label={t('documentEditor.lblPageCount')}>
           <input
             type="number"
             min="0"
@@ -178,17 +180,17 @@ export function DocumentEditor({ initial, jobs, apiBaseUrl }: Props) {
         </Field>
       </section>
 
-      <Field label="Tags (comma or space separated)">
+      <Field label={t('documentEditor.lblTags')}>
         <input
           value={tagsRaw}
           onChange={(e) => setTagsRaw(e.target.value)}
           onBlur={saveAll}
-          placeholder="caltrans drainage rev-b"
+          placeholder={t('documentEditor.phTags')}
           className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
         />
       </Field>
 
-      <Field label="Notes">
+      <Field label={t('documentEditor.lblNotes')}>
         <textarea
           rows={4}
           value={notes}
