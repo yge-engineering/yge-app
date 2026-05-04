@@ -3,9 +3,12 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
+  coerceLocale,
   dispatchStatusLabel,
   type Dispatch,
 } from '@yge/shared';
+import { getTranslator } from '../../../../lib/locale';
+import { cookies } from 'next/headers';
 
 function apiBaseUrl(): string {
   return (
@@ -24,6 +27,9 @@ export default async function DispatchHandoutPage({
 }: {
   params: { id: string };
 }) {
+  const t = getTranslator();
+  const localeCookie = cookies().get('yge-locale')?.value;
+  const locale = coerceLocale(localeCookie);
   const d = await fetchDispatch(params.id);
   if (!d) notFound();
 
@@ -31,34 +37,34 @@ export default async function DispatchHandoutPage({
     <main className="mx-auto max-w-3xl p-8 text-black">
       <div className="mb-6 flex items-center justify-between print:hidden">
         <Link href={`/dispatch/${d.id}`} className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Back
+          {t('handoutPg.back')}
         </Link>
-        <span className="text-xs text-gray-500">Use your browser's Print menu (Ctrl/Cmd+P)</span>
+        <span className="text-xs text-gray-500">{t('prequalPg.printHint')}</span>
       </div>
 
       <article className="bg-white p-8 text-sm leading-relaxed shadow-sm print:shadow-none">
         <header className="mb-4 flex items-end justify-between border-b-2 border-black pb-2">
           <div>
-            <div className="text-xs uppercase tracking-wide">Dispatch</div>
+            <div className="text-xs uppercase tracking-wide">{t('handoutPg.docTitle')}</div>
             <h1 className="text-2xl font-bold">{d.scheduledFor}</h1>
-            <p className="text-sm">Job: {d.jobId}</p>
+            <p className="text-sm">{t('handoutPg.jobLabel', { id: d.jobId })}</p>
           </div>
           <div className="text-right">
             <div className="text-xs uppercase tracking-wide">Young General Engineering, Inc.</div>
             <div className="text-xs">19645 Little Woods Rd, Cottonwood CA 96022</div>
-            <div className="text-xs">Status: {dispatchStatusLabel(d.status)}</div>
+            <div className="text-xs">{t('handoutPg.statusLabel', { status: dispatchStatusLabel(d.status, locale) })}</div>
           </div>
         </header>
 
         <section className="grid grid-cols-2 gap-4 text-sm">
-          <Field label="Foreman">{d.foremanName}</Field>
-          <Field label="Foreman phone">{d.foremanPhone ?? '—'}</Field>
-          <Field label="Meet time">{d.meetTime ?? '—'}</Field>
-          <Field label="Meet location">{d.meetLocation ?? '—'}</Field>
+          <Field label={t('handoutPg.lblForeman')}>{d.foremanName}</Field>
+          <Field label={t('handoutPg.lblForemanPhone')}>{d.foremanPhone ?? '—'}</Field>
+          <Field label={t('handoutPg.lblMeetTime')}>{d.meetTime ?? '—'}</Field>
+          <Field label={t('handoutPg.lblMeetLocation')}>{d.meetLocation ?? '—'}</Field>
         </section>
 
         <section className="mt-4">
-          <Heading>Scope of work</Heading>
+          <Heading>{t('handoutPg.scopeHeader')}</Heading>
           <div className="whitespace-pre-wrap rounded border border-gray-300 p-2 text-sm">
             {d.scopeOfWork}
           </div>
@@ -66,7 +72,7 @@ export default async function DispatchHandoutPage({
 
         {d.specialInstructions && (
           <section className="mt-4">
-            <Heading>Special instructions / safety topic</Heading>
+            <Heading>{t('handoutPg.specialHeader')}</Heading>
             <div className="whitespace-pre-wrap rounded border border-gray-300 bg-yellow-50 p-2 text-sm">
               {d.specialInstructions}
             </div>
@@ -74,17 +80,17 @@ export default async function DispatchHandoutPage({
         )}
 
         <section className="mt-4">
-          <Heading>Crew ({d.crew.length})</Heading>
+          <Heading>{t('handoutPg.crewHeader', { count: d.crew.length })}</Heading>
           {d.crew.length === 0 ? (
-            <p className="text-xs text-gray-500">No crew assigned.</p>
+            <p className="text-xs text-gray-500">{t('handoutPg.noCrew')}</p>
           ) : (
             <table className="w-full table-fixed border-collapse text-xs">
               <thead>
                 <tr className="border-b border-gray-400">
                   <th className="w-8 px-1 py-1 text-left">#</th>
-                  <th className="px-1 py-1 text-left">Name</th>
-                  <th className="w-32 px-1 py-1 text-left">Role</th>
-                  <th className="px-1 py-1 text-left">Note</th>
+                  <th className="px-1 py-1 text-left">{t('handoutPg.thName')}</th>
+                  <th className="w-32 px-1 py-1 text-left">{t('handoutPg.thRole')}</th>
+                  <th className="px-1 py-1 text-left">{t('handoutPg.thNote')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -102,17 +108,17 @@ export default async function DispatchHandoutPage({
         </section>
 
         <section className="mt-4">
-          <Heading>Equipment ({d.equipment.length})</Heading>
+          <Heading>{t('handoutPg.equipHeader', { count: d.equipment.length })}</Heading>
           {d.equipment.length === 0 ? (
-            <p className="text-xs text-gray-500">No equipment assigned.</p>
+            <p className="text-xs text-gray-500">{t('handoutPg.noEquip')}</p>
           ) : (
             <table className="w-full table-fixed border-collapse text-xs">
               <thead>
                 <tr className="border-b border-gray-400">
                   <th className="w-8 px-1 py-1 text-left">#</th>
-                  <th className="px-1 py-1 text-left">Equipment</th>
-                  <th className="w-40 px-1 py-1 text-left">Operator</th>
-                  <th className="px-1 py-1 text-left">Note</th>
+                  <th className="px-1 py-1 text-left">{t('handoutPg.thEquipment')}</th>
+                  <th className="w-40 px-1 py-1 text-left">{t('handoutPg.thOperator')}</th>
+                  <th className="px-1 py-1 text-left">{t('handoutPg.thNote')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -131,12 +137,12 @@ export default async function DispatchHandoutPage({
 
         <section className="mt-6 grid grid-cols-2 gap-6">
           <div>
-            <div className="text-xs font-semibold uppercase">Foreman acknowledgement</div>
+            <div className="text-xs font-semibold uppercase">{t('handoutPg.foremanAck')}</div>
             <div className="mt-6 border-b border-gray-400" />
             <div className="mt-1 text-xs text-gray-600">{d.foremanName}</div>
           </div>
           <div>
-            <div className="text-xs font-semibold uppercase">Date</div>
+            <div className="text-xs font-semibold uppercase">{t('prequalPg.dateLabel')}</div>
             <div className="mt-6 border-b border-gray-400 text-sm">{d.scheduledFor}</div>
           </div>
         </section>
