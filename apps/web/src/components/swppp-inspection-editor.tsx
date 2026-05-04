@@ -4,6 +4,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 import {
   bmpStatusLabel,
   swpppTriggerLabel,
@@ -82,6 +83,7 @@ export function SwpppInspectionEditor({
   inspection?: SwpppInspection;
 }) {
   const router = useRouter();
+  const t = useTranslator();
   const [form, setForm] = useState<FormState>(defaults(inspection));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -185,17 +187,17 @@ export function SwpppInspectionEditor({
         </div>
       )}
 
-      <Section title="Inspection">
-        <Field label="Job ID" required>
+      <Section title={t('swppp.secInspection')}>
+        <Field label={t('swppp.lblJobId')} required>
           <input
             className={inputCls}
             value={form.jobId}
             onChange={(e) => setField('jobId', e.target.value)}
-            placeholder="job-YYYY-MM-DD-..."
+            placeholder={t('swppp.phJobId')}
             required
           />
         </Field>
-        <Field label="Inspected on" required>
+        <Field label={t('swppp.lblInspectedOn')} required>
           <input
             type="date"
             className={inputCls}
@@ -204,7 +206,7 @@ export function SwpppInspectionEditor({
             required
           />
         </Field>
-        <Field label="Trigger">
+        <Field label={t('swppp.lblTrigger')}>
           <select
             className={inputCls}
             value={form.trigger}
@@ -217,7 +219,7 @@ export function SwpppInspectionEditor({
             ))}
           </select>
         </Field>
-        <Field label="Finalized on">
+        <Field label={t('swppp.lblFinalizedOn')}>
           <input
             type="date"
             className={inputCls}
@@ -227,8 +229,8 @@ export function SwpppInspectionEditor({
         </Field>
       </Section>
 
-      <Section title="Inspector">
-        <Field label="Inspector name" required>
+      <Section title={t('swppp.secInspector')}>
+        <Field label={t('swppp.lblInspectorName')} required>
           <input
             className={inputCls}
             value={form.inspectorName}
@@ -236,7 +238,7 @@ export function SwpppInspectionEditor({
             required
           />
         </Field>
-        <Field label="QSP/QSD certification #">
+        <Field label={t('swppp.lblInspectorCert')}>
           <input
             className={inputCls}
             value={form.inspectorCertification}
@@ -245,15 +247,15 @@ export function SwpppInspectionEditor({
         </Field>
       </Section>
 
-      <Section title="Weather + discharge">
-        <Field label="Rain forecast (≥0.5in within 24h)">
+      <Section title={t('swppp.secWeather')}>
+        <Field label={t('swppp.lblRainForecast')}>
           <Checkbox
             checked={form.rainForecast}
             onChange={(b) => setField('rainForecast', b)}
-            label="Forecast triggered pre-storm inspection"
+            label={t('swppp.cbRainForecast')}
           />
         </Field>
-        <Field label="Forecast precip (in)">
+        <Field label={t('swppp.lblForecastPrecip')}>
           <input
             type="number"
             step="0.01"
@@ -263,14 +265,14 @@ export function SwpppInspectionEditor({
             onChange={(e) => setField('forecastPrecipInches', e.target.value)}
           />
         </Field>
-        <Field label="Qualifying rain event">
+        <Field label={t('swppp.lblQualifying')}>
           <Checkbox
             checked={form.qualifyingRainEvent}
             onChange={(b) => setField('qualifyingRainEvent', b)}
-            label="Storm produced ≥0.5in"
+            label={t('swppp.cbQualifying')}
           />
         </Field>
-        <Field label="Observed precip (in)">
+        <Field label={t('swppp.lblObservedPrecip')}>
           <input
             type="number"
             step="0.01"
@@ -280,14 +282,14 @@ export function SwpppInspectionEditor({
             onChange={(e) => setField('observedPrecipInches', e.target.value)}
           />
         </Field>
-        <Field label="Discharge occurred">
+        <Field label={t('swppp.lblDischarge')}>
           <Checkbox
             checked={form.dischargeOccurred}
             onChange={(b) => setField('dischargeOccurred', b)}
-            label="Stormwater discharged from site"
+            label={t('swppp.cbDischarge')}
           />
         </Field>
-        <Field label="Discharge description" full>
+        <Field label={t('swppp.lblDischargeDesc')} full>
           <textarea
             className={`${inputCls} min-h-[60px]`}
             value={form.dischargeDescription}
@@ -299,20 +301,19 @@ export function SwpppInspectionEditor({
       <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
-            BMP checks ({form.bmpChecks.length})
+            {t('swppp.bmpHeader', { count: form.bmpChecks.length })}
           </h2>
           <button
             type="button"
             onClick={addBmp}
             className="rounded border border-yge-blue-500 px-2 py-1 text-xs text-yge-blue-500 hover:bg-yge-blue-50"
           >
-            + Add BMP
+            {t('swppp.addBmp')}
           </button>
         </div>
         {form.bmpChecks.length === 0 ? (
           <p className="mt-3 text-xs text-gray-500">
-            No BMPs added yet. Add silt fence, fiber rolls, stabilized entrance,
-            inlet protection, etc.
+            {t('swppp.bmpEmpty')}
           </p>
         ) : (
           <div className="mt-3 space-y-3">
@@ -329,25 +330,25 @@ export function SwpppInspectionEditor({
               >
                 <div className="grid gap-2 sm:grid-cols-4">
                   <div>
-                    <label className="block text-xs font-medium text-gray-700">Code</label>
+                    <label className="block text-xs font-medium text-gray-700">{t('swppp.lblBmpCode')}</label>
                     <input
                       className={inputCls}
                       value={b.bmpCode}
                       onChange={(e) => updateBmp(i, { bmpCode: e.target.value })}
-                      placeholder="SE-1"
+                      placeholder={t('swppp.phBmpCode')}
                     />
                   </div>
                   <div className="sm:col-span-2">
-                    <label className="block text-xs font-medium text-gray-700">Name</label>
+                    <label className="block text-xs font-medium text-gray-700">{t('swppp.lblBmpName')}</label>
                     <input
                       className={inputCls}
                       value={b.bmpName}
                       onChange={(e) => updateBmp(i, { bmpName: e.target.value })}
-                      placeholder="Silt Fence"
+                      placeholder={t('swppp.phBmpName')}
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-700">Status</label>
+                    <label className="block text-xs font-medium text-gray-700">{t('swppp.lblBmpStatus')}</label>
                     <select
                       className={inputCls}
                       value={b.status}
@@ -365,7 +366,7 @@ export function SwpppInspectionEditor({
                 </div>
                 <div className="mt-2 grid gap-2 sm:grid-cols-2">
                   <div>
-                    <label className="block text-xs font-medium text-gray-700">Location</label>
+                    <label className="block text-xs font-medium text-gray-700">{t('swppp.lblBmpLocation')}</label>
                     <input
                       className={inputCls}
                       value={b.location ?? ''}
@@ -373,7 +374,7 @@ export function SwpppInspectionEditor({
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-700">Corrected on</label>
+                    <label className="block text-xs font-medium text-gray-700">{t('swppp.lblBmpCorrectedOn')}</label>
                     <input
                       type="date"
                       className={inputCls}
@@ -382,7 +383,7 @@ export function SwpppInspectionEditor({
                     />
                   </div>
                   <div className="sm:col-span-2">
-                    <label className="block text-xs font-medium text-gray-700">Deficiency</label>
+                    <label className="block text-xs font-medium text-gray-700">{t('swppp.lblBmpDeficiency')}</label>
                     <textarea
                       className={`${inputCls} min-h-[40px]`}
                       value={b.deficiency ?? ''}
@@ -391,7 +392,7 @@ export function SwpppInspectionEditor({
                   </div>
                   <div className="sm:col-span-2">
                     <label className="block text-xs font-medium text-gray-700">
-                      Corrective action
+                      {t('swppp.lblBmpAction')}
                     </label>
                     <textarea
                       className={`${inputCls} min-h-[40px]`}
@@ -406,7 +407,7 @@ export function SwpppInspectionEditor({
                     onClick={() => removeBmp(i)}
                     className="text-xs text-red-600 hover:underline"
                   >
-                    Remove
+                    {t('swppp.removeBmp')}
                   </button>
                 </div>
               </div>
@@ -415,8 +416,8 @@ export function SwpppInspectionEditor({
         )}
       </div>
 
-      <Section title="Notes">
-        <Field label="Site / inspection notes" full>
+      <Section title={t('swppp.secNotes')}>
+        <Field label={t('swppp.lblNotes')} full>
           <textarea
             className={`${inputCls} min-h-[100px]`}
             value={form.notes}
@@ -431,7 +432,7 @@ export function SwpppInspectionEditor({
           disabled={saving}
           className="rounded bg-yge-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-yge-blue-700 disabled:opacity-50"
         >
-          {saving ? 'Saving…' : mode === 'create' ? 'Log inspection' : 'Save changes'}
+          {saving ? t('swppp.busy') : mode === 'create' ? t('swppp.create') : t('swppp.save')}
         </button>
       </div>
     </form>
