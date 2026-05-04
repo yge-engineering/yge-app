@@ -4,6 +4,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 import {
   incidentClassificationLabel,
   incidentOutcomeLabel,
@@ -124,6 +125,7 @@ export function IncidentEditor({
   incident?: Incident;
 }) {
   const router = useRouter();
+  const t = useTranslator();
   const [form, setForm] = useState<FormState>(defaults(incident));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -213,23 +215,21 @@ export function IncidentEditor({
 
       {form.died && !form.calOshaReported && (
         <div className="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-900">
-          <strong>URGENT:</strong> Death must be reported to Cal/OSHA within 8
-          hours per Labor Code §6409.1. Mark <em>Cal/OSHA reported</em> below
-          once the call is made.
+          <strong>{t('incEditor.urgentLeader')}</strong>{t('incEditor.urgentBody')}
         </div>
       )}
 
-      <Section title="Case identification">
-        <Field label="Case #" required>
+      <Section title={t('incEditor.secCase')}>
+        <Field label={t('incEditor.lblCase')} required>
           <input
             className={inputCls}
             value={form.caseNumber}
             onChange={(e) => setField('caseNumber', e.target.value)}
-            placeholder="2026-001"
+            placeholder={t('incEditor.phCase')}
             required
           />
         </Field>
-        <Field label="Log year" required>
+        <Field label={t('incEditor.lblYear')} required>
           <input
             type="number"
             className={inputCls}
@@ -238,7 +238,7 @@ export function IncidentEditor({
             required
           />
         </Field>
-        <Field label="Incident date" required>
+        <Field label={t('incEditor.lblIncidentDate')} required>
           <input
             type="date"
             className={inputCls}
@@ -247,18 +247,18 @@ export function IncidentEditor({
             required
           />
         </Field>
-        <Field label="Time of incident (HH:MM)">
+        <Field label={t('incEditor.lblIncidentTime')}>
           <input
             className={inputCls}
             value={form.incidentTime}
             onChange={(e) => setField('incidentTime', e.target.value)}
-            placeholder="14:30"
+            placeholder={t('incEditor.phIncidentTime')}
           />
         </Field>
       </Section>
 
-      <Section title="Employee">
-        <Field label="Employee name" required>
+      <Section title={t('incEditor.secEmployee')}>
+        <Field label={t('incEditor.lblEmpName')} required>
           <input
             className={inputCls}
             value={form.employeeName}
@@ -266,22 +266,22 @@ export function IncidentEditor({
             required
           />
         </Field>
-        <Field label="Employee ID">
+        <Field label={t('incEditor.lblEmpId')}>
           <input
             className={inputCls}
             value={form.employeeId}
             onChange={(e) => setField('employeeId', e.target.value)}
-            placeholder="emp-xxxxxxxx"
+            placeholder={t('incEditor.phEmpId')}
           />
         </Field>
-        <Field label="Job title">
+        <Field label={t('incEditor.lblJobTitle')}>
           <input
             className={inputCls}
             value={form.jobTitle}
             onChange={(e) => setField('jobTitle', e.target.value)}
           />
         </Field>
-        <Field label="Hire date">
+        <Field label={t('incEditor.lblHireDate')}>
           <input
             type="date"
             className={inputCls}
@@ -289,54 +289,54 @@ export function IncidentEditor({
             onChange={(e) => setField('hireDate', e.target.value)}
           />
         </Field>
-        <Field label="Privacy case">
+        <Field label={t('incEditor.lblPrivacyCase')}>
           <Checkbox
             checked={form.privacyCase}
             onChange={(b) => setField('privacyCase', b)}
-            label='Print "Privacy Case" instead of name on Form 300'
+            label={t('incEditor.cbPrivacyCase')}
           />
         </Field>
-        <Field label="Time work started (HH:MM)">
+        <Field label={t('incEditor.lblWorkStart')}>
           <input
             className={inputCls}
             value={form.workStartTime}
             onChange={(e) => setField('workStartTime', e.target.value)}
-            placeholder="07:00"
+            placeholder={t('incEditor.phWorkStart')}
           />
         </Field>
       </Section>
 
-      <Section title="Where + what (Form 300 description)">
-        <Field label="Location" required>
+      <Section title={t('incEditor.secWhere')}>
+        <Field label={t('incEditor.lblLocation')} required>
           <input
             className={inputCls}
             value={form.location}
             onChange={(e) => setField('location', e.target.value)}
-            placeholder="Sulphur Springs Rd, Sta. 12+50"
+            placeholder={t('incEditor.phLocation')}
             required
           />
         </Field>
-        <Field label="Job ID">
+        <Field label={t('incEditor.lblJobId')}>
           <input
             className={inputCls}
             value={form.jobId}
             onChange={(e) => setField('jobId', e.target.value)}
-            placeholder="job-YYYY-MM-DD-..."
+            placeholder={t('incEditor.phJobId')}
           />
         </Field>
-        <Field label="Description (injury, body parts, agent)" required full>
+        <Field label={t('incEditor.lblDescription')} required full>
           <textarea
             className={`${inputCls} min-h-[80px]`}
             value={form.description}
             onChange={(e) => setField('description', e.target.value)}
-            placeholder="Strained right shoulder while lifting form panel."
+            placeholder={t('incEditor.phDescription')}
             required
           />
         </Field>
       </Section>
 
-      <Section title="Classification + outcome">
-        <Field label="Classification" required>
+      <Section title={t('incEditor.secClassification')}>
+        <Field label={t('incEditor.lblClassification')} required>
           <select
             className={inputCls}
             value={form.classification}
@@ -351,7 +351,7 @@ export function IncidentEditor({
             ))}
           </select>
         </Field>
-        <Field label="Outcome" required>
+        <Field label={t('incEditor.lblOutcome')} required>
           <select
             className={inputCls}
             value={form.outcome}
@@ -364,7 +364,7 @@ export function IncidentEditor({
             ))}
           </select>
         </Field>
-        <Field label="Days away from work">
+        <Field label={t('incEditor.lblDaysAway')}>
           <input
             type="number"
             min="0"
@@ -373,7 +373,7 @@ export function IncidentEditor({
             onChange={(e) => setField('daysAway', e.target.value)}
           />
         </Field>
-        <Field label="Days of restricted duty">
+        <Field label={t('incEditor.lblDaysRestricted')}>
           <input
             type="number"
             min="0"
@@ -384,29 +384,29 @@ export function IncidentEditor({
         </Field>
       </Section>
 
-      <Section title="Form 301 narrative">
-        <Field label="What was the employee doing just before?" full>
+      <Section title={t('incEditor.secNarrative')}>
+        <Field label={t('incEditor.lblTaskBefore')} full>
           <textarea
             className={`${inputCls} min-h-[60px]`}
             value={form.taskBeforeIncident}
             onChange={(e) => setField('taskBeforeIncident', e.target.value)}
           />
         </Field>
-        <Field label="What happened?" full>
+        <Field label={t('incEditor.lblWhatHappened')} full>
           <textarea
             className={`${inputCls} min-h-[80px]`}
             value={form.whatHappened}
             onChange={(e) => setField('whatHappened', e.target.value)}
           />
         </Field>
-        <Field label="Injury / illness description (body parts)" full>
+        <Field label={t('incEditor.lblInjuryDesc')} full>
           <textarea
             className={`${inputCls} min-h-[60px]`}
             value={form.injuryDescription}
             onChange={(e) => setField('injuryDescription', e.target.value)}
           />
         </Field>
-        <Field label="Object / substance that harmed the employee">
+        <Field label={t('incEditor.lblHarmingAgent')}>
           <input
             className={inputCls}
             value={form.harmingAgent}
@@ -415,53 +415,53 @@ export function IncidentEditor({
         </Field>
       </Section>
 
-      <Section title="Treatment">
-        <Field label="Treating physician">
+      <Section title={t('incEditor.secTreatment')}>
+        <Field label={t('incEditor.lblPhysician')}>
           <input
             className={inputCls}
             value={form.physicianName}
             onChange={(e) => setField('physicianName', e.target.value)}
           />
         </Field>
-        <Field label="Facility name">
+        <Field label={t('incEditor.lblFacility')}>
           <input
             className={inputCls}
             value={form.facilityName}
             onChange={(e) => setField('facilityName', e.target.value)}
           />
         </Field>
-        <Field label="Facility address" full>
+        <Field label={t('incEditor.lblFacilityAddress')} full>
           <input
             className={inputCls}
             value={form.facilityAddress}
             onChange={(e) => setField('facilityAddress', e.target.value)}
           />
         </Field>
-        <Field label="Treated in ER">
+        <Field label={t('incEditor.lblTreatedER')}>
           <Checkbox
             checked={form.treatedInER}
             onChange={(b) => setField('treatedInER', b)}
-            label="Employee was treated in an emergency room"
+            label={t('incEditor.cbTreatedER')}
           />
         </Field>
-        <Field label="Hospitalized overnight">
+        <Field label={t('incEditor.lblHospitalized')}>
           <Checkbox
             checked={form.hospitalizedOvernight}
             onChange={(b) => setField('hospitalizedOvernight', b)}
-            label="Employee was admitted overnight"
+            label={t('incEditor.cbHospitalized')}
           />
         </Field>
       </Section>
 
-      <Section title="Severity flags">
-        <Field label="Death">
+      <Section title={t('incEditor.secSeverity')}>
+        <Field label={t('incEditor.lblDeath')}>
           <Checkbox
             checked={form.died}
             onChange={(b) => setField('died', b)}
-            label="Employee died from this incident"
+            label={t('incEditor.cbDeath')}
           />
         </Field>
-        <Field label="Date of death">
+        <Field label={t('incEditor.lblDateOfDeath')}>
           <input
             type="date"
             className={inputCls}
@@ -469,17 +469,17 @@ export function IncidentEditor({
             onChange={(e) => setField('dateOfDeath', e.target.value)}
           />
         </Field>
-        <Field label="Reported to Cal/OSHA">
+        <Field label={t('incEditor.lblCalOsha')}>
           <Checkbox
             checked={form.calOshaReported}
             onChange={(b) => setField('calOshaReported', b)}
-            label="8-hour Cal/OSHA call has been made (LC §6409.1)"
+            label={t('incEditor.cbCalOsha')}
           />
         </Field>
       </Section>
 
-      <Section title="Status">
-        <Field label="Case status">
+      <Section title={t('incEditor.secStatus')}>
+        <Field label={t('incEditor.lblStatus')}>
           <select
             className={inputCls}
             value={form.status}
@@ -492,7 +492,7 @@ export function IncidentEditor({
             ))}
           </select>
         </Field>
-        <Field label="Closed on">
+        <Field label={t('incEditor.lblClosedOn')}>
           <input
             type="date"
             className={inputCls}
@@ -502,22 +502,22 @@ export function IncidentEditor({
         </Field>
       </Section>
 
-      <Section title="Form 301 prepared by">
-        <Field label="Name">
+      <Section title={t('incEditor.secPreparedBy')}>
+        <Field label={t('incEditor.lblPreparedName')}>
           <input
             className={inputCls}
             value={form.preparedByName}
             onChange={(e) => setField('preparedByName', e.target.value)}
           />
         </Field>
-        <Field label="Title">
+        <Field label={t('incEditor.lblPreparedTitle')}>
           <input
             className={inputCls}
             value={form.preparedByTitle}
             onChange={(e) => setField('preparedByTitle', e.target.value)}
           />
         </Field>
-        <Field label="Prepared on">
+        <Field label={t('incEditor.lblPreparedOn')}>
           <input
             type="date"
             className={inputCls}
@@ -527,8 +527,8 @@ export function IncidentEditor({
         </Field>
       </Section>
 
-      <Section title="Notes">
-        <Field label="Internal notes" full>
+      <Section title={t('incEditor.secNotes')}>
+        <Field label={t('incEditor.lblNotes')} full>
           <textarea
             className={`${inputCls} min-h-[80px]`}
             value={form.notes}
@@ -543,7 +543,7 @@ export function IncidentEditor({
           disabled={saving}
           className="rounded bg-yge-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-yge-blue-700 disabled:opacity-50"
         >
-          {saving ? 'Saving…' : mode === 'create' ? 'Log incident' : 'Save changes'}
+          {saving ? t('incEditor.busy') : mode === 'create' ? t('incEditor.create') : t('incEditor.save')}
         </button>
       </div>
     </form>
