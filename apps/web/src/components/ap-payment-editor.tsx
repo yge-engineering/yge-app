@@ -4,6 +4,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 import {
   apPaymentMethodLabel,
   dollarsToCents,
@@ -60,6 +61,7 @@ export function ApPaymentEditor({
   payment?: ApPayment;
 }) {
   const router = useRouter();
+  const t = useTranslator();
   const [form, setForm] = useState<FormState>(defaults(payment));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -124,17 +126,17 @@ export function ApPaymentEditor({
         </div>
       )}
 
-      <Section title="Invoice + vendor">
-        <Field label="AP invoice ID" required>
+      <Section title={t('apPayment.secInvoice')}>
+        <Field label={t('apPayment.lblApInvId')} required>
           <input
             className={inputCls}
             value={form.apInvoiceId}
             onChange={(e) => setField('apInvoiceId', e.target.value)}
-            placeholder="api-xxxxxxxx"
+            placeholder={t('apPayment.phApInvId')}
             required
           />
         </Field>
-        <Field label="Vendor name" required>
+        <Field label={t('apPayment.lblVendor')} required>
           <input
             className={inputCls}
             value={form.vendorName}
@@ -144,8 +146,8 @@ export function ApPaymentEditor({
         </Field>
       </Section>
 
-      <Section title="Payment">
-        <Field label="Method">
+      <Section title={t('apPayment.secPayment')}>
+        <Field label={t('apPayment.lblMethod')}>
           <select
             className={inputCls}
             value={form.method}
@@ -158,7 +160,7 @@ export function ApPaymentEditor({
             ))}
           </select>
         </Field>
-        <Field label="Paid on" required>
+        <Field label={t('apPayment.lblPaidOn')} required>
           <input
             type="date"
             className={inputCls}
@@ -167,7 +169,7 @@ export function ApPaymentEditor({
             required
           />
         </Field>
-        <Field label="Amount ($)" required>
+        <Field label={t('apPayment.lblAmount')} required>
           <input
             type="number"
             step="0.01"
@@ -178,33 +180,33 @@ export function ApPaymentEditor({
             required
           />
         </Field>
-        <Field label="Reference #">
+        <Field label={t('apPayment.lblRefNum')}>
           <input
             className={inputCls}
             value={form.referenceNumber}
             onChange={(e) => setField('referenceNumber', e.target.value)}
-            placeholder="check #, ACH trace, wire ref"
+            placeholder={t('apPayment.phRefNum')}
           />
         </Field>
-        <Field label="Bank account">
+        <Field label={t('apPayment.lblBank')}>
           <input
             className={inputCls}
             value={form.bankAccount}
             onChange={(e) => setField('bankAccount', e.target.value)}
-            placeholder="Operating - BoA x1234"
+            placeholder={t('apPayment.phBank')}
           />
         </Field>
       </Section>
 
-      <Section title="Status">
-        <Field label="Cleared">
+      <Section title={t('apPayment.secStatus')}>
+        <Field label={t('apPayment.lblCleared')}>
           <Checkbox
             checked={form.cleared}
             onChange={(b) => setField('cleared', b)}
-            label="Funds have left the bank"
+            label={t('apPayment.cbCleared')}
           />
         </Field>
-        <Field label="Cleared on">
+        <Field label={t('apPayment.lblClearedOn')}>
           <input
             type="date"
             className={inputCls}
@@ -212,14 +214,14 @@ export function ApPaymentEditor({
             onChange={(e) => setField('clearedOn', e.target.value)}
           />
         </Field>
-        <Field label="Voided">
+        <Field label={t('apPayment.lblVoided')}>
           <Checkbox
             checked={form.voided}
             onChange={(b) => setField('voided', b)}
-            label="Pull this payment out of the AP balance + register"
+            label={t('apPayment.cbVoided')}
           />
         </Field>
-        <Field label="Voided on">
+        <Field label={t('apPayment.lblVoidedOn')}>
           <input
             type="date"
             className={inputCls}
@@ -229,8 +231,8 @@ export function ApPaymentEditor({
         </Field>
       </Section>
 
-      <Section title="Notes">
-        <Field label="Internal notes" full>
+      <Section title={t('apPayment.secNotes')}>
+        <Field label={t('apPayment.lblNotes')} full>
           <textarea
             className={`${inputCls} min-h-[80px]`}
             value={form.notes}
@@ -245,7 +247,7 @@ export function ApPaymentEditor({
           disabled={saving}
           className="rounded bg-yge-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-yge-blue-700 disabled:opacity-50"
         >
-          {saving ? 'Saving…' : mode === 'create' ? 'Record payment' : 'Save changes'}
+          {saving ? t('apPayment.busy') : mode === 'create' ? t('apPayment.create') : t('apPayment.save')}
         </button>
       </div>
     </form>
