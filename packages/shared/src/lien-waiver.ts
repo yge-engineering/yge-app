@@ -109,13 +109,8 @@ export type LienWaiverPatch = z.infer<typeof LienWaiverPatchSchema>;
 
 // ---- Helpers -------------------------------------------------------------
 
-export function lienWaiverKindLabel(k: LienWaiverKind): string {
-  switch (k) {
-    case 'CONDITIONAL_PROGRESS': return 'Conditional progress (§8132)';
-    case 'UNCONDITIONAL_PROGRESS': return 'Unconditional progress (§8134)';
-    case 'CONDITIONAL_FINAL': return 'Conditional final (§8136)';
-    case 'UNCONDITIONAL_FINAL': return 'Unconditional final (§8138)';
-  }
+export function lienWaiverKindLabel(k: LienWaiverKind, locale: Locale = 'en'): string {
+  return translate(SEED_DICTIONARY, locale, `lienWaiver.kind.${k}`);
 }
 
 export function lienWaiverShortKindLabel(k: LienWaiverKind, locale: Locale = 'en'): string {
