@@ -8,6 +8,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import type { MasterProfile, MasterProfileBonding } from '@yge/shared';
+import { useTranslator } from '../lib/use-translator';
 
 interface Props {
   apiBaseUrl: string;
@@ -22,6 +23,7 @@ const EMPTY: MasterProfileBonding = {
 
 export function MasterProfileBondingEditor({ apiBaseUrl, initial }: Props) {
   const router = useRouter();
+  const t = useTranslator();
   const [draft, setDraft] = useState<MasterProfileBonding>(initial ?? EMPTY);
   const [busy, setBusy] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
@@ -50,7 +52,7 @@ export function MasterProfileBondingEditor({ apiBaseUrl, initial }: Props) {
         const issuesSuffix = body.issues
           ? ` — ${JSON.stringify(body.issues).slice(0, 200)}`
           : '';
-        setError((body.error ?? `API returned ${res.status}`) + issuesSuffix);
+        setError((body.error ?? t('bondingProfile.errApi', { status: res.status })) + issuesSuffix);
         return;
       }
       setSavedAt(new Date().toISOString());
@@ -65,11 +67,11 @@ export function MasterProfileBondingEditor({ apiBaseUrl, initial }: Props) {
   return (
     <section className="rounded-md border border-gray-200 bg-white p-4 shadow-sm">
       <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-700">
-        Bonding profile
+        {t('bondingProfile.title')}
       </h2>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <Field label="Surety name">
+        <Field label={t('bondingProfile.surety')}>
           <input
             type="text"
             value={draft.suretyName}
@@ -77,7 +79,7 @@ export function MasterProfileBondingEditor({ apiBaseUrl, initial }: Props) {
             className={inputClass}
           />
         </Field>
-        <Field label="Single-job limit ($)">
+        <Field label={t('bondingProfile.singleJob')}>
           <input
             type="number"
             min={0}
@@ -88,7 +90,7 @@ export function MasterProfileBondingEditor({ apiBaseUrl, initial }: Props) {
             className={inputClass}
           />
         </Field>
-        <Field label="Aggregate limit ($)">
+        <Field label={t('bondingProfile.aggregate')}>
           <input
             type="number"
             min={0}
@@ -99,7 +101,7 @@ export function MasterProfileBondingEditor({ apiBaseUrl, initial }: Props) {
             className={inputClass}
           />
         </Field>
-        <Field label="Bonding agent name">
+        <Field label={t('bondingProfile.agentName')}>
           <input
             type="text"
             value={draft.agentName ?? ''}
@@ -107,7 +109,7 @@ export function MasterProfileBondingEditor({ apiBaseUrl, initial }: Props) {
             className={inputClass}
           />
         </Field>
-        <Field label="Agent phone">
+        <Field label={t('bondingProfile.agentPhone')}>
           <input
             type="tel"
             value={draft.agentPhone ?? ''}
@@ -115,7 +117,7 @@ export function MasterProfileBondingEditor({ apiBaseUrl, initial }: Props) {
             className={inputClass}
           />
         </Field>
-        <Field label="Agent email">
+        <Field label={t('bondingProfile.agentEmail')}>
           <input
             type="email"
             value={draft.agentEmail ?? ''}
@@ -125,12 +127,12 @@ export function MasterProfileBondingEditor({ apiBaseUrl, initial }: Props) {
         </Field>
       </div>
 
-      <Field label="Internal notes" className="mt-3">
+      <Field label={t('bondingProfile.notes')} className="mt-3">
         <textarea
           value={draft.notes ?? ''}
           onChange={(e) => setField('notes', e.target.value || undefined)}
           className={`${inputClass} h-20 resize-y`}
-          placeholder="e.g. 'Travelers — capacity confirmed via Brook on 4/22'"
+          placeholder={t('bondingProfile.notesPh')}
         />
       </Field>
 
@@ -147,21 +149,19 @@ export function MasterProfileBondingEditor({ apiBaseUrl, initial }: Props) {
           disabled={!dirty || busy}
           className="rounded bg-yge-blue-500 px-4 py-1.5 text-sm font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50"
         >
-          {busy ? 'Saving…' : 'Save bonding'}
+          {busy ? t('bondingProfile.busy') : t('bondingProfile.action')}
         </button>
         {savedAt && (
           <span className="text-xs text-emerald-700">
-            ✓ Saved at {savedAt.replace('T', ' ').slice(0, 16)} UTC
+            {t('bondingProfile.savedAt', { at: savedAt.replace('T', ' ').slice(0, 16) })}
           </span>
         )}
         {dirty && !busy && !savedAt && (
-          <span className="text-xs text-gray-500">Unsaved changes.</span>
+          <span className="text-xs text-gray-500">{t('bondingProfile.unsaved')}</span>
         )}
       </div>
       <p className="mt-2 text-xs text-gray-500">
-        Bonding limits drive the bid coach&rsquo;s capacity check —
-        proposals over 85% of single-job or aggregate fire warn /
-        danger flags before submit.
+        {t('bondingProfile.help')}
       </p>
     </section>
   );
