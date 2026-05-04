@@ -4,6 +4,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 import {
   dollarsToCents,
   pcoOriginLabel,
@@ -89,6 +90,7 @@ export function PcoEditor({
   pco?: Pco;
 }) {
   const router = useRouter();
+  const t = useTranslator();
   const [form, setForm] = useState<FormState>(defaults(pco));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -158,33 +160,33 @@ export function PcoEditor({
         </div>
       )}
 
-      <Section title="Identification">
-        <Field label="Job ID" required>
+      <Section title={t('pco.secId')}>
+        <Field label={t('pco.lblJobId')} required>
           <input
             className={inputCls}
             value={form.jobId}
             onChange={(e) => setField('jobId', e.target.value)}
-            placeholder="job-YYYY-MM-DD-..."
+            placeholder={t('pco.phJobId')}
             required
           />
         </Field>
-        <Field label="PCO #" required>
+        <Field label={t('pco.lblPcoNum')} required>
           <input
             className={inputCls}
             value={form.pcoNumber}
             onChange={(e) => setField('pcoNumber', e.target.value)}
-            placeholder="PCO-001"
+            placeholder={t('pco.phPcoNum')}
             required
           />
         </Field>
-        <Field label="Agency PCO #">
+        <Field label={t('pco.lblAgencyPcoNum')}>
           <input
             className={inputCls}
             value={form.agencyPcoNumber}
             onChange={(e) => setField('agencyPcoNumber', e.target.value)}
           />
         </Field>
-        <Field label="Origin">
+        <Field label={t('pco.lblOrigin')}>
           <select
             className={inputCls}
             value={form.origin}
@@ -199,8 +201,8 @@ export function PcoEditor({
         </Field>
       </Section>
 
-      <Section title="Scope">
-        <Field label="Title" required full>
+      <Section title={t('pco.secScope')}>
+        <Field label={t('pco.lblTitle')} required full>
           <input
             className={inputCls}
             value={form.title}
@@ -208,7 +210,7 @@ export function PcoEditor({
             required
           />
         </Field>
-        <Field label="Description" full>
+        <Field label={t('pco.lblDescription')} full>
           <textarea
             className={`${inputCls} min-h-[100px]`}
             value={form.description}
@@ -217,8 +219,8 @@ export function PcoEditor({
         </Field>
       </Section>
 
-      <Section title="Money + schedule">
-        <Field label="Cost impact ($)">
+      <Section title={t('pco.secMoney')}>
+        <Field label={t('pco.lblCostImpact')}>
           <input
             type="number"
             step="0.01"
@@ -227,7 +229,7 @@ export function PcoEditor({
             onChange={(e) => setField('costImpactDollars', e.target.value)}
           />
         </Field>
-        <Field label="Schedule impact (days)">
+        <Field label={t('pco.lblScheduleImpact')}>
           <input
             type="number"
             className={inputCls}
@@ -237,8 +239,8 @@ export function PcoEditor({
         </Field>
       </Section>
 
-      <Section title="Status + dates">
-        <Field label="Status">
+      <Section title={t('pco.secStatus')}>
+        <Field label={t('pco.lblStatus')}>
           <select
             className={inputCls}
             value={form.status}
@@ -251,7 +253,7 @@ export function PcoEditor({
             ))}
           </select>
         </Field>
-        <Field label="Noticed on" required>
+        <Field label={t('pco.lblNoticed')} required>
           <input
             type="date"
             className={inputCls}
@@ -260,7 +262,7 @@ export function PcoEditor({
             required
           />
         </Field>
-        <Field label="Submitted on">
+        <Field label={t('pco.lblSubmitted')}>
           <input
             type="date"
             className={inputCls}
@@ -268,7 +270,7 @@ export function PcoEditor({
             onChange={(e) => setField('submittedOn', e.target.value)}
           />
         </Field>
-        <Field label="Last agency response">
+        <Field label={t('pco.lblLastResponse')}>
           <input
             type="date"
             className={inputCls}
@@ -278,31 +280,31 @@ export function PcoEditor({
         </Field>
       </Section>
 
-      <Section title="Cross-references">
-        <Field label="Triggering RFI ID">
+      <Section title={t('pco.secXref')}>
+        <Field label={t('pco.lblRfiId')}>
           <input
             className={inputCls}
             value={form.rfiId}
             onChange={(e) => setField('rfiId', e.target.value)}
-            placeholder="rfi-xxxxxxxx"
+            placeholder={t('pco.phRfiId')}
           />
         </Field>
-        <Field label="Executed CO ID">
+        <Field label={t('pco.lblCoId')}>
           <input
             className={inputCls}
             value={form.changeOrderId}
             onChange={(e) => setField('changeOrderId', e.target.value)}
-            placeholder="co-xxxxxxxx"
+            placeholder={t('pco.phCoId')}
           />
         </Field>
-        <Field label="Agency contact">
+        <Field label={t('pco.lblAgencyContact')}>
           <input
             className={inputCls}
             value={form.agencyContact}
             onChange={(e) => setField('agencyContact', e.target.value)}
           />
         </Field>
-        <Field label="Prepared by">
+        <Field label={t('pco.lblPreparedBy')}>
           <input
             className={inputCls}
             value={form.preparedByName}
@@ -311,8 +313,8 @@ export function PcoEditor({
         </Field>
       </Section>
 
-      <Section title="Notes">
-        <Field label="Internal notes" full>
+      <Section title={t('pco.secNotes')}>
+        <Field label={t('pco.lblNotes')} full>
           <textarea
             className={`${inputCls} min-h-[100px]`}
             value={form.notes}
@@ -327,7 +329,7 @@ export function PcoEditor({
           disabled={saving}
           className="rounded bg-yge-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-yge-blue-700 disabled:opacity-50"
         >
-          {saving ? 'Saving…' : mode === 'create' ? 'Create PCO' : 'Save changes'}
+          {saving ? t('pco.busy') : mode === 'create' ? t('pco.create') : t('pco.save')}
         </button>
       </div>
     </form>
