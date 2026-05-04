@@ -4,6 +4,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 import {
   punchItemSeverityLabel,
   punchItemStatusLabel,
@@ -70,6 +71,7 @@ export function PunchItemEditor({
   item?: PunchItem;
 }) {
   const router = useRouter();
+  const t = useTranslator();
   const [form, setForm] = useState<FormState>(defaults(item));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -139,17 +141,17 @@ export function PunchItemEditor({
         </div>
       )}
 
-      <Section title="Job + identification">
-        <Field label="Job ID" required>
+      <Section title={t('punchItem.secJob')}>
+        <Field label={t('punchItem.lblJobId')} required>
           <input
             className={inputCls}
             value={form.jobId}
             onChange={(e) => setField('jobId', e.target.value)}
-            placeholder="job-YYYY-MM-DD-..."
+            placeholder={t('punchItem.phJobId')}
             required
           />
         </Field>
-        <Field label="Identified on" required>
+        <Field label={t('punchItem.lblIdentified')} required>
           <input
             type="date"
             className={inputCls}
@@ -160,17 +162,17 @@ export function PunchItemEditor({
         </Field>
       </Section>
 
-      <Section title="Item">
-        <Field label="Location" required>
+      <Section title={t('punchItem.secItem')}>
+        <Field label={t('punchItem.lblLocation')} required>
           <input
             className={inputCls}
             value={form.location}
             onChange={(e) => setField('location', e.target.value)}
-            placeholder="Sta. 12+50 LT, catch basin #3, etc."
+            placeholder={t('punchItem.phLocation')}
             required
           />
         </Field>
-        <Field label="Severity">
+        <Field label={t('punchItem.lblSeverity')}>
           <select
             className={inputCls}
             value={form.severity}
@@ -183,7 +185,7 @@ export function PunchItemEditor({
             ))}
           </select>
         </Field>
-        <Field label="Description" required full>
+        <Field label={t('punchItem.lblDescription')} required full>
           <textarea
             className={`${inputCls} min-h-[80px]`}
             value={form.description}
@@ -193,24 +195,24 @@ export function PunchItemEditor({
         </Field>
       </Section>
 
-      <Section title="Responsibility">
-        <Field label="Responsible party (free-form)">
+      <Section title={t('punchItem.secResp')}>
+        <Field label={t('punchItem.lblRespParty')}>
           <input
             className={inputCls}
             value={form.responsibleParty}
             onChange={(e) => setField('responsibleParty', e.target.value)}
-            placeholder="Crew lead name, sub name, etc."
+            placeholder={t('punchItem.phRespParty')}
           />
         </Field>
-        <Field label="Responsible vendor ID (sub)">
+        <Field label={t('punchItem.lblRespVendor')}>
           <input
             className={inputCls}
             value={form.responsibleVendorId}
             onChange={(e) => setField('responsibleVendorId', e.target.value)}
-            placeholder="vnd-xxxxxxxx"
+            placeholder={t('punchItem.phRespVendor')}
           />
         </Field>
-        <Field label="Due on">
+        <Field label={t('punchItem.lblDue')}>
           <input
             type="date"
             className={inputCls}
@@ -218,7 +220,7 @@ export function PunchItemEditor({
             onChange={(e) => setField('dueOn', e.target.value)}
           />
         </Field>
-        <Field label="Status">
+        <Field label={t('punchItem.lblStatus')}>
           <select
             className={inputCls}
             value={form.status}
@@ -233,8 +235,8 @@ export function PunchItemEditor({
         </Field>
       </Section>
 
-      <Section title="Closeout">
-        <Field label="Closed on">
+      <Section title={t('punchItem.secCloseout')}>
+        <Field label={t('punchItem.lblClosed')}>
           <input
             type="date"
             className={inputCls}
@@ -242,26 +244,26 @@ export function PunchItemEditor({
             onChange={(e) => setField('closedOn', e.target.value)}
           />
         </Field>
-        <Field label="Verified by (initials)">
+        <Field label={t('punchItem.lblVerifiedBy')}>
           <input
             className={inputCls}
             value={form.closedByInitials}
             onChange={(e) => setField('closedByInitials', e.target.value)}
-            placeholder="RDY"
+            placeholder={t('punchItem.phVerifiedBy')}
           />
         </Field>
       </Section>
 
-      <Section title="Photos + notes">
-        <Field label="Photo refs (one per line)" full>
+      <Section title={t('punchItem.secPhotos')}>
+        <Field label={t('punchItem.lblPhotoRefs')} full>
           <textarea
             className={`${inputCls} min-h-[60px] font-mono`}
             value={form.photoRefs}
             onChange={(e) => setField('photoRefs', e.target.value)}
-            placeholder="img-2026-04-25-01.jpg"
+            placeholder={t('punchItem.phPhotoRefs')}
           />
         </Field>
-        <Field label="Notes" full>
+        <Field label={t('punchItem.lblNotes')} full>
           <textarea
             className={`${inputCls} min-h-[80px]`}
             value={form.notes}
@@ -276,7 +278,7 @@ export function PunchItemEditor({
           disabled={saving}
           className="rounded bg-yge-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-yge-blue-700 disabled:opacity-50"
         >
-          {saving ? 'Saving…' : mode === 'create' ? 'Create item' : 'Save changes'}
+          {saving ? t('punchItem.busy') : mode === 'create' ? t('punchItem.create') : t('punchItem.save')}
         </button>
       </div>
     </form>
