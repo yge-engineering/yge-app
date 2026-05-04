@@ -4,6 +4,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 import {
   accountTypeLabel,
   defaultTypeForNumber,
@@ -57,6 +58,7 @@ export function AccountEditor({
   account?: Account;
 }) {
   const router = useRouter();
+  const t = useTranslator();
   const [form, setForm] = useState<FormState>(defaults(account));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -126,26 +128,26 @@ export function AccountEditor({
         </div>
       )}
 
-      <Section title="Account">
-        <Field label="Number (4-6 digits)" required>
+      <Section title={t('accountEditor.section')}>
+        <Field label={t('accountEditor.lblNumber')} required>
           <input
             className={inputCls}
             value={form.number}
             onChange={(e) => onNumberChange(e.target.value)}
-            placeholder="51100"
+            placeholder={t('accountEditor.phNumber')}
             required
           />
         </Field>
-        <Field label="Name" required>
+        <Field label={t('accountEditor.lblName')} required>
           <input
             className={inputCls}
             value={form.name}
             onChange={(e) => setField('name', e.target.value)}
-            placeholder="Direct Labor — Wages"
+            placeholder={t('accountEditor.phName')}
             required
           />
         </Field>
-        <Field label="Type">
+        <Field label={t('accountEditor.lblType')}>
           <select
             className={inputCls}
             value={form.type}
@@ -161,22 +163,22 @@ export function AccountEditor({
             ))}
           </select>
         </Field>
-        <Field label="Parent #">
+        <Field label={t('accountEditor.lblParent')}>
           <input
             className={inputCls}
             value={form.parentNumber}
             onChange={(e) => setField('parentNumber', e.target.value)}
-            placeholder="51000"
+            placeholder={t('accountEditor.phParent')}
           />
         </Field>
-        <Field label="Active">
+        <Field label={t('accountEditor.lblActive')}>
           <Checkbox
             checked={form.active}
             onChange={(b) => setField('active', b)}
-            label="Visible in pickers (uncheck to retire)"
+            label={t('accountEditor.cbActive')}
           />
         </Field>
-        <Field label="Description" full>
+        <Field label={t('accountEditor.lblDescription')} full>
           <textarea
             className={`${inputCls} min-h-[60px]`}
             value={form.description}
@@ -191,7 +193,7 @@ export function AccountEditor({
           disabled={saving}
           className="rounded bg-yge-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-yge-blue-700 disabled:opacity-50"
         >
-          {saving ? 'Saving…' : mode === 'create' ? 'Create account' : 'Save changes'}
+          {saving ? t('accountEditor.busy') : mode === 'create' ? t('accountEditor.create') : t('accountEditor.save')}
         </button>
       </div>
     </form>
