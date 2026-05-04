@@ -6,6 +6,7 @@ import { AppShell, AuditBinderPanel, StatusPill } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { BidResult, BidTab, Job } from '@yge/shared';
 import { BidResultEditor } from '@/components/bid-result-editor';
+import { getTranslator, type Translator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
   return (
@@ -57,13 +58,14 @@ export default async function BidResultDetailPage({
   ]);
   if (!result) notFound();
   const job = jobs.find((j) => j.id === result.jobId);
+  const t = getTranslator();
 
   return (
     <AppShell>
     <main className="mx-auto max-w-4xl p-8">
       <div className="mb-6">
         <Link href="/bid-results" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Back to bid results
+          {t('bidResultPg.back')}
         </Link>
       </div>
 
@@ -75,7 +77,7 @@ export default async function BidResultDetailPage({
         />
       </div>
 
-      {linkedTab && <LinkedBidTabPanel tab={linkedTab} />}
+      {linkedTab && <LinkedBidTabPanel tab={linkedTab} t={t} />}
 
       <AuditBinderPanel entityType="BidResult" entityId={result.id} />
     </main>
@@ -83,7 +85,7 @@ export default async function BidResultDetailPage({
   );
 }
 
-function LinkedBidTabPanel({ tab }: { tab: BidTab }) {
+function LinkedBidTabPanel({ tab, t }: { tab: BidTab; t: Translator }) {
   const apparent = tab.bidders.find((b) => b.rank === 1);
   const ee = tab.engineersEstimateCents;
   return (
@@ -91,22 +93,22 @@ function LinkedBidTabPanel({ tab }: { tab: BidTab }) {
       <header className="mb-2 flex items-center justify-between">
         <div>
           <h2 className="text-sm font-semibold uppercase tracking-wide text-yge-blue-500">
-            Public bid tab
+            {t('bidResultPg.linkedHeader')}
           </h2>
           <p className="text-xs text-gray-700">
-            {tab.agencyName} · {tab.source} · opened {tab.bidOpenedAt.slice(0, 10)}
+            {t('bidResultPg.linkedSubtitle', { agency: tab.agencyName, source: tab.source, date: tab.bidOpenedAt.slice(0, 10) })}
           </p>
         </div>
         <Link
           href={`/bid-tabs/${tab.id}`}
           className="rounded bg-yge-blue-500 px-3 py-1 text-xs font-semibold text-white hover:bg-yge-blue-700"
         >
-          Open tab →
+          {t('bidResultPg.openTab')}
         </Link>
       </header>
       <dl className="grid gap-3 text-xs sm:grid-cols-3">
         <div>
-          <dt className="text-[10px] uppercase tracking-wide text-gray-500">Apparent low</dt>
+          <dt className="text-[10px] uppercase tracking-wide text-gray-500">{t('bidResultPg.lblApparentLow')}</dt>
           <dd className="mt-0.5 font-mono text-gray-900">
             {apparent ? formatMoney(apparent.totalCents) : '—'}
           </dd>
@@ -115,21 +117,21 @@ function LinkedBidTabPanel({ tab }: { tab: BidTab }) {
           )}
         </div>
         <div>
-          <dt className="text-[10px] uppercase tracking-wide text-gray-500">Engineer&rsquo;s estimate</dt>
+          <dt className="text-[10px] uppercase tracking-wide text-gray-500">{t('bidResultPg.lblEngineerEst')}</dt>
           <dd className="mt-0.5 font-mono text-gray-900">
             {ee ? formatMoney(ee) : '—'}
           </dd>
           {apparent && ee && (
             <dd className="text-[10px] text-gray-600">
-              low {apparent.totalCents > ee ? '+' : ''}{(((apparent.totalCents - ee) / ee) * 100).toFixed(1)}%
+              {apparent.totalCents > ee ? t('bidResultPg.lowDeltaPositive', { pct: (((apparent.totalCents - ee) / ee) * 100).toFixed(1) }) : t('bidResultPg.lowDeltaNegative', { pct: (((apparent.totalCents - ee) / ee) * 100).toFixed(1) })}
             </dd>
           )}
         </div>
         <div>
-          <dt className="text-[10px] uppercase tracking-wide text-gray-500">Bidders on tab</dt>
+          <dt className="text-[10px] uppercase tracking-wide text-gray-500">{t('bidResultPg.lblBidders')}</dt>
           <dd className="mt-0.5 font-mono text-gray-900">{tab.bidders.length}</dd>
           {tab.county && (
-            <dd className="text-[10px] text-gray-600">{tab.county} County</dd>
+            <dd className="text-[10px] text-gray-600">{t('bidResultPg.countySuffix', { county: tab.county })}</dd>
           )}
         </div>
       </dl>
@@ -143,7 +145,7 @@ function LinkedBidTabPanel({ tab }: { tab: BidTab }) {
           />
         ))}
         {tab.bidders.length > 5 && (
-          <span className="text-[10px] text-gray-500 self-center">+{tab.bidders.length - 5} more</span>
+          <span className="text-[10px] text-gray-500 self-center">{t('bidResultPg.moreSuffix', { count: tab.bidders.length - 5 })}</span>
         )}
       </div>
     </section>

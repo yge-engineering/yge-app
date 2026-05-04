@@ -5,6 +5,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useTranslator } from '../../../lib/use-translator';
 
 import { Alert, AppShell } from '../../../components';
 import { useRouter } from 'next/navigation';
@@ -13,6 +14,7 @@ import { ApiError, postJson } from '@/lib/api';
 
 export default function NewBidResultPage() {
   const router = useRouter();
+  const t = useTranslator();
   const [jobId, setJobId] = useState('');
   const [bidOpenedAt, setBidOpenedAt] = useState(
     new Date().toISOString().slice(0, 10),
@@ -36,7 +38,7 @@ export default function NewBidResultPage() {
     e.preventDefault();
     setError(null);
     if (!jobId) {
-      setError('Pick a job.');
+      setError(t('newBidResult.errPickJob'));
       return;
     }
     setSaving(true);
@@ -48,11 +50,11 @@ export default function NewBidResultPage() {
       router.push(`/bid-results/${res.result.id}`);
     } catch (err) {
       if (err instanceof ApiError) {
-        setError(`${err.message} (HTTP ${err.status})`);
+        setError(t('newBidResult.errHttp', { message: err.message, status: err.status }));
       } else if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError('Unknown error');
+        setError(t('newBidResult.errUnknown'));
       }
       setSaving(false);
     }
@@ -63,25 +65,24 @@ export default function NewBidResultPage() {
     <main className="mx-auto max-w-xl p-8">
       <div className="mb-6">
         <Link href="/bid-results" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Back to bid results
+          {t('bidResultPg.back')}
         </Link>
       </div>
 
-      <h1 className="text-3xl font-bold text-yge-blue-500">Log a bid result</h1>
+      <h1 className="text-3xl font-bold text-yge-blue-500">{t('newBidResult.title')}</h1>
       <p className="mt-2 text-gray-700">
-        Pick the job and the date the agency opened bids. After saving you can
-        paste in the bidder list, mark the apparent low, and set the outcome.
+        {t('newBidResult.subtitle')}
       </p>
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-4">
-        <Field label="Job *">
+        <Field label={t('newBidResult.lblJob')}>
           <select
             required
             value={jobId}
             onChange={(e) => setJobId(e.target.value)}
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           >
-            <option value="">— Pick a job —</option>
+            <option value="">{t('newBidResult.pickJob')}</option>
             {jobs.map((j) => (
               <option key={j.id} value={j.id}>
                 {j.projectName}
@@ -90,7 +91,7 @@ export default function NewBidResultPage() {
             ))}
           </select>
         </Field>
-        <Field label="Bid-open date *">
+        <Field label={t('newBidResult.lblBidOpen')}>
           <input
             required
             type="date"
@@ -110,10 +111,10 @@ export default function NewBidResultPage() {
             disabled={saving}
             className="rounded bg-yge-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50"
           >
-            {saving ? 'Saving…' : 'Create draft'}
+            {saving ? t('newBidResult.busy') : t('newBidResult.action')}
           </button>
           <Link href="/bid-results" className="text-sm text-gray-600 hover:underline">
-            Cancel
+            {t('newBidResult.cancel')}
           </Link>
         </div>
       </form>
