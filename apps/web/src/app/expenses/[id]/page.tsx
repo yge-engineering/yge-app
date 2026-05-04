@@ -6,6 +6,7 @@ import { AppShell, AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { Expense } from '@yge/shared';
 import { ExpenseEditor } from '../../../components/expense-editor';
+import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
   return (
@@ -24,6 +25,7 @@ export default async function ExpenseDetailPage({
 }: {
   params: { id: string };
 }) {
+  const t = getTranslator();
   const expense = await fetchExpense(params.id);
   if (!expense) notFound();
 
@@ -32,14 +34,14 @@ export default async function ExpenseDetailPage({
     <main className="mx-auto max-w-3xl p-8">
       <div className="mb-6">
         <Link href="/expenses" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Expenses
+          {t('newExpensePg.back')}
         </Link>
       </div>
       <h1 className="text-3xl font-bold text-yge-blue-500">{expense.vendor}</h1>
       <p className="mt-1 text-sm text-gray-600">
         {expense.employeeName} · {expense.receiptDate}
       </p>
-      <p className="mt-1 text-xs text-gray-500">ID: {expense.id}</p>
+      <p className="mt-1 text-xs text-gray-500">{t('photoPg.idLabel', { id: expense.id })}</p>
       <div className="mt-6">
         <ExpenseEditor mode="edit" expense={expense} />
       </div>
