@@ -5,6 +5,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useTranslator } from '../../../lib/use-translator';
 
 import { Alert, AppShell } from '../../../components';
 import { useRouter } from 'next/navigation';
@@ -35,6 +36,7 @@ const KINDS: CertificateKind[] = [
 
 export default function NewCertificatePage() {
   const router = useRouter();
+  const t = useTranslator();
   const [kind, setKind] = useState<CertificateKind>('GENERAL_LIABILITY');
   const [label, setLabel] = useState('');
   const [saving, setSaving] = useState(false);
@@ -44,7 +46,7 @@ export default function NewCertificatePage() {
     e.preventDefault();
     setError(null);
     if (label.trim().length === 0) {
-      setError('Label is required.');
+      setError(t('newCert.errLabelRequired'));
       return;
     }
     setSaving(true);
@@ -56,11 +58,11 @@ export default function NewCertificatePage() {
       router.push(`/certificates/${res.certificate.id}`);
     } catch (err) {
       if (err instanceof ApiError) {
-        setError(`${err.message} (HTTP ${err.status})`);
+        setError(t('newCert.errHttp', { message: err.message, status: err.status }));
       } else if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError('Unknown error');
+        setError(t('newCert.errUnknown'));
       }
       setSaving(false);
     }
@@ -71,18 +73,17 @@ export default function NewCertificatePage() {
     <main className="mx-auto max-w-xl p-8">
       <div className="mb-6">
         <Link href="/certificates" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Back to certificates
+          {t('newCert.back')}
         </Link>
       </div>
 
-      <h1 className="text-3xl font-bold text-yge-blue-500">Add certificate</h1>
+      <h1 className="text-3xl font-bold text-yge-blue-500">{t('newCert.title')}</h1>
       <p className="mt-2 text-gray-700">
-        Pick the kind and a short label. After saving you can fill in
-        carrier, policy number, limits, expirations, and the PDF link.
+        {t('newCert.subtitle')}
       </p>
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-4">
-        <Field label="Kind">
+        <Field label={t('newCert.lblKind')}>
           <select
             value={kind}
             onChange={(e) => setKind(e.target.value as CertificateKind)}
@@ -95,12 +96,12 @@ export default function NewCertificatePage() {
             ))}
           </select>
         </Field>
-        <Field label="Label *">
+        <Field label={t('newCert.lblLabel')}>
           <input
             required
             value={label}
             onChange={(e) => setLabel(e.target.value)}
-            placeholder='e.g. "Travelers GL Policy 12345" or "CSLB License A & C-12"'
+            placeholder={t('newCert.phLabel')}
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
@@ -115,10 +116,10 @@ export default function NewCertificatePage() {
             disabled={saving}
             className="rounded bg-yge-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50"
           >
-            {saving ? 'Saving…' : 'Save certificate'}
+            {saving ? t('newCert.busy') : t('newCert.action')}
           </button>
           <Link href="/certificates" className="text-sm text-gray-600 hover:underline">
-            Cancel
+            {t('newCert.cancel')}
           </Link>
         </div>
       </form>
