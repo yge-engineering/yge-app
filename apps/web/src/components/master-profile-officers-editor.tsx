@@ -10,6 +10,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { newOfficerId, type MasterProfile, type MasterProfileOfficer } from '@yge/shared';
+import { useTranslator } from '../lib/use-translator';
 
 interface Props {
   apiBaseUrl: string;
@@ -18,6 +19,7 @@ interface Props {
 
 export function MasterProfileOfficersEditor({ apiBaseUrl, initial }: Props) {
   const router = useRouter();
+  const t = useTranslator();
   const [draft, setDraft] = useState<MasterProfileOfficer[]>(initial);
   const [busy, setBusy] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
@@ -64,7 +66,7 @@ export function MasterProfileOfficersEditor({ apiBaseUrl, initial }: Props) {
         const issuesSuffix = body.issues
           ? ` — ${JSON.stringify(body.issues).slice(0, 200)}`
           : '';
-        setError((body.error ?? `API returned ${res.status}`) + issuesSuffix);
+        setError((body.error ?? t('officersEditor.errApi', { status: res.status })) + issuesSuffix);
         return;
       }
       setSavedAt(new Date().toISOString());
@@ -80,25 +82,25 @@ export function MasterProfileOfficersEditor({ apiBaseUrl, initial }: Props) {
     <section className="rounded-md border border-gray-200 bg-white p-4 shadow-sm">
       <header className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-700">
-          Officers ({draft.length})
+          {t('officersEditor.title', { count: draft.length })}
         </h2>
         <button
           type="button"
           onClick={addRow}
           className="rounded border border-yge-blue-500 px-2 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50"
         >
-          + Add officer
+          {t('officersEditor.add')}
         </button>
       </header>
 
       {draft.length === 0 ? (
-        <p className="text-sm text-gray-500">No officers yet. Click + Add officer.</p>
+        <p className="text-sm text-gray-500">{t('officersEditor.empty')}</p>
       ) : (
         <div className="space-y-3">
           {draft.map((o, i) => (
             <div key={o.id} className="rounded border border-gray-200 bg-gray-50 p-3">
               <div className="grid gap-2 sm:grid-cols-2">
-                <Field label="Name">
+                <Field label={t('officersEditor.lblName')}>
                   <input
                     type="text"
                     value={o.name}
@@ -106,7 +108,7 @@ export function MasterProfileOfficersEditor({ apiBaseUrl, initial }: Props) {
                     className={inputClass}
                   />
                 </Field>
-                <Field label="Title">
+                <Field label={t('officersEditor.lblTitle')}>
                   <input
                     type="text"
                     value={o.title}
@@ -115,8 +117,8 @@ export function MasterProfileOfficersEditor({ apiBaseUrl, initial }: Props) {
                   />
                 </Field>
                 <Field
-                  label="Role key"
-                  hint="lowercase: president / vp / secretary / safety / signer / etc."
+                  label={t('officersEditor.lblRoleKey')}
+                  hint={t('officersEditor.hintRoleKey')}
                 >
                   <input
                     type="text"
@@ -125,7 +127,7 @@ export function MasterProfileOfficersEditor({ apiBaseUrl, initial }: Props) {
                     className={inputClass}
                   />
                 </Field>
-                <Field label="Phone">
+                <Field label={t('officersEditor.lblPhone')}>
                   <input
                     type="tel"
                     value={o.phone}
@@ -133,7 +135,7 @@ export function MasterProfileOfficersEditor({ apiBaseUrl, initial }: Props) {
                     className={inputClass}
                   />
                 </Field>
-                <Field label="Email">
+                <Field label={t('officersEditor.lblEmail')}>
                   <input
                     type="email"
                     value={o.email}
@@ -141,7 +143,7 @@ export function MasterProfileOfficersEditor({ apiBaseUrl, initial }: Props) {
                     className={inputClass}
                   />
                 </Field>
-                <Field label="Ownership %">
+                <Field label={t('officersEditor.lblOwn')}>
                   <input
                     type="number"
                     min={0}
@@ -164,7 +166,7 @@ export function MasterProfileOfficersEditor({ apiBaseUrl, initial }: Props) {
                   onClick={() => removeRow(i)}
                   className="rounded border border-red-300 px-2 py-0.5 text-xs text-red-700 hover:bg-red-50"
                 >
-                  Remove
+                  {t('officersEditor.remove')}
                 </button>
               </div>
             </div>
@@ -185,21 +187,19 @@ export function MasterProfileOfficersEditor({ apiBaseUrl, initial }: Props) {
           disabled={!dirty || busy}
           className="rounded bg-yge-blue-500 px-4 py-1.5 text-sm font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50"
         >
-          {busy ? 'Saving…' : 'Save officers'}
+          {busy ? t('officersEditor.busy') : t('officersEditor.action')}
         </button>
         {savedAt && (
           <span className="text-xs text-emerald-700">
-            ✓ Saved at {savedAt.replace('T', ' ').slice(0, 16)} UTC
+            {t('officersEditor.savedAt', { at: savedAt.replace('T', ' ').slice(0, 16) })}
           </span>
         )}
         {dirty && !busy && !savedAt && (
-          <span className="text-xs text-gray-500">Unsaved changes.</span>
+          <span className="text-xs text-gray-500">{t('officersEditor.unsaved')}</span>
         )}
       </div>
       <p className="mt-2 text-xs text-gray-500">
-        roleKey drives the form filler&rsquo;s signer lookup. The seeded
-        IRS W-9 + DAS-140 mappings reach for officers.president.signature
-        and officers.vp.signature — keep at least one row with each role.
+        {t('officersEditor.help')}
       </p>
     </section>
   );
