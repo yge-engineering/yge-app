@@ -5,6 +5,7 @@ import { AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { ApPayment } from '@yge/shared';
 import { ApPaymentEditor } from '../../../components/ap-payment-editor';
+import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
   return (
@@ -25,22 +26,23 @@ export default async function ApPaymentDetailPage({
 }) {
   const payment = await fetchPayment(params.id);
   if (!payment) notFound();
+  const t = getTranslator();
 
   return (
     <main className="mx-auto max-w-3xl p-8">
       <div className="mb-6">
         <Link href="/ap-payments" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Check Register
+          {t('paymentPg.checkRegister')}
         </Link>
       </div>
       <h1 className="text-3xl font-bold text-yge-blue-500">
-        Payment {payment.id}
+        {t('paymentPg.paymentTitle', { id: payment.id })}
       </h1>
       <p className="mt-1 text-sm text-gray-600">
-        {payment.vendorName} · {payment.paidOn}
+        {t('paymentPg.subtitleVendorDate', { vendor: payment.vendorName, date: payment.paidOn })}
       </p>
       <p className="mt-1 text-xs text-gray-500">
-        Applied to{' '}
+        {t('paymentPg.appliedToPrefix')}
         <Link
           href={`/ap-invoices/${payment.apInvoiceId}`}
           className="text-yge-blue-500 hover:underline"
