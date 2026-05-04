@@ -22,6 +22,8 @@ import {
   type PricedEstimate,
   type PricedEstimateTotals,
 } from '@yge/shared';
+import { useTranslator, useLocale } from '../lib/use-translator';
+import type { Translator } from '../lib/locale';
 
 interface Props {
   estimate: PricedEstimate;
@@ -29,7 +31,9 @@ interface Props {
 }
 
 export function BidChecklistBanner({ estimate, totals }: Props) {
-  const checklist = computeBidChecklist(estimate, totals);
+  const t = useTranslator();
+  const locale = useLocale();
+  const checklist = computeBidChecklist(estimate, totals, locale);
   const [expanded, setExpanded] = useState<boolean>(
     !checklist.readyToSubmit, // start expanded if anything is failing
   );
@@ -54,14 +58,18 @@ export function BidChecklistBanner({ estimate, totals }: Props) {
   };
 
   const headline = !checklist.readyToSubmit
-    ? `Bid is non-responsive — ${checklist.blockerFailCount} blocker${
-        checklist.blockerFailCount === 1 ? '' : 's'
-      } to fix`
+    ? checklist.blockerFailCount === 1
+      ? t('bidChecklistBanner.headlineNonResponsiveOne')
+      : t('bidChecklistBanner.headlineNonResponsiveMany', {
+          count: checklist.blockerFailCount,
+        })
     : !checklist.allClear
-      ? `Ready to submit, but ${checklist.recommendedWarnCount} item${
-          checklist.recommendedWarnCount === 1 ? '' : 's'
-        } you may want to review`
-      : 'Ready to submit — every check passes';
+      ? checklist.recommendedWarnCount === 1
+        ? t('bidChecklistBanner.headlineWarnOne')
+        : t('bidChecklistBanner.headlineWarnMany', {
+            count: checklist.recommendedWarnCount,
+          })
+      : t('bidChecklistBanner.headlineAllClear');
 
   return (
     <section
@@ -83,7 +91,7 @@ export function BidChecklistBanner({ estimate, totals }: Props) {
           </span>
           <div>
             <div className="text-sm font-semibold uppercase tracking-wide">
-              Bid readiness
+              {t('bidChecklistBanner.heading')}
             </div>
             <div className="text-base font-bold">{headline}</div>
           </div>
@@ -92,7 +100,9 @@ export function BidChecklistBanner({ estimate, totals }: Props) {
           onClick={() => setExpanded((v) => !v)}
           className="text-xs font-semibold uppercase tracking-wide opacity-70 hover:opacity-100"
         >
-          {expanded ? 'Hide details' : 'Show details'}
+          {expanded
+            ? t('bidChecklistBanner.hideDetails')
+            : t('bidChecklistBanner.showDetails')}
         </button>
       </header>
 
@@ -100,14 +110,14 @@ export function BidChecklistBanner({ estimate, totals }: Props) {
         <ul className="mt-4 space-y-2 border-t border-current/20 pt-3 text-sm">
           {checklist.items.map((item) => (
             <li key={item.id} className="flex items-start gap-3">
-              <ItemMarker status={item.status} severity={item.severity} />
+              <ItemMarker status={item.status} severity={item.severity} t={t} />
               <div className="flex-1">
                 <div className="font-medium">
                   {item.label}
                   {item.severity === 'blocker' &&
                     item.status === 'fail' && (
                       <span className="ml-2 inline-block rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
-                        Blocker
+                        {t('bidChecklistBanner.blockerBadge')}
                       </span>
                     )}
                 </div>
@@ -126,14 +136,16 @@ export function BidChecklistBanner({ estimate, totals }: Props) {
 function ItemMarker({
   status,
   severity,
+  t,
 }: {
   status: 'pass' | 'warn' | 'fail';
   severity: 'blocker' | 'recommended';
+  t: Translator;
 }) {
   if (status === 'pass') {
     return (
       <span
-        aria-label="Pass"
+        aria-label={t('bidChecklistBanner.passLabel')}
         className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-green-600 text-xs font-bold text-white"
       >
         &#10003;
@@ -143,7 +155,7 @@ function ItemMarker({
   if (status === 'fail') {
     return (
       <span
-        aria-label="Fail"
+        aria-label={t('bidChecklistBanner.failLabel')}
         className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-600 text-xs font-bold text-white"
       >
         &#10007;
@@ -153,7 +165,11 @@ function ItemMarker({
   // warn
   return (
     <span
-      aria-label={severity === 'blocker' ? 'Blocker warning' : 'Recommended'}
+      aria-label={
+        severity === 'blocker'
+          ? t('bidChecklistBanner.blockerWarnLabel')
+          : t('bidChecklistBanner.recommendedLabel')
+      }
       className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-yellow-400 text-xs font-bold text-white"
     >
       !

@@ -20,6 +20,7 @@
 import type { PricedEstimate, PricedEstimateTotals } from './priced-estimate';
 import { unacknowledgedAddenda } from './addendum';
 import { classifySubBids, isHighwayClassProjectType } from './sub-bid';
+import { translate, SEED_DICTIONARY, type Locale } from './i18n';
 
 export type BidChecklistStatus = 'pass' | 'warn' | 'fail';
 export type BidChecklistSeverity = 'blocker' | 'recommended';
@@ -50,8 +51,11 @@ export interface BidChecklist {
 export function computeBidChecklist(
   estimate: PricedEstimate,
   totals: PricedEstimateTotals,
+  locale: Locale = 'en',
 ): BidChecklist {
   const items: BidChecklistItem[] = [];
+  const tr = (key: string, vars?: Record<string, string | number>): string =>
+    translate(SEED_DICTIONARY, locale, key, vars);
 
   // ---- Blocker items -----------------------------------------------------
 
@@ -62,19 +66,22 @@ export function computeBidChecklist(
   if (totals.unpricedLineCount === 0) {
     items.push({
       id: 'lines-priced',
-      label: 'All bid items have unit prices',
+      label: tr('bidChecklist.linesPriced.label'),
       status: 'pass',
       severity: 'blocker',
     });
   } else {
     items.push({
       id: 'lines-priced',
-      label: 'All bid items have unit prices',
+      label: tr('bidChecklist.linesPriced.label'),
       status: 'fail',
       severity: 'blocker',
-      detail: `${totals.unpricedLineCount} line${
-        totals.unpricedLineCount === 1 ? '' : 's'
-      } still need a unit price.`,
+      detail:
+        totals.unpricedLineCount === 1
+          ? tr('bidChecklist.linesPriced.detailOne')
+          : tr('bidChecklist.linesPriced.detailMany', {
+              count: totals.unpricedLineCount,
+            }),
     });
   }
 
@@ -83,17 +90,17 @@ export function computeBidChecklist(
   if (totals.bidTotalCents > 0) {
     items.push({
       id: 'bid-total-positive',
-      label: 'Bid total is greater than zero',
+      label: tr('bidChecklist.bidTotalPositive.label'),
       status: 'pass',
       severity: 'blocker',
     });
   } else {
     items.push({
       id: 'bid-total-positive',
-      label: 'Bid total is greater than zero',
+      label: tr('bidChecklist.bidTotalPositive.label'),
       status: 'fail',
       severity: 'blocker',
-      detail: 'No priced lines means no bid. Add unit prices first.',
+      detail: tr('bidChecklist.bidTotalPositive.detail'),
     });
   }
 
@@ -103,19 +110,20 @@ export function computeBidChecklist(
   if (unacked.length === 0) {
     items.push({
       id: 'addenda-acknowledged',
-      label: 'All logged addenda are acknowledged',
+      label: tr('bidChecklist.addenda.label'),
       status: 'pass',
       severity: 'blocker',
     });
   } else {
     items.push({
       id: 'addenda-acknowledged',
-      label: 'All logged addenda are acknowledged',
+      label: tr('bidChecklist.addenda.label'),
       status: 'fail',
       severity: 'blocker',
-      detail: `${unacked.length} addend${
-        unacked.length === 1 ? 'um is' : 'a are'
-      } logged but not yet acknowledged. Tick the acknowledgment box on each one before submitting.`,
+      detail:
+        unacked.length === 1
+          ? tr('bidChecklist.addenda.detailOne')
+          : tr('bidChecklist.addenda.detailMany', { count: unacked.length }),
     });
   }
 
@@ -127,18 +135,17 @@ export function computeBidChecklist(
   if (estimate.bidSecurity) {
     items.push({
       id: 'bid-security',
-      label: 'Bid security captured',
+      label: tr('bidChecklist.bidSecurity.label'),
       status: 'pass',
       severity: 'recommended',
     });
   } else {
     items.push({
       id: 'bid-security',
-      label: 'Bid security captured',
+      label: tr('bidChecklist.bidSecurity.label'),
       status: 'warn',
       severity: 'recommended',
-      detail:
-        'Most CA public works require a 10% bid bond or cashier\u2019s/certified check. Add one or confirm this job doesn\u2019t need security.',
+      detail: tr('bidChecklist.bidSecurity.detail'),
     });
   }
 
@@ -156,14 +163,19 @@ export function computeBidChecklist(
   if (captured > 0) {
     items.push({
       id: 'sub-list',
-      label: 'Subcontractor list captured',
+      label: tr('bidChecklist.subList.label'),
       status: 'pass',
       severity: 'recommended',
       detail:
         sub.mustList.length > 0
-          ? `${sub.mustList.length} of ${captured} subcontractor${
-              captured === 1 ? '' : 's'
-            } exceed the §4104 listing threshold.`
+          ? captured === 1
+            ? tr('bidChecklist.subList.detailListedOne', {
+                listed: sub.mustList.length,
+              })
+            : tr('bidChecklist.subList.detailListedMany', {
+                listed: sub.mustList.length,
+                captured,
+              })
           : undefined,
     });
   } else {
@@ -177,19 +189,18 @@ export function computeBidChecklist(
     if (isHighwayLike && totals.bidTotalCents >= sub.thresholdCents) {
       items.push({
         id: 'sub-list',
-        label: 'Subcontractor list captured',
+        label: tr('bidChecklist.subList.label'),
         status: 'warn',
         severity: 'recommended',
-        detail:
-          'No subs on a highway/bridge bid this size is unusual. If any sub is performing >$10K of work, they must be on the §4104 list.',
+        detail: tr('bidChecklist.subList.detailHighway'),
       });
     } else {
       items.push({
         id: 'sub-list',
-        label: 'Subcontractor list captured',
+        label: tr('bidChecklist.subList.label'),
         status: 'pass',
         severity: 'recommended',
-        detail: 'No subcontractors captured — assuming self-performed.',
+        detail: tr('bidChecklist.subList.detailNoSubs'),
       });
     }
   }
@@ -200,18 +211,17 @@ export function computeBidChecklist(
   if (estimate.ownerAgency && estimate.ownerAgency.trim().length > 0) {
     items.push({
       id: 'owner-agency',
-      label: 'Owner / agency identified',
+      label: tr('bidChecklist.ownerAgency.label'),
       status: 'pass',
       severity: 'recommended',
     });
   } else {
     items.push({
       id: 'owner-agency',
-      label: 'Owner / agency identified',
+      label: tr('bidChecklist.ownerAgency.label'),
       status: 'warn',
       severity: 'recommended',
-      detail:
-        'No owner/agency on file. The transmittal letter and bid summary won\u2019t have a clear addressee.',
+      detail: tr('bidChecklist.ownerAgency.detail'),
     });
   }
 
@@ -220,17 +230,17 @@ export function computeBidChecklist(
   if (estimate.bidDueDate && estimate.bidDueDate.trim().length > 0) {
     items.push({
       id: 'bid-due-date',
-      label: 'Bid due date set',
+      label: tr('bidChecklist.bidDueDate.label'),
       status: 'pass',
       severity: 'recommended',
     });
   } else {
     items.push({
       id: 'bid-due-date',
-      label: 'Bid due date set',
+      label: tr('bidChecklist.bidDueDate.label'),
       status: 'warn',
       severity: 'recommended',
-      detail: 'No bid due date — the bid summary won\u2019t print one.',
+      detail: tr('bidChecklist.bidDueDate.detail'),
     });
   }
 
