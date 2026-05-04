@@ -10,6 +10,7 @@ import { notFound } from 'next/navigation';
 import type { PtoEOutput } from '@yge/shared';
 import { DraftView } from '@/components/draft-view';
 import { ConvertDraftButton } from '@/components/convert-draft-button';
+import { getTranslator } from '../../../lib/locale';
 
 interface SavedDraft {
   id: string;
@@ -59,6 +60,7 @@ function formatWhen(iso: string): string {
 }
 
 export default async function DraftDetailPage({ params }: { params: { id: string } }) {
+  const t = getTranslator();
   const saved = await fetchDraft(params.id);
   if (!saved) notFound();
 
@@ -67,20 +69,20 @@ export default async function DraftDetailPage({ params }: { params: { id: string
     <main className="mx-auto max-w-4xl p-8">
       <div className="mb-6 flex items-center justify-between">
         <Link href="/drafts" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; All saved drafts
+          {t('draftPg.back')}
         </Link>
         <Link
           href="/plans-to-estimate"
           className="text-sm text-yge-blue-500 hover:underline"
         >
-          New draft &rarr;
+          {t('draftPg.newDraft')}
         </Link>
       </div>
 
       <div className="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <div className="mb-4 flex items-center justify-between gap-3">
           <p className="text-xs uppercase tracking-wide text-gray-500">
-            Saved {formatWhen(saved.createdAt)}
+            {t('draftPg.savedAt', { when: formatWhen(saved.createdAt) })}
           </p>
           <ConvertDraftButton draftId={saved.id} apiBaseUrl={publicApiBaseUrl()} />
         </div>
@@ -95,11 +97,11 @@ export default async function DraftDetailPage({ params }: { params: { id: string
 
       <details className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <summary className="cursor-pointer text-sm font-semibold text-gray-700">
-          Original document text ({saved.documentText.length.toLocaleString()} chars)
+          {t('draftPg.originalText', { chars: saved.documentText.length.toLocaleString() })}
         </summary>
         {saved.sessionNotes && (
           <p className="mt-3 rounded bg-yellow-50 p-3 text-sm text-yellow-900">
-            <span className="font-semibold">Session notes:</span> {saved.sessionNotes}
+            <span className="font-semibold">{t('draftPg.sessionNotes')}</span> {saved.sessionNotes}
           </p>
         )}
         <pre className="mt-3 max-h-96 overflow-auto whitespace-pre-wrap rounded bg-gray-50 p-3 font-mono text-xs text-gray-800">
