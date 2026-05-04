@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 import {
   rfiDaysOutstanding,
   rfiPriorityLabel,
@@ -21,6 +22,7 @@ interface Props {
 }
 
 export function RfiEditor({ initial, jobs, apiBaseUrl }: Props) {
+  const t = useTranslator();
   const [r, setR] = useState<Rfi>(initial);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,11 +48,11 @@ export function RfiEditor({ initial, jobs, apiBaseUrl }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-      if (!res.ok) throw new Error(`Save failed: ${res.status}`);
+      if (!res.ok) throw new Error(t('rfiEditor.errSaveStatus', { status: res.status }));
       const json = (await res.json()) as { rfi: Rfi };
       setR(json.rfi);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Save failed');
+      setError(err instanceof Error ? err.message : t('rfiEditor.errFallback'));
     } finally {
       setSaving(false);
     }
@@ -80,14 +82,14 @@ export function RfiEditor({ initial, jobs, apiBaseUrl }: Props) {
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs font-mono font-bold uppercase tracking-wide text-gray-500">
-            RFI #{r.rfiNumber}
+            {t('rfiEditor.heading', { number: r.rfiNumber })}
           </p>
           <h1 className="mt-1 text-2xl font-bold text-yge-blue-500">{r.subject}</h1>
           <p className="mt-1 text-sm text-gray-600">
             {job ? job.projectName : r.jobId}
             {days !== undefined && (
               <>
-                {' '}\u00b7 {days} day{days === 1 ? '' : 's'} outstanding
+                {' '}{days === 1 ? t('rfiEditor.outstandingOne') : t('rfiEditor.outstandingMany', { days })}
               </>
             )}
           </p>
@@ -115,7 +117,7 @@ export function RfiEditor({ initial, jobs, apiBaseUrl }: Props) {
               </option>
             ))}
           </select>
-          {saving && <span className="text-gray-500">Saving&hellip;</span>}
+          {saving && <span className="text-gray-500">{t('rfiEditor.saving')}</span>}
         </div>
       </header>
 
@@ -126,7 +128,7 @@ export function RfiEditor({ initial, jobs, apiBaseUrl }: Props) {
       )}
 
       <section className="grid gap-4 sm:grid-cols-2">
-        <Field label="Subject">
+        <Field label={t('rfiEditor.lblSubject')}>
           <input
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
@@ -134,25 +136,25 @@ export function RfiEditor({ initial, jobs, apiBaseUrl }: Props) {
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Asked of">
+        <Field label={t('rfiEditor.lblAskedOf')}>
           <input
             value={askedOf}
             onChange={(e) => setAskedOf(e.target.value)}
             onBlur={saveAll}
-            placeholder="Caltrans Region 2 design engineer"
+            placeholder={t('rfiEditor.phAskedOf')}
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Reference">
+        <Field label={t('rfiEditor.lblReference')}>
           <input
             value={reference}
             onChange={(e) => setReference(e.target.value)}
             onBlur={saveAll}
-            placeholder="Section 32 11 23, Sheet C-3 Note 14"
+            placeholder={t('rfiEditor.phReference')}
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Sent">
+        <Field label={t('rfiEditor.lblSent')}>
           <input
             type="date"
             value={sentAt}
@@ -161,7 +163,7 @@ export function RfiEditor({ initial, jobs, apiBaseUrl }: Props) {
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Response due">
+        <Field label={t('rfiEditor.lblResponseDue')}>
           <input
             type="date"
             value={responseDueAt}
@@ -170,7 +172,7 @@ export function RfiEditor({ initial, jobs, apiBaseUrl }: Props) {
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Answered">
+        <Field label={t('rfiEditor.lblAnswered')}>
           <input
             type="date"
             value={answeredAt}
@@ -181,7 +183,7 @@ export function RfiEditor({ initial, jobs, apiBaseUrl }: Props) {
         </Field>
       </section>
 
-      <Field label="Question">
+      <Field label={t('rfiEditor.lblQuestion')}>
         <textarea
           rows={5}
           value={question}
@@ -191,7 +193,7 @@ export function RfiEditor({ initial, jobs, apiBaseUrl }: Props) {
         />
       </Field>
 
-      <Field label="Answer (write-up of the response)">
+      <Field label={t('rfiEditor.lblAnswer')}>
         <textarea
           rows={5}
           value={answer}
@@ -202,7 +204,7 @@ export function RfiEditor({ initial, jobs, apiBaseUrl }: Props) {
       </Field>
 
       <section className="grid gap-4 sm:grid-cols-2">
-        <Field label="RFI PDF URL">
+        <Field label={t('rfiEditor.lblRfiPdf')}>
           <input
             value={rfiPdfUrl}
             onChange={(e) => setRfiPdfUrl(e.target.value)}
@@ -210,7 +212,7 @@ export function RfiEditor({ initial, jobs, apiBaseUrl }: Props) {
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Answer PDF URL">
+        <Field label={t('rfiEditor.lblAnswerPdf')}>
           <input
             value={answerPdfUrl}
             onChange={(e) => setAnswerPdfUrl(e.target.value)}
@@ -228,7 +230,7 @@ export function RfiEditor({ initial, jobs, apiBaseUrl }: Props) {
             onChange={(e) => void patch({ costImpact: e.target.checked })}
             className="h-4 w-4"
           />
-          Cost impact (likely change order)
+          {t('rfiEditor.costImpact')}
         </label>
         <label className="flex items-center gap-2 text-sm">
           <input
@@ -237,11 +239,11 @@ export function RfiEditor({ initial, jobs, apiBaseUrl }: Props) {
             onChange={(e) => void patch({ scheduleImpact: e.target.checked })}
             className="h-4 w-4"
           />
-          Schedule impact (delay claim possible)
+          {t('rfiEditor.scheduleImpact')}
         </label>
       </section>
 
-      <Field label="Internal notes">
+      <Field label={t('rfiEditor.lblNotes')}>
         <textarea
           rows={3}
           value={notes}
