@@ -32,6 +32,8 @@ import {
   listDirRates,
   updateDirRate,
 } from '../lib/dir-rates-store';
+import { runDirScrape } from '../services/dir-scraper';
+import { DirClassificationSchema } from '@yge/shared';
 
 export const dirRateSyncRouter = Router();
 
@@ -68,9 +70,57 @@ dirRateSyncRouter.post('/runs', async (req, res, next) => {
     }
     const run = await createSyncRun(parsed.data);
     // The scraper job is a separate worker that picks up QUEUED runs
-    // off this list. Phase 1 returns the queued row; the scheduled
-    // scrape lands in a later commit.
+    // off this list. POST /scrape triggers an inline run synchronously;
+    // /runs is for cron / scheduled-scrape kickoff that the scraper
+    // worker drains later.
     return res.status(201).json({ run });
+  } catch (err) { next(err); }
+});
+
+// ---- Live scrape -------------------------------------------------------
+
+const ScrapeFocusSchema = z.object({
+  classification: DirClassificationSchema,
+  county: z.string().min(1).max(80),
+});
+
+const ScrapeRequestSchema = z.object({
+  source: DirRateSyncSourceSchema.optional(),
+  initiatedByUserId: z.string().max(120).optional(),
+  /** Optional list of (classification, county) pairs to focus on.
+   *  If omitted the scraper walks every link the index returns. */
+  focus: z.array(ScrapeFocusSchema).max(200).optional(),
+});
+
+/**
+ * POST /api/dir-rate-sync/scrape — runs the Caltrans/DIR scraper
+ * synchronously and returns the resulting sync-run + proposals.
+ * Heavy: blocks the request until every focused determination is
+ * fetched + parsed. Use a smaller `focus` list to keep latency low,
+ * or POST /runs (queued-only) and let the cron worker drain it
+ * in the background.
+ */
+dirRateSyncRouter.post('/scrape', async (req, res, next) => {
+  try {
+    const parsed = ScrapeRequestSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Validation failed', issues: parsed.error.issues });
+    }
+    const { source = 'MANUAL', initiatedByUserId, focus } = parsed.data;
+    const result = await runDirScrape({
+      source,
+      ...(initiatedByUserId ? { initiatedByUserId } : {}),
+      ...(focus ? { focus } : {}),
+    });
+    return res.status(201).json({
+      run: result.run,
+      proposalCount: result.proposals.length,
+      unparsed: result.unparsed.map((u) => ({
+        ruleLabel: u.ruleLabel,
+        region: u.region,
+        url: u.url,
+      })),
+    });
   } catch (err) { next(err); }
 });
 
