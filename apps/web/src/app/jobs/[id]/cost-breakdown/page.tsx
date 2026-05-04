@@ -12,6 +12,7 @@ import {
   PageHeader,
   Tile,
 } from '../../../../components';
+import { getTranslator } from '../../../../lib/locale';
 import {
   buildJobCostBreakdown,
   findRateInEffect,
@@ -59,6 +60,7 @@ export default async function CostBreakdownPage({
   params: { id: string };
   searchParams: { county?: string };
 }) {
+  const t = getTranslator();
   const job = await fetchJob(params.id);
   if (!job) notFound();
   const county = searchParams.county?.trim() || 'Shasta';
@@ -104,13 +106,13 @@ export default async function CostBreakdownPage({
       <main className="mx-auto max-w-6xl">
         <PageHeader
           title={job.projectName}
-          subtitle="Costs by cost code — AP invoice line items + time-card hours × DIR labor rate + reimbursable expenses + mileage. Uncoded items roll into the bottom bucket."
+          subtitle={t('costBdPg.subtitle')}
           back={{ href: `/jobs/${job.id}`, label: `← ${job.projectName}` }}
         />
 
         <form action={`/jobs/${job.id}/cost-breakdown`} className="mb-4 flex flex-wrap items-end gap-3 rounded-md border border-gray-200 bg-white p-3">
           <label className="block text-xs">
-            <span className="mb-1 block font-medium text-gray-700">Labor rate county</span>
+            <span className="mb-1 block font-medium text-gray-700">{t('costBdPg.lblCounty')}</span>
             <input
               name="county"
               defaultValue={county}
@@ -118,45 +120,44 @@ export default async function CostBreakdownPage({
             />
           </label>
           <button type="submit" className="rounded-md bg-blue-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-800">
-            Reload
+            {t('costBdPg.reload')}
           </button>
         </form>
 
         <section className="mb-4 grid gap-3 sm:grid-cols-3">
-          <Tile label="Cost codes" value={breakdown.rows.length} />
-          <Tile label="Total actual" value={<Money cents={breakdown.totalActualCents} />} />
+          <Tile label={t('costBdPg.tileCostCodes')} value={breakdown.rows.length} />
+          <Tile label={t('costBdPg.tileTotalActual')} value={<Money cents={breakdown.totalActualCents} />} />
           <Tile
-            label="Budget vs actual"
-            value={breakdown.hasBudget && variance !== null ? <Money cents={variance} /> : 'n/a'}
+            label={t('costBdPg.tileBudgetVsActual')}
+            value={breakdown.hasBudget && variance !== null ? <Money cents={variance} /> : t('costBdPg.naLabel')}
             tone={variance !== null && variance < 0 ? 'danger' : 'neutral'}
           />
         </section>
 
         {!breakdown.hasBudget ? (
           <p className="mb-4 text-xs text-gray-500">
-            No budget loaded for this job. Budget vs actual variance lights up once bid items grow
-            a cost-code field (Phase 2) and the awarded estimate for this job has cost codes assigned.
+            {t('costBdPg.noBudgetNote')}
           </p>
         ) : null}
 
         {breakdown.rows.length === 0 ? (
           <div className="rounded-md border border-gray-200 bg-gray-50 p-6 text-sm text-gray-600">
-            No costs coded to this job yet.
+            {t('costBdPg.noCosts')}
           </div>
         ) : (
           <div className="overflow-x-auto rounded-md border border-gray-200 bg-white">
             <table className="w-full text-left text-xs">
               <thead className="bg-gray-50 uppercase tracking-wide text-gray-500">
                 <tr>
-                  <th className="px-3 py-2">Cost code</th>
-                  <th className="px-3 py-2 text-right">AP</th>
-                  <th className="px-3 py-2 text-right">Labor</th>
-                  <th className="px-3 py-2 text-right">Expense</th>
-                  <th className="px-3 py-2 text-right">Mileage</th>
-                  <th className="px-3 py-2 text-right">Actual</th>
-                  <th className="px-3 py-2 text-right">Budget</th>
-                  <th className="px-3 py-2 text-right">Variance</th>
-                  <th className="px-3 py-2 text-right">Var %</th>
+                  <th className="px-3 py-2">{t('costBdPg.thCostCode')}</th>
+                  <th className="px-3 py-2 text-right">{t('costBdPg.thAp')}</th>
+                  <th className="px-3 py-2 text-right">{t('costBdPg.thLabor')}</th>
+                  <th className="px-3 py-2 text-right">{t('costBdPg.thExpense')}</th>
+                  <th className="px-3 py-2 text-right">{t('costBdPg.thMileage')}</th>
+                  <th className="px-3 py-2 text-right">{t('costBdPg.thActual')}</th>
+                  <th className="px-3 py-2 text-right">{t('costBdPg.thBudget')}</th>
+                  <th className="px-3 py-2 text-right">{t('costBdPg.thVariance')}</th>
+                  <th className="px-3 py-2 text-right">{t('costBdPg.thVarPct')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -164,7 +165,7 @@ export default async function CostBreakdownPage({
                   <Row key={r.costCode} row={r} />
                 ))}
                 <tr className="border-t-2 border-black bg-gray-50 font-semibold">
-                  <td className="px-3 py-3 text-right uppercase tracking-wide">Totals</td>
+                  <td className="px-3 py-3 text-right uppercase tracking-wide">{t('costBdPg.totals')}</td>
                   <td colSpan={4} className="px-3 py-3"></td>
                   <td className="px-3 py-3 text-right"><Money cents={breakdown.totalActualCents} /></td>
                   <td className="px-3 py-3 text-right">
