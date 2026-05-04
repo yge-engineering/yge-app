@@ -5,6 +5,7 @@ import { AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { Document, Job } from '@yge/shared';
 import { DocumentEditor } from '@/components/document-editor';
+import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
   return (
@@ -34,6 +35,7 @@ export default async function DocumentDetailPage({
 }: {
   params: { id: string };
 }) {
+  const t = getTranslator();
   const [doc, jobs] = await Promise.all([fetchDocument(params.id), fetchJobs()]);
   if (!doc) notFound();
 
@@ -41,7 +43,7 @@ export default async function DocumentDetailPage({
     <main className="mx-auto max-w-3xl p-8">
       <div className="mb-6">
         <Link href="/documents" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Back to documents
+          {t('newDocument.back')}
         </Link>
       </div>
 

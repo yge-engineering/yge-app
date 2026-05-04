@@ -15,6 +15,7 @@ import {
   type Job,
 } from '@yge/shared';
 import { ApiError, postJson } from '@/lib/api';
+import { useTranslator, useLocale } from '../../../lib/use-translator';
 
 const KINDS: DocumentKind[] = [
   'RFP',
@@ -38,6 +39,8 @@ const KINDS: DocumentKind[] = [
 ];
 
 export default function NewDocumentPage() {
+  const t = useTranslator();
+  const locale = useLocale();
   const router = useRouter();
   const [title, setTitle] = useState('');
   const [kind, setKind] = useState<DocumentKind>('RFP');
@@ -61,7 +64,7 @@ export default function NewDocumentPage() {
     e.preventDefault();
     setError(null);
     if (title.trim().length === 0) {
-      setError('Title is required.');
+      setError(t('newDocument.errTitle'));
       return;
     }
     const tags = tagsRaw
@@ -82,11 +85,11 @@ export default function NewDocumentPage() {
       router.push(`/documents/${res.document.id}`);
     } catch (err) {
       if (err instanceof ApiError) {
-        setError(`${err.message} (HTTP ${err.status})`);
+        setError(t('newDocument.errHttp', { msg: err.message, status: err.status }));
       } else if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError('Unknown error');
+        setError(t('newDocument.errUnknown'));
       }
       setSaving(false);
     }
@@ -97,29 +100,27 @@ export default function NewDocumentPage() {
     <main className="mx-auto max-w-2xl p-8">
       <div className="mb-6">
         <Link href="/documents" className="text-sm text-yge-blue-500 hover:underline">
-          &larr; Back to documents
+          {t('newDocument.back')}
         </Link>
       </div>
 
-      <h1 className="text-3xl font-bold text-yge-blue-500">Add document</h1>
+      <h1 className="text-3xl font-bold text-yge-blue-500">{t('newDocument.title')}</h1>
       <p className="mt-2 text-gray-700">
-        Capture a pointer to a PDF / file plus enough metadata to find it
-        later. The actual file lives wherever you keep it (Drive, SharePoint,
-        Bluebeam, local path) — paste that URL or path below.
+        {t('newDocument.subtitle')}
       </p>
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-4">
-        <Field label="Title *">
+        <Field label={t('newDocument.lblTitle')}>
           <input
             required
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder='e.g. "Sulphur Springs RFP rev B"'
+            placeholder={t('newDocument.phTitle')}
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Kind">
+          <Field label={t('newDocument.lblKind')}>
             <select
               value={kind}
               onChange={(e) => setKind(e.target.value as DocumentKind)}
@@ -127,18 +128,18 @@ export default function NewDocumentPage() {
             >
               {KINDS.map((k) => (
                 <option key={k} value={k}>
-                  {documentKindLabel(k)}
+                  {documentKindLabel(k, locale)}
                 </option>
               ))}
             </select>
           </Field>
-          <Field label="Job (optional)">
+          <Field label={t('newDocument.lblJob')}>
             <select
               value={jobId}
               onChange={(e) => setJobId(e.target.value)}
               className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
             >
-              <option value="">— Not job-specific —</option>
+              <option value="">{t('newDocument.notJobSpecific')}</option>
               {jobs.map((j) => (
                 <option key={j.id} value={j.id}>
                   {j.projectName}
@@ -147,16 +148,16 @@ export default function NewDocumentPage() {
             </select>
           </Field>
         </div>
-        <Field label="URL or path">
+        <Field label={t('newDocument.lblUrl')}>
           <input
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            placeholder='https://drive.google.com/... or "S:/YGE/2026/..."'
+            placeholder={t('newDocument.phUrl')}
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Document date">
+          <Field label={t('newDocument.lblDate')}>
             <input
               type="date"
               value={documentDate}
@@ -164,7 +165,7 @@ export default function NewDocumentPage() {
               className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
             />
           </Field>
-          <Field label="Tags (comma or space separated)">
+          <Field label={t('newDocument.lblTags')}>
             <input
               value={tagsRaw}
               onChange={(e) => setTagsRaw(e.target.value)}
@@ -184,10 +185,10 @@ export default function NewDocumentPage() {
             disabled={saving}
             className="rounded bg-yge-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50"
           >
-            {saving ? 'Saving…' : 'Save document'}
+            {saving ? t('newDocument.busy') : t('newDocument.action')}
           </button>
           <Link href="/documents" className="text-sm text-gray-600 hover:underline">
-            Cancel
+            {t('newDocument.cancel')}
           </Link>
         </div>
       </form>
