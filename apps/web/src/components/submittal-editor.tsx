@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 import {
   submittalDaysOutstanding,
   submittalKindLabel,
@@ -40,6 +41,7 @@ interface Props {
 }
 
 export function SubmittalEditor({ initial, jobs, apiBaseUrl }: Props) {
+  const t = useTranslator();
   const [s, setS] = useState<Submittal>(initial);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -67,11 +69,11 @@ export function SubmittalEditor({ initial, jobs, apiBaseUrl }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-      if (!res.ok) throw new Error(`Save failed: ${res.status}`);
+      if (!res.ok) throw new Error(t('submittalEditor.errSaveStatus', { status: res.status }));
       const json = (await res.json()) as { submittal: Submittal };
       setS(json.submittal);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Save failed');
+      setError(err instanceof Error ? err.message : t('submittalEditor.errFallback'));
     } finally {
       setSaving(false);
     }
@@ -103,21 +105,21 @@ export function SubmittalEditor({ initial, jobs, apiBaseUrl }: Props) {
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs font-mono font-bold uppercase tracking-wide text-gray-500">
-            Submittal #{s.submittalNumber}
-            {s.revision && <> Rev {s.revision}</>}
+            {t('submittalEditor.heading', { number: s.submittalNumber })}
+            {s.revision && t('submittalEditor.revSuffix', { revision: s.revision })}
           </p>
           <h1 className="mt-1 text-2xl font-bold text-yge-blue-500">{s.subject}</h1>
           <p className="mt-1 text-sm text-gray-600">
             {submittalKindLabel(s.kind)}
             {s.specSection && (
               <>
-                {' '}\u00b7 {s.specSection}
+                {' '}{t('submittalEditor.specSuffix', { section: s.specSection })}
               </>
             )}
-            {' '}\u00b7 {job ? job.projectName : s.jobId}
+            {' '}· {job ? job.projectName : s.jobId}
             {days !== undefined && (
               <>
-                {' '}\u00b7 {days} days {s.returnedAt ? 'turnaround' : 'outstanding'}
+                {' '}{s.returnedAt ? t('submittalEditor.daysReturned', { days }) : t('submittalEditor.daysOutstanding', { days })}
               </>
             )}
           </p>
@@ -145,7 +147,7 @@ export function SubmittalEditor({ initial, jobs, apiBaseUrl }: Props) {
               </option>
             ))}
           </select>
-          {saving && <span className="text-gray-500">Saving&hellip;</span>}
+          {saving && <span className="text-gray-500">{t('submittalEditor.saving')}</span>}
         </div>
       </header>
 
@@ -156,7 +158,7 @@ export function SubmittalEditor({ initial, jobs, apiBaseUrl }: Props) {
       )}
 
       <section className="grid gap-4 sm:grid-cols-2">
-        <Field label="Submittal #">
+        <Field label={t('submittalEditor.lblNumber')}>
           <input
             value={submittalNumber}
             onChange={(e) => setSubmittalNumber(e.target.value)}
@@ -164,7 +166,7 @@ export function SubmittalEditor({ initial, jobs, apiBaseUrl }: Props) {
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm font-mono"
           />
         </Field>
-        <Field label="Revision (A/B/C)">
+        <Field label={t('submittalEditor.lblRevision')}>
           <input
             value={revision}
             onChange={(e) => setRevision(e.target.value)}
@@ -172,7 +174,7 @@ export function SubmittalEditor({ initial, jobs, apiBaseUrl }: Props) {
             className="rounded border border-gray-300 px-3 py-2 text-sm font-mono"
           />
         </Field>
-        <Field label="Subject">
+        <Field label={t('submittalEditor.lblSubject')}>
           <input
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
@@ -180,7 +182,7 @@ export function SubmittalEditor({ initial, jobs, apiBaseUrl }: Props) {
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Spec section">
+        <Field label={t('submittalEditor.lblSpecSection')}>
           <input
             value={specSection}
             onChange={(e) => setSpecSection(e.target.value)}
@@ -188,16 +190,16 @@ export function SubmittalEditor({ initial, jobs, apiBaseUrl }: Props) {
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Submitted to">
+        <Field label={t('submittalEditor.lblSubmittedTo')}>
           <input
             value={submittedTo}
             onChange={(e) => setSubmittedTo(e.target.value)}
             onBlur={saveAll}
-            placeholder="Engineer of Record"
+            placeholder={t('submittalEditor.phSubmittedTo')}
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Submitted on">
+        <Field label={t('submittalEditor.lblSubmittedOn')}>
           <input
             type="date"
             value={submittedAt}
@@ -206,7 +208,7 @@ export function SubmittalEditor({ initial, jobs, apiBaseUrl }: Props) {
             className="rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Response due">
+        <Field label={t('submittalEditor.lblResponseDue')}>
           <input
             type="date"
             value={responseDueAt}
@@ -215,7 +217,7 @@ export function SubmittalEditor({ initial, jobs, apiBaseUrl }: Props) {
             className="rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Returned on">
+        <Field label={t('submittalEditor.lblReturnedOn')}>
           <input
             type="date"
             value={returnedAt}
@@ -233,10 +235,10 @@ export function SubmittalEditor({ initial, jobs, apiBaseUrl }: Props) {
           onChange={(e) => void patch({ blocksOrdering: e.target.checked })}
           className="h-4 w-4"
         />
-        <label>Blocks ordering / fabrication until returned</label>
+        <label>{t('submittalEditor.blocksOrdering')}</label>
       </section>
 
-      <Field label="Reviewer notes (engineer's response)">
+      <Field label={t('submittalEditor.lblReviewerNotes')}>
         <textarea
           rows={5}
           value={reviewerNotes}
@@ -247,19 +249,19 @@ export function SubmittalEditor({ initial, jobs, apiBaseUrl }: Props) {
       </Field>
 
       <section className="grid gap-4 sm:grid-cols-2">
-        <Field label="Lead time note">
+        <Field label={t('submittalEditor.lblLeadTime')}>
           <input
             value={leadTimeNote}
             onChange={(e) => setLeadTimeNote(e.target.value)}
             onBlur={saveAll}
-            placeholder="6 weeks for custom rebar"
+            placeholder={t('submittalEditor.phLeadTime')}
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2">
-        <Field label="Submittal PDF URL">
+        <Field label={t('submittalEditor.lblSubmittalPdf')}>
           <input
             value={submittalPdfUrl}
             onChange={(e) => setSubmittalPdfUrl(e.target.value)}
@@ -267,7 +269,7 @@ export function SubmittalEditor({ initial, jobs, apiBaseUrl }: Props) {
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Returned PDF URL">
+        <Field label={t('submittalEditor.lblReturnedPdf')}>
           <input
             value={returnedPdfUrl}
             onChange={(e) => setReturnedPdfUrl(e.target.value)}
@@ -277,7 +279,7 @@ export function SubmittalEditor({ initial, jobs, apiBaseUrl }: Props) {
         </Field>
       </section>
 
-      <Field label="Internal notes">
+      <Field label={t('submittalEditor.lblNotes')}>
         <textarea
           rows={3}
           value={notes}
