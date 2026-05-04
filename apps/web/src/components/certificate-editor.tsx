@@ -5,6 +5,7 @@
 // label + number + dates.
 
 import { useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 import {
   certificateExpiryLevel,
   certificateKindLabel,
@@ -50,6 +51,7 @@ interface Props {
 }
 
 export function CertificateEditor({ initial, apiBaseUrl }: Props) {
+  const t = useTranslator();
   const [c, setC] = useState<Certificate>(initial);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -98,11 +100,11 @@ export function CertificateEditor({ initial, apiBaseUrl }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-      if (!res.ok) throw new Error(`Save failed: ${res.status}`);
+      if (!res.ok) throw new Error(t('cert.errSaveStatus', { status: res.status }));
       const json = (await res.json()) as { certificate: Certificate };
       setC(json.certificate);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Save failed');
+      setError(err instanceof Error ? err.message : t('cert.errFallback'));
     } finally {
       setSaving(false);
     }
@@ -154,7 +156,7 @@ export function CertificateEditor({ initial, apiBaseUrl }: Props) {
           <p className="mt-1 text-sm text-gray-600">
             {c.expiresOn ? (
               <>
-                Expires {c.expiresOn}
+                {t('cert.expires', { date: c.expiresOn })}
                 {days !== undefined && (
                   <span
                     className={
@@ -165,12 +167,12 @@ export function CertificateEditor({ initial, apiBaseUrl }: Props) {
                           : 'ml-2 text-gray-500'
                     }
                   >
-                    ({days < 0 ? `EXPIRED ${Math.abs(days)} d ago` : `${days} d remaining`})
+                    ({days < 0 ? t('cert.expiredAgo', { n: Math.abs(days) }) : t('cert.daysRemaining', { n: days })})
                   </span>
                 )}
               </>
             ) : (
-              'Lifetime'
+              t('cert.lifetime')
             )}
           </p>
         </div>
@@ -199,7 +201,7 @@ export function CertificateEditor({ initial, apiBaseUrl }: Props) {
               </option>
             ))}
           </select>
-          {saving && <span className="text-gray-500">Saving&hellip;</span>}
+          {saving && <span className="text-gray-500">{t('cert.saving')}</span>}
         </div>
       </header>
 
@@ -211,7 +213,7 @@ export function CertificateEditor({ initial, apiBaseUrl }: Props) {
 
       {/* Identification */}
       <section className="grid gap-4 sm:grid-cols-2">
-        <Field label="Label">
+        <Field label={t('cert.lblLabel')}>
           <input
             value={label}
             onChange={(e) => setLabel(e.target.value)}
@@ -219,7 +221,7 @@ export function CertificateEditor({ initial, apiBaseUrl }: Props) {
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Issuing authority / carrier">
+        <Field label={t('cert.lblIssuer')}>
           <input
             value={issuer}
             onChange={(e) => setIssuer(e.target.value)}
@@ -227,7 +229,7 @@ export function CertificateEditor({ initial, apiBaseUrl }: Props) {
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Cert / policy / license number">
+        <Field label={t('cert.lblNumber')}>
           <input
             value={number}
             onChange={(e) => setNumber(e.target.value)}
@@ -235,16 +237,16 @@ export function CertificateEditor({ initial, apiBaseUrl }: Props) {
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm font-mono"
           />
         </Field>
-        <Field label="PDF / vault URL">
+        <Field label={t('cert.lblPdf')}>
           <input
             value={pdfUrl}
             onChange={(e) => setPdfUrl(e.target.value)}
             onBlur={saveAll}
-            placeholder="https://..."
+            placeholder={t('cert.phPdf')}
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Effective on">
+        <Field label={t('cert.lblEffective')}>
           <input
             type="date"
             value={effectiveOn}
@@ -253,7 +255,7 @@ export function CertificateEditor({ initial, apiBaseUrl }: Props) {
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Expires on">
+        <Field label={t('cert.lblExpiresOn')}>
           <input
             type="date"
             value={expiresOn}
@@ -268,10 +270,10 @@ export function CertificateEditor({ initial, apiBaseUrl }: Props) {
       {isInsurance && (
         <section>
           <h2 className="mb-2 text-lg font-semibold text-gray-900">
-            Insurance limits
+            {t('cert.headerInsLimits')}
           </h2>
           <div className="grid gap-4 sm:grid-cols-3">
-            <Field label="Per-occurrence ($)">
+            <Field label={t('cert.lblPerOcc')}>
               <input
                 type="number"
                 min="0"
@@ -282,7 +284,7 @@ export function CertificateEditor({ initial, apiBaseUrl }: Props) {
                 className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
               />
             </Field>
-            <Field label="Aggregate ($)">
+            <Field label={t('cert.lblAggLimit')}>
               <input
                 type="number"
                 min="0"
@@ -293,7 +295,7 @@ export function CertificateEditor({ initial, apiBaseUrl }: Props) {
                 className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
               />
             </Field>
-            <Field label="Deductible ($)">
+            <Field label={t('cert.lblDeductible')}>
               <input
                 type="number"
                 min="0"
@@ -312,10 +314,10 @@ export function CertificateEditor({ initial, apiBaseUrl }: Props) {
       {isBond && (
         <section>
           <h2 className="mb-2 text-lg font-semibold text-gray-900">
-            Bonding profile
+            {t('cert.headerBond')}
           </h2>
           <div className="grid gap-4 sm:grid-cols-3">
-            <Field label="Single-job cap ($)">
+            <Field label={t('cert.lblSingleJobCap')}>
               <input
                 type="number"
                 min="0"
@@ -326,7 +328,7 @@ export function CertificateEditor({ initial, apiBaseUrl }: Props) {
                 className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
               />
             </Field>
-            <Field label="Aggregate cap ($)">
+            <Field label={t('cert.lblBondAggCap')}>
               <input
                 type="number"
                 min="0"
@@ -337,7 +339,7 @@ export function CertificateEditor({ initial, apiBaseUrl }: Props) {
                 className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
               />
             </Field>
-            <Field label="Rate (decimal e.g. 0.0125)">
+            <Field label={t('cert.lblBondRate')}>
               <input
                 type="number"
                 min="0"
@@ -354,9 +356,9 @@ export function CertificateEditor({ initial, apiBaseUrl }: Props) {
 
       {/* Agent contact */}
       <section>
-        <h2 className="mb-2 text-lg font-semibold text-gray-900">Agent / contact</h2>
+        <h2 className="mb-2 text-lg font-semibold text-gray-900">{t('cert.headerAgent')}</h2>
         <div className="grid gap-4 sm:grid-cols-3">
-          <Field label="Agent name">
+          <Field label={t('cert.lblAgentName')}>
             <input
               value={agentName}
               onChange={(e) => setAgentName(e.target.value)}
@@ -364,7 +366,7 @@ export function CertificateEditor({ initial, apiBaseUrl }: Props) {
               className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
             />
           </Field>
-          <Field label="Agent phone">
+          <Field label={t('cert.lblAgentPhone')}>
             <input
               value={agentPhone}
               onChange={(e) => setAgentPhone(e.target.value)}
@@ -372,7 +374,7 @@ export function CertificateEditor({ initial, apiBaseUrl }: Props) {
               className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
             />
           </Field>
-          <Field label="Agent email">
+          <Field label={t('cert.lblAgentEmail')}>
             <input
               type="email"
               value={agentEmail}
@@ -384,13 +386,13 @@ export function CertificateEditor({ initial, apiBaseUrl }: Props) {
         </div>
       </section>
 
-      <Field label="Notes">
+      <Field label={t('cert.lblNotes')}>
         <textarea
           rows={4}
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           onBlur={saveAll}
-          placeholder="Riders, exclusions, gotchas."
+          placeholder={t('cert.phNotes')}
           className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
         />
       </Field>
