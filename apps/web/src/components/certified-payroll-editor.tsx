@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 import {
   classificationLabel,
   computeRowPay,
@@ -18,7 +19,7 @@ import {
 } from '@yge/shared';
 
 const STATUSES: CprStatus[] = ['DRAFT', 'SUBMITTED', 'ACCEPTED', 'AMENDED', 'NON_PERFORMANCE'];
-const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const DAY_KEYS = ['cpr.dayMon', 'cpr.dayTue', 'cpr.dayWed', 'cpr.dayThu', 'cpr.dayFri', 'cpr.daySat', 'cpr.daySun'];
 
 interface Props {
   initial: CertifiedPayroll;
@@ -28,6 +29,7 @@ interface Props {
 }
 
 export function CertifiedPayrollEditor({ initial, employees, jobs, apiBaseUrl }: Props) {
+  const t = useTranslator();
   const [cpr, setCpr] = useState<CertifiedPayroll>(initial);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,11 +53,11 @@ export function CertifiedPayrollEditor({ initial, employees, jobs, apiBaseUrl }:
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-      if (!res.ok) throw new Error(`Save failed: ${res.status}`);
+      if (!res.ok) throw new Error(t('cpr.errSaveStatus', { status: res.status }));
       const json = (await res.json()) as { certifiedPayroll: CertifiedPayroll };
       setCpr(json.certifiedPayroll);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Save failed');
+      setError(err instanceof Error ? err.message : t('cpr.errFallback'));
     } finally {
       setSaving(false);
     }
@@ -64,7 +66,7 @@ export function CertifiedPayrollEditor({ initial, employees, jobs, apiBaseUrl }:
   function addRow() {
     const emp = employees.find((e) => e.id === newEmpId);
     if (!emp) {
-      setError('Pick an employee.');
+      setError(t('cpr.errPickEmployee'));
       return;
     }
     const total = newDays.reduce((a, b) => a + b, 0);
@@ -113,15 +115,15 @@ export function CertifiedPayrollEditor({ initial, employees, jobs, apiBaseUrl }:
       });
       if (res.status === 409) {
         const body = (await res.json()) as { blockers?: string[] };
-        setError(`Submission blocked: ${(body.blockers ?? []).join('; ')}`);
+        setError(t('cpr.errSubmissionBlocked', { reasons: (body.blockers ?? []).join('; ') }));
         return;
       }
-      if (!res.ok) throw new Error(`Submit failed: ${res.status}`);
+      if (!res.ok) throw new Error(t('cpr.errSubmitStatus', { status: res.status }));
       const json = (await res.json()) as { certifiedPayroll: CertifiedPayroll };
       setCpr(json.certifiedPayroll);
-      setSubmitMsg('Submitted successfully.');
+      setSubmitMsg(t('cpr.submittedOk'));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Submit failed');
+      setError(err instanceof Error ? err.message : t('cpr.errSubmitFallback'));
     } finally {
       setSaving(false);
     }
@@ -134,19 +136,15 @@ export function CertifiedPayrollEditor({ initial, employees, jobs, apiBaseUrl }:
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs font-mono font-bold uppercase tracking-wide text-gray-500">
-            Payroll #{cpr.payrollNumber}
-            {cpr.isFinalPayroll && <span className="ml-2 text-orange-700">FINAL</span>}
+            {t('cpr.heading', { number: cpr.payrollNumber })}
+            {cpr.isFinalPayroll && <span className="ml-2 text-orange-700">{t('cprEditor.final')}</span>}
           </p>
           <h1 className="mt-1 text-2xl font-bold text-yge-blue-500">
             {job ? job.projectName : cpr.jobId}
           </h1>
           <p className="mt-1 text-sm text-gray-600">
-            Week {cpr.weekStarting} → {cpr.weekEnding}
-            {cpr.projectNumber && (
-              <>
-                {' '}\u00b7 #{cpr.projectNumber}
-              </>
-            )}
+            {t('cpr.weekRange', { start: cpr.weekStarting, end: cpr.weekEnding })}
+            {cpr.projectNumber && t('cpr.projNumSuffix', { number: cpr.projectNumber })}
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs">
@@ -167,12 +165,12 @@ export function CertifiedPayrollEditor({ initial, employees, jobs, apiBaseUrl }:
               onClick={submit}
               disabled={blockers.length > 0}
               className="rounded bg-yge-blue-500 px-3 py-1 text-xs font-medium text-white hover:bg-yge-blue-700 disabled:opacity-50"
-              title={blockers.length > 0 ? blockers.join('\n') : 'Submit to DIR'}
+              title={blockers.length > 0 ? blockers.join('\n') : t('cpr.submitTip')}
             >
-              Submit
+              {t('cpr.submit')}
             </button>
           )}
-          {saving && <span className="text-gray-500">Saving&hellip;</span>}
+          {saving && <span className="text-gray-500">{t('cpr.saving')}</span>}
         </div>
       </header>
 
@@ -189,7 +187,7 @@ export function CertifiedPayrollEditor({ initial, employees, jobs, apiBaseUrl }:
 
       {blockers.length > 0 && cpr.status === 'DRAFT' && (
         <div className="rounded border border-yellow-300 bg-yellow-50 p-3 text-sm text-yellow-800">
-          <strong>Submit blockers:</strong>
+          <strong>{t('cpr.blockersTitle')}</strong>
           <ul className="ml-4 list-disc">
             {blockers.map((b, i) => (
               <li key={i}>{b}</li>
@@ -206,7 +204,7 @@ export function CertifiedPayrollEditor({ initial, employees, jobs, apiBaseUrl }:
             onChange={(e) => void patch({ complianceStatementSigned: e.target.checked })}
             className="h-4 w-4"
           />
-          Statement of compliance signed
+          {t('cpr.complianceSigned')}
         </label>
         <label className="flex items-center gap-2">
           <input
@@ -215,16 +213,16 @@ export function CertifiedPayrollEditor({ initial, employees, jobs, apiBaseUrl }:
             onChange={(e) => void patch({ isFinalPayroll: e.target.checked })}
             className="h-4 w-4"
           />
-          Final payroll on this job
+          {t('cpr.finalPayroll')}
         </label>
       </section>
 
       {/* Add row */}
       <section>
-        <h2 className="mb-2 text-lg font-semibold text-gray-900">Add employee row</h2>
+        <h2 className="mb-2 text-lg font-semibold text-gray-900">{t('cpr.addRowHeader')}</h2>
         <div className="rounded border border-gray-200 bg-gray-50 p-3">
           <div className="grid gap-2 sm:grid-cols-4">
-            <Field label="Employee">
+            <Field label={t('cpr.lblEmployee')}>
               <select
                 value={newEmpId}
                 onChange={(e) => setNewEmpId(e.target.value)}
@@ -237,7 +235,7 @@ export function CertifiedPayrollEditor({ initial, employees, jobs, apiBaseUrl }:
                 ))}
               </select>
             </Field>
-            <Field label="Last-4 SSN">
+            <Field label={t('cpr.lblSsn')}>
               <input
                 value={newSsnLast4}
                 onChange={(e) => setNewSsnLast4(e.target.value.slice(0, 4))}
@@ -245,7 +243,7 @@ export function CertifiedPayrollEditor({ initial, employees, jobs, apiBaseUrl }:
                 className="w-full rounded border border-gray-300 px-2 py-1 text-sm font-mono"
               />
             </Field>
-            <Field label="Hourly rate ($)">
+            <Field label={t('cpr.lblHourlyRate')}>
               <input
                 type="number"
                 min="0"
@@ -255,7 +253,7 @@ export function CertifiedPayrollEditor({ initial, employees, jobs, apiBaseUrl }:
                 className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
               />
             </Field>
-            <Field label="Fringe rate ($/hr)">
+            <Field label={t('cpr.lblFringe')}>
               <input
                 type="number"
                 min="0"
@@ -267,8 +265,8 @@ export function CertifiedPayrollEditor({ initial, employees, jobs, apiBaseUrl }:
             </Field>
           </div>
           <div className="mt-2 grid grid-cols-7 gap-1">
-            {DAY_LABELS.map((d, i) => (
-              <Field key={d} label={d}>
+            {DAY_KEYS.map((dKey, i) => (
+              <Field key={dKey} label={t(dKey)}>
                 <input
                   type="number"
                   min="0"
@@ -289,7 +287,7 @@ export function CertifiedPayrollEditor({ initial, employees, jobs, apiBaseUrl }:
               onClick={addRow}
               className="rounded bg-yge-blue-500 px-3 py-1 text-sm font-medium text-white hover:bg-yge-blue-700"
             >
-              Add row
+              {t('cpr.addRow')}
             </button>
           </div>
         </div>
@@ -297,15 +295,15 @@ export function CertifiedPayrollEditor({ initial, employees, jobs, apiBaseUrl }:
 
       {/* Rows */}
       <section>
-        <h2 className="mb-2 text-lg font-semibold text-gray-900">Payroll rows</h2>
+        <h2 className="mb-2 text-lg font-semibold text-gray-900">{t('cpr.payrollRowsHeader')}</h2>
         {cpr.rows.length === 0 ? (
-          <p className="text-sm text-gray-500">No rows yet.</p>
+          <p className="text-sm text-gray-500">{t('cpr.empty')}</p>
         ) : (
           <table className="w-full text-left text-sm">
             <thead className="text-xs uppercase tracking-wide text-gray-500">
               <tr>
-                <th className="py-2 pr-2">Name</th>
-                <th className="py-2 pr-2">Classification</th>
+                <th className="py-2 pr-2">{t('cpr.thName')}</th>
+                <th className="py-2 pr-2">{t('cpr.thClassification')}</th>
                 <th className="py-2 pr-2">M</th>
                 <th className="py-2 pr-2">T</th>
                 <th className="py-2 pr-2">W</th>
@@ -313,10 +311,10 @@ export function CertifiedPayrollEditor({ initial, employees, jobs, apiBaseUrl }:
                 <th className="py-2 pr-2">F</th>
                 <th className="py-2 pr-2">S</th>
                 <th className="py-2 pr-2">S</th>
-                <th className="py-2 pr-2">Total</th>
-                <th className="py-2 pr-2">ST/OT</th>
-                <th className="py-2 pr-2">Rate</th>
-                <th className="py-2 pr-2">Gross</th>
+                <th className="py-2 pr-2">{t('cpr.thTotal')}</th>
+                <th className="py-2 pr-2">{t('cpr.thStOt')}</th>
+                <th className="py-2 pr-2">{t('cpr.thRate')}</th>
+                <th className="py-2 pr-2">{t('cpr.thGross')}</th>
                 <th className="py-2"></th>
               </tr>
             </thead>
@@ -358,7 +356,7 @@ export function CertifiedPayrollEditor({ initial, employees, jobs, apiBaseUrl }:
         )}
       </section>
 
-      <Field label="Notes">
+      <Field label={t('cpr.lblNotes')}>
         <textarea
           rows={3}
           defaultValue={cpr.notes ?? ''}
