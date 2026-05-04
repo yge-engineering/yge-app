@@ -9,6 +9,7 @@
 // onto the invoice via PATCH so it's fully editable afterward.
 
 import { useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 import {
   arInvoiceLineKindLabel,
   arInvoiceSourceLabel,
@@ -34,6 +35,7 @@ interface Props {
 }
 
 export function ArInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
+  const t = useTranslator();
   const [inv, setInv] = useState<ArInvoice>(initial);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -132,7 +134,7 @@ export function ArInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
       );
       if (!res.ok) {
         const text = await res.text();
-        throw new Error(`Build failed: ${res.status} ${text}`);
+        throw new Error(t('arInv.errBuildStatus', { status: res.status, text }));
       }
       const json = (await res.json()) as {
         invoice: ArInvoice;
@@ -143,14 +145,13 @@ export function ArInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
       };
       setInv(json.invoice);
       setBuildSummary(
-        `Built ${json.invoice.lineItems.length} line item(s) from ` +
-          `${json.built.reportsConsulted} daily report(s)` +
+        t('arInv.buildSummary', { count: json.invoice.lineItems.length, reports: json.built.reportsConsulted }) +
           (json.built.unsubmittedReportsSkipped > 0
-            ? ` (${json.built.unsubmittedReportsSkipped} unsubmitted report(s) skipped)`
+            ? t('arInv.buildSummarySkipped', { skipped: json.built.unsubmittedReportsSkipped })
             : ''),
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Build failed');
+      setError(err instanceof Error ? err.message : t('arInv.errBuildFallback'));
     } finally {
       setSaving(false);
     }
@@ -158,7 +159,7 @@ export function ArInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
 
   function addLine() {
     if (newDesc.trim().length === 0) {
-      setError('Line description is required.');
+      setError(t('arInv.errLineDesc'));
       return;
     }
     const qty = Number(newQty || '1');
@@ -189,14 +190,13 @@ export function ArInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs uppercase tracking-wide text-gray-500">
-            {arInvoiceStatusLabel(inv.status)} &middot; {arInvoiceSourceLabel(inv.source)}
+            {t('arInv.headerStatusSep', { status: arInvoiceStatusLabel(inv.status), source: arInvoiceSourceLabel(inv.source) })}
           </p>
           <h1 className="mt-1 text-2xl font-bold text-yge-blue-500">
-            #{inv.invoiceNumber} &mdash; {inv.customerName}
+            {t('arInv.heading', { number: inv.invoiceNumber, customer: inv.customerName })}
           </h1>
           <p className="mt-1 text-sm text-gray-600">
-            {job ? job.projectName : inv.jobId}
-            {' '}\u00b7 invoice {inv.invoiceDate}
+            {t('arInv.subtitle', { job: job ? job.projectName : inv.jobId, date: inv.invoiceDate })}
           </p>
         </div>
         <div className="text-right">
@@ -204,7 +204,7 @@ export function ArInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
             {formatUSD(inv.totalCents)}
           </div>
           <div className="text-xs text-gray-500">
-            {formatUSD(inv.paidCents)} paid &middot; {formatUSD(balance)} balance
+            {t('arInv.paidBalance', { paid: formatUSD(inv.paidCents), balance: formatUSD(balance) })}
           </div>
           <select
             value={inv.status}
@@ -224,10 +224,10 @@ export function ArInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
               rel="noopener noreferrer"
               className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50"
             >
-              Print &rarr;
+              {t('arInv.print')}
             </a>
           </div>
-          {saving && <div className="text-xs text-gray-500">Saving&hellip;</div>}
+          {saving && <div className="text-xs text-gray-500">{t('arInv.saving')}</div>}
         </div>
       </header>
 
@@ -240,15 +240,13 @@ export function ArInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
       {/* Build from daily reports */}
       <section className="rounded-lg border border-blue-200 bg-blue-50 p-4">
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-blue-800">
-          Build from daily reports
+          {t('arInv.buildHeader')}
         </h2>
         <p className="mb-3 text-xs text-blue-900">
-          Aggregates submitted daily reports for this job into one LABOR line
-          per DIR classification, or one consolidated LABOR line. Pull-built
-          line items are fully editable afterward.
+          {t('arInv.buildIntro')}
         </p>
         <div className="grid gap-3 sm:grid-cols-5">
-          <Field label="Period start">
+          <Field label={t('arInv.lblPeriodStart')}>
             <input
               type="date"
               value={buildStart}
@@ -256,7 +254,7 @@ export function ArInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
               className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
             />
           </Field>
-          <Field label="Period end">
+          <Field label={t('arInv.lblPeriodEnd')}>
             <input
               type="date"
               value={buildEnd}
@@ -264,7 +262,7 @@ export function ArInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
               className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
             />
           </Field>
-          <Field label="Default rate ($/hr)">
+          <Field label={t('arInv.lblDefaultRate')}>
             <input
               type="number"
               min="0"
@@ -274,7 +272,7 @@ export function ArInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
               className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
             />
           </Field>
-          <Field label="Consolidate?">
+          <Field label={t('arInv.lblConsolidate')}>
             <div className="flex h-9 items-center">
               <input
                 type="checkbox"
@@ -282,7 +280,7 @@ export function ArInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
                 onChange={(e) => setConsolidateLabor(e.target.checked)}
                 className="h-4 w-4"
               />
-              <span className="ml-2 text-xs">All as one LABOR line</span>
+              <span className="ml-2 text-xs">{t('arInv.consolidateHint')}</span>
             </div>
           </Field>
           <div className="self-end">
@@ -291,7 +289,7 @@ export function ArInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
               onClick={buildFromReports}
               className="rounded bg-yge-blue-500 px-3 py-1 text-sm font-medium text-white hover:bg-yge-blue-700"
             >
-              Build
+              {t('arInv.build')}
             </button>
           </div>
         </div>
@@ -302,7 +300,7 @@ export function ArInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
 
       {/* Header fields */}
       <section className="grid gap-4 sm:grid-cols-2">
-        <Field label="Customer">
+        <Field label={t('arInv.lblCustomer')}>
           <input
             value={customerName}
             onChange={(e) => setCustomerName(e.target.value)}
@@ -310,7 +308,7 @@ export function ArInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Customer project / PO">
+        <Field label={t('arInv.lblCustomerPo')}>
           <input
             value={customerProjectNumber}
             onChange={(e) => setCustomerProjectNumber(e.target.value)}
@@ -318,7 +316,7 @@ export function ArInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm font-mono"
           />
         </Field>
-        <Field label="Customer address">
+        <Field label={t('arInv.lblCustomerAddress')}>
           <textarea
             rows={3}
             value={customerAddress}
@@ -327,17 +325,17 @@ export function ArInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Description (printed below header)">
+        <Field label={t('arInv.lblDescription')}>
           <textarea
             rows={3}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             onBlur={saveHeader}
-            placeholder="e.g. 'Vegetation management work performed for the period of...'"
+            placeholder={t('arInv.phDescription')}
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Invoice #">
+        <Field label={t('arInv.lblInvoiceNum')}>
           <input
             value={invoiceNumber}
             onChange={(e) => setInvoiceNumber(e.target.value)}
@@ -345,7 +343,7 @@ export function ArInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm font-mono"
           />
         </Field>
-        <Field label="Invoice date">
+        <Field label={t('arInv.lblInvoiceDate')}>
           <input
             type="date"
             value={invoiceDate}
@@ -354,7 +352,7 @@ export function ArInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
             className="rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Billing period start">
+        <Field label={t('arInv.lblBillStart')}>
           <input
             type="date"
             value={billingPeriodStart}
@@ -363,7 +361,7 @@ export function ArInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
             className="rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Billing period end">
+        <Field label={t('arInv.lblBillEnd')}>
           <input
             type="date"
             value={billingPeriodEnd}
@@ -372,7 +370,7 @@ export function ArInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
             className="rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Due date">
+        <Field label={t('arInv.lblDueDate')}>
           <input
             type="date"
             value={dueDate}
@@ -381,7 +379,7 @@ export function ArInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
             className="rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Tax ($)">
+        <Field label={t('arInv.lblTax')}>
           <input
             type="number"
             min="0"
@@ -392,7 +390,7 @@ export function ArInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
             className="rounded border border-gray-300 px-3 py-2 text-sm"
           />
         </Field>
-        <Field label="Retention held ($)">
+        <Field label={t('arInv.lblRetention')}>
           <input
             type="number"
             min="0"
@@ -407,11 +405,11 @@ export function ArInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
 
       {/* Line items */}
       <section>
-        <h2 className="mb-2 text-lg font-semibold text-gray-900">Line items</h2>
+        <h2 className="mb-2 text-lg font-semibold text-gray-900">{t('arInv.lineItemsHeader')}</h2>
 
         <div className="rounded border border-gray-200 bg-gray-50 p-3">
           <div className="grid gap-2 sm:grid-cols-6">
-            <Field label="Kind">
+            <Field label={t('arInv.lblKind')}>
               <select
                 value={newKind}
                 onChange={(e) => setNewKind(e.target.value as ArInvoiceLineKind)}
@@ -424,14 +422,14 @@ export function ArInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
                 ))}
               </select>
             </Field>
-            <Field label="Description">
+            <Field label={t('arInv.lblDescriptionShort')}>
               <input
                 value={newDesc}
                 onChange={(e) => setNewDesc(e.target.value)}
                 className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
               />
             </Field>
-            <Field label="Qty">
+            <Field label={t('arInv.lblQty')}>
               <input
                 type="number"
                 min="0"
@@ -441,14 +439,14 @@ export function ArInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
                 className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
               />
             </Field>
-            <Field label="Unit">
+            <Field label={t('arInv.lblUnit')}>
               <input
                 value={newUnit}
                 onChange={(e) => setNewUnit(e.target.value)}
                 className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
               />
             </Field>
-            <Field label="Unit $">
+            <Field label={t('arInv.lblUnitDollar')}>
               <input
                 type="number"
                 min="0"
@@ -464,14 +462,14 @@ export function ArInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
                 onClick={addLine}
                 className="rounded bg-yge-blue-500 px-3 py-1 text-sm font-medium text-white hover:bg-yge-blue-700"
               >
-                Add line
+                {t('arInv.addLine')}
               </button>
             </div>
           </div>
         </div>
 
         {inv.lineItems.length === 0 ? (
-          <p className="mt-4 text-sm text-gray-500">No line items yet.</p>
+          <p className="mt-4 text-sm text-gray-500">{t('arInv.lineItemsEmpty')}</p>
         ) : (
           <ul className="mt-4 divide-y divide-gray-100 rounded border border-gray-200 bg-white text-sm">
             {inv.lineItems.map((li, i) => (
@@ -487,11 +485,7 @@ export function ArInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
                   <div className="text-xs text-gray-500">
                     {li.quantity} {li.unit ?? ''} &times;{' '}
                     {formatUSD(li.unitPriceCents)}
-                    {li.note && (
-                      <>
-                        {' '}\u00b7 {li.note}
-                      </>
-                    )}
+                    {li.note && t('arInv.lineNoteSep', { note: li.note })}
                   </div>
                 </div>
                 <div className="flex items-center gap-3 text-sm">
@@ -503,7 +497,7 @@ export function ArInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
                     onClick={() => removeLine(i)}
                     className="text-xs text-red-600 hover:underline"
                   >
-                    Remove
+                    {t('arInv.removeLine')}
                   </button>
                 </div>
               </li>
@@ -514,29 +508,29 @@ export function ArInvoiceEditor({ initial, jobs, apiBaseUrl }: Props) {
         {/* Totals summary */}
         <div className="mt-4 grid gap-1 rounded border border-gray-200 bg-gray-50 p-3 text-sm sm:max-w-sm sm:ml-auto">
           <div className="flex justify-between">
-            <span>Subtotal</span>
+            <span>{t('arInv.subtotal')}</span>
             <span className="font-mono">{formatUSD(inv.subtotalCents)}</span>
           </div>
           {inv.taxCents !== undefined && (
             <div className="flex justify-between">
-              <span>Tax</span>
+              <span>{t('arInv.tax')}</span>
               <span className="font-mono">{formatUSD(inv.taxCents)}</span>
             </div>
           )}
           {inv.retentionCents !== undefined && inv.retentionCents > 0 && (
             <div className="flex justify-between text-orange-700">
-              <span>Retention held</span>
+              <span>{t('arInv.retentionLabel')}</span>
               <span className="font-mono">-{formatUSD(inv.retentionCents)}</span>
             </div>
           )}
           <div className="flex justify-between border-t border-gray-300 pt-1 text-base font-bold">
-            <span>Total</span>
+            <span>{t('arInv.totalLabel')}</span>
             <span className="font-mono">{formatUSD(inv.totalCents)}</span>
           </div>
         </div>
       </section>
 
-      <Field label="Internal notes (not printed)">
+      <Field label={t('arInv.lblNotes')}>
         <textarea
           rows={3}
           value={notes}
