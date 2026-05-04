@@ -4,6 +4,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useTranslator } from '../lib/use-translator';
 import {
   adjustmentKindLabel,
   bankRecStatusLabel,
@@ -69,6 +70,7 @@ export function BankRecEditor({
   rec?: BankRec;
 }) {
   const router = useRouter();
+  const t = useTranslator();
   const [form, setForm] = useState<FormState>(defaults(rec));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -173,33 +175,31 @@ export function BankRecEditor({
             : 'border-yellow-300 bg-yellow-50 text-yellow-900'
         }`}
       >
-        <strong>{preview.inBalance ? '✓ Reconciles' : '✗ Does not reconcile'}</strong>{' '}
-        Adjusted bank {formatUSD(preview.adjustedBankBalanceCents)} ·
-        Adjusted GL {formatUSD(preview.adjustedGlBalanceCents)}
+        <strong>{preview.inBalance ? t('bankRec.recOk') : t('bankRec.recBad')}</strong>{t('bankRec.recBody', { bank: formatUSD(preview.adjustedBankBalanceCents), gl: formatUSD(preview.adjustedGlBalanceCents) })}
         {!preview.inBalance && (
-          <span> (Δ {formatUSD(preview.imbalanceCents)})</span>
+          <span>{t('bankRec.recDelta', { imbalance: formatUSD(preview.imbalanceCents) })}</span>
         )}
       </div>
 
-      <Section title="Account + period">
-        <Field label="Bank account label" required>
+      <Section title={t('bankRec.secAccount')}>
+        <Field label={t('bankRec.lblAccount')} required>
           <input
             className={inputCls}
             value={form.bankAccountLabel}
             onChange={(e) => setField('bankAccountLabel', e.target.value)}
-            placeholder="Operating - BoA x1234"
+            placeholder={t('bankRec.phAccount')}
             required
           />
         </Field>
-        <Field label="GL account number">
+        <Field label={t('bankRec.lblGl')}>
           <input
             className={inputCls}
             value={form.glAccountNumber}
             onChange={(e) => setField('glAccountNumber', e.target.value)}
-            placeholder="10100"
+            placeholder={t('bankRec.phGl')}
           />
         </Field>
-        <Field label="Statement date" required>
+        <Field label={t('bankRec.lblStatementDate')} required>
           <input
             type="date"
             className={inputCls}
@@ -208,7 +208,7 @@ export function BankRecEditor({
             required
           />
         </Field>
-        <Field label="Status">
+        <Field label={t('bankRec.lblStatus')}>
           <select
             className={inputCls}
             value={form.status}
@@ -223,8 +223,8 @@ export function BankRecEditor({
         </Field>
       </Section>
 
-      <Section title="Balances">
-        <Field label="Beginning balance ($)">
+      <Section title={t('bankRec.secBalances')}>
+        <Field label={t('bankRec.lblBeginning')}>
           <input
             type="number"
             step="0.01"
@@ -233,7 +233,7 @@ export function BankRecEditor({
             onChange={(e) => setField('beginningBalanceDollars', e.target.value)}
           />
         </Field>
-        <Field label="Statement (ending) balance ($)" required>
+        <Field label={t('bankRec.lblStatementBalance')} required>
           <input
             type="number"
             step="0.01"
@@ -243,7 +243,7 @@ export function BankRecEditor({
             required
           />
         </Field>
-        <Field label="GL balance per books ($)" required>
+        <Field label={t('bankRec.lblGlBalance')} required>
           <input
             type="number"
             step="0.01"
@@ -255,8 +255,8 @@ export function BankRecEditor({
         </Field>
       </Section>
 
-      <Section title="In-transit items">
-        <Field label="Outstanding checks ($)">
+      <Section title={t('bankRec.secInTransit')}>
+        <Field label={t('bankRec.lblOutstandingChecks')}>
           <input
             type="number"
             step="0.01"
@@ -266,7 +266,7 @@ export function BankRecEditor({
             onChange={(e) => setField('outstandingChecksDollars', e.target.value)}
           />
         </Field>
-        <Field label="Deposits in transit ($)">
+        <Field label={t('bankRec.lblOutstandingDeposits')}>
           <input
             type="number"
             step="0.01"
@@ -281,7 +281,7 @@ export function BankRecEditor({
       <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
-            Adjustments ({form.adjustments.length}) · net{' '}
+            {t('bankRec.adjustmentsHeader', { count: form.adjustments.length })}
             <span className="font-mono">{formatUSD(adjustmentNet)}</span>
           </h2>
           <button
@@ -289,20 +289,19 @@ export function BankRecEditor({
             onClick={addAdjustment}
             className="rounded border border-yge-blue-500 px-2 py-1 text-xs text-yge-blue-500 hover:bg-yge-blue-50"
           >
-            + Add adjustment
+            {t('bankRec.addAdjustment')}
           </button>
         </div>
         {form.adjustments.length === 0 ? (
           <p className="mt-3 text-xs text-gray-500">
-            None. Add bank fees (subtract from GL), interest income (add to
-            GL), or manual rounding adjustments.
+            {t('bankRec.adjustmentsEmpty')}
           </p>
         ) : (
           <div className="mt-3 space-y-2">
             {form.adjustments.map((a, i) => (
               <div key={i} className="grid gap-2 rounded border border-gray-200 p-2 sm:grid-cols-5">
                 <div>
-                  <label className="block text-xs font-medium text-gray-700">Kind</label>
+                  <label className="block text-xs font-medium text-gray-700">{t('bankRec.lblAdjKind')}</label>
                   <select
                     className={inputCls}
                     value={a.kind}
@@ -318,7 +317,7 @@ export function BankRecEditor({
                   </select>
                 </div>
                 <div className="sm:col-span-3">
-                  <label className="block text-xs font-medium text-gray-700">Description</label>
+                  <label className="block text-xs font-medium text-gray-700">{t('bankRec.lblAdjDescription')}</label>
                   <input
                     className={inputCls}
                     value={a.description}
@@ -326,7 +325,7 @@ export function BankRecEditor({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700">Amount ($)</label>
+                  <label className="block text-xs font-medium text-gray-700">{t('bankRec.lblAdjAmount')}</label>
                   <div className="flex items-center gap-1">
                     <input
                       type="number"
@@ -354,8 +353,8 @@ export function BankRecEditor({
         )}
       </div>
 
-      <Section title="Sign-off">
-        <Field label="Reconciled on">
+      <Section title={t('bankRec.secSignoff')}>
+        <Field label={t('bankRec.lblReconciledOn')}>
           <input
             type="date"
             className={inputCls}
@@ -363,7 +362,7 @@ export function BankRecEditor({
             onChange={(e) => setField('reconciledOn', e.target.value)}
           />
         </Field>
-        <Field label="Reconciled by">
+        <Field label={t('bankRec.lblReconciledBy')}>
           <input
             className={inputCls}
             value={form.reconciledByName}
@@ -372,8 +371,8 @@ export function BankRecEditor({
         </Field>
       </Section>
 
-      <Section title="Notes">
-        <Field label="Notes" full>
+      <Section title={t('bankRec.secNotes')}>
+        <Field label={t('bankRec.lblNotes')} full>
           <textarea
             className={`${inputCls} min-h-[80px]`}
             value={form.notes}
@@ -388,7 +387,7 @@ export function BankRecEditor({
           disabled={saving}
           className="rounded bg-yge-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-yge-blue-700 disabled:opacity-50"
         >
-          {saving ? 'Saving…' : mode === 'create' ? 'Create rec' : 'Save changes'}
+          {saving ? t('bankRec.busy') : mode === 'create' ? t('bankRec.create') : t('bankRec.save')}
         </button>
       </div>
     </form>
