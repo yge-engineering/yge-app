@@ -59,7 +59,34 @@ import { credentialsRouter } from './routes/credentials';
 const app = express();
 
 app.use(helmet());
-app.use(cors({ origin: process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000' }));
+
+// CORS — allow the production web origins (custom domain + Vercel
+// default) plus dev. Vercel preview deploys all live under
+// *.vercel.app so we accept that pattern too. Server-to-server
+// requests (which don't send an Origin header) are always allowed.
+const ALLOWED_ORIGINS = new Set<string>([
+  'http://localhost:3000',
+  'https://app.youngge.com',
+  'https://yge-app-web.vercel.app',
+]);
+const EXTRA_ORIGIN = process.env.NEXT_PUBLIC_APP_URL;
+if (EXTRA_ORIGIN) ALLOWED_ORIGINS.add(EXTRA_ORIGIN);
+
+app.use(
+  cors({
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true);
+      if (ALLOWED_ORIGINS.has(origin)) return cb(null, true);
+      // Vercel preview deploys (e.g. yge-app-web-git-fix-xxx.vercel.app).
+      if (/^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin)) {
+        return cb(null, true);
+      }
+      return cb(new Error(`Not allowed by CORS: ${origin}`));
+    },
+    credentials: true,
+  }),
+);
+
 app.use(express.json({ limit: '10mb' }));
 app.use(pinoHttp({ logger }));
 
