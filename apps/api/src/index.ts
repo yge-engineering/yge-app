@@ -179,5 +179,6 @@ app.listen(port, () => {
     void import('./lib/ap-inbox-scheduler').then((m) =>
       m.startApInboxScheduler(),
     );
+    void import('./lib/backup').then((m) => m.startBackupScheduler());
   }
 });
