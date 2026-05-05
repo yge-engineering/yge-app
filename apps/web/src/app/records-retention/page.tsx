@@ -14,6 +14,7 @@ import {
 } from '../../components';
 import { RetentionPurgeConfirmForm } from '../../components/retention-purge-confirm-form';
 import { getTranslator } from '../../lib/locale';
+import { requirePermission } from '../../lib/permissions';
 import {
   RETENTION_RULES,
   computeRetentionStats,

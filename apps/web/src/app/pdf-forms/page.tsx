@@ -14,6 +14,7 @@ import {
   StatusPill,
 } from '../../components';
 import { getTranslator } from '../../lib/locale';
+import { requirePermission } from '../../lib/permissions';
 import {
   computeFillability,
   computeFormLibraryRollup,

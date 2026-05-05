@@ -23,6 +23,7 @@ import {
   type DirRateSyncRun,
 } from '@yge/shared';
 import { getTranslator } from '../../lib/locale';
+import { requirePermission } from '../../lib/permissions';
 
 function apiBaseUrl(): string {
   return (
