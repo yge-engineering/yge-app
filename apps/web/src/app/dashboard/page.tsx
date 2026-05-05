@@ -76,6 +76,15 @@ async function fetchJson<T>(pathname: string, key: string): Promise<T[]> {
 }
 
 export default async function DashboardPage() {
+  // Foremen + crew don't need the full enterprise dashboard (AR aging,
+  // RFI counts, dispatch double-bookings, etc.). Redirect them to the
+  // focused /me/today view that surfaces just their work.
+  const me = (await import('../../lib/auth')).getCurrentUser();
+  if (me && (me.role === 'FOREMAN' || me.role === 'CREW')) {
+    const { redirect } = await import('next/navigation');
+    redirect('/me/today');
+  }
+
   const today = ygeToday();
   const [
     jobs,
