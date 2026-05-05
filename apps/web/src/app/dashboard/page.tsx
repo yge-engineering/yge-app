@@ -139,6 +139,16 @@ export default async function DashboardPage() {
     }
   }
 
+  // AP needs review — DRAFT rows from the auto-poll waiting for human
+  // approval. The poller stamps "AI extraction" into notes, so DRAFT
+  // rows that came from email all bubble up here.
+  const apNeedsReview = apInvoices.filter(
+    (ap) =>
+      ap.status === 'DRAFT' &&
+      typeof ap.notes === 'string' &&
+      /AI extraction|From: /i.test(ap.notes),
+  ).length;
+
   // Open RFIs + submittals.
   const openRfis = rfis.filter(
     (r) => r.status === 'DRAFT' || r.status === 'SENT',
@@ -253,6 +263,26 @@ export default async function DashboardPage() {
           ok={t('dashboard.compliance.dispatchConflicts.ok')}
         />
       </div>
+
+      {/* AP NEEDS REVIEW — auto-poll DRAFT rows waiting for human pass */}
+      {apNeedsReview > 0 && (
+        <div className="mb-6">
+          <Link
+            href="/ap-invoices?status=DRAFT"
+            className="block rounded-lg border border-amber-300 bg-amber-50 p-4 shadow-sm hover:bg-amber-100"
+          >
+            <div className="text-xs font-semibold uppercase tracking-wide text-amber-900">
+              AP needs review
+            </div>
+            <div className="mt-1 text-2xl font-bold text-amber-900">
+              {apNeedsReview} invoice{apNeedsReview === 1 ? '' : 's'}
+            </div>
+            <div className="text-xs text-amber-800">
+              From the auto-poll · click to open the AP list filtered to DRAFT.
+            </div>
+          </Link>
+        </div>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-3">
         {/* TODAY'S DISPATCH */}
