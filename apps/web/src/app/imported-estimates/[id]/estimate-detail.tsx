@@ -1,23 +1,19 @@
 'use client';
 
-// Estimate detail — editable.
+// Estimate detail — Excel-style inline editor.
 //
-// Plain English: a SharePoint-style table for one imported estimate.
-// Header card across the top has Edit project info; section subheads
-// have + Add line; each line has Edit + Delete on hover. All
-// mutations PATCH /api/imported-estimates/:id with the full record
-// (the API replaces the whole row on PATCH; partial updates would
-// need a separate endpoint).
-//
-// Totals (Direct, O&P, Bid) are recomputed from the line array on
-// every save so the header card matches the lines without the user
-// having to remember to re-enter them.
+// Plain English: every line cell is a real <input> you can click into
+// and type. Tab moves to the next cell, Enter saves and stays. When
+// you click out of a cell (blur) we save the whole estimate to the
+// API. Totals (Total cost / O&P / Bid) are computed live and
+// read-only. + Add line drops a new empty row at the bottom of a
+// section. Hover any line for Delete. The "Edit project info" button
+// stays as a modal for header-level fields (name, client, rate,
+// O&P %).
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import {
-  groupLinesBySection,
   importedEstimateLineCategoryLabel,
   type ImportedEstimate,
   type ImportedEstimateLine,
@@ -48,76 +44,50 @@ function fmtMoneyCompact(cents: number): string {
     maximumFractionDigits: 0,
   })}`;
 }
-function dollarsToCents(s: string): number {
+function dollarsToCents(s: string | number): number {
+  if (typeof s === 'number') return Math.round(s * 100);
   const trimmed = s.trim();
   if (!trimmed) return 0;
   const n = Number(trimmed.replace(/[$,]/g, ''));
   if (!Number.isFinite(n) || n < 0) return 0;
   return Math.round(n * 100);
 }
-function centsToDollars(c: number): string {
-  return (c / 100).toFixed(2);
-}
 
-interface DraftLine {
-  itemNumber: string;
-  sectionName: string;
-  category: ImportedEstimateLineCategory;
-  costCode: string;
-  description: string;
-  quantity: string;
-  unit: string;
-  otMultiplier: string;
-  unitCostDollars: string;
-  notes: string;
-}
-
-function lineToDraft(l: ImportedEstimateLine, oppPercent: number): DraftLine {
-  return {
-    itemNumber: l.itemNumber !== undefined && l.itemNumber !== null ? String(l.itemNumber) : '',
-    sectionName: l.sectionName ?? '',
-    category: l.category,
-    costCode: l.costCode ?? '',
-    description: l.description,
-    quantity: String(l.quantity ?? 0),
-    unit: l.unit ?? '',
-    otMultiplier: String(l.otMultiplier ?? 1),
-    unitCostDollars: centsToDollars(l.unitCostCents),
-    notes: l.notes ?? '',
-  };
-}
-
-function draftToLine(d: DraftLine, oppPercent: number): ImportedEstimateLine {
-  const quantity = Number(d.quantity) || 0;
-  const otMultiplier = Number(d.otMultiplier) || 1;
-  const unitCostCents = dollarsToCents(d.unitCostDollars);
-  const totalCostCents = Math.round(quantity * unitCostCents * otMultiplier);
+function recomputeLine(
+  line: ImportedEstimateLine,
+  oppPercent: number,
+): ImportedEstimateLine {
+  const totalCostCents = Math.round(
+    line.quantity * line.unitCostCents * line.otMultiplier,
+  );
   const oppMarkupCents = Math.round(totalCostCents * oppPercent);
   const bidPriceCents = totalCostCents + oppMarkupCents;
-  const itemNumber = d.itemNumber.trim() ? Number(d.itemNumber) : null;
-  const out: ImportedEstimateLine = {
-    category: d.category,
-    description: d.description.trim(),
-    quantity,
-    otMultiplier,
-    unitCostCents,
-    totalCostCents,
-    oppMarkupCents,
-    bidPriceCents,
-  };
-  if (itemNumber !== null && Number.isFinite(itemNumber)) out.itemNumber = itemNumber;
-  if (d.sectionName.trim()) out.sectionName = d.sectionName.trim();
-  if (d.costCode.trim()) out.costCode = d.costCode.trim();
-  if (d.unit.trim()) out.unit = d.unit.trim();
-  if (d.notes.trim()) out.notes = d.notes.trim();
-  return out;
+  return { ...line, totalCostCents, oppMarkupCents, bidPriceCents };
 }
 
-function recomputeTotals(lines: ImportedEstimateLine[], oppPercent: number) {
+function recomputeAllTotals(lines: ImportedEstimateLine[], oppPercent: number) {
   const directCostCents = lines.reduce((s, l) => s + l.totalCostCents, 0);
   const oppMarkupCents = Math.round(directCostCents * oppPercent);
   const bidPriceCents = directCostCents + oppMarkupCents;
   return { directCostCents, oppMarkupCents, bidPriceCents };
+}
+
+type SectionGroup = { sectionName: string; lines: Array<{ line: ImportedEstimateLine; idx: number }> };
+
+function groupLinesPreservingIndex(
+  lines: ImportedEstimateLine[],
+): SectionGroup[] {
+  const out: SectionGroup[] = [];
+  let current: SectionGroup | null = null;
+  lines.forEach((line, idx) => {
+    const section = line.sectionName ?? '(Uncategorized)';
+    if (!current || current.sectionName !== section) {
+      current = { sectionName: section, lines: [] };
+      out.push(current);
+    }
+    current.lines.push({ line, idx });
+  });
+  return out;
 }
 
 interface Props {
@@ -125,20 +95,25 @@ interface Props {
 }
 
 export function EstimateDetail({ initial }: Props) {
-  const router = useRouter();
   const [estimate, setEstimate] = useState<ImportedEstimate>(initial);
   const [editingProject, setEditingProject] = useState(false);
-  const [editingLine, setEditingLine] = useState<{
-    index: number | null; // null = new
-    draft: DraftLine;
-  } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const sections = useMemo(() => groupLinesBySection(estimate.lines), [estimate.lines]);
+  // Generation counter — bumped after every successful save. Each row
+  // resets its uncontrolled inputs to the new line value when it sees
+  // a new gen. Keeps inputs from fighting in-flight server data.
+  const [gen, setGen] = useState(0);
 
-  /** Persist the full estimate to the API and update local state on success. */
+  const sections = useMemo(() => groupLinesPreservingIndex(estimate.lines), [
+    estimate.lines,
+  ]);
+
+  /** Persist a new estimate snapshot, optimistically updating local
+   *  state first so the UI is snappy. Reverts on save failure. */
   async function persist(next: ImportedEstimate) {
+    const prev = estimate;
+    setEstimate(next);
     setSaving(true);
     setError(null);
     try {
@@ -167,38 +142,67 @@ export function EstimateDetail({ initial }: Props) {
       const json = (await res.json()) as { importedEstimate: ImportedEstimate };
       setEstimate(json.importedEstimate);
     } catch (err) {
+      // Revert on failure so the UI doesn't lie about what's saved.
+      setEstimate(prev);
       setError(err instanceof Error ? err.message : 'Save failed.');
-      // Re-throw so callers can chain follow-up state changes only on success.
       throw err;
     } finally {
       setSaving(false);
+      setGen((g) => g + 1);
     }
   }
 
-  async function deleteLine(idx: number) {
+  function applyLineChange(idx: number, patch: Partial<ImportedEstimateLine>) {
+    const before = estimate.lines[idx];
+    if (!before) return;
+    const merged = recomputeLine({ ...before, ...patch }, estimate.oppPercent);
+    // No-op short-circuit: skip the round-trip if nothing actually changed.
+    if (
+      JSON.stringify({ ...before, totalCostCents: 0, oppMarkupCents: 0, bidPriceCents: 0 }) ===
+      JSON.stringify({ ...merged, totalCostCents: 0, oppMarkupCents: 0, bidPriceCents: 0 })
+    ) {
+      return;
+    }
+    const nextLines = estimate.lines.map((l, i) => (i === idx ? merged : l));
+    const totals = recomputeAllTotals(nextLines, estimate.oppPercent);
+    void persist({ ...estimate, lines: nextLines, ...totals }).catch(() => undefined);
+  }
+
+  function deleteLine(idx: number) {
     if (!confirm('Delete this line? This cannot be undone.')) return;
     const nextLines = estimate.lines.filter((_, i) => i !== idx);
-    const totals = recomputeTotals(nextLines, estimate.oppPercent);
-    try {
-      await persist({ ...estimate, lines: nextLines, ...totals });
-    } catch {
-      // error already shown via state
-    }
+    const totals = recomputeAllTotals(nextLines, estimate.oppPercent);
+    void persist({ ...estimate, lines: nextLines, ...totals }).catch(() => undefined);
   }
 
-  async function saveLine(idx: number | null, draft: DraftLine) {
-    const newLine = draftToLine(draft, estimate.oppPercent);
-    const nextLines =
-      idx === null
-        ? [...estimate.lines, newLine]
-        : estimate.lines.map((l, i) => (i === idx ? newLine : l));
-    const totals = recomputeTotals(nextLines, estimate.oppPercent);
-    try {
-      await persist({ ...estimate, lines: nextLines, ...totals });
-      setEditingLine(null);
-    } catch {
-      // keep modal open so user can retry
-    }
+  function addLine(sectionName: string) {
+    const newLine: ImportedEstimateLine = {
+      sectionName,
+      category: 'LABOR',
+      description: '',
+      quantity: 0,
+      otMultiplier: 1,
+      unitCostCents: 0,
+      totalCostCents: 0,
+      oppMarkupCents: 0,
+      bidPriceCents: 0,
+    };
+    const nextLines = [...estimate.lines, newLine];
+    const totals = recomputeAllTotals(nextLines, estimate.oppPercent);
+    void persist({ ...estimate, lines: nextLines, ...totals }).catch(() => undefined);
+  }
+
+  function renameSection(oldName: string) {
+    const next = prompt('Rename section', oldName);
+    if (!next || next.trim() === oldName) return;
+    const newName = next.trim();
+    const nextLines = estimate.lines.map((l) =>
+      (l.sectionName ?? '(Uncategorized)') === oldName
+        ? { ...l, sectionName: newName }
+        : l,
+    );
+    const totals = recomputeAllTotals(nextLines, estimate.oppPercent);
+    void persist({ ...estimate, lines: nextLines, ...totals }).catch(() => undefined);
   }
 
   async function saveProject(next: {
@@ -208,17 +212,14 @@ export function EstimateDetail({ initial }: Props) {
     oppPercent: number;
     notes: string;
   }) {
-    const totals = recomputeTotals(estimate.lines, next.oppPercent);
-    // Re-mark each line's opp/bid against the new oppPercent so existing
-    // line values stay consistent with the new markup.
+    // When O&P percent changes, walk every line and update its
+    // oppMarkupCents + bidPriceCents so the per-line bid stays
+    // consistent with the new percentage.
     const nextLines = estimate.lines.map((l) => {
       const opp = Math.round(l.totalCostCents * next.oppPercent);
-      return {
-        ...l,
-        oppMarkupCents: opp,
-        bidPriceCents: l.totalCostCents + opp,
-      };
+      return { ...l, oppMarkupCents: opp, bidPriceCents: l.totalCostCents + opp };
     });
+    const totals = recomputeAllTotals(nextLines, next.oppPercent);
     try {
       await persist({
         ...estimate,
@@ -250,6 +251,9 @@ export function EstimateDetail({ initial }: Props) {
           )}
         </div>
         <div className="flex items-center gap-2">
+          {saving && (
+            <span className="text-xs text-blue-700">Saving…</span>
+          )}
           <button
             type="button"
             onClick={() => setEditingProject(true)}
@@ -260,7 +264,6 @@ export function EstimateDetail({ initial }: Props) {
         </div>
       </div>
 
-      {/* Project header */}
       <div className="mb-4">
         <h1 className="text-2xl font-bold text-yge-blue-500">{estimate.projectName}</h1>
         <p className="mt-1 text-sm text-gray-600">
@@ -273,11 +276,6 @@ export function EstimateDetail({ initial }: Props) {
           {error}
         </div>
       )}
-      {saving && (
-        <div className="mb-3 rounded border border-blue-300 bg-blue-50 p-2 text-xs text-blue-900">
-          Saving…
-        </div>
-      )}
 
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
         <Stat label="Direct cost" value={fmtMoneyCompact(estimate.directCostCents)} />
@@ -288,43 +286,25 @@ export function EstimateDetail({ initial }: Props) {
         <Stat label="Bid price" value={fmtMoneyCompact(estimate.bidPriceCents)} primary />
       </div>
 
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-gray-300 pb-2">
-        <h2 className="text-sm font-semibold text-gray-900">
-          {estimate.lines.length} line{estimate.lines.length === 1 ? '' : 's'}
-        </h2>
-        <button
-          type="button"
-          onClick={() =>
-            setEditingLine({
-              index: null,
-              draft: {
-                itemNumber: '',
-                sectionName: sections.length > 0 ? sections[sections.length - 1]!.sectionName : '',
-                category: 'LABOR',
-                costCode: '',
-                description: '',
-                quantity: '0',
-                unit: '',
-                otMultiplier: '1',
-                unitCostDollars: '',
-                notes: '',
-              },
-            })
-          }
-          className="rounded-md bg-blue-700 px-3 py-1.5 text-sm font-semibold text-white hover:bg-blue-800"
-        >
-          + Add line
-        </button>
-      </div>
+      <p className="mb-2 text-xs text-gray-500">
+        Click any cell to edit. Tab moves to the next cell, Enter saves. Changes save automatically.
+      </p>
 
       {sections.map((sec) => {
-        const sectionDirect = sec.lines.reduce((s, l) => s + l.totalCostCents, 0);
-        const sectionBid = sec.lines.reduce((s, l) => s + l.bidPriceCents, 0);
+        const sectionDirect = sec.lines.reduce((s, l) => s + l.line.totalCostCents, 0);
+        const sectionBid = sec.lines.reduce((s, l) => s + l.line.bidPriceCents, 0);
         return (
           <div key={sec.sectionName} className="mb-6">
             <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-gray-200 pb-1">
-              <h3 className="text-sm font-bold uppercase tracking-wide text-gray-900">
+              <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-gray-900">
                 {sec.sectionName}
+                <button
+                  type="button"
+                  onClick={() => renameSection(sec.sectionName)}
+                  className="text-[10px] font-normal normal-case text-gray-400 hover:text-gray-700"
+                >
+                  rename
+                </button>
               </h3>
               <div className="flex items-center gap-3 text-xs text-gray-500">
                 <span>
@@ -333,26 +313,10 @@ export function EstimateDetail({ initial }: Props) {
                 </span>
                 <button
                   type="button"
-                  onClick={() =>
-                    setEditingLine({
-                      index: null,
-                      draft: {
-                        itemNumber: '',
-                        sectionName: sec.sectionName,
-                        category: 'LABOR',
-                        costCode: '',
-                        description: '',
-                        quantity: '0',
-                        unit: '',
-                        otMultiplier: '1',
-                        unitCostDollars: '',
-                        notes: '',
-                      },
-                    })
-                  }
+                  onClick={() => addLine(sec.sectionName)}
                   className="text-blue-700 hover:underline"
                 >
-                  + Add
+                  + Add line
                 </button>
               </div>
             </div>
@@ -360,78 +324,50 @@ export function EstimateDetail({ initial }: Props) {
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 text-left text-[11px] uppercase tracking-wide text-gray-500">
                   <tr>
-                    <th className="px-2 py-1.5">#</th>
-                    <th className="px-2 py-1.5">Category</th>
-                    <th className="px-2 py-1.5">Code</th>
-                    <th className="px-2 py-1.5">Description</th>
-                    <th className="px-2 py-1.5 text-right">Qty</th>
-                    <th className="px-2 py-1.5">Unit</th>
-                    <th className="px-2 py-1.5 text-right">Unit cost</th>
-                    <th className="px-2 py-1.5 text-right">Total</th>
-                    <th className="px-2 py-1.5 text-right">Bid</th>
-                    <th className="px-2 py-1.5 text-right">Actions</th>
+                    <th className="w-14 px-1 py-1.5">#</th>
+                    <th className="w-36 px-1 py-1.5">Category</th>
+                    <th className="w-36 px-1 py-1.5">Code</th>
+                    <th className="px-1 py-1.5">Description</th>
+                    <th className="w-20 px-1 py-1.5 text-right">Qty</th>
+                    <th className="w-20 px-1 py-1.5">Unit</th>
+                    <th className="w-20 px-1 py-1.5 text-right">OT</th>
+                    <th className="w-28 px-1 py-1.5 text-right">Unit cost</th>
+                    <th className="w-28 px-1 py-1.5 text-right">Total</th>
+                    <th className="w-28 px-1 py-1.5 text-right">Bid</th>
+                    <th className="w-12 px-1 py-1.5"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {sec.lines.map((l) => {
-                    // We need the original index in the flat lines[] array
-                    // for delete/edit, since `sec.lines` is a filtered view.
-                    const flatIdx = estimate.lines.indexOf(l);
-                    return (
-                      <tr key={flatIdx} className="group hover:bg-gray-50">
-                        <td className="px-2 py-1.5 text-xs text-gray-500">{l.itemNumber ?? '—'}</td>
-                        <td className="px-2 py-1.5 text-xs">
-                          {importedEstimateLineCategoryLabel(l.category)}
-                        </td>
-                        <td className="px-2 py-1.5 font-mono text-xs">{l.costCode ?? '—'}</td>
-                        <td className="px-2 py-1.5">
-                          {l.description}
-                          {l.notes && (
-                            <div className="text-[11px] italic text-gray-500">{l.notes}</div>
-                          )}
-                        </td>
-                        <td className="px-2 py-1.5 text-right font-mono text-xs">{l.quantity}</td>
-                        <td className="px-2 py-1.5 text-xs text-gray-500">{l.unit ?? '—'}</td>
-                        <td className="px-2 py-1.5 text-right font-mono text-xs">
-                          {fmtMoney(l.unitCostCents)}
-                        </td>
-                        <td className="px-2 py-1.5 text-right font-mono text-xs">
-                          {fmtMoney(l.totalCostCents)}
-                        </td>
-                        <td className="px-2 py-1.5 text-right font-mono text-xs font-semibold">
-                          {fmtMoney(l.bidPriceCents)}
-                        </td>
-                        <td className="px-2 py-1.5 text-right whitespace-nowrap">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setEditingLine({
-                                index: flatIdx,
-                                draft: lineToDraft(l, estimate.oppPercent),
-                              })
-                            }
-                            className="text-xs text-gray-600 opacity-0 transition group-hover:opacity-100 hover:underline"
-                          >
-                            Edit
-                          </button>
-                          <span className="px-1 text-gray-300 opacity-0 group-hover:opacity-100">·</span>
-                          <button
-                            type="button"
-                            onClick={() => deleteLine(flatIdx)}
-                            className="text-xs text-red-700 opacity-0 transition group-hover:opacity-100 hover:underline"
-                          >
-                            Delete
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                  {sec.lines.map(({ line, idx }) => (
+                    <EditableLineRow
+                      key={`${idx}-${gen}`}
+                      line={line}
+                      onChange={(patch) => applyLineChange(idx, patch)}
+                      onDelete={() => deleteLine(idx)}
+                    />
+                  ))}
                 </tbody>
               </table>
             </div>
           </div>
         );
       })}
+
+      <div className="mt-4">
+        <button
+          type="button"
+          onClick={() =>
+            addLine(
+              sections.length > 0
+                ? sections[sections.length - 1]!.sectionName
+                : 'New section',
+            )
+          }
+          className="rounded-md bg-blue-700 px-3 py-1.5 text-sm font-semibold text-white hover:bg-blue-800"
+        >
+          + Add line
+        </button>
+      </div>
 
       {editingProject && (
         <ProjectModal
@@ -440,14 +376,233 @@ export function EstimateDetail({ initial }: Props) {
           onSave={saveProject}
         />
       )}
-      {editingLine && (
-        <LineModal
-          initial={editingLine.draft}
-          onClose={() => setEditingLine(null)}
-          onSave={(draft) => saveLine(editingLine.index, draft)}
-        />
-      )}
     </div>
+  );
+}
+
+// ---- Editable row -------------------------------------------------------
+
+function EditableLineRow({
+  line,
+  onChange,
+  onDelete,
+}: {
+  line: ImportedEstimateLine;
+  onChange: (patch: Partial<ImportedEstimateLine>) => void;
+  onDelete: () => void;
+}) {
+  return (
+    <tr className="group hover:bg-gray-50">
+      <CellInputNumber
+        defaultValue={line.itemNumber ?? null}
+        onCommit={(v) => onChange({ itemNumber: v ?? undefined })}
+        align="left"
+      />
+      <CellSelect
+        defaultValue={line.category}
+        options={CATEGORIES.map((c) => ({
+          value: c,
+          label: importedEstimateLineCategoryLabel(c),
+        }))}
+        onCommit={(v) => onChange({ category: v as ImportedEstimateLineCategory })}
+      />
+      <CellInputText
+        defaultValue={line.costCode ?? ''}
+        onCommit={(v) => onChange({ costCode: v || undefined })}
+        mono
+      />
+      <CellInputText
+        defaultValue={line.description}
+        onCommit={(v) => onChange({ description: v })}
+      />
+      <CellInputNumber
+        defaultValue={line.quantity}
+        onCommit={(v) => onChange({ quantity: v ?? 0 })}
+        align="right"
+        step="any"
+      />
+      <CellInputText
+        defaultValue={line.unit ?? ''}
+        onCommit={(v) => onChange({ unit: v || undefined })}
+      />
+      <CellInputNumber
+        defaultValue={line.otMultiplier}
+        onCommit={(v) => onChange({ otMultiplier: v ?? 1 })}
+        align="right"
+        step="any"
+      />
+      <CellInputDollars
+        defaultCents={line.unitCostCents}
+        onCommit={(cents) => onChange({ unitCostCents: cents })}
+      />
+      <td className="px-1 py-1 text-right font-mono text-xs text-gray-600">
+        {fmtMoney(line.totalCostCents)}
+      </td>
+      <td className="px-1 py-1 text-right font-mono text-xs font-semibold text-gray-900">
+        {fmtMoney(line.bidPriceCents)}
+      </td>
+      <td className="px-1 py-1 text-right">
+        <button
+          type="button"
+          onClick={onDelete}
+          aria-label="Delete line"
+          className="text-xs text-red-700 opacity-0 transition group-hover:opacity-100 hover:underline"
+        >
+          ×
+        </button>
+      </td>
+    </tr>
+  );
+}
+
+// ---- Cell primitives ----------------------------------------------------
+//
+// These are uncontrolled inputs (use defaultValue + onBlur/onKeyDown).
+// The parent passes a fresh `key` whenever it needs to reset the value
+// (e.g. after a server save) so React mounts a fresh input.
+
+function CellInputText({
+  defaultValue,
+  onCommit,
+  mono,
+}: {
+  defaultValue: string;
+  onCommit: (v: string) => void;
+  mono?: boolean;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  return (
+    <td className="px-0.5 py-0.5">
+      <input
+        ref={ref}
+        defaultValue={defaultValue}
+        onBlur={(e) => {
+          const v = e.target.value;
+          if (v !== defaultValue) onCommit(v);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.currentTarget.blur();
+          } else if (e.key === 'Escape') {
+            if (ref.current) ref.current.value = defaultValue;
+            ref.current?.blur();
+          }
+        }}
+        className={`w-full bg-transparent px-1 py-1 text-sm focus:bg-white focus:outline focus:outline-2 focus:outline-blue-500 ${
+          mono ? 'font-mono text-xs' : ''
+        }`}
+      />
+    </td>
+  );
+}
+
+function CellInputNumber({
+  defaultValue,
+  onCommit,
+  align,
+  step,
+}: {
+  defaultValue: number | null;
+  onCommit: (v: number | null) => void;
+  align?: 'left' | 'right';
+  step?: string;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  const initial = defaultValue === null ? '' : String(defaultValue);
+  return (
+    <td className="px-0.5 py-0.5">
+      <input
+        ref={ref}
+        type="number"
+        step={step ?? '1'}
+        defaultValue={initial}
+        onBlur={(e) => {
+          const raw = e.target.value;
+          if (raw === initial) return;
+          if (raw === '') return onCommit(null);
+          const n = Number(raw);
+          if (!Number.isFinite(n)) return;
+          onCommit(n);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') e.currentTarget.blur();
+          if (e.key === 'Escape') {
+            if (ref.current) ref.current.value = initial;
+            ref.current?.blur();
+          }
+        }}
+        className={`w-full bg-transparent px-1 py-1 font-mono text-xs focus:bg-white focus:outline focus:outline-2 focus:outline-blue-500 ${
+          align === 'right' ? 'text-right' : ''
+        }`}
+      />
+    </td>
+  );
+}
+
+function CellInputDollars({
+  defaultCents,
+  onCommit,
+}: {
+  defaultCents: number;
+  onCommit: (cents: number) => void;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  const initial = (defaultCents / 100).toFixed(2);
+  return (
+    <td className="px-0.5 py-0.5">
+      <input
+        ref={ref}
+        type="number"
+        step="0.01"
+        defaultValue={initial}
+        onBlur={(e) => {
+          const raw = e.target.value.trim();
+          const cents = dollarsToCents(raw);
+          if (cents !== defaultCents) onCommit(cents);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') e.currentTarget.blur();
+          if (e.key === 'Escape') {
+            if (ref.current) ref.current.value = initial;
+            ref.current?.blur();
+          }
+        }}
+        className="w-full bg-transparent px-1 py-1 text-right font-mono text-xs focus:bg-white focus:outline focus:outline-2 focus:outline-blue-500"
+      />
+    </td>
+  );
+}
+
+function CellSelect<T extends string>({
+  defaultValue,
+  options,
+  onCommit,
+}: {
+  defaultValue: T;
+  options: Array<{ value: T; label: string }>;
+  onCommit: (v: T) => void;
+}) {
+  const [value, setValue] = useState<T>(defaultValue);
+  // Reset to defaultValue when key (gen) changes via parent.
+  useEffect(() => setValue(defaultValue), [defaultValue]);
+  return (
+    <td className="px-0.5 py-0.5">
+      <select
+        value={value}
+        onChange={(e) => {
+          const next = e.target.value as T;
+          setValue(next);
+          if (next !== defaultValue) onCommit(next);
+        }}
+        className="w-full bg-transparent px-1 py-1 text-xs focus:bg-white focus:outline focus:outline-2 focus:outline-blue-500"
+      >
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    </td>
   );
 }
 
@@ -465,6 +620,8 @@ function Stat({ label, value, primary }: { label: string; value: string; primary
     </div>
   );
 }
+
+// ---- Project info modal --------------------------------------------------
 
 function ProjectModal({
   estimate,
@@ -579,172 +736,6 @@ function ProjectModal({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
-              className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
-            />
-          </Field>
-        </div>
-        <div className="mt-5 flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={busy}
-            className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={submit}
-            disabled={busy}
-            className="rounded-md bg-blue-700 px-3 py-1.5 text-sm font-semibold text-white hover:bg-blue-800 disabled:opacity-50"
-          >
-            {busy ? 'Saving…' : 'Save'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function LineModal({
-  initial,
-  onClose,
-  onSave,
-}: {
-  initial: DraftLine;
-  onClose: () => void;
-  onSave: (draft: DraftLine) => Promise<void>;
-}) {
-  const [draft, setDraft] = useState(initial);
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-
-  async function submit() {
-    if (!draft.description.trim()) {
-      setErr('Description is required.');
-      return;
-    }
-    setBusy(true);
-    setErr(null);
-    try {
-      await onSave(draft);
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Save failed');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-lg rounded-xl bg-white p-5 shadow-lg">
-        <div className="mb-4 flex items-start justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">
-            {initial.description ? 'Edit line' : 'New line'}
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="text-gray-400 hover:text-gray-700"
-          >
-            ×
-          </button>
-        </div>
-        {err && (
-          <div className="mb-3 rounded border border-red-300 bg-red-50 p-2 text-sm text-red-800">
-            {err}
-          </div>
-        )}
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Item #">
-              <input
-                value={draft.itemNumber}
-                onChange={(e) => setDraft({ ...draft, itemNumber: e.target.value })}
-                className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
-              />
-            </Field>
-            <Field label="Category">
-              <select
-                value={draft.category}
-                onChange={(e) =>
-                  setDraft({ ...draft, category: e.target.value as ImportedEstimateLineCategory })
-                }
-                className="w-full rounded border border-gray-300 px-2 py-2 text-sm"
-              >
-                {CATEGORIES.map((c) => (
-                  <option key={c} value={c}>
-                    {importedEstimateLineCategoryLabel(c)}
-                  </option>
-                ))}
-              </select>
-            </Field>
-          </div>
-          <Field label="Section">
-            <input
-              value={draft.sectionName}
-              onChange={(e) => setDraft({ ...draft, sectionName: e.target.value })}
-              className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
-              placeholder="e.g. MOBILIZATION, TRAFFIC CONTROL"
-            />
-          </Field>
-          <Field label="Cost code">
-            <input
-              value={draft.costCode}
-              onChange={(e) => setDraft({ ...draft, costCode: e.target.value })}
-              className="w-full rounded border border-gray-300 px-3 py-2 font-mono text-sm"
-            />
-          </Field>
-          <Field label="Description">
-            <input
-              value={draft.description}
-              onChange={(e) => setDraft({ ...draft, description: e.target.value })}
-              className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
-            />
-          </Field>
-          <div className="grid grid-cols-3 gap-3">
-            <Field label="Quantity">
-              <input
-                type="number"
-                step="0.01"
-                value={draft.quantity}
-                onChange={(e) => setDraft({ ...draft, quantity: e.target.value })}
-                className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
-              />
-            </Field>
-            <Field label="Unit">
-              <input
-                value={draft.unit}
-                onChange={(e) => setDraft({ ...draft, unit: e.target.value })}
-                className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
-                placeholder="hr"
-              />
-            </Field>
-            <Field label="OT mult">
-              <input
-                type="number"
-                step="0.1"
-                value={draft.otMultiplier}
-                onChange={(e) => setDraft({ ...draft, otMultiplier: e.target.value })}
-                className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
-              />
-            </Field>
-          </div>
-          <Field label="Unit cost ($)">
-            <input
-              type="number"
-              step="0.01"
-              value={draft.unitCostDollars}
-              onChange={(e) => setDraft({ ...draft, unitCostDollars: e.target.value })}
-              className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
-            />
-          </Field>
-          <Field label="Notes">
-            <textarea
-              value={draft.notes}
-              onChange={(e) => setDraft({ ...draft, notes: e.target.value })}
-              rows={2}
               className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
             />
           </Field>

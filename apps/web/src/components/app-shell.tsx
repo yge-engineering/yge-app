@@ -143,15 +143,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <MobileNav groups={NAV} />
         <Link href="/dashboard" className="flex items-center gap-3">
           {/* New logo provided May 2026: Y in red over GE, with the
-           *  YOUNG / GENERAL ENGINEERING wordmark below. The image
-           *  already carries the full company name so we don't need
-           *  the side-by-side text labels we used with the old square
-           *  YGE tile. */}
+           *  YOUNG / GENERAL ENGINEERING wordmark below. */}
           <img
             src="/yge-logo.jpg"
             alt="Young General Engineering"
             className="h-12 w-auto"
           />
+          <div className="hidden sm:block">
+            <div className="text-[12px] font-semibold leading-tight text-red-800">
+              Cottonwood, CA
+            </div>
+            <div className="text-[10px] leading-tight text-red-800">
+              CSLB 1145219 SB/DVBE
+            </div>
+            <div className="text-[10px] leading-tight text-red-800">
+              DIR 2000018967
+            </div>
+          </div>
         </Link>
         <form action="/search" method="get" className="ml-auto hidden flex-1 max-w-md sm:block sm:mx-6">
           <div className="relative">
