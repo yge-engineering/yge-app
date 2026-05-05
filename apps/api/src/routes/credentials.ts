@@ -18,7 +18,10 @@ import {
   setPassword,
   verifyPassword,
 } from '../lib/credentials-store';
-import { getPortalUserByEmail } from '../lib/portal-users-store';
+import {
+  getPortalUserByEmail,
+  recordPortalUserLogin,
+} from '../lib/portal-users-store';
 
 export const credentialsRouter = Router();
 
@@ -204,6 +207,11 @@ credentialsRouter.post('/verify', async (req, res, next) => {
     const valid = await verifyPassword(email, password);
     if (valid) {
       lockoutModule.recordLoginSuccess(ip, email);
+      // Update lastLoginAt + hasPassword on the portal-user row so
+      // /admin/portal-users shows "X min ago" right after sign-in.
+      // Best-effort — we never block the sign-in on the bookkeeping
+      // failing.
+      void recordPortalUserLogin(email).catch(() => {});
     } else {
       lockoutModule.recordLoginFailure(ip, email);
     }
