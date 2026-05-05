@@ -18,6 +18,7 @@ import {
   StatusPill,
 } from '../../components';
 import { getTranslator, type Translator } from '../../lib/locale';
+import { requirePermission } from '../../lib/permissions';
 import {
   auditActionKey,
   changedFields,
@@ -83,6 +84,7 @@ export default async function AuditPage({
 }: {
   searchParams: SearchParams;
 }) {
+  requirePermission('audit:view');
   const qs = new URLSearchParams();
   for (const [k, v] of Object.entries(searchParams)) {
     if (v) qs.set(k, v);
