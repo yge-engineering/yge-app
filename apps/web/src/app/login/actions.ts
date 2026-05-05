@@ -20,7 +20,7 @@ import { redirect } from 'next/navigation';
 
 import {
   clearSessionCookie,
-  findSeededUser,
+  findPortalUser,
   setSessionCookie,
 } from '../../lib/auth';
 
@@ -55,7 +55,7 @@ export async function checkEmail(
     return { error: 'Enter your work email.' };
   }
 
-  const user = findSeededUser(email);
+  const user = await findPortalUser(email);
   if (!user) {
     return {
       error: 'That email is not on the access list. Ask Ryan to add you.',
@@ -102,7 +102,7 @@ export async function signInWithPassword(
     return { step: 'enter-password', email, error: 'Enter your password.' };
   }
 
-  const user = findSeededUser(email);
+  const user = await findPortalUser(email);
   if (!user) {
     return {
       error: 'That email is not on the access list. Ask Ryan to add you.',
@@ -170,7 +170,7 @@ export async function setPasswordAndSignIn(
     };
   }
 
-  const user = findSeededUser(email);
+  const user = await findPortalUser(email);
   if (!user) {
     return {
       error: 'That email is not on the access list. Ask Ryan to add you.',

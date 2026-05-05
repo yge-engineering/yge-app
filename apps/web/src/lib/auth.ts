@@ -1,20 +1,24 @@
-// Authentication helpers — dev-mode + Supabase-ready.
+// Authentication helpers — backed by the API's portal-users store.
 //
-// Plain English: until Supabase is wired up, this lets Ryan + Brook
-// log in by typing their email and clicking Sign In. The "user" lives
-// in a cookie. When Supabase env vars are set later, the same helpers
-// will switch to real auth without any UI changes.
+// Plain English: every signed-in user has a row at /api/portal-users.
+// Ryan + Brook are seeded there automatically; new users are added
+// via /admin/portal-users. findPortalUser() is the single source of
+// truth — login actions call it before issuing a session cookie.
+//
+// findSeededUser() is a fallback used when the API is unreachable;
+// it still returns Brook + Ryan so a local boot works without the
+// API up. Production should not depend on it.
 
 import { cookies } from 'next/headers';
+import type { PortalRole } from '@yge/shared';
 
 export interface YgeUser {
   email: string;
   name: string;
-  role: 'PRESIDENT' | 'VP' | 'OFFICE' | 'FOREMAN' | 'CREW';
+  role: PortalRole;
 }
 
-// The two real users for now. Email is the unique key. Anyone else is
-// rejected at sign-in until we add an "invite" flow.
+// Bootstrap fallback used only when the API is unreachable.
 const SEEDED_USERS: YgeUser[] = [
   { email: 'brookyoung@youngge.com', name: 'Brook L Young', role: 'PRESIDENT' },
   { email: 'ryoung@youngge.com', name: 'Ryan D Young', role: 'VP' },
@@ -23,8 +27,44 @@ const SEEDED_USERS: YgeUser[] = [
 const COOKIE_NAME = 'yge-session';
 const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 days
 
-/** Look up a seeded user by email (case-insensitive). Returns null if
- *  no user matches. */
+function apiBaseUrl(): string {
+  return (
+    process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+  );
+}
+
+/** Look up a portal user by email via the API. Returns null if the
+ *  email is not on the access list, or the user is disabled. */
+export async function findPortalUser(email: string): Promise<YgeUser | null> {
+  const target = email.trim().toLowerCase();
+  if (!target) return null;
+  try {
+    const res = await fetch(
+      `${apiBaseUrl()}/api/portal-users/by-email?email=${encodeURIComponent(target)}`,
+      { cache: 'no-store' },
+    );
+    if (res.status === 404) return null;
+    if (!res.ok) return findSeededUser(target);
+    const json = (await res.json()) as {
+      user?: {
+        email: string;
+        name: string;
+        role: PortalRole;
+        disabled?: boolean;
+      };
+    };
+    const u = json.user;
+    if (!u || u.disabled) return null;
+    return { email: u.email, name: u.name, role: u.role };
+  } catch {
+    // API unreachable — fall back to seeded list so Brook + Ryan can
+    // still get in during outages.
+    return findSeededUser(target);
+  }
+}
+
+/** Bootstrap fallback. Returns Brook or Ryan when the API isn't
+ *  reachable. Kept exported for the existing dev-mode imports. */
 export function findSeededUser(email: string): YgeUser | null {
   const target = email.trim().toLowerCase();
   for (const u of SEEDED_USERS) {
