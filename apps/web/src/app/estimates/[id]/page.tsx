@@ -104,6 +104,12 @@ export default async function EstimateDetailPage({
           {t('estPg.subList')}
         </Link>
         <Link
+          href={`/estimates/${data.estimate.id}/sub-leveling`}
+          className="rounded border border-yge-blue-500 px-3 py-1 font-medium text-yge-blue-500 hover:bg-yge-blue-50"
+        >
+          Sub leveling
+        </Link>
+        <Link
           href={`/estimates/${data.estimate.id}/addenda`}
           className="rounded border border-yge-blue-500 px-3 py-1 font-medium text-yge-blue-500 hover:bg-yge-blue-50"
         >
