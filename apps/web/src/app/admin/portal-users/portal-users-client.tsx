@@ -66,6 +66,9 @@ export function PortalUsersClient({ initialUsers, jobs, apiBaseUrl }: Props) {
   const [inviting, setInviting] = useState(false);
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [inviteSuccess, setInviteSuccess] = useState<string | null>(null);
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const [inviteRecipient, setInviteRecipient] =
+    useState<{ email: string; name: string } | null>(null);
 
   async function reload() {
     try {
@@ -220,6 +223,8 @@ export function PortalUsersClient({ initialUsers, jobs, apiBaseUrl }: Props) {
     setInviting(true);
     setInviteError(null);
     setInviteSuccess(null);
+    setInviteLink(null);
+    setInviteRecipient(null);
     try {
       const res = await fetch(`${apiBaseUrl}/api/portal-users`, {
         method: 'POST',
@@ -238,8 +243,13 @@ export function PortalUsersClient({ initialUsers, jobs, apiBaseUrl }: Props) {
         typeof window !== 'undefined' ? window.location.origin : '';
       const link = `${origin}/login?email=${encodeURIComponent(inviteEmail.trim().toLowerCase())}`;
       setInviteSuccess(
-        `${inviteName.trim()} added. Send them this link so the email is pre-filled: ${link}`,
+        `${inviteName.trim()} added. Sign-in link: ${link}`,
       );
+      setInviteLink(link);
+      setInviteRecipient({
+        email: inviteEmail.trim().toLowerCase(),
+        name: inviteName.trim(),
+      });
       setInviteEmail('');
       setInviteName('');
       setInviteRole('FOREMAN');
@@ -486,8 +496,33 @@ export function PortalUsersClient({ initialUsers, jobs, apiBaseUrl }: Props) {
           </div>
         )}
         {inviteSuccess && (
-          <div className="mt-3 rounded border border-green-300 bg-green-50 p-2 text-sm text-green-800">
-            {inviteSuccess}
+          <div className="mt-3 space-y-2 rounded border border-green-300 bg-green-50 p-2 text-sm text-green-800">
+            <div>{inviteSuccess}</div>
+            {inviteLink && inviteRecipient && (
+              <div className="flex flex-wrap gap-2 text-xs">
+                <a
+                  href={`mailto:${encodeURIComponent(inviteRecipient.email)}?subject=${encodeURIComponent('Your YGE app sign-in')}&body=${encodeURIComponent(
+                    `Hi ${inviteRecipient.name},\n\nYou've been added to the YGE app. Click here to sign in and pick a password:\n\n${inviteLink}\n\nLet Ryan know if you hit any issues.\n`,
+                  )}`}
+                  className="rounded border border-green-700 bg-white px-2 py-1 font-medium text-green-800 hover:bg-green-100"
+                >
+                  ✉ Email the link
+                </a>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(inviteLink);
+                    } catch {
+                      // best-effort
+                    }
+                  }}
+                  className="rounded border border-green-700 bg-white px-2 py-1 font-medium text-green-800 hover:bg-green-100"
+                >
+                  Copy link
+                </button>
+              </div>
+            )}
           </div>
         )}
         <div className="mt-3 flex justify-end">
