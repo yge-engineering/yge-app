@@ -198,6 +198,12 @@ export default async function JobDetailPage({
   });
   const t = getTranslator();
 
+  // Hide the financial sub-page links from non-financial roles
+  // (foremen, crew). The pages themselves are gated in bundle 922
+  // but rendering links to them just to redirect-to-dashboard is
+  // confusing.
+  const canSeeFinancials = grants.includes('financials:view');
+
   return (
     <main className="mx-auto max-w-6xl p-8">
       <div className="mb-6 flex items-center justify-between">
@@ -205,12 +211,14 @@ export default async function JobDetailPage({
           {t('jobDetail.backLink')}
         </Link>
         <div className="flex items-center gap-2">
-          <Link
-            href={`/jobs/${job.id}/cost-breakdown`}
-            className="rounded border border-yge-blue-500 px-3 py-1 text-sm font-medium text-yge-blue-500 hover:bg-yge-blue-50"
-          >
-            {t('jobDetail.costBreakdown')}
-          </Link>
+          {canSeeFinancials && (
+            <Link
+              href={`/jobs/${job.id}/cost-breakdown`}
+              className="rounded border border-yge-blue-500 px-3 py-1 text-sm font-medium text-yge-blue-500 hover:bg-yge-blue-50"
+            >
+              {t('jobDetail.costBreakdown')}
+            </Link>
+          )}
           <Link
             href={`/jobs/${job.id}/binder`}
             className="rounded border border-yge-blue-500 px-3 py-1 text-sm font-medium text-yge-blue-500 hover:bg-yge-blue-50"
@@ -252,15 +260,17 @@ export default async function JobDetailPage({
         </div>
       )}
 
-      {/* Quick links — cost variance, etc. */}
-      <div className="mt-6 flex flex-wrap gap-2">
-        <Link
-          href={`/jobs/${job.id}/cost-variance`}
-          className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100"
-        >
-          Cost code variance →
-        </Link>
-      </div>
+      {/* Quick links — cost variance, etc. Hidden from non-financial roles. */}
+      {canSeeFinancials && (
+        <div className="mt-6 flex flex-wrap gap-2">
+          <Link
+            href={`/jobs/${job.id}/cost-variance`}
+            className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100"
+          >
+            Cost code variance →
+          </Link>
+        </div>
+      )}
 
       {/* Next step card — one click to whatever the estimator should do next */}
       {action.id !== 'no-action' && (
