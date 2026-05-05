@@ -111,10 +111,32 @@ credentialsRouter.post('/verify', async (req, res, next) => {
       });
     }
     const { email, password } = parsed.data;
+    // Rate limit: 8 failures per (ip, email) in 15 min → 15-min lockout.
+    // Configurable via LOGIN_MAX_FAILURES / LOGIN_WINDOW_MS / LOGIN_LOCKOUT_MS.
+    const ip =
+      (req.headers['x-forwarded-for'] as string | undefined)?.split(',')[0]?.trim() ??
+      req.ip ??
+      'unknown';
+    const lockoutModule = await import('../lib/login-rate-limit');
+    const lock = lockoutModule.checkLoginAllowed(ip, email);
+    if (lock) {
+      const retryAfterSec = Math.ceil(lock.retryAfterMs / 1000);
+      res.setHeader('Retry-After', String(retryAfterSec));
+      return res.status(429).json({
+        error: 'Too many failed sign-in attempts. Try again later.',
+        retryAfterSec,
+      });
+    }
     if (!isAllowed(email)) {
+      lockoutModule.recordLoginFailure(ip, email);
       return res.json({ valid: false });
     }
     const valid = await verifyPassword(email, password);
+    if (valid) {
+      lockoutModule.recordLoginSuccess(ip, email);
+    } else {
+      lockoutModule.recordLoginFailure(ip, email);
+    }
     return res.json({ valid });
   } catch (err) {
     next(err);

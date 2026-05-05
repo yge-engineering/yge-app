@@ -117,6 +117,17 @@ export async function signInWithPassword(
       body: JSON.stringify({ email, password }),
       cache: 'no-store',
     });
+    if (res.status === 429) {
+      const json = (await res.json().catch(() => ({}))) as {
+        retryAfterSec?: number;
+      };
+      const minutes = Math.max(1, Math.ceil((json.retryAfterSec ?? 900) / 60));
+      return {
+        step: 'enter-password',
+        email,
+        error: `Too many failed attempts. Try again in ~${minutes} minutes.`,
+      };
+    }
     if (res.ok) {
       const json = (await res.json()) as { valid?: boolean };
       valid = Boolean(json.valid);
