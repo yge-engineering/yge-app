@@ -99,6 +99,43 @@ const VerifyBody = z.object({
   password: z.string().min(1).max(120),
 });
 
+// ---- POST /api/credentials/change-password -----------------------------
+
+const ChangePasswordBody = z.object({
+  email: z.string().email().max(120),
+  oldPassword: z.string().min(1).max(120),
+  newPassword: z.string().min(8).max(120),
+});
+
+credentialsRouter.post('/change-password', async (req, res, next) => {
+  try {
+    const parsed = ChangePasswordBody.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        error: 'Validation failed',
+        issues: parsed.error.issues,
+      });
+    }
+    const { email, oldPassword, newPassword } = parsed.data;
+    if (!(await isAllowed(email))) {
+      return res.status(403).json({ error: 'Not on access list' });
+    }
+    const ok = await verifyPassword(email, oldPassword);
+    if (!ok) {
+      return res.status(403).json({ error: 'Current password is wrong' });
+    }
+    if (newPassword === oldPassword) {
+      return res
+        .status(400)
+        .json({ error: 'New password must differ from the current one' });
+    }
+    await setPassword(email, newPassword);
+    return res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
 credentialsRouter.post('/verify', async (req, res, next) => {
   try {
     const parsed = VerifyBody.safeParse(req.body);

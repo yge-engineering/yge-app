@@ -6,10 +6,22 @@
 
 import Link from 'next/link';
 
-import { AppShell, Button, Card, DescriptionList, PageHeader, RoleBadge } from '../../components';
+import {
+  AppShell,
+  Button,
+  Card,
+  ChangePasswordForm,
+  DescriptionList,
+  PageHeader,
+  RoleBadge,
+} from '../../components';
 import { signOut } from '../login/actions';
 import { getCurrentUser } from '../../lib/auth';
 import { getTranslator } from '../../lib/locale';
+
+function publicApiBaseUrl(): string {
+  return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+}
 
 export default function ProfilePage() {
   const user = getCurrentUser();
@@ -49,6 +61,13 @@ export default function ProfilePage() {
             </form>
           </div>
         </Card>
+
+        <div className="mb-6">
+          <ChangePasswordForm
+            email={user.email}
+            apiBaseUrl={publicApiBaseUrl()}
+          />
+        </div>
 
         <Card>
           <h2 className="mb-3 text-sm font-semibold text-gray-900">{t('profile.companyInfo')}</h2>
