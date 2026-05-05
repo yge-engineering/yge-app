@@ -31,7 +31,37 @@ export default function NewDailyReportPage() {
 
   useEffect(() => {
     const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
-    Promise.all([
+    // Foreman scope: pull the signed-in user's portal record so we
+    // can filter the job dropdown to assignedJobIds when their role
+    // is FOREMAN. Owners + office + PM see every job.
+    async function loadMe(): Promise<{
+      role: string;
+      assignedJobIds: string[];
+    } | null> {
+      try {
+        const meRes = await fetch('/api/me', { cache: 'no-store' });
+        if (!meRes.ok) return null;
+        const meJson = (await meRes.json()) as {
+          user?: { email?: string; role?: string };
+        };
+        const email = meJson.user?.email;
+        const role = meJson.user?.role ?? '';
+        if (!email) return null;
+        const puRes = await fetch(
+          `${apiBase}/api/portal-users/by-email?email=${encodeURIComponent(email)}`,
+          { cache: 'no-store' },
+        );
+        if (!puRes.ok) return { role, assignedJobIds: [] };
+        const pu = (await puRes.json()) as {
+          user?: { assignedJobIds?: string[] };
+        };
+        return { role, assignedJobIds: pu.user?.assignedJobIds ?? [] };
+      } catch {
+        return null;
+      }
+    }
+
+    void Promise.all([
       fetch(`${apiBase}/api/jobs`, { cache: 'no-store' })
         .then((r) => (r.ok ? r.json() : { jobs: [] }))
         .then((j: { jobs: Job[] }) => j.jobs ?? []),
@@ -44,11 +74,17 @@ export default function NewDailyReportPage() {
               (e.role === 'FOREMAN' || e.role === 'SUPERINTENDENT'),
           ),
         ),
+      loadMe(),
     ])
-      .then(([js, fs]) => {
-        setJobs(js);
+      .then(([js, fs, me]) => {
+        let visibleJobs = js;
+        if (me?.role === 'FOREMAN') {
+          const allowed = new Set(me.assignedJobIds);
+          visibleJobs = js.filter((j) => allowed.has(j.id));
+        }
+        setJobs(visibleJobs);
         setForemen(fs);
-        if (js[0]) setJobId(js[0].id);
+        if (visibleJobs[0]) setJobId(visibleJobs[0].id);
         if (fs[0]) setForemanId(fs[0].id);
       })
       .catch(() => {
