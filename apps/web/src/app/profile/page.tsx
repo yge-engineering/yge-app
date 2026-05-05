@@ -6,12 +6,15 @@
 
 import Link from 'next/link';
 
+import type { Job, PortalUser } from '@yge/shared';
+
 import {
   AppShell,
   Button,
   Card,
   ChangePasswordForm,
   DescriptionList,
+  MyAssignedJobs,
   PageHeader,
   RoleBadge,
 } from '../../components';
@@ -19,11 +22,42 @@ import { signOut } from '../login/actions';
 import { getCurrentUser } from '../../lib/auth';
 import { getTranslator } from '../../lib/locale';
 
+function apiBaseUrl(): string {
+  return (
+    process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+  );
+}
 function publicApiBaseUrl(): string {
   return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 }
 
-export default function ProfilePage() {
+async function fetchMe(email: string): Promise<PortalUser | null> {
+  if (!email) return null;
+  try {
+    const res = await fetch(
+      `${apiBaseUrl()}/api/portal-users/by-email?email=${encodeURIComponent(email)}`,
+      { cache: 'no-store' },
+    );
+    if (!res.ok) return null;
+    const j = (await res.json()) as { user?: PortalUser };
+    return j.user ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchJobs(): Promise<Job[]> {
+  try {
+    const res = await fetch(`${apiBaseUrl()}/api/jobs`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    const j = (await res.json()) as { jobs?: Job[] };
+    return j.jobs ?? [];
+  } catch {
+    return [];
+  }
+}
+
+export default async function ProfilePage() {
   const user = getCurrentUser();
   const t = getTranslator();
   if (!user) {
@@ -35,6 +69,14 @@ export default function ProfilePage() {
       </AppShell>
     );
   }
+
+  // Foremen see their assigned jobs on /profile so they can jump
+  // straight to one without using the sidebar. Other roles get null
+  // back from MyAssignedJobs.
+  const [me, jobs] =
+    user.role === 'FOREMAN'
+      ? await Promise.all([fetchMe(user.email), fetchJobs()])
+      : [null, []];
 
   return (
     <AppShell>
@@ -61,6 +103,12 @@ export default function ProfilePage() {
             </form>
           </div>
         </Card>
+
+        {user.role === 'FOREMAN' && (
+          <div className="mb-6">
+            <MyAssignedJobs me={me} jobs={jobs} />
+          </div>
+        )}
 
         <div className="mb-6">
           <ChangePasswordForm

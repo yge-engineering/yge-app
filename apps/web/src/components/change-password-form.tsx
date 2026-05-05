@@ -4,6 +4,8 @@
 // to /api/credentials/change-password. Verifies the current password
 // before replacing the hash. Successful change shows an inline
 // confirmation; errors stay on the form.
+//
+// Shipped in bundle 897.
 
 import { useState } from 'react';
 
