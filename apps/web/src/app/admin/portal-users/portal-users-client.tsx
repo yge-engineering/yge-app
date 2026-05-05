@@ -351,7 +351,7 @@ export function PortalUsersClient({
               <th className="px-3 py-2">Name</th>
               <th className="px-3 py-2">Email</th>
               <th className="px-3 py-2">Role</th>
-              <th className="px-3 py-2">Password</th>
+              <th className="px-3 py-2">Setup</th>
               <th className="px-3 py-2">Last login</th>
               <th className="px-3 py-2 text-right">Actions</th>
             </tr>
@@ -406,11 +406,38 @@ export function PortalUsersClient({
                     )}
                   </td>
                   <td className="px-3 py-2 text-xs">
-                    {u.hasPassword ? (
-                      <span className="text-green-700">✓ Set</span>
-                    ) : (
-                      <span className="text-amber-700">Pending</span>
-                    )}
+                    <div className="flex flex-col gap-0.5">
+                      <span
+                        className={
+                          u.hasPassword
+                            ? 'text-green-700'
+                            : 'text-amber-700'
+                        }
+                      >
+                        {u.hasPassword ? '✓' : '○'} Password
+                      </span>
+                      <span
+                        className={
+                          u.employeeId
+                            ? 'text-green-700'
+                            : 'text-gray-500'
+                        }
+                      >
+                        {u.employeeId ? '✓' : '○'} Linked
+                      </span>
+                      {isForeman && (
+                        <span
+                          className={
+                            u.assignedJobIds.length > 0
+                              ? 'text-green-700'
+                              : 'text-amber-700'
+                          }
+                        >
+                          {u.assignedJobIds.length > 0 ? '✓' : '○'} Jobs (
+                          {u.assignedJobIds.length})
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-3 py-2 text-xs text-gray-700">
                     {formatWhen(u.lastLoginAt)}
