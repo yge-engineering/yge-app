@@ -9,7 +9,9 @@ import {
   AppShell,
   AuditBinderPanel,
   MarkupWhatIfSlider,
+  P2eFeedbackCard,
 } from '../../../components';
+import { getCurrentUser } from '../../../lib/auth';
 import { notFound } from 'next/navigation';
 import type { PricedEstimate, PricedEstimateTotals } from '@yge/shared';
 import { EstimateEditor } from '@/components/estimate-editor';
@@ -129,6 +131,17 @@ export default async function EstimateDetailPage({
           apiBaseUrl={publicApiBaseUrl()}
         />
       </div>
+
+      {data.estimate.fromDraftId && (
+        <div className="mt-6">
+          <P2eFeedbackCard
+            apiBaseUrl={publicApiBaseUrl()}
+            estimateId={data.estimate.id}
+            draftId={data.estimate.fromDraftId}
+            byEmail={getCurrentUser()?.email}
+          />
+        </div>
+      )}
 
       <AuditBinderPanel entityType="Estimate" entityId={data.estimate.id} />
     </main>

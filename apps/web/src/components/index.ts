@@ -43,5 +43,6 @@ export { MarkupWhatIfSlider } from './markup-whatif-slider';
 export { ChangePasswordForm } from './change-password-form';
 export { BidDueSoonBanner } from './bid-due-soon-banner';
 export { MyAssignedJobs } from './my-assigned-jobs';
+export { P2eFeedbackCard } from './p2e-feedback-card';
 export { OneDriveRecentPanel } from './onedrive-recent-panel';
 export { PwaInstallButton } from './pwa-install-button';
