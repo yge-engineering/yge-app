@@ -51,6 +51,10 @@ export function PortalUsersClient({ initialUsers, jobs, apiBaseUrl }: Props) {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [jobsExpandedFor, setJobsExpandedFor] = useState<string | null>(null);
+  const [notesDraftFor, setNotesDraftFor] = useState<{
+    id: string;
+    value: string;
+  } | null>(null);
 
   const activeJobs = jobs.filter(
     (j) =>
@@ -80,6 +84,30 @@ export function PortalUsersClient({ initialUsers, jobs, apiBaseUrl }: Props) {
       setUsers(json.users ?? []);
     } catch {
       // best-effort
+    }
+  }
+
+  async function saveNotes(id: string, notes: string) {
+    setBusyId(id);
+    setError(null);
+    try {
+      const res = await fetch(
+        `${apiBaseUrl}/api/portal-users/${encodeURIComponent(id)}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ notes: notes.trim() || undefined }),
+        },
+      );
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new Error(`Save failed (${res.status}): ${text.slice(0, 200)}`);
+      }
+      await reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Save failed.');
+    } finally {
+      setBusyId(null);
     }
   }
 
@@ -355,6 +383,19 @@ export function PortalUsersClient({ initialUsers, jobs, apiBaseUrl }: Props) {
                     {formatWhen(u.lastLoginAt)}
                   </td>
                   <td className="px-3 py-2 text-right text-xs">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setNotesDraftFor(
+                          notesDraftFor?.id === u.id
+                            ? null
+                            : { id: u.id, value: u.notes ?? '' },
+                        )
+                      }
+                      className="mr-3 font-medium text-gray-700 hover:underline"
+                    >
+                      {u.notes ? 'Notes ✎' : 'Notes'}
+                    </button>
                     {u.hasPassword && (
                       <button
                         type="button"
@@ -384,6 +425,50 @@ export function PortalUsersClient({ initialUsers, jobs, apiBaseUrl }: Props) {
                   </td>
                 </tr>,
               );
+              if (notesDraftFor?.id === u.id) {
+                rows.push(
+                  <tr key={`${u.id}-notes`} className="bg-gray-50">
+                    <td colSpan={6} className="px-4 py-3">
+                      <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        Internal notes — visible only on this admin page
+                      </div>
+                      <textarea
+                        value={notesDraftFor.value}
+                        onChange={(e) =>
+                          setNotesDraftFor({
+                            id: u.id,
+                            value: e.target.value,
+                          })
+                        }
+                        rows={3}
+                        placeholder="e.g. Hired Apr 2026, foreman on Sulphur Springs job."
+                        className="mt-2 w-full rounded border border-gray-300 px-3 py-2 text-sm"
+                      />
+                      <div className="mt-2 flex justify-end gap-2 text-xs">
+                        <button
+                          type="button"
+                          onClick={() => setNotesDraftFor(null)}
+                          className="rounded border border-gray-300 bg-white px-3 py-1 font-medium text-gray-700 hover:bg-gray-100"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            void saveNotes(u.id, notesDraftFor.value).then(() =>
+                              setNotesDraftFor(null),
+                            );
+                          }}
+                          disabled={busyId === u.id}
+                          className="rounded bg-blue-700 px-3 py-1 font-semibold text-white hover:bg-blue-800 disabled:opacity-50"
+                        >
+                          Save notes
+                        </button>
+                      </div>
+                    </td>
+                  </tr>,
+                );
+              }
               if (isForeman && expanded) {
                 rows.push(
                   <tr key={`${u.id}-jobs`} className="bg-blue-50/40">
