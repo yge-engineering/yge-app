@@ -242,8 +242,14 @@ export function PortalUsersClient({ initialUsers, jobs, apiBaseUrl }: Props) {
       const origin =
         typeof window !== 'undefined' ? window.location.origin : '';
       const link = `${origin}/login?email=${encodeURIComponent(inviteEmail.trim().toLowerCase())}`;
+      // Foremen need explicit job assignment before they can see
+      // anything useful, so nudge Ryan to do it now.
+      const foremanHint =
+        inviteRole === 'FOREMAN'
+          ? ` ${inviteName.trim()} won't see any jobs until you click Jobs (0) on their row above and check the boxes.`
+          : '';
       setInviteSuccess(
-        `${inviteName.trim()} added. Sign-in link: ${link}`,
+        `${inviteName.trim()} added. Sign-in link: ${link}.${foremanHint}`,
       );
       setInviteLink(link);
       setInviteRecipient({
