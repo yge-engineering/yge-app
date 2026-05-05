@@ -207,7 +207,22 @@ export function EstimateDetail({ initial, costCodes }: Props) {
       oppMarkupCents: 0,
       bidPriceCents: 0,
     };
-    const nextLines = [...estimate.lines, newLine];
+    // Insert at the end of the matching section so the new row shows
+    // up where the user clicked. Falls back to appending at the end
+    // when the section doesn't exist yet (new section being created).
+    let insertAt = estimate.lines.length;
+    for (let i = estimate.lines.length - 1; i >= 0; i -= 1) {
+      const sec = estimate.lines[i]!.sectionName ?? '(Uncategorized)';
+      if (sec === sectionName) {
+        insertAt = i + 1;
+        break;
+      }
+    }
+    const nextLines = [
+      ...estimate.lines.slice(0, insertAt),
+      newLine,
+      ...estimate.lines.slice(insertAt),
+    ];
     const totals = recomputeAllTotals(nextLines, estimate.oppPercent);
     void persist({ ...estimate, lines: nextLines, ...totals }).catch(() => undefined);
   }
