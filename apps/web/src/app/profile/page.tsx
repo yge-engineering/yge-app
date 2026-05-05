@@ -6,7 +6,11 @@
 
 import Link from 'next/link';
 
-import type { Job, PortalUser } from '@yge/shared';
+import {
+  ROLE_PERMISSIONS,
+  type Job,
+  type PortalUser,
+} from '@yge/shared';
 
 import {
   AppShell,
@@ -78,6 +82,15 @@ export default async function ProfilePage() {
       ? await Promise.all([fetchMe(user.email), fetchJobs()])
       : [null, []];
 
+  // Admin shortcut visible to anyone with portalUsers:manage,
+  // masterProfile:view, or audit:view. Saves Brook + Ryan a click
+  // when they need to invite a user or check the audit log.
+  const grants = ROLE_PERMISSIONS[user.role] ?? [];
+  const showAdminShortcut =
+    grants.includes('portalUsers:manage') ||
+    grants.includes('masterProfile:view') ||
+    grants.includes('audit:view');
+
   return (
     <AppShell>
       <main className="mx-auto max-w-2xl">
@@ -107,6 +120,25 @@ export default async function ProfilePage() {
         {user.role === 'FOREMAN' && (
           <div className="mb-6">
             <MyAssignedJobs me={me} jobs={jobs} />
+          </div>
+        )}
+
+        {showAdminShortcut && (
+          <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm">
+            <div className="flex items-center justify-between gap-3">
+              <span>
+                <strong className="block text-blue-900">Admin tools</strong>
+                <span className="text-xs text-blue-800">
+                  Portal users, master profile, audit log, settings.
+                </span>
+              </span>
+              <Link
+                href="/admin"
+                className="rounded-md bg-blue-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-800"
+              >
+                Open admin →
+              </Link>
+            </div>
           </div>
         )}
 
