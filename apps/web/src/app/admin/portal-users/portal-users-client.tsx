@@ -11,7 +11,9 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import {
+  fullName,
   portalRoleLabel,
+  type Employee,
   type Job,
   type PortalRole,
   type PortalUser,
@@ -29,6 +31,7 @@ const ROLES: PortalRole[] = [
 interface Props {
   initialUsers: PortalUser[];
   jobs: Job[];
+  employees: Employee[];
   apiBaseUrl: string;
 }
 
@@ -45,7 +48,13 @@ function formatWhen(iso?: string): string {
   });
 }
 
-export function PortalUsersClient({ initialUsers, jobs, apiBaseUrl }: Props) {
+export function PortalUsersClient({
+  initialUsers,
+  jobs,
+  employees,
+  apiBaseUrl,
+}: Props) {
+  const activeEmployees = employees.filter((e) => e.status === 'ACTIVE');
   const router = useRouter();
   const [users, setUsers] = useState<PortalUser[]>(initialUsers);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -154,6 +163,30 @@ export function PortalUsersClient({ initialUsers, jobs, apiBaseUrl }: Props) {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ assignedJobIds: jobIds }),
+        },
+      );
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new Error(`Save failed (${res.status}): ${text.slice(0, 200)}`);
+      }
+      await reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Save failed.');
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function setEmployeeLink(id: string, employeeId: string) {
+    setBusyId(id);
+    setError(null);
+    try {
+      const res = await fetch(
+        `${apiBaseUrl}/api/portal-users/${encodeURIComponent(id)}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ employeeId: employeeId || undefined }),
         },
       );
       if (!res.ok) {
@@ -429,28 +462,55 @@ export function PortalUsersClient({ initialUsers, jobs, apiBaseUrl }: Props) {
                 rows.push(
                   <tr key={`${u.id}-notes`} className="bg-gray-50">
                     <td colSpan={6} className="px-4 py-3">
-                      <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                        Internal notes — visible only on this admin page
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <label className="block text-xs">
+                          <span className="mb-1 block font-semibold uppercase tracking-wide text-gray-500">
+                            Linked employee record (optional)
+                          </span>
+                          <select
+                            value={u.employeeId ?? ''}
+                            onChange={(e) =>
+                              void setEmployeeLink(u.id, e.target.value)
+                            }
+                            disabled={busyId === u.id}
+                            className="w-full rounded border border-gray-300 bg-white px-2 py-1 text-sm"
+                          >
+                            <option value="">— Not linked —</option>
+                            {activeEmployees.map((emp) => (
+                              <option key={emp.id} value={emp.id}>
+                                {fullName(emp)}
+                              </option>
+                            ))}
+                          </select>
+                          <span className="mt-1 block text-[10px] text-gray-500">
+                            Links this portal user to their HR record so time cards + crew schedule connect.
+                          </span>
+                        </label>
+                        <div className="block text-xs">
+                          <span className="mb-1 block font-semibold uppercase tracking-wide text-gray-500">
+                            Internal notes
+                          </span>
+                          <textarea
+                            value={notesDraftFor.value}
+                            onChange={(e) =>
+                              setNotesDraftFor({
+                                id: u.id,
+                                value: e.target.value,
+                              })
+                            }
+                            rows={3}
+                            placeholder="e.g. Hired Apr 2026, foreman on Sulphur Springs job."
+                            className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
+                          />
+                        </div>
                       </div>
-                      <textarea
-                        value={notesDraftFor.value}
-                        onChange={(e) =>
-                          setNotesDraftFor({
-                            id: u.id,
-                            value: e.target.value,
-                          })
-                        }
-                        rows={3}
-                        placeholder="e.g. Hired Apr 2026, foreman on Sulphur Springs job."
-                        className="mt-2 w-full rounded border border-gray-300 px-3 py-2 text-sm"
-                      />
                       <div className="mt-2 flex justify-end gap-2 text-xs">
                         <button
                           type="button"
                           onClick={() => setNotesDraftFor(null)}
                           className="rounded border border-gray-300 bg-white px-3 py-1 font-medium text-gray-700 hover:bg-gray-100"
                         >
-                          Cancel
+                          Close
                         </button>
                         <button
                           type="button"
