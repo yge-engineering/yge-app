@@ -171,4 +171,11 @@ app.use(
 const port = Number(process.env.API_PORT ?? 4000);
 app.listen(port, () => {
   logger.info(`YGE API listening on http://localhost:${port}`);
+  // Kick off background pollers after the HTTP server is ready.
+  // Disabled in test envs (vitest sets NODE_ENV=test).
+  if (process.env.NODE_ENV !== 'test') {
+    void import('./lib/ap-inbox-scheduler').then((m) =>
+      m.startApInboxScheduler(),
+    );
+  }
 });

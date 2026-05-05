@@ -30,6 +30,10 @@ import {
   getMicrosoftToken,
 } from '../lib/microsoft-tokens-store';
 import { pollApInbox } from '../lib/ap-inbox-poller';
+import {
+  getApInboxLastRun,
+  runApInboxPollOnce,
+} from '../lib/ap-inbox-scheduler';
 
 export const microsoftRouter = Router();
 
@@ -188,6 +192,25 @@ microsoftRouter.post('/ap-inbox-poll', async (req, res, next) => {
       ...(parsed.data.limit ? { limit: parsed.data.limit } : {}),
     });
     return res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Status endpoint: exposes the last auto-poll summary so the UI can
+// render "last poll: 12 min ago · X new invoices". Read-only.
+microsoftRouter.get('/ap-inbox-status', async (_req, res) => {
+  const last = getApInboxLastRun();
+  return res.json({ lastRun: last });
+});
+
+// Manual run-now: same as the per-user pull, but iterates every
+// connected user. Useful when the office wants to flush the inbox
+// without waiting for the next scheduled tick.
+microsoftRouter.post('/ap-inbox-run-now', async (_req, res, next) => {
+  try {
+    const summary = await runApInboxPollOnce();
+    return res.json({ summary });
   } catch (err) {
     next(err);
   }

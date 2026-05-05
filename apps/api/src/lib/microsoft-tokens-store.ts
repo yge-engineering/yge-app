@@ -59,6 +59,13 @@ export async function getMicrosoftToken(email: string): Promise<StoredToken | nu
   return file.tokens.find((t) => t.email === norm) ?? null;
 }
 
+/** All stored Microsoft tokens. Used by the AP-inbox scheduler to
+ *  iterate over every connected user. */
+export async function listMicrosoftTokens(): Promise<StoredToken[]> {
+  const file = await readAll();
+  return [...file.tokens];
+}
+
 export async function saveMicrosoftToken(
   email: string,
   data: Omit<StoredToken, 'email' | 'issuedAt'> & { issuedAt?: string },

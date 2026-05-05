@@ -9,6 +9,7 @@ import Link from 'next/link';
 
 import {
   ApInboxPullButton,
+  ApInboxStatusBanner,
   AppShell,
   DataTable,
   EmptyState,
@@ -129,6 +130,8 @@ export default async function ApInvoicesPage({
             </span>
           }
         />
+
+        <ApInboxStatusBanner apiBaseUrl={publicApiBaseUrl()} />
 
         <section className="mb-4 grid gap-3 sm:grid-cols-4">
           <Tile
