@@ -63,6 +63,7 @@ import { equipmentRatesRouter } from './routes/equipment-rates';
 import { importedEstimatesRouter } from './routes/imported-estimates';
 import { microsoftRouter } from './routes/microsoft';
 import { portalUsersRouter } from './routes/portal-users';
+import { p2eFeedbackRouter } from './routes/p2e-feedback';
 
 const app = express();
 
@@ -156,6 +157,7 @@ app.use('/api/equipment-rates', equipmentRatesRouter);
 app.use('/api/imported-estimates', importedEstimatesRouter);
 app.use('/api/microsoft', microsoftRouter);
 app.use('/api/portal-users', portalUsersRouter);
+app.use('/api/p2e-feedback', p2eFeedbackRouter);
 
 // 404
 app.use((_req, res) => {
