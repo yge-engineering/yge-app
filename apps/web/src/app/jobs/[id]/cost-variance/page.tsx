@@ -17,6 +17,7 @@ import {
 } from '@yge/shared';
 
 import { AppShell, PageHeader } from '../../../../components';
+import { requirePermission } from '../../../../lib/permissions';
 
 function apiBaseUrl(): string {
   return (
@@ -52,6 +53,7 @@ export default async function CostVariancePage({
 }: {
   params: { id: string };
 }) {
+  requirePermission('financials:view');
   const jobJson = await fetchJson<{ job: Job }>(
     `${apiBaseUrl()}/api/jobs/${params.id}`,
   );

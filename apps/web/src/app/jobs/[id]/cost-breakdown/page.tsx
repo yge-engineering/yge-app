@@ -13,6 +13,7 @@ import {
   Tile,
 } from '../../../../components';
 import { getTranslator } from '../../../../lib/locale';
+import { requirePermission } from '../../../../lib/permissions';
 import {
   buildJobCostBreakdown,
   findRateInEffect,
@@ -60,6 +61,7 @@ export default async function CostBreakdownPage({
   params: { id: string };
   searchParams: { county?: string };
 }) {
+  requirePermission('financials:view');
   const t = getTranslator();
   const job = await fetchJob(params.id);
   if (!job) notFound();
