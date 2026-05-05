@@ -62,6 +62,7 @@ import { costCodesRouter } from './routes/cost-codes';
 import { equipmentRatesRouter } from './routes/equipment-rates';
 import { importedEstimatesRouter } from './routes/imported-estimates';
 import { microsoftRouter } from './routes/microsoft';
+import { portalUsersRouter } from './routes/portal-users';
 
 const app = express();
 
@@ -154,6 +155,7 @@ app.use('/api/cost-codes', costCodesRouter);
 app.use('/api/equipment-rates', equipmentRatesRouter);
 app.use('/api/imported-estimates', importedEstimatesRouter);
 app.use('/api/microsoft', microsoftRouter);
+app.use('/api/portal-users', portalUsersRouter);
 
 // 404
 app.use((_req, res) => {

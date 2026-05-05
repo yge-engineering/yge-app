@@ -766,3 +766,4 @@ export * from './vendor-ap-aging-detail-snapshot';
 export * from './job-ar-aging-detail-snapshot';
 export * from './job-ap-aging-detail-snapshot';
 export * from './permissions';
+export * from './portal-user';
