@@ -64,6 +64,7 @@ export function PortalUsersClient({
     id: string;
     value: string;
   } | null>(null);
+  const [search, setSearch] = useState('');
 
   const activeJobs = jobs.filter(
     (j) =>
@@ -329,7 +330,17 @@ export function PortalUsersClient({
     }
   }
 
-  const sorted = [...users].sort((a, b) => {
+  const filtered = users.filter((u) => {
+    if (!search.trim()) return true;
+    const q = search.trim().toLowerCase();
+    return (
+      u.name.toLowerCase().includes(q) ||
+      u.email.toLowerCase().includes(q) ||
+      u.role.toLowerCase().includes(q) ||
+      (u.notes ?? '').toLowerCase().includes(q)
+    );
+  });
+  const sorted = [...filtered].sort((a, b) => {
     // Owners first, then disabled rows last.
     const order = (u: PortalUser) =>
       u.disabled ? 99 : ROLES.indexOf(u.role);
@@ -343,6 +354,21 @@ export function PortalUsersClient({
           {error}
         </div>
       )}
+
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by name / email / role / notes"
+          className="w-full max-w-sm rounded border border-gray-300 px-3 py-1.5 text-sm"
+        />
+        <span className="text-xs text-gray-500">
+          {users.length === filtered.length
+            ? `${users.length} user${users.length === 1 ? '' : 's'}`
+            : `${filtered.length} of ${users.length} users`}
+        </span>
+      </div>
 
       <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
         <table className="w-full text-sm">
