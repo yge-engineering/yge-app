@@ -39,6 +39,12 @@ const TILES: Tile[] = [
     requires: 'audit:view',
   },
   {
+    href: '/admin/p2e-accuracy',
+    title: 'Plans-to-Estimate accuracy',
+    blurb: 'Reviewer verdicts on AI drafts. Tracks Good / Mixed / Bad over time.',
+    requires: 'audit:view',
+  },
+  {
     href: '/settings',
     title: 'Settings',
     blurb: 'Locale, integrations, app preferences.',
