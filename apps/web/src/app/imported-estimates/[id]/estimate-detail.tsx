@@ -15,11 +15,21 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   importedEstimateLineCategoryLabel,
+  type CostCode,
   type ImportedEstimate,
   type ImportedEstimateLine,
   type ImportedEstimateLineCategory,
   type ImportedEstimateRateType,
 } from '@yge/shared';
+
+// Common construction units. Used as a typeahead suggestion list on
+// the Unit column. The user can still type a custom value — datalist
+// only suggests, doesn't restrict.
+const COMMON_UNITS = [
+  'hr', 'day', 'week', 'mo', 'year',
+  'ea', 'ls', 'lf', 'sf', 'sy', 'cy',
+  'ton', 'lb', 'gal', 'mi', 'km',
+] as const;
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 
@@ -92,10 +102,20 @@ function groupLinesPreservingIndex(
 
 interface Props {
   initial: ImportedEstimate;
+  costCodes: CostCode[];
 }
 
-export function EstimateDetail({ initial }: Props) {
+export function EstimateDetail({ initial, costCodes }: Props) {
   const [estimate, setEstimate] = useState<ImportedEstimate>(initial);
+
+  // Lookup helper: code (case-insensitive) -> CostCode record. Used by
+  // the cost-code cell to auto-fill the description after the user
+  // picks a code from the typeahead.
+  const costCodeByCode = useMemo(() => {
+    const map = new Map<string, CostCode>();
+    for (const c of costCodes) map.set(c.code.toLowerCase(), c);
+    return map;
+  }, [costCodes]);
   const [editingProject, setEditingProject] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -290,6 +310,21 @@ export function EstimateDetail({ initial }: Props) {
         Click any cell to edit. Tab moves to the next cell, Enter saves. Changes save automatically.
       </p>
 
+      {/* Master suggestion lists, referenced by every row's input. The
+       *  browser handles the dropdown UI + filtering as the user types. */}
+      <datalist id="cost-codes-master">
+        {costCodes.map((c) => (
+          <option key={c.id} value={c.code}>
+            {c.description ?? ''}
+          </option>
+        ))}
+      </datalist>
+      <datalist id="units-master">
+        {COMMON_UNITS.map((u) => (
+          <option key={u} value={u} />
+        ))}
+      </datalist>
+
       {sections.map((sec) => {
         const sectionDirect = sec.lines.reduce((s, l) => s + l.line.totalCostCents, 0);
         const sectionBid = sec.lines.reduce((s, l) => s + l.line.bidPriceCents, 0);
@@ -342,6 +377,7 @@ export function EstimateDetail({ initial }: Props) {
                     <EditableLineRow
                       key={`${idx}-${gen}`}
                       line={line}
+                      costCodeByCode={costCodeByCode}
                       onChange={(patch) => applyLineChange(idx, patch)}
                       onDelete={() => deleteLine(idx)}
                     />
@@ -384,10 +420,12 @@ export function EstimateDetail({ initial }: Props) {
 
 function EditableLineRow({
   line,
+  costCodeByCode,
   onChange,
   onDelete,
 }: {
   line: ImportedEstimateLine;
+  costCodeByCode: Map<string, CostCode>;
   onChange: (patch: Partial<ImportedEstimateLine>) => void;
   onDelete: () => void;
 }) {
@@ -406,10 +444,17 @@ function EditableLineRow({
         }))}
         onCommit={(v) => onChange({ category: v as ImportedEstimateLineCategory })}
       />
-      <CellInputText
+      <CellInputCostCode
         defaultValue={line.costCode ?? ''}
-        onCommit={(v) => onChange({ costCode: v || undefined })}
-        mono
+        currentDescription={line.description}
+        costCodeByCode={costCodeByCode}
+        onCommit={(code, autoDescription) => {
+          const patch: Partial<ImportedEstimateLine> = {
+            costCode: code || undefined,
+          };
+          if (autoDescription !== undefined) patch.description = autoDescription;
+          onChange(patch);
+        }}
       />
       <CellInputText
         defaultValue={line.description}
@@ -421,7 +466,7 @@ function EditableLineRow({
         align="right"
         step="any"
       />
-      <CellInputText
+      <CellInputUnit
         defaultValue={line.unit ?? ''}
         onCommit={(v) => onChange({ unit: v || undefined })}
       />
@@ -491,6 +536,104 @@ function CellInputText({
         className={`w-full bg-transparent px-1 py-1 text-sm focus:bg-white focus:outline focus:outline-2 focus:outline-blue-500 ${
           mono ? 'font-mono text-xs' : ''
         }`}
+      />
+    </td>
+  );
+}
+
+function CellInputCostCode({
+  defaultValue,
+  currentDescription,
+  costCodeByCode,
+  onCommit,
+}: {
+  defaultValue: string;
+  currentDescription: string;
+  costCodeByCode: Map<string, CostCode>;
+  onCommit: (code: string, autoDescription: string | undefined) => void;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  // Capture the description that came in alongside the previous code.
+  // We use it to detect "untouched" descriptions — only those get
+  // overwritten when the user picks a new code.
+  const prevAutoDescRef = useRef<string | null>(
+    (() => {
+      const c = costCodeByCode.get(defaultValue.toLowerCase());
+      return c?.description ?? null;
+    })(),
+  );
+
+  function commit(rawValue: string) {
+    const code = rawValue.trim();
+    if (code === defaultValue) return;
+    const found = costCodeByCode.get(code.toLowerCase());
+    if (found && found.description) {
+      // Only auto-fill description when:
+      //  - it's empty, or
+      //  - it matches the description that came from the previous
+      //    cost code (= user hadn't typed a custom one)
+      const desc = currentDescription.trim();
+      const prev = prevAutoDescRef.current;
+      const shouldAuto = !desc || (prev && desc === prev);
+      prevAutoDescRef.current = found.description;
+      onCommit(code, shouldAuto ? found.description : undefined);
+    } else {
+      // Code not in master list — save it as-is, no auto-fill.
+      prevAutoDescRef.current = null;
+      onCommit(code, undefined);
+    }
+  }
+
+  return (
+    <td className="px-0.5 py-0.5">
+      <input
+        ref={ref}
+        list="cost-codes-master"
+        defaultValue={defaultValue}
+        onBlur={(e) => commit(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.currentTarget.blur();
+          } else if (e.key === 'Escape') {
+            if (ref.current) ref.current.value = defaultValue;
+            ref.current?.blur();
+          }
+        }}
+        className="w-full bg-transparent px-1 py-1 font-mono text-xs focus:bg-white focus:outline focus:outline-2 focus:outline-blue-500"
+        placeholder="LAB-…"
+      />
+    </td>
+  );
+}
+
+function CellInputUnit({
+  defaultValue,
+  onCommit,
+}: {
+  defaultValue: string;
+  onCommit: (v: string) => void;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  return (
+    <td className="px-0.5 py-0.5">
+      <input
+        ref={ref}
+        list="units-master"
+        defaultValue={defaultValue}
+        onBlur={(e) => {
+          const v = e.target.value.trim();
+          if (v !== defaultValue) onCommit(v);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.currentTarget.blur();
+          } else if (e.key === 'Escape') {
+            if (ref.current) ref.current.value = defaultValue;
+            ref.current?.blur();
+          }
+        }}
+        className="w-full bg-transparent px-1 py-1 text-xs focus:bg-white focus:outline focus:outline-2 focus:outline-blue-500"
+        placeholder="hr"
       />
     </td>
   );

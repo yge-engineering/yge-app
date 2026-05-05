@@ -1,11 +1,12 @@
-// /imported-estimates/[id] — detail view with edit / add-line /
-// delete-line / edit-project-info modals.
+// /imported-estimates/[id] — detail view with Excel-style inline
+// editing.
 //
-// Server component fetches the estimate then hands it to the client
-// EstimateDetail component which manages all edit state.
+// Server component fetches the estimate + the master cost-code list
+// (so the cost-code column can suggest from + auto-fill description),
+// then hands both to the client EstimateDetail component.
 
 import { notFound } from 'next/navigation';
-import type { ImportedEstimate } from '@yge/shared';
+import type { CostCode, ImportedEstimate } from '@yge/shared';
 
 import { AppShell } from '../../../components';
 import { EstimateDetail } from './estimate-detail';
@@ -29,17 +30,31 @@ async function fetchEstimate(id: string): Promise<ImportedEstimate | null> {
   }
 }
 
+async function fetchCostCodes(): Promise<CostCode[]> {
+  try {
+    const res = await fetch(`${apiBaseUrl()}/api/cost-codes`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    const body = (await res.json()) as { costCodes?: CostCode[] };
+    return body.costCodes ?? [];
+  } catch {
+    return [];
+  }
+}
+
 export default async function ImportedEstimateDetailPage({
   params,
 }: {
   params: { id: string };
 }) {
-  const estimate = await fetchEstimate(params.id);
+  const [estimate, costCodes] = await Promise.all([
+    fetchEstimate(params.id),
+    fetchCostCodes(),
+  ]);
   if (!estimate) notFound();
   return (
     <AppShell>
       <main className="mx-auto max-w-6xl">
-        <EstimateDetail initial={estimate} />
+        <EstimateDetail initial={estimate} costCodes={costCodes} />
       </main>
     </AppShell>
   );
