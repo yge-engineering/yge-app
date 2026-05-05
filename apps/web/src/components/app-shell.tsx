@@ -84,6 +84,9 @@ const NAV_SPEC: NavGroupSpec[] = [
     links: [
       { key: 'nav.crew', href: '/crew' },
       { key: 'nav.equipment', href: '/equipment' },
+      { key: 'nav.equipmentRates', href: '/equipment-rates' },
+      { key: 'nav.costCodes', href: '/cost-codes' },
+      { key: 'nav.importedEstimates', href: '/imported-estimates' },
       { key: 'nav.mileage', href: '/mileage' },
       { key: 'nav.expenses', href: '/expenses' },
       { key: 'nav.photos', href: '/photos' },

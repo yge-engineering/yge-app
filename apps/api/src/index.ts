@@ -58,6 +58,9 @@ import { credentialsRouter } from './routes/credentials';
 import { calendarEventsRouter } from './routes/calendar-events';
 import { calendarShareRouter } from './routes/calendar-share';
 import { foldersRouter } from './routes/folders';
+import { costCodesRouter } from './routes/cost-codes';
+import { equipmentRatesRouter } from './routes/equipment-rates';
+import { importedEstimatesRouter } from './routes/imported-estimates';
 
 const app = express();
 
@@ -146,6 +149,9 @@ app.use('/api/credentials', credentialsRouter);
 app.use('/api/calendar-events', calendarEventsRouter);
 app.use('/api/calendar-share', calendarShareRouter);
 app.use('/api/folders', foldersRouter);
+app.use('/api/cost-codes', costCodesRouter);
+app.use('/api/equipment-rates', equipmentRatesRouter);
+app.use('/api/imported-estimates', importedEstimatesRouter);
 
 // 404
 app.use((_req, res) => {
