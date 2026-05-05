@@ -167,10 +167,25 @@ export default async function JobsPage({ searchParams }: PageProps) {
 
       {!fetchError && jobs.length === 0 && (
         <div className="mt-6 rounded border border-gray-200 bg-gray-50 p-6 text-sm text-gray-600">
-          {t('jobs.empty')}{' '}
-          <Link href="/jobs/new" className="text-yge-blue-500 hover:underline">
-            {t('jobs.createFirst')} &rarr;
-          </Link>
+          {!canSeeAll && canSeeAssigned ? (
+            <span>
+              No jobs assigned to you yet. Ryan or the office sets these on{' '}
+              <code className="rounded bg-gray-200 px-1 font-mono text-xs">
+                /admin/portal-users
+              </code>{' '}
+              — ask one of them to assign you to a job.
+            </span>
+          ) : (
+            <>
+              {t('jobs.empty')}{' '}
+              <Link
+                href="/jobs/new"
+                className="text-yge-blue-500 hover:underline"
+              >
+                {t('jobs.createFirst')} &rarr;
+              </Link>
+            </>
+          )}
         </div>
       )}
 
