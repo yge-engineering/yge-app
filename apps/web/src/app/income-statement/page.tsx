@@ -11,6 +11,7 @@ import {
   Tile,
 } from '../../components';
 import { getTranslator, type Translator } from '../../lib/locale';
+import { requirePermission } from '../../lib/permissions';
 import {
   buildIncomeStatement,
   grossProfitMargin,

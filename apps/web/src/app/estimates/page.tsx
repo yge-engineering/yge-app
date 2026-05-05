@@ -7,6 +7,7 @@ import Link from 'next/link';
 
 import { Alert, AppShell, Money } from '../../components';
 import { getTranslator } from '../../lib/locale';
+import { requirePermission } from '../../lib/permissions';
 
 interface EstimateSummary {
   id: string;
@@ -95,6 +96,7 @@ function formatWhen(iso: string): string {
 }
 
 export default async function EstimatesPage() {
+  requirePermission('estimates:view');
   let estimates: EstimateSummary[] = [];
   let fetchError: string | null = null;
   try {

@@ -18,6 +18,7 @@ import {
   Tile,
 } from '../../components';
 import { getTranslator } from '../../lib/locale';
+import { requirePermission } from '../../lib/permissions';
 import {
   bankRecStatusLabel,
   computeBankRec,
@@ -49,6 +50,7 @@ function statusTone(s: BankRec['status']): 'success' | 'warn' | 'muted' | 'neutr
 }
 
 export default async function BankRecsPage() {
+  requirePermission('financials:view');
   const recs = await fetchRecs();
   const rollup = computeBankRecRollup(recs);
   const t = getTranslator();

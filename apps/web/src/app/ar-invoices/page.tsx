@@ -18,6 +18,7 @@ import {
   Tile,
 } from '../../components';
 import { getLocale, getTranslator } from '../../lib/locale';
+import { requirePermission } from '../../lib/permissions';
 import {
   arInvoiceStatusLabel,
   arUnpaidBalanceCents,
@@ -79,6 +80,7 @@ export default async function ArInvoicesPage({
 }: {
   searchParams: { status?: string; jobId?: string };
 }) {
+  requirePermission('financials:view');
   const [invoices, all, jobs] = await Promise.all([
     fetchInvoices(searchParams),
     fetchAllInvoices(),

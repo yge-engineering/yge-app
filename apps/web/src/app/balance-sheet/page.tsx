@@ -13,6 +13,7 @@ import {
   PageHeader,
 } from '../../components';
 import { getTranslator, type Translator } from '../../lib/locale';
+import { requirePermission } from '../../lib/permissions';
 import {
   buildBalanceSheet,
   type Account,

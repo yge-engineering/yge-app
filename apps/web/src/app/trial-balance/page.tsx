@@ -12,6 +12,7 @@ import {
   PageHeader,
 } from '../../components';
 import { getTranslator } from '../../lib/locale';
+import { requirePermission } from '../../lib/permissions';
 import {
   accountTypeLabel,
   computeAccountBalances,
@@ -41,6 +42,7 @@ async function fetchEntries(): Promise<JournalEntry[]> {
 }
 
 export default async function TrialBalancePage() {
+  requirePermission('financials:view');
   const [accounts, entries] = await Promise.all([fetchAccounts(), fetchEntries()]);
   const accountByNum = new Map(accounts.map((a) => [a.number, a]));
   const balances = computeAccountBalances(entries);

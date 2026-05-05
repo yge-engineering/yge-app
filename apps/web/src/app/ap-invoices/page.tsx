@@ -20,6 +20,7 @@ import {
   Tile,
 } from '../../components';
 import { getCurrentUser } from '../../lib/auth';
+import { requirePermission } from '../../lib/permissions';
 import { getLocale, getTranslator } from '../../lib/locale';
 import {
   apDueLevel,
@@ -82,6 +83,7 @@ export default async function ApInvoicesPage({
 }: {
   searchParams: { status?: string; jobId?: string };
 }) {
+  requirePermission('financials:view');
   const [invoices, all, jobs] = await Promise.all([
     fetchInvoices(searchParams),
     fetchAllInvoices(),
