@@ -348,11 +348,37 @@ export function PortalUsersClient({
     return order(a) - order(b) || a.name.localeCompare(b.name);
   });
 
+  // Role-count rollup so admin can see the team shape at a glance.
+  const roleCounts = ROLES.map((r) => ({
+    role: r,
+    count: users.filter((u) => u.role === r && !u.disabled).length,
+  })).filter((rc) => rc.count > 0);
+  const disabledCount = users.filter((u) => u.disabled).length;
+
   return (
     <div className="space-y-6">
       {error && (
         <div className="rounded border border-red-300 bg-red-50 p-2 text-sm text-red-800">
           {error}
+        </div>
+      )}
+
+      {users.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 rounded-md border border-gray-200 bg-white p-3 text-xs">
+          <span className="text-gray-500">Active by role:</span>
+          {roleCounts.map((rc) => (
+            <span
+              key={rc.role}
+              className="rounded-full bg-blue-50 px-2 py-0.5 font-medium text-blue-800"
+            >
+              {portalRoleLabel(rc.role)} {rc.count}
+            </span>
+          ))}
+          {disabledCount > 0 && (
+            <span className="ml-2 rounded-full bg-amber-50 px-2 py-0.5 font-medium text-amber-800">
+              Disabled {disabledCount}
+            </span>
+          )}
         </div>
       )}
 
