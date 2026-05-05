@@ -11,9 +11,12 @@ import { getTranslator } from '../../../lib/locale';
 import {
   contractTypeLabel,
   nextBidAction,
+  ROLE_PERMISSIONS,
   statusLabel,
   type Job,
+  type PortalUser,
 } from '@yge/shared';
+import { getCurrentUser } from '../../../lib/auth';
 import { JobStatusEditor } from '@/components/job-status-editor';
 import { JobInfoEditor } from '@/components/job-info-editor';
 import { BidDueBanner } from '@/components/bid-due-banner';
@@ -144,6 +147,26 @@ export default async function JobDetailPage({
 }) {
   const job = await fetchJob(params.id);
   if (!job) notFound();
+
+  // Foreman scope: 404 if this jobId isn't on the signed-in user's
+  // assignedJobIds. Owners / office / PM with jobs:viewAll bypass;
+  // crew has neither perm and also 404s.
+  const me = getCurrentUser();
+  const grants = me ? (ROLE_PERMISSIONS[me.role] ?? []) : [];
+  if (!grants.includes('jobs:viewAll')) {
+    if (!grants.includes('jobs:viewAssigned') || !me) notFound();
+    try {
+      const res = await fetch(
+        `${apiBaseUrl()}/api/portal-users/by-email?email=${encodeURIComponent(me.email)}`,
+        { cache: 'no-store' },
+      );
+      if (!res.ok) notFound();
+      const j = (await res.json()) as { user?: PortalUser };
+      if (!(j.user?.assignedJobIds ?? []).includes(job.id)) notFound();
+    } catch {
+      notFound();
+    }
+  }
 
   const [allDrafts, allEstimates, allImported] = await Promise.all([
     fetchDrafts(),
