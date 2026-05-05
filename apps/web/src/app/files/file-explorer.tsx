@@ -21,6 +21,10 @@ interface Props {
   initialFolders: Folder[];
   initialDocuments: Document[];
   apiBaseUrl: string;
+  /** Email of the signed-in user, lowercase. Empty when not signed in.
+   *  Used to query Microsoft connection status + show their email on
+   *  the Connect button. */
+  currentUserEmail?: string;
 }
 
 function fmtBytes(n: number | undefined): string {
@@ -40,6 +44,7 @@ export function FileExplorer({
   initialFolders,
   initialDocuments,
   apiBaseUrl,
+  currentUserEmail,
 }: Props) {
   const [folders, setFolders] = useState<Folder[]>(initialFolders);
   const [documents, setDocuments] = useState<Document[]>(initialDocuments);
@@ -47,6 +52,99 @@ export function FileExplorer({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  // Microsoft 365 connection state. When the user clicks Connect we
+  // bounce out to Microsoft, OAuth, then come back with
+  // ?microsoft=connected so the page can refresh the chip.
+  const [msStatus, setMsStatus] = useState<{
+    connected: boolean;
+    configured: boolean;
+  }>({ connected: false, configured: true });
+
+  useEffect(() => {
+    if (!currentUserEmail) return;
+    let cancelled = false;
+    async function loadStatus() {
+      try {
+        const r = await fetch(
+          `${apiBaseUrl}/api/microsoft/status?email=${encodeURIComponent(currentUserEmail!)}`,
+          { cache: 'no-store' },
+        );
+        if (!r.ok) return;
+        const j = (await r.json()) as { connected: boolean; configured: boolean };
+        if (!cancelled) setMsStatus({ connected: j.connected, configured: j.configured });
+      } catch {
+        // network blip — leave defaults
+      }
+    }
+    void loadStatus();
+    // Surface ?microsoft=connected / =error from the OAuth callback.
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const ms = params.get('microsoft');
+      if (ms === 'connected') {
+        setError(null);
+        // Clean the param so a refresh doesn't repeat the toast.
+        const u = new URL(window.location.href);
+        u.searchParams.delete('microsoft');
+        u.searchParams.delete('email');
+        u.searchParams.delete('name');
+        window.history.replaceState({}, '', u.toString());
+        void loadStatus();
+      } else if (ms === 'error') {
+        const reason = params.get('reason') ?? 'Microsoft connect failed.';
+        setError(`Microsoft connect failed: ${reason}`);
+        const u = new URL(window.location.href);
+        u.searchParams.delete('microsoft');
+        u.searchParams.delete('reason');
+        window.history.replaceState({}, '', u.toString());
+      }
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [apiBaseUrl, currentUserEmail]);
+
+  async function connectMicrosoft() {
+    setBusy(true);
+    setError(null);
+    try {
+      const ret =
+        typeof window !== 'undefined' ? window.location.href.split('?')[0]! : '/files';
+      const r = await fetch(
+        `${apiBaseUrl}/api/microsoft/auth-url?return=${encodeURIComponent(ret)}`,
+      );
+      if (!r.ok) {
+        const t = await r.text().catch(() => '');
+        throw new Error(`Could not start Microsoft sign-in: ${t.slice(0, 120)}`);
+      }
+      const j = (await r.json()) as { url: string };
+      window.location.href = j.url;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Microsoft connect failed.');
+      setBusy(false);
+    }
+  }
+
+  async function disconnectMicrosoft() {
+    if (!currentUserEmail) return;
+    if (!confirm('Disconnect Microsoft 365 from YGE?')) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const r = await fetch(`${apiBaseUrl}/api/microsoft/disconnect`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: currentUserEmail }),
+      });
+      if (!r.ok) throw new Error(`Disconnect failed (${r.status})`);
+      setMsStatus({ ...msStatus, connected: false });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Disconnect failed.');
+    } finally {
+      setBusy(false);
+    }
+  }
 
   const tree = useMemo(() => buildFolderTree(folders), [folders]);
   const breadcrumbs = useMemo(
@@ -328,6 +426,28 @@ export function FileExplorer({
             >
               + New folder
             </button>
+            {currentUserEmail && msStatus.configured && (
+              msStatus.connected ? (
+                <button
+                  type="button"
+                  onClick={disconnectMicrosoft}
+                  disabled={busy}
+                  className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-800 hover:bg-emerald-100 disabled:opacity-50"
+                  title="Click to disconnect Microsoft 365"
+                >
+                  ✓ Microsoft 365 connected
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={connectMicrosoft}
+                  disabled={busy}
+                  className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+                >
+                  Connect Microsoft 365
+                </button>
+              )
+            )}
           </div>
         </div>
 

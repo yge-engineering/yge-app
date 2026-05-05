@@ -10,6 +10,7 @@
 import type { Document, Folder } from '@yge/shared';
 
 import { AppShell } from '../../components';
+import { getCurrentUser } from '../../lib/auth';
 import { FileExplorer } from './file-explorer';
 
 function apiBaseUrl(): string {
@@ -48,6 +49,7 @@ export default async function FilesPage() {
     fetchFolders(),
     fetchDocuments(),
   ]);
+  const user = getCurrentUser();
   return (
     <AppShell>
       <main className="mx-auto max-w-6xl">
@@ -55,6 +57,7 @@ export default async function FilesPage() {
           initialFolders={folders}
           initialDocuments={documents}
           apiBaseUrl={publicApiBaseUrl()}
+          currentUserEmail={user?.email ?? ''}
         />
       </main>
     </AppShell>
