@@ -44,6 +44,22 @@ export function LicenseRenewalBanner({
     tracked.push({ label: `USDOT ${profile.dotNumber}`, expiresOn: profile.dotExpiresOn });
   if (profile.caMcpExpiresOn && profile.caMcpNumber)
     tracked.push({ label: `CA MCP ${profile.caMcpNumber}`, expiresOn: profile.caMcpExpiresOn });
+  // Insurance policies — losing GL or WC mid-bid is as bad as a
+  // license lapse. Pull each policy's kind + carrier into the
+  // banner so renewals don't slip.
+  for (const p of profile.insurance ?? []) {
+    const kindShort = p.kind
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+    tracked.push({
+      label: `${kindShort} (${p.carrierName})`,
+      expiresOn: p.expiresOn,
+    });
+  }
+  // Bonding doesn't carry an expiresOn in the current schema.
+  // Adding one is a future bundle — most surety bonds renew on a
+  // calendar (most often Jan 1) so a separate yearly task captures
+  // it for now.
 
   const flagged = tracked
     .map((it) => ({ ...it, days: daysUntil(it.expiresOn, now) }))
