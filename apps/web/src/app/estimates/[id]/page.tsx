@@ -5,7 +5,11 @@
 
 import Link from 'next/link';
 
-import { AppShell, AuditBinderPanel } from '../../../components';
+import {
+  AppShell,
+  AuditBinderPanel,
+  MarkupWhatIfSlider,
+} from '../../../components';
 import { notFound } from 'next/navigation';
 import type { PricedEstimate, PricedEstimateTotals } from '@yge/shared';
 import { EstimateEditor } from '@/components/estimate-editor';
@@ -107,6 +111,15 @@ export default async function EstimateDetailPage({
 
       <div className="mb-4">
         <BidDueBanner bidDueDate={data.estimate.bidDueDate} />
+      </div>
+
+      <div className="mb-4">
+        <MarkupWhatIfSlider
+          estimateId={data.estimate.id}
+          apiBaseUrl={publicApiBaseUrl()}
+          currentOppPercent={data.estimate.oppPercent}
+          directCostCents={data.totals.directCents}
+        />
       </div>
 
       <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
