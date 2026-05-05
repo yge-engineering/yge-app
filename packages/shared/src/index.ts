@@ -4,6 +4,7 @@ export * from './folder';
 export * from './cost-code';
 export * from './equipment-rate';
 export * from './imported-estimate';
+export * from './cost-variance';
 export * from './bid-coach';
 export * from './bid-tab';
 export * from './bid-tab-link';

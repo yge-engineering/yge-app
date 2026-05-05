@@ -58,6 +58,11 @@ export const JobSchema = z.object({
   ownerAgency: z.string().max(200).optional(),
   /** Project location — typically city, county, or address. */
   location: z.string().max(200).optional(),
+  /** Optional jobsite latitude (decimal degrees, -90..90). Used by the
+   *  weather-forecast tile on the job detail page. */
+  latitude: z.number().min(-90).max(90).optional(),
+  /** Optional jobsite longitude (decimal degrees, -180..180). */
+  longitude: z.number().min(-180).max(180).optional(),
   /** ISO date or human string. The bid must be in the agency's hands by
    *  this time. */
   bidDueDate: z.string().max(40).optional(),

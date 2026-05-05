@@ -19,6 +19,8 @@ import { JobInfoEditor } from '@/components/job-info-editor';
 import { BidDueBanner } from '@/components/bid-due-banner';
 import { JobAgencyCompetitors } from '@/components/job-agency-competitors';
 import { JobLinkedBidTabs } from '@/components/job-linked-bid-tabs';
+import { ForecastStrip } from '@/components/forecast-strip';
+import { fetchNwsForecast } from '@/lib/nws';
 
 interface DraftSummary {
   id: string;
@@ -216,6 +218,26 @@ export default async function JobDetailPage({
           <BidDueBanner bidDueDate={job.bidDueDate} />
         </div>
       )}
+
+      {/* Per-jobsite forecast — shown when the job has lat/lon. */}
+      {typeof job.latitude === 'number' && typeof job.longitude === 'number' && (
+        <div className="mt-6">
+          <ForecastStrip
+            forecast={await fetchNwsForecast(job.latitude, job.longitude)}
+            locationLabel={job.location ?? job.projectName}
+          />
+        </div>
+      )}
+
+      {/* Quick links — cost variance, etc. */}
+      <div className="mt-6 flex flex-wrap gap-2">
+        <Link
+          href={`/jobs/${job.id}/cost-variance`}
+          className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100"
+        >
+          Cost code variance →
+        </Link>
+      </div>
 
       {/* Next step card — one click to whatever the estimator should do next */}
       {action.id !== 'no-action' && (

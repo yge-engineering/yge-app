@@ -77,6 +77,12 @@ function Modal({
   const [ownerAgency, setOwnerAgency] = useState(job.ownerAgency ?? '');
   const [location, setLocation] = useState(job.location ?? '');
   const [bidDueDate, setBidDueDate] = useState(job.bidDueDate ?? '');
+  const [latitudeStr, setLatitudeStr] = useState(
+    job.latitude !== undefined ? String(job.latitude) : '',
+  );
+  const [longitudeStr, setLongitudeStr] = useState(
+    job.longitude !== undefined ? String(job.longitude) : '',
+  );
   const [engineersEstimateDollars, setEngineersEstimateDollars] = useState(
     job.engineersEstimateCents !== undefined
       ? (job.engineersEstimateCents / 100).toFixed(2)
@@ -104,6 +110,10 @@ function Modal({
     body.ownerAgency = ownerAgency.trim() || undefined;
     body.location = location.trim() || undefined;
     body.bidDueDate = bidDueDate.trim() || undefined;
+    const lat = latitudeStr.trim() ? Number(latitudeStr) : undefined;
+    const lon = longitudeStr.trim() ? Number(longitudeStr) : undefined;
+    body.latitude = lat !== undefined && Number.isFinite(lat) ? lat : undefined;
+    body.longitude = lon !== undefined && Number.isFinite(lon) ? lon : undefined;
     body.engineersEstimateCents = eeCents !== undefined && Number.isFinite(eeCents) && eeCents >= 0 ? eeCents : undefined;
     body.pursuitOwner = pursuitOwner.trim() || undefined;
     body.notes = notes.trim() || undefined;
@@ -207,6 +217,35 @@ function Modal({
               placeholder="Soquel Demonstration State Forest"
             />
           </label>
+
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block text-sm">
+              <span className="mb-1 block font-medium text-gray-700">Latitude</span>
+              <input
+                type="number"
+                step="0.0001"
+                value={latitudeStr}
+                onChange={(e) => setLatitudeStr(e.target.value)}
+                className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
+                placeholder="40.3852"
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="mb-1 block font-medium text-gray-700">Longitude</span>
+              <input
+                type="number"
+                step="0.0001"
+                value={longitudeStr}
+                onChange={(e) => setLongitudeStr(e.target.value)}
+                className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
+                placeholder="-122.2811"
+              />
+            </label>
+          </div>
+          <p className="text-[11px] text-gray-500">
+            Set both to enable the per-jobsite weather forecast on the job page.
+            Find coords by right-clicking the site in Google Maps.
+          </p>
 
           <div className="grid grid-cols-2 gap-3">
             <label className="block text-sm">
