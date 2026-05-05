@@ -45,6 +45,12 @@ const TILES: Tile[] = [
     requires: 'audit:view',
   },
   {
+    href: '/admin/system-status',
+    title: 'System status',
+    blurb: 'DB, Anthropic, Microsoft, AP-poll health from /health/integrations.',
+    requires: 'audit:view',
+  },
+  {
     href: '/settings',
     title: 'Settings',
     blurb: 'Locale, integrations, app preferences.',
