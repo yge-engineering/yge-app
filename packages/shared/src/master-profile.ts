@@ -142,8 +142,12 @@ export const MasterProfileSchema = z.object({
   dirExpiresOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 
   dotNumber: z.string().max(40).optional(),
+  /** USDOT biennial update / MCS-150 deadline. */
+  dotExpiresOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   /** California Motor Carrier Permit number. */
   caMcpNumber: z.string().max(40).optional(),
+  /** California MCP renewal date. */
+  caMcpExpiresOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 
   naicsCodes: z.array(z.string().regex(/^\d{6}$/)).default([]),
   pscCodes: z.array(z.string().max(10)).default([]),

@@ -40,6 +40,10 @@ export function LicenseRenewalBanner({
     tracked.push({ label: `CSLB ${profile.cslbLicense}`, expiresOn: profile.cslbExpiresOn });
   if (profile.dirExpiresOn)
     tracked.push({ label: `DIR ${profile.dirNumber}`, expiresOn: profile.dirExpiresOn });
+  if (profile.dotExpiresOn && profile.dotNumber)
+    tracked.push({ label: `USDOT ${profile.dotNumber}`, expiresOn: profile.dotExpiresOn });
+  if (profile.caMcpExpiresOn && profile.caMcpNumber)
+    tracked.push({ label: `CA MCP ${profile.caMcpNumber}`, expiresOn: profile.caMcpExpiresOn });
 
   const flagged = tracked
     .map((it) => ({ ...it, days: daysUntil(it.expiresOn, now) }))
