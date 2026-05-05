@@ -10,6 +10,7 @@ import type React from 'react';
 import { Alert } from '../../components/alert';
 import { AppShell } from '../../components/app-shell';
 import { GettingStartedBanner } from '../../components/getting-started-banner';
+import { LicenseRenewalBanner } from '../../components/license-renewal-banner';
 import { Money } from '../../components/money';
 import { RecentActivity } from '../../components/recent-activity';
 import { getCurrentUser } from '../../lib/auth';
@@ -32,6 +33,7 @@ import {
   type LienWaiver,
   type PunchItem,
   type Rfi,
+  type MasterProfile,
   type Submittal,
   type SwpppInspection,
   type WeatherLog,
@@ -45,6 +47,19 @@ function apiBaseUrl(): string {
 
 /** Tracks whether ANY fetch in the page failed at the network level. */
 let apiUnreachable = false;
+
+async function fetchMasterProfile(): Promise<MasterProfile | null> {
+  try {
+    const res = await fetch(`${apiBaseUrl()}/api/master-profile`, {
+      cache: 'no-store',
+    });
+    if (!res.ok) return null;
+    const j = (await res.json()) as { profile?: MasterProfile };
+    return j.profile ?? null;
+  } catch {
+    return null;
+  }
+}
 
 async function fetchJson<T>(pathname: string, key: string): Promise<T[]> {
   try {
@@ -75,6 +90,7 @@ export default async function DashboardPage() {
     dispatches,
     weatherLogs,
     swpppInspections,
+    masterProfile,
   ] = await Promise.all([
     fetchJson<Job>('/api/jobs', 'jobs'),
     fetchJson<{ id: string }>('/api/customers', 'customers'),
@@ -89,6 +105,7 @@ export default async function DashboardPage() {
     fetchJson<Dispatch>('/api/dispatches', 'dispatches'),
     fetchJson<WeatherLog>('/api/weather-logs', 'logs'),
     fetchJson<SwpppInspection>('/api/swppp-inspections', 'inspections'),
+    fetchMasterProfile(),
   ]);
 
   const arRollup = computeArRollup(arInvoices);
@@ -176,6 +193,8 @@ export default async function DashboardPage() {
           points at a running API.
         </Alert>
       )}
+
+      <LicenseRenewalBanner profile={masterProfile} />
 
       <GettingStartedBanner
         customers={customers.length}
