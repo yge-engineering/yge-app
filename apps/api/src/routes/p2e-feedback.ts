@@ -6,6 +6,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { appendFeedback, listFeedback } from '../lib/p2e-feedback-store';
+import { recordAudit } from '../lib/audit-store';
 
 export const p2eFeedbackRouter = Router();
 
@@ -27,6 +28,15 @@ p2eFeedbackRouter.post('/', async (req, res, next) => {
         .json({ error: 'Validation failed', issues: parsed.error.issues });
     }
     const entry = await appendFeedback(parsed.data);
+    // Surface in the audit log so /audit shows AI feedback submissions
+    // alongside other mutations. Best-effort — don't fail the request
+    // if the audit write hiccups.
+    void recordAudit({
+      action: 'create',
+      entityType: 'P2eFeedback',
+      entityId: entry.id,
+      after: entry,
+    }).catch(() => {});
     return res.status(201).json({ entry });
   } catch (err) {
     next(err);
