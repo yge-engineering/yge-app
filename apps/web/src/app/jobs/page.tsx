@@ -7,11 +7,14 @@ import Link from 'next/link';
 
 import { Alert, AppShell, Money } from '../../components';
 import { getLocale, getTranslator } from '../../lib/locale';
+import { getCurrentUser } from '../../lib/auth';
 import {
   contractTypeLabel,
+  ROLE_PERMISSIONS,
   statusLabel,
   type Job,
   type JobStatus,
+  type PortalUser,
 } from '@yge/shared';
 
 function apiBaseUrl(): string {
@@ -25,6 +28,24 @@ async function fetchJobs(): Promise<Job[]> {
   if (!res.ok) throw new Error(`API returned ${res.status}`);
   const json = (await res.json()) as { jobs: Job[] };
   return json.jobs;
+}
+
+/** Foreman scope: load the signed-in user's PortalUser record so we
+ *  can read their assignedJobIds[]. Owners / office / PM see all
+ *  jobs; foremen see only their assigned ones; crew sees none. */
+async function fetchMyPortalUser(email: string): Promise<PortalUser | null> {
+  if (!email) return null;
+  try {
+    const res = await fetch(
+      `${apiBaseUrl()}/api/portal-users/by-email?email=${encodeURIComponent(email)}`,
+      { cache: 'no-store' },
+    );
+    if (!res.ok) return null;
+    const json = (await res.json()) as { user?: PortalUser };
+    return json.user ?? null;
+  } catch {
+    return null;
+  }
 }
 
 function formatWhen(iso: string): string {
@@ -73,12 +94,28 @@ const FILTER_PRESETS: { labelKey: string; value: string; matches: (s: JobStatus)
 ];
 
 export default async function JobsPage({ searchParams }: PageProps) {
+  const user = getCurrentUser();
   let jobs: Job[] = [];
   let fetchError: string | null = null;
   try {
     jobs = await fetchJobs();
   } catch (err) {
     fetchError = err instanceof Error ? err.message : 'Unknown error';
+  }
+
+  // Foreman scope: filter the list to assignedJobIds. Owners / office /
+  // PM with jobs:viewAll see everything. Crew with neither see nothing.
+  const grants = user ? (ROLE_PERMISSIONS[user.role] ?? []) : [];
+  const canSeeAll = grants.includes('jobs:viewAll');
+  const canSeeAssigned = grants.includes('jobs:viewAssigned');
+  if (!canSeeAll) {
+    if (canSeeAssigned && user) {
+      const me = await fetchMyPortalUser(user.email);
+      const allowed = new Set(me?.assignedJobIds ?? []);
+      jobs = jobs.filter((j) => allowed.has(j.id));
+    } else {
+      jobs = [];
+    }
   }
 
   const filterValue = searchParams?.status ?? 'active';
