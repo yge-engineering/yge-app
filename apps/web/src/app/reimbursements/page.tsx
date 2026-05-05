@@ -16,6 +16,7 @@ import {
   Tile,
 } from '../../components';
 import { getTranslator } from '../../lib/locale';
+import { requirePermission } from '../../lib/permissions';
 import {
   buildAllReimbursementSummaries,
   computeReimbursementGrandTotals,
@@ -45,6 +46,7 @@ async function fetchExpenses(): Promise<Expense[]> {
 }
 
 export default async function ReimbursementsPage() {
+  requirePermission('financials:view');
   const [mileage, expenses] = await Promise.all([fetchMileage(), fetchExpenses()]);
   const summaries = buildAllReimbursementSummaries({ mileage, expenses });
   const totals = computeReimbursementGrandTotals(summaries);

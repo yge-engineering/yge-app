@@ -4,6 +4,7 @@ import Link from 'next/link';
 import type { ImportedEstimate } from '@yge/shared';
 
 import { AppShell, PageHeader } from '../../components';
+import { requirePermission } from '../../lib/permissions';
 
 function apiBaseUrl(): string {
   return (
@@ -27,6 +28,7 @@ function fmtMoney(cents: number): string {
 }
 
 export default async function ImportedEstimatesPage() {
+  requirePermission('estimates:view');
   const estimates = await fetchEstimates();
   return (
     <AppShell>

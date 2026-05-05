@@ -15,6 +15,7 @@ import {
   Tile,
 } from '../../components';
 import { getTranslator, type Translator } from '../../lib/locale';
+import { requirePermission } from '../../lib/permissions';
 import {
   buildJobProfitRows,
   computeJobProfitRollup,
@@ -47,6 +48,7 @@ async function fetchJson<T>(pathname: string, key: string): Promise<T[]> {
 }
 
 export default async function JobProfitPage() {
+  requirePermission('financials:view');
   const [jobs, arInvoices, apInvoices, changeOrders, expenses, mileage] = await Promise.all([
     fetchJson<Job>('/api/jobs', 'jobs'),
     fetchJson<ArInvoice>('/api/ar-invoices', 'invoices'),

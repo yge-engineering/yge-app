@@ -18,6 +18,7 @@ import {
   Tile,
 } from '../../components';
 import { getTranslator } from '../../lib/locale';
+import { requirePermission } from '../../lib/permissions';
 import {
   computeJournalEntryRollup,
   isBalanced,
