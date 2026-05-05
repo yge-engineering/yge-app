@@ -193,9 +193,34 @@ export default async function ApInvoicesPage({
                   const job = inv.jobId ? jobById.get(inv.jobId) : undefined;
                   const balance = unpaidBalanceCents(inv);
                   const rowClass = lvl === 'overdue' ? 'bg-red-50' : lvl === 'dueSoon' ? 'bg-amber-50' : '';
+                  // AP inbox poller stamps "AI extraction (...)" into the
+                  // notes field. Surface that as a pill so reviewers know
+                  // which rows still need a human pass on the totals/lines.
+                  const aiMatch = (inv.notes ?? '').match(
+                    /AI extraction \([^)]*confidence (HIGH|MEDIUM|LOW)\)/i,
+                  );
+                  const aiConfidence = aiMatch?.[1];
                   return (
                     <tr key={inv.id} className={rowClass}>
-                      <td className="px-4 py-3 font-medium text-gray-900">{inv.vendorName}</td>
+                      <td className="px-4 py-3 font-medium text-gray-900">
+                        <span className="flex items-center gap-2">
+                          <span>{inv.vendorName}</span>
+                          {aiConfidence && (
+                            <span
+                              className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                                aiConfidence === 'HIGH'
+                                  ? 'bg-green-100 text-green-800'
+                                  : aiConfidence === 'MEDIUM'
+                                    ? 'bg-amber-100 text-amber-800'
+                                    : 'bg-gray-100 text-gray-700'
+                              }`}
+                              title={`AI extracted (${aiConfidence.toLowerCase()} confidence)`}
+                            >
+                              ✓ AI
+                            </span>
+                          )}
+                        </span>
+                      </td>
                       <td className="px-4 py-3 text-sm font-mono text-gray-700">
                         {inv.invoiceNumber ?? <span className="text-gray-400 font-sans">—</span>}
                       </td>

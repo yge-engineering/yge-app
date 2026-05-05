@@ -41,6 +41,13 @@ export default async function ApInvoiceDetailPage({
   if (!invoice) notFound();
   const t = getTranslator();
 
+  // Surface AI-extraction provenance from the notes (the AP inbox
+  // poller stamps these markers when Claude pre-filled the row).
+  const notes = invoice.notes ?? '';
+  const aiHeader = notes.match(/AI extraction \(([^)]*confidence (HIGH|MEDIUM|LOW))\)/i);
+  const aiConfidence = aiHeader?.[2];
+  const reviewerNote = notes.match(/^Reviewer note: (.+)$/m)?.[1]?.trim();
+
   return (
     <AppShell>
     <main className="mx-auto max-w-4xl p-8">
@@ -49,6 +56,26 @@ export default async function ApInvoiceDetailPage({
           {t('apInvoiceDetail.backLink')}
         </Link>
       </div>
+
+      {aiConfidence && (
+        <div
+          className={`mb-4 rounded-md border p-3 text-sm ${
+            aiConfidence === 'HIGH'
+              ? 'border-green-300 bg-green-50 text-green-900'
+              : aiConfidence === 'MEDIUM'
+                ? 'border-amber-300 bg-amber-50 text-amber-900'
+                : 'border-gray-300 bg-gray-50 text-gray-700'
+          }`}
+        >
+          <div className="font-semibold">
+            ✓ AI-extracted from email PDF · confidence {aiConfidence.toLowerCase()}
+          </div>
+          {reviewerNote && <div className="mt-1 text-xs">{reviewerNote}</div>}
+          <div className="mt-1 text-xs">
+            Double-check the totals, dates, and line items before approving.
+          </div>
+        </div>
+      )}
 
       <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <ApInvoiceEditor initial={invoice} jobs={jobs} apiBaseUrl={publicApiBaseUrl()} />
