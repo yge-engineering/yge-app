@@ -10,18 +10,32 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   calendarEventCategoryLabel,
   calendarEventDefaultColor,
+  eventIncludesUser,
+  fullName,
   type CalendarEvent,
+  type CalendarEventAttendee,
   type CalendarEventCategory,
+  type Employee,
 } from '@yge/shared';
 
 type ViewType = 'day' | 'week' | 'month' | 'year';
 
 const VIEWS: ViewType[] = ['day', 'week', 'month', 'year'];
 
+export interface KnownUser {
+  email: string;
+  name: string;
+}
+
 interface Props {
   initialEvents: CalendarEvent[];
   today: string;
   apiBaseUrl: string;
+  employees: Employee[];
+  knownUsers: KnownUser[];
+  /** Email of the signed-in user, lowercase. Empty when not signed in
+   *  (shouldn't happen since the page is gated, but guarded anyway). */
+  currentUserEmail: string;
 }
 
 interface DraftEvent {
@@ -33,6 +47,7 @@ interface DraftEvent {
   allDay: boolean;
   location: string;
   category: CalendarEventCategory;
+  attendees: CalendarEventAttendee[];
 }
 
 const CATEGORIES: CalendarEventCategory[] = [
@@ -43,6 +58,7 @@ const CATEGORIES: CalendarEventCategory[] = [
   'INSPECTION',
   'MEETING',
   'PERSONAL',
+  'TIME_OFF',
 ];
 
 // ---- Date helpers --------------------------------------------------------
@@ -112,14 +128,31 @@ function eventsOnDate(events: CalendarEvent[], d: Date): CalendarEvent[] {
 
 // ---- Main wrapper --------------------------------------------------------
 
-export function CalendarView({ initialEvents, today, apiBaseUrl }: Props) {
+export function CalendarView({
+  initialEvents,
+  today,
+  apiBaseUrl,
+  employees,
+  knownUsers,
+  currentUserEmail,
+}: Props) {
   const [view, setView] = useState<ViewType>('month');
   const [cursor, setCursor] = useState<Date>(new Date(`${today}T12:00:00`));
   const [events, setEvents] = useState<CalendarEvent[]>(initialEvents);
   const [editing, setEditing] = useState<CalendarEvent | null>(null);
   const [creatingDraft, setCreatingDraft] = useState<DraftEvent | null>(null);
+  /** True = show only events the current user owns or was invited to. */
+  const [myOnly, setMyOnly] = useState<boolean>(currentUserEmail !== '');
 
   const todayDate = useMemo(() => new Date(`${today}T12:00:00`), [today]);
+
+  // Filter events for the active user view. When current user is empty
+  // (e.g. dev fallback) we always show everything so the page isn't
+  // accidentally blank.
+  const visibleEvents = useMemo(() => {
+    if (!myOnly || !currentUserEmail) return events;
+    return events.filter((e) => eventIncludesUser(e, currentUserEmail));
+  }, [events, myOnly, currentUserEmail]);
 
   function navigate(delta: number) {
     if (view === 'day') setCursor(addDays(cursor, delta));
@@ -137,6 +170,22 @@ export function CalendarView({ initialEvents, today, apiBaseUrl }: Props) {
     }
     const end = new Date(start);
     end.setHours(start.getHours() + 1);
+    // Pre-seed the creating user as an attendee so the event lands on
+    // their own filtered calendar by default.
+    const seedAttendees: CalendarEventAttendee[] = [];
+    if (currentUserEmail) {
+      const me = knownUsers.find(
+        (u) => u.email.toLowerCase() === currentUserEmail.toLowerCase(),
+      );
+      if (me) {
+        seedAttendees.push({
+          kind: 'USER',
+          ref: me.email.toLowerCase(),
+          name: me.name,
+          status: 'ACCEPTED',
+        });
+      }
+    }
     setCreatingDraft({
       title: '',
       description: '',
@@ -145,6 +194,7 @@ export function CalendarView({ initialEvents, today, apiBaseUrl }: Props) {
       allDay: false,
       location: '',
       category: 'GENERAL',
+      attendees: seedAttendees,
     });
   }
 
@@ -180,6 +230,10 @@ export function CalendarView({ initialEvents, today, apiBaseUrl }: Props) {
       allDay: draft.allDay,
       location: draft.location || undefined,
       category: draft.category,
+      attendees: draft.attendees,
+      ...(currentUserEmail && !draft.id
+        ? { createdByUserId: currentUserEmail.toLowerCase() }
+        : {}),
     };
     if (draft.id) {
       const res = await fetch(
@@ -219,17 +273,20 @@ export function CalendarView({ initialEvents, today, apiBaseUrl }: Props) {
         view={view}
         cursor={cursor}
         todayDate={todayDate}
+        myOnly={myOnly}
+        showFilter={Boolean(currentUserEmail)}
         onViewChange={setView}
         onPrev={() => navigate(-1)}
         onNext={() => navigate(1)}
         onToday={() => setCursor(todayDate)}
         onNew={() => openCreate(cursor)}
+        onToggleMyOnly={() => setMyOnly(!myOnly)}
       />
 
       {view === 'day' && (
         <DayView
           cursor={cursor}
-          events={events}
+          events={visibleEvents}
           todayDate={todayDate}
           onCreate={(hour) => openCreate(cursor, hour)}
           onEventClick={setEditing}
@@ -238,7 +295,7 @@ export function CalendarView({ initialEvents, today, apiBaseUrl }: Props) {
       {view === 'week' && (
         <WeekView
           cursor={cursor}
-          events={events}
+          events={visibleEvents}
           todayDate={todayDate}
           onCreate={(date, hour) => openCreate(date, hour)}
           onEventClick={setEditing}
@@ -247,7 +304,7 @@ export function CalendarView({ initialEvents, today, apiBaseUrl }: Props) {
       {view === 'month' && (
         <MonthView
           cursor={cursor}
-          events={events}
+          events={visibleEvents}
           todayDate={todayDate}
           onCreate={openCreate}
           onEventClick={setEditing}
@@ -256,7 +313,7 @@ export function CalendarView({ initialEvents, today, apiBaseUrl }: Props) {
       {view === 'year' && (
         <YearView
           cursor={cursor}
-          events={events}
+          events={visibleEvents}
           todayDate={todayDate}
           onPickMonth={(d) => {
             setCursor(d);
@@ -278,9 +335,12 @@ export function CalendarView({ initialEvents, today, apiBaseUrl }: Props) {
                   allDay: editing.allDay ?? false,
                   location: editing.location ?? '',
                   category: editing.category,
+                  attendees: editing.attendees ?? [],
                 }
               : creatingDraft!
           }
+          employees={employees}
+          knownUsers={knownUsers}
           onClose={() => {
             setEditing(null);
             setCreatingDraft(null);
@@ -310,20 +370,26 @@ function Toolbar({
   view,
   cursor,
   todayDate,
+  myOnly,
+  showFilter,
   onViewChange,
   onPrev,
   onNext,
   onToday,
   onNew,
+  onToggleMyOnly,
 }: {
   view: ViewType;
   cursor: Date;
   todayDate: Date;
+  myOnly: boolean;
+  showFilter: boolean;
   onViewChange: (v: ViewType) => void;
   onPrev: () => void;
   onNext: () => void;
   onToday: () => void;
   onNew: () => void;
+  onToggleMyOnly: () => void;
 }) {
   let title = '';
   if (view === 'day') title = fmtDateLong(cursor);
@@ -342,6 +408,24 @@ function Toolbar({
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
+        {showFilter && (
+          <div className="inline-flex rounded-md border border-gray-300 bg-white">
+            <button
+              type="button"
+              onClick={onToggleMyOnly}
+              className={`px-3 py-1.5 text-xs font-medium first:rounded-l-md ${myOnly ? 'bg-gray-900 text-white' : 'text-gray-700 hover:bg-gray-100'}`}
+            >
+              My events
+            </button>
+            <button
+              type="button"
+              onClick={onToggleMyOnly}
+              className={`px-3 py-1.5 text-xs font-medium last:rounded-r-md ${!myOnly ? 'bg-gray-900 text-white' : 'text-gray-700 hover:bg-gray-100'}`}
+            >
+              All
+            </button>
+          </div>
+        )}
         <div className="inline-flex rounded-md border border-gray-300 bg-white">
           {VIEWS.map((v) => (
             <button
@@ -818,11 +902,15 @@ function fromLocalDatetimeInput(local: string): string {
 
 function EventModal({
   initial,
+  employees,
+  knownUsers,
   onClose,
   onSave,
   onDelete,
 }: {
   initial: DraftEvent;
+  employees: Employee[];
+  knownUsers: KnownUser[];
   onClose: () => void;
   onSave: (draft: DraftEvent) => Promise<void>;
   onDelete?: () => Promise<void>;
@@ -976,6 +1064,13 @@ function EventModal({
             />
           </label>
 
+          <AttendeePicker
+            attendees={draft.attendees}
+            employees={employees}
+            knownUsers={knownUsers}
+            onChange={(next) => setDraft({ ...draft, attendees: next })}
+          />
+
           <label className="block text-sm">
             <span className="mb-1 block font-medium text-gray-700">Notes</span>
             <textarea
@@ -1018,6 +1113,158 @@ function EventModal({
               {busy ? 'Saving…' : draft.id ? 'Save' : 'Create'}
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---- Attendee picker ----------------------------------------------------
+
+function AttendeePicker({
+  attendees,
+  employees,
+  knownUsers,
+  onChange,
+}: {
+  attendees: CalendarEventAttendee[];
+  employees: Employee[];
+  knownUsers: KnownUser[];
+  onChange: (next: CalendarEventAttendee[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+
+  // Build the unified candidate list (USERs first, then active EMPLOYEEs).
+  const candidates = useMemo(() => {
+    const userRows = knownUsers.map((u) => ({
+      kind: 'USER' as const,
+      ref: u.email.toLowerCase(),
+      name: u.name,
+      key: `USER:${u.email.toLowerCase()}`,
+      role: 'Login user',
+    }));
+    const empRows = employees
+      .filter((e) => e.status === 'ACTIVE')
+      .map((e) => ({
+        kind: 'EMPLOYEE' as const,
+        ref: e.id,
+        name: fullName(e),
+        key: `EMPLOYEE:${e.id}`,
+        role: e.role || 'Employee',
+      }));
+    return [...userRows, ...empRows];
+  }, [employees, knownUsers]);
+
+  // Filter by query and exclude already-added attendees.
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const taken = new Set(attendees.map((a) => `${a.kind}:${a.ref.toLowerCase()}`));
+    return candidates
+      .filter((c) => !taken.has(`${c.kind}:${c.ref.toLowerCase()}`))
+      .filter((c) => !q || c.name.toLowerCase().includes(q))
+      .slice(0, 30);
+  }, [candidates, query, attendees]);
+
+  function add(c: (typeof candidates)[number]) {
+    onChange([
+      ...attendees,
+      { kind: c.kind, ref: c.ref, name: c.name, status: 'INVITED' },
+    ]);
+    setQuery('');
+  }
+
+  function remove(idx: number) {
+    onChange(attendees.filter((_, i) => i !== idx));
+  }
+
+  return (
+    <div className="block text-sm">
+      <span className="mb-1 block font-medium text-gray-700">People</span>
+      <div className="rounded border border-gray-300 bg-white p-2">
+        <div className="flex flex-wrap gap-1">
+          {attendees.length === 0 ? (
+            <span className="px-1 py-0.5 text-xs text-gray-400">
+              No one tagged yet.
+            </span>
+          ) : (
+            attendees.map((a, i) => (
+              <span
+                key={`${a.kind}:${a.ref}`}
+                className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs ${a.kind === 'USER' ? 'bg-blue-100 text-blue-800' : 'bg-emerald-100 text-emerald-800'}`}
+                title={a.kind === 'USER' ? 'Login user' : 'Employee'}
+              >
+                {a.name}
+                <button
+                  type="button"
+                  onClick={() => remove(i)}
+                  aria-label={`Remove ${a.name}`}
+                  className="ml-1 text-gray-500 hover:text-gray-900"
+                >
+                  ×
+                </button>
+              </span>
+            ))
+          )}
+        </div>
+        <div className="mt-2 flex flex-col gap-1">
+          {!open ? (
+            <button
+              type="button"
+              onClick={() => setOpen(true)}
+              className="self-start rounded border border-dashed border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-50"
+            >
+              + Add person
+            </button>
+          ) : (
+            <>
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search by name…"
+                autoFocus
+                className="w-full rounded border border-gray-300 px-2 py-1 text-xs"
+              />
+              <div className="max-h-44 overflow-y-auto rounded border border-gray-200 bg-white">
+                {filtered.length === 0 ? (
+                  <div className="px-2 py-1.5 text-xs text-gray-400">
+                    No matches.
+                  </div>
+                ) : (
+                  <ul>
+                    {filtered.map((c) => (
+                      <li key={c.key}>
+                        <button
+                          type="button"
+                          onClick={() => add(c)}
+                          className="flex w-full items-center justify-between gap-2 px-2 py-1.5 text-left text-xs hover:bg-gray-50"
+                        >
+                          <span className="font-medium text-gray-900">
+                            {c.name}
+                          </span>
+                          <span
+                            className={`rounded px-1.5 py-0.5 text-[10px] uppercase tracking-wide ${c.kind === 'USER' ? 'bg-blue-100 text-blue-800' : 'bg-emerald-100 text-emerald-800'}`}
+                          >
+                            {c.kind === 'USER' ? 'User' : c.role}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  setQuery('');
+                }}
+                className="self-start text-[11px] text-gray-500 hover:underline"
+              >
+                Done
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>

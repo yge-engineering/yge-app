@@ -19,6 +19,7 @@ export const CalendarEventCategorySchema = z.enum([
   'INSPECTION',
   'MEETING',
   'PERSONAL',
+  'TIME_OFF',
 ]);
 export type CalendarEventCategory = z.infer<typeof CalendarEventCategorySchema>;
 
@@ -39,6 +40,8 @@ export function calendarEventCategoryLabel(c: CalendarEventCategory): string {
       return 'Meeting';
     case 'PERSONAL':
       return 'Personal';
+    case 'TIME_OFF':
+      return 'Time off';
   }
 }
 
@@ -60,8 +63,35 @@ export function calendarEventDefaultColor(c: CalendarEventCategory): string {
       return 'bg-sky-100 text-sky-800';
     case 'PERSONAL':
       return 'bg-gray-100 text-gray-800';
+    case 'TIME_OFF':
+      return 'bg-orange-100 text-orange-800';
   }
 }
+
+/** A person attached to a calendar event. Two flavors:
+ *
+ *  - `kind: 'USER'` — refers to a YgeUser by email. These are
+ *    Ryan + Brook today; in the future, anyone with a sign-in.
+ *  - `kind: 'EMPLOYEE'` — refers to an Employee row by id. Most
+ *    crew members are employees without a login; they appear on
+ *    events as subjects (e.g. "Joe Smith — time off this week")
+ *    so the office can see who's out.
+ *
+ *  The two kinds can overlap: Ryan is both a USER (email) and an
+ *  EMPLOYEE (employee id). The picker lets you pick either bucket.
+ */
+export const CalendarEventAttendeeSchema = z.object({
+  kind: z.enum(['USER', 'EMPLOYEE']),
+  /** For USER: lowercase email. For EMPLOYEE: the employee id. */
+  ref: z.string().min(1).max(120),
+  /** Display name shown on the event chip + modal. */
+  name: z.string().min(1).max(200),
+  /** RSVP-style response. Defaults to INVITED on add. */
+  status: z
+    .enum(['INVITED', 'ACCEPTED', 'DECLINED'])
+    .default('INVITED'),
+});
+export type CalendarEventAttendee = z.infer<typeof CalendarEventAttendeeSchema>;
 
 export const CalendarEventSchema = z.object({
   /** Stable id `cal-<8hex>`. */
@@ -94,6 +124,13 @@ export const CalendarEventSchema = z.object({
 
   /** User who created it (best-effort; from session cookie). */
   createdByUserId: z.string().max(120).optional(),
+
+  /** People attached to the event. Both YgeUsers (with email logins)
+   *  and Employees (no login, just a record). Whoever is logged in
+   *  sees this event on their calendar by default if their email is
+   *  in the USER attendees list. The EMPLOYEE attendees are shown on
+   *  the event card so the office can see who's involved. */
+  attendees: z.array(CalendarEventAttendeeSchema).default([]),
 });
 export type CalendarEvent = z.infer<typeof CalendarEventSchema>;
 
@@ -116,6 +153,26 @@ export type CalendarEventPatch = z.infer<typeof CalendarEventPatchSchema>;
 export function newCalendarEventId(): string {
   const hex = Math.floor(Math.random() * 0x100000000).toString(16);
   return `cal-${hex.padStart(8, '0')}`;
+}
+
+/** Returns true if the event "belongs" to the given user — they
+ *  created it, OR they're listed as a USER attendee. Email is
+ *  compared case-insensitively. */
+export function eventIncludesUser(
+  e: Pick<CalendarEvent, 'attendees' | 'createdByUserId'>,
+  userEmail: string,
+): boolean {
+  const norm = userEmail.trim().toLowerCase();
+  if (!norm) return false;
+  if (
+    typeof e.createdByUserId === 'string' &&
+    e.createdByUserId.toLowerCase() === norm
+  ) {
+    return true;
+  }
+  return e.attendees.some(
+    (a) => a.kind === 'USER' && a.ref.toLowerCase() === norm,
+  );
 }
 
 /** Returns true if event start..end overlaps the [from, to] day window
