@@ -13,7 +13,12 @@ import {
 } from '../../../components';
 import { PortalUsersClient } from './portal-users-client';
 import { getCurrentUser } from '../../../lib/auth';
-import { ROLE_PERMISSIONS, type PortalRole, type PortalUser } from '@yge/shared';
+import {
+  ROLE_PERMISSIONS,
+  type Job,
+  type PortalRole,
+  type PortalUser,
+} from '@yge/shared';
 
 function apiBaseUrl(): string {
   return (
@@ -37,6 +42,17 @@ async function fetchUsers(): Promise<PortalUser[]> {
   }
 }
 
+async function fetchJobs(): Promise<Job[]> {
+  try {
+    const res = await fetch(`${apiBaseUrl()}/api/jobs`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    const json = (await res.json()) as { jobs?: Job[] };
+    return json.jobs ?? [];
+  } catch {
+    return [];
+  }
+}
+
 export default async function PortalUsersAdminPage() {
   const me = getCurrentUser();
   // Server-side gate: only PRESIDENT / VP can manage portal users.
@@ -48,17 +64,18 @@ export default async function PortalUsersAdminPage() {
     (ROLE_PERMISSIONS[myRole] ?? []).includes('portalUsers:manage');
   if (!canManage) notFound();
 
-  const users = await fetchUsers();
+  const [users, jobs] = await Promise.all([fetchUsers(), fetchJobs()]);
 
   return (
     <AppShell>
       <main className="mx-auto max-w-5xl">
         <PageHeader
           title="Portal users"
-          subtitle="Everyone who can sign in to YGE. Invite new users, change roles, revoke access."
+          subtitle="Everyone who can sign in to YGE. Invite new users, change roles, revoke access. Assign jobs to foremen so they only see their own."
         />
         <PortalUsersClient
           initialUsers={users}
+          jobs={jobs}
           apiBaseUrl={publicApiBaseUrl()}
         />
       </main>

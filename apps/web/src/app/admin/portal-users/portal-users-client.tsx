@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import {
   portalRoleLabel,
+  type Job,
   type PortalRole,
   type PortalUser,
 } from '@yge/shared';
@@ -27,6 +28,7 @@ const ROLES: PortalRole[] = [
 
 interface Props {
   initialUsers: PortalUser[];
+  jobs: Job[];
   apiBaseUrl: string;
 }
 
@@ -43,11 +45,19 @@ function formatWhen(iso?: string): string {
   });
 }
 
-export function PortalUsersClient({ initialUsers, apiBaseUrl }: Props) {
+export function PortalUsersClient({ initialUsers, jobs, apiBaseUrl }: Props) {
   const router = useRouter();
   const [users, setUsers] = useState<PortalUser[]>(initialUsers);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [jobsExpandedFor, setJobsExpandedFor] = useState<string | null>(null);
+
+  const activeJobs = jobs.filter(
+    (j) =>
+      j.status === 'AWARDED' ||
+      j.status === 'PURSUING' ||
+      j.status === 'BID_SUBMITTED',
+  );
 
   // Invite form state
   const [inviteEmail, setInviteEmail] = useState('');
@@ -67,6 +77,30 @@ export function PortalUsersClient({ initialUsers, apiBaseUrl }: Props) {
       setUsers(json.users ?? []);
     } catch {
       // best-effort
+    }
+  }
+
+  async function setAssignedJobs(id: string, jobIds: string[]) {
+    setBusyId(id);
+    setError(null);
+    try {
+      const res = await fetch(
+        `${apiBaseUrl}/api/portal-users/${encodeURIComponent(id)}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ assignedJobIds: jobIds }),
+        },
+      );
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new Error(`Save failed (${res.status}): ${text.slice(0, 200)}`);
+      }
+      await reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Save failed.');
+    } finally {
+      setBusyId(null);
     }
   }
 
@@ -210,63 +244,139 @@ export function PortalUsersClient({ initialUsers, apiBaseUrl }: Props) {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {sorted.map((u) => (
-              <tr key={u.id} className={u.disabled ? 'bg-gray-50 text-gray-500' : ''}>
-                <td className="px-3 py-2 font-medium text-gray-900">
-                  {u.name}
-                  {u.disabled && (
-                    <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
-                      DISABLED
-                    </span>
-                  )}
-                </td>
-                <td className="px-3 py-2 text-xs text-gray-700">{u.email}</td>
-                <td className="px-3 py-2">
-                  <select
-                    value={u.role}
-                    onChange={(e) =>
-                      void changeRole(u.id, e.target.value as PortalRole)
-                    }
-                    disabled={busyId === u.id}
-                    className="rounded border border-gray-300 px-2 py-1 text-xs"
-                  >
-                    {ROLES.map((r) => (
-                      <option key={r} value={r}>
-                        {portalRoleLabel(r)}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-                <td className="px-3 py-2 text-xs">
-                  {u.hasPassword ? (
-                    <span className="text-green-700">✓ Set</span>
-                  ) : (
-                    <span className="text-amber-700">Pending</span>
-                  )}
-                </td>
-                <td className="px-3 py-2 text-xs text-gray-700">
-                  {formatWhen(u.lastLoginAt)}
-                </td>
-                <td className="px-3 py-2 text-right text-xs">
-                  <button
-                    type="button"
-                    onClick={() => void toggleDisabled(u)}
-                    disabled={busyId === u.id}
-                    className="font-medium text-amber-700 hover:underline disabled:opacity-50"
-                  >
-                    {u.disabled ? 'Enable' : 'Disable'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void revoke(u)}
-                    disabled={busyId === u.id}
-                    className="ml-3 font-medium text-red-700 hover:underline disabled:opacity-50"
-                  >
-                    Revoke
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {sorted.flatMap((u) => {
+              const isForeman = u.role === 'FOREMAN';
+              const expanded = jobsExpandedFor === u.id;
+              const assigned = new Set(u.assignedJobIds);
+              const rows: React.ReactNode[] = [];
+              rows.push(
+                <tr
+                  key={u.id}
+                  className={u.disabled ? 'bg-gray-50 text-gray-500' : ''}
+                >
+                  <td className="px-3 py-2 font-medium text-gray-900">
+                    {u.name}
+                    {u.disabled && (
+                      <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
+                        DISABLED
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2 text-xs text-gray-700">{u.email}</td>
+                  <td className="px-3 py-2">
+                    <select
+                      value={u.role}
+                      onChange={(e) =>
+                        void changeRole(u.id, e.target.value as PortalRole)
+                      }
+                      disabled={busyId === u.id}
+                      className="rounded border border-gray-300 px-2 py-1 text-xs"
+                    >
+                      {ROLES.map((r) => (
+                        <option key={r} value={r}>
+                          {portalRoleLabel(r)}
+                        </option>
+                      ))}
+                    </select>
+                    {isForeman && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setJobsExpandedFor(expanded ? null : u.id)
+                        }
+                        className="ml-2 text-[11px] font-medium text-blue-700 hover:underline"
+                      >
+                        {expanded
+                          ? 'Hide jobs'
+                          : `Jobs (${u.assignedJobIds.length})`}
+                      </button>
+                    )}
+                  </td>
+                  <td className="px-3 py-2 text-xs">
+                    {u.hasPassword ? (
+                      <span className="text-green-700">✓ Set</span>
+                    ) : (
+                      <span className="text-amber-700">Pending</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2 text-xs text-gray-700">
+                    {formatWhen(u.lastLoginAt)}
+                  </td>
+                  <td className="px-3 py-2 text-right text-xs">
+                    <button
+                      type="button"
+                      onClick={() => void toggleDisabled(u)}
+                      disabled={busyId === u.id}
+                      className="font-medium text-amber-700 hover:underline disabled:opacity-50"
+                    >
+                      {u.disabled ? 'Enable' : 'Disable'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void revoke(u)}
+                      disabled={busyId === u.id}
+                      className="ml-3 font-medium text-red-700 hover:underline disabled:opacity-50"
+                    >
+                      Revoke
+                    </button>
+                  </td>
+                </tr>,
+              );
+              if (isForeman && expanded) {
+                rows.push(
+                  <tr key={`${u.id}-jobs`} className="bg-blue-50/40">
+                    <td colSpan={6} className="px-4 py-3">
+                      <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        Assigned jobs for {u.name}
+                      </div>
+                      <p className="mt-1 text-xs text-gray-600">
+                        Foreman only sees these jobs in /jobs and the field
+                        pages. All other jobs are hidden from them.
+                      </p>
+                      {activeJobs.length === 0 ? (
+                        <p className="mt-2 text-xs text-gray-500">
+                          No active jobs in the system. Create a job first.
+                        </p>
+                      ) : (
+                        <div className="mt-2 grid grid-cols-2 gap-1 sm:grid-cols-3">
+                          {activeJobs.map((j) => {
+                            const checked = assigned.has(j.id);
+                            return (
+                              <label
+                                key={j.id}
+                                className="flex cursor-pointer items-start gap-2 rounded border border-gray-200 bg-white p-2 text-xs hover:bg-gray-50"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  disabled={busyId === u.id}
+                                  onChange={(e) => {
+                                    const next = new Set(assigned);
+                                    if (e.target.checked) next.add(j.id);
+                                    else next.delete(j.id);
+                                    void setAssignedJobs(u.id, [...next]);
+                                  }}
+                                  className="mt-0.5"
+                                />
+                                <span className="min-w-0">
+                                  <span className="block truncate font-medium text-gray-900">
+                                    {j.projectName}
+                                  </span>
+                                  <span className="block truncate text-[10px] text-gray-500">
+                                    {j.id} · {j.status}
+                                  </span>
+                                </span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </td>
+                  </tr>,
+                );
+              }
+              return rows;
+            })}
           </tbody>
         </table>
       </div>
