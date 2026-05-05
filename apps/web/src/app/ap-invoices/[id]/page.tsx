@@ -2,7 +2,11 @@
 
 import Link from 'next/link';
 
-import { AppShell, AuditBinderPanel } from '../../../components';
+import {
+  ApReextractButton,
+  AppShell,
+  AuditBinderPanel,
+} from '../../../components';
 import { notFound } from 'next/navigation';
 import type { ApInvoice, Job } from '@yge/shared';
 import { ApInvoiceEditor } from '@/components/ap-invoice-editor';
@@ -86,18 +90,24 @@ export default async function ApInvoiceDetailPage({
           file from data/ap-inbox/. */}
       {/Attachment saved at:/i.test(invoice.notes ?? '') && (
         <section className="mt-8 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-          <div className="mb-3 flex items-center justify-between">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-700">
               Original invoice (from email)
             </h2>
-            <a
-              href={`${publicApiBaseUrl()}/api/ap-invoices/${encodeURIComponent(invoice.id)}/attachment`}
-              target="_blank"
-              rel="noreferrer"
-              className="text-sm text-blue-700 hover:underline"
-            >
-              Open in new tab ↗
-            </a>
+            <span className="flex flex-wrap items-center gap-3">
+              <ApReextractButton
+                invoiceId={invoice.id}
+                apiBaseUrl={publicApiBaseUrl()}
+              />
+              <a
+                href={`${publicApiBaseUrl()}/api/ap-invoices/${encodeURIComponent(invoice.id)}/attachment`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-sm text-blue-700 hover:underline"
+              >
+                Open in new tab ↗
+              </a>
+            </span>
           </div>
           <iframe
             title="Vendor invoice PDF"

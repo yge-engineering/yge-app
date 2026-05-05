@@ -64,6 +64,77 @@ apInvoicesRouter.get('/:id', async (req, res, next) => {
   }
 });
 
+// POST /api/ap-invoices/:id/re-extract — re-runs the AI extractor on
+// the saved attachment PDF and PATCHes the invoice with the result.
+// Useful when the auto-poll's first pass failed (transient Claude
+// outage, missing API key at the time, etc.) — the AP clerk clicks
+// this to retry without re-pulling from email.
+apInvoicesRouter.post('/:id/re-extract', async (req, res, next) => {
+  try {
+    const inv = await getApInvoice(req.params.id);
+    if (!inv) return res.status(404).json({ error: 'Invoice not found' });
+    const match = (inv.notes ?? '').match(/Attachment saved at:\s*(.+)/i);
+    const candidate = match?.[1]?.trim();
+    if (!candidate) {
+      return res
+        .status(400)
+        .json({ error: 'No saved attachment to re-extract from.' });
+    }
+    const fs = await import('node:fs/promises');
+    const path = await import('node:path');
+    const inboxRoot = path.resolve(
+      process.env.AP_INBOX_DATA_DIR ??
+        path.resolve(process.cwd(), 'data', 'ap-inbox'),
+    );
+    const resolved = path.resolve(candidate);
+    if (!resolved.startsWith(inboxRoot + path.sep) && resolved !== inboxRoot) {
+      return res.status(403).json({ error: 'Attachment outside inbox dir' });
+    }
+    const bytes = await fs.readFile(resolved).catch(() => null);
+    if (!bytes) {
+      return res.status(404).json({ error: 'Attachment file missing on disk' });
+    }
+    const { extractInvoiceFromPdf } = await import('../lib/ap-invoice-extractor');
+    const extracted = await extractInvoiceFromPdf(bytes);
+    if (!extracted) {
+      return res.status(502).json({
+        error: 'Extraction failed (Anthropic call errored or returned no tool call).',
+      });
+    }
+    // Build the patch — extracted values overwrite the existing row,
+    // but we keep the audit trail visible by appending a re-extract
+    // marker to notes.
+    const newNotesPrefix = `Re-extracted ${new Date().toISOString()} (${extracted.promptVersion}, confidence ${extracted.confidence})`;
+    const oldNotes = (inv.notes ?? '').trim();
+    const patch: Record<string, unknown> = {
+      vendorName: extracted.vendorName,
+      ...(extracted.invoiceNumber ? { invoiceNumber: extracted.invoiceNumber } : {}),
+      ...(extracted.invoiceDate ? { invoiceDate: extracted.invoiceDate } : {}),
+      ...(extracted.dueDate ? { dueDate: extracted.dueDate } : {}),
+      ...(extracted.subtotalCents !== undefined
+        ? { subtotalCents: extracted.subtotalCents }
+        : {}),
+      ...(extracted.taxCents !== undefined ? { taxCents: extracted.taxCents } : {}),
+      ...(extracted.freightCents !== undefined
+        ? { freightCents: extracted.freightCents }
+        : {}),
+      totalCents: extracted.totalCents,
+      lineItems: extracted.lineItems.map((li) => ({
+        description: li.description,
+        ...(li.unit ? { unit: li.unit } : {}),
+        quantity: li.quantity,
+        unitPriceCents: li.unitPriceCents,
+        lineTotalCents: li.lineTotalCents,
+      })),
+      notes: [newNotesPrefix, oldNotes].filter(Boolean).join('\n\n'),
+    };
+    const updated = await updateApInvoice(req.params.id, patch);
+    return res.json({ invoice: updated, extracted });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /api/ap-invoices/:id/attachment — streams the PDF that the AP
 // inbox poller saved alongside the row. The poller stores the path
 // in `notes` ("Attachment saved at: <abs path>") so the office can
