@@ -14,6 +14,12 @@
 // cookie used by AccountChip is read server-side via `/api/me`.
 
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import {
+  ROLE_PERMISSIONS,
+  type Permission,
+  type PortalRole,
+} from '@yge/shared';
 
 import { AccountChip } from './account-chip';
 import { PwaInstallButton } from './pwa-install-button';
@@ -36,11 +42,17 @@ interface NavGroup {
 interface NavLinkSpec {
   key: string;
   href: string;
+  /** Optional permission required to see this link in the sidebar.
+   *  Omitted = visible to all signed-in users. */
+  requires?: Permission;
 }
 
 interface NavGroupSpec {
   key: string;
   links: NavLinkSpec[];
+  /** Optional group-level permission. If set, the entire group hides
+   *  unless the user has it (or any of its children's requires). */
+  requires?: Permission;
 }
 
 const NAV_SPEC: NavGroupSpec[] = [
@@ -59,8 +71,8 @@ const NAV_SPEC: NavGroupSpec[] = [
     key: 'nav.group.project',
     links: [
       { key: 'nav.jobs', href: '/jobs' },
-      { key: 'nav.estimates', href: '/estimates' },
-      { key: 'nav.bidResults', href: '/bid-results' },
+      { key: 'nav.estimates', href: '/estimates', requires: 'estimates:view' },
+      { key: 'nav.bidResults', href: '/bid-results', requires: 'estimates:view' },
       { key: 'nav.changeOrders', href: '/change-orders' },
       { key: 'nav.rfis', href: '/rfis' },
       { key: 'nav.submittals', href: '/submittals' },
@@ -70,14 +82,14 @@ const NAV_SPEC: NavGroupSpec[] = [
   {
     key: 'nav.group.money',
     links: [
-      { key: 'nav.arInvoices', href: '/ar-invoices' },
-      { key: 'nav.arPayments', href: '/ar-payments' },
-      { key: 'nav.apInvoices', href: '/ap-invoices' },
-      { key: 'nav.apPayments', href: '/ap-payments' },
-      { key: 'nav.aging', href: '/aging' },
-      { key: 'nav.cashForecast', href: '/cash-forecast' },
-      { key: 'nav.bankRecs', href: '/bank-recs' },
-      { key: 'nav.balanceSheet', href: '/balance-sheet' },
+      { key: 'nav.arInvoices', href: '/ar-invoices', requires: 'financials:view' },
+      { key: 'nav.arPayments', href: '/ar-payments', requires: 'financials:view' },
+      { key: 'nav.apInvoices', href: '/ap-invoices', requires: 'financials:view' },
+      { key: 'nav.apPayments', href: '/ap-payments', requires: 'financials:view' },
+      { key: 'nav.aging', href: '/aging', requires: 'financials:view' },
+      { key: 'nav.cashForecast', href: '/cash-forecast', requires: 'financials:view' },
+      { key: 'nav.bankRecs', href: '/bank-recs', requires: 'financials:view' },
+      { key: 'nav.balanceSheet', href: '/balance-sheet', requires: 'financials:view' },
     ],
   },
   {
@@ -120,6 +132,7 @@ const NAV_SPEC: NavGroupSpec[] = [
     key: 'nav.group.more',
     links: [
       { key: 'nav.allModules', href: '/all-modules' },
+      { key: 'nav.portalUsers', href: '/admin/portal-users', requires: 'portalUsers:manage' },
       { key: 'nav.printViews', href: '/print' },
       { key: 'nav.settings', href: '/settings' },
       { key: 'nav.help', href: '/help' },
@@ -132,10 +145,39 @@ const NAV_SPEC: NavGroupSpec[] = [
 export function AppShell({ children }: { children: React.ReactNode }) {
   const t = useTranslator();
   const locale = useLocale();
+  // Fetch the signed-in user once on mount so we can filter the
+  // sidebar by their role's permissions. Until the fetch resolves
+  // we render every link (assume admin) so first paint isn't empty;
+  // once we know the role, links the user can't access disappear.
+  const [role, setRole] = useState<PortalRole | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/me', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        if (cancelled) return;
+        const r = (j as { user?: { role?: PortalRole } } | null)?.user?.role;
+        if (r) setRole(r);
+      })
+      .catch(() => {
+        // Non-fatal — falls back to "show everything" until the next reload.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const grants = role ? (ROLE_PERMISSIONS[role] ?? []) : null;
+  function linkVisible(spec: NavLinkSpec): boolean {
+    if (!spec.requires) return true;
+    if (!grants) return true; // pre-fetch — show everything
+    return grants.includes(spec.requires);
+  }
   const NAV: NavGroup[] = NAV_SPEC.map((g) => ({
     label: t(g.key),
-    links: g.links.map((l) => ({ label: t(l.key), href: l.href })),
-  }));
+    links: g.links
+      .filter(linkVisible)
+      .map((l) => ({ label: t(l.key), href: l.href })),
+  })).filter((g) => g.links.length > 0);
   return (
     <div className="min-h-screen flex flex-col">
       <KeyboardShortcuts />
