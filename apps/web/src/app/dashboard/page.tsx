@@ -9,6 +9,7 @@ import type React from 'react';
 
 import { Alert } from '../../components/alert';
 import { AppShell } from '../../components/app-shell';
+import { BidDueSoonBanner } from '../../components/bid-due-soon-banner';
 import { GettingStartedBanner } from '../../components/getting-started-banner';
 import { LicenseRenewalBanner } from '../../components/license-renewal-banner';
 import { Money } from '../../components/money';
@@ -195,6 +196,8 @@ export default async function DashboardPage() {
       )}
 
       <LicenseRenewalBanner profile={masterProfile} />
+
+      <BidDueSoonBanner jobs={jobs} />
 
       <GettingStartedBanner
         customers={customers.length}

@@ -41,5 +41,6 @@ export { ApInboxStatusBanner } from './ap-inbox-status-banner';
 export { ApReextractButton } from './ap-reextract-button';
 export { MarkupWhatIfSlider } from './markup-whatif-slider';
 export { ChangePasswordForm } from './change-password-form';
+export { BidDueSoonBanner } from './bid-due-soon-banner';
 export { OneDriveRecentPanel } from './onedrive-recent-panel';
 export { PwaInstallButton } from './pwa-install-button';
