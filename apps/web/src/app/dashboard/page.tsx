@@ -14,6 +14,7 @@ import { Money } from '../../components/money';
 import { RecentActivity } from '../../components/recent-activity';
 import { getCurrentUser } from '../../lib/auth';
 import { getTranslator } from '../../lib/locale';
+import { ygeHour, ygeToday } from '../../lib/yge-time';
 import {
   computeArPaymentRollup,
   computeArRollup,
@@ -59,7 +60,7 @@ async function fetchJson<T>(pathname: string, key: string): Promise<T[]> {
 }
 
 export default async function DashboardPage() {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = ygeToday();
   const [
     jobs,
     customers,
@@ -132,7 +133,7 @@ export default async function DashboardPage() {
 
   const user = getCurrentUser();
   const firstName = user ? user.name.split(' ')[0] : '';
-  const hour = new Date().getHours();
+  const hour = ygeHour();
   const partOfDay = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
   const t = getTranslator();
   const greetingKey =
@@ -151,7 +152,8 @@ export default async function DashboardPage() {
             {t(greetingKey)}{firstName ? `, ${firstName}` : ''}
           </h1>
           <p className="text-sm text-gray-600">
-            {new Date().toLocaleDateString(undefined, {
+            {new Date().toLocaleDateString('en-US', {
+              timeZone: 'America/Los_Angeles',
               weekday: 'long',
               year: 'numeric',
               month: 'long',
