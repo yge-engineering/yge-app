@@ -15,6 +15,7 @@ import {
   type Job,
 } from '@yge/shared';
 import { JobStatusEditor } from '@/components/job-status-editor';
+import { JobInfoEditor } from '@/components/job-info-editor';
 import { BidDueBanner } from '@/components/bid-due-banner';
 import { JobAgencyCompetitors } from '@/components/job-agency-competitors';
 import { JobLinkedBidTabs } from '@/components/job-linked-bid-tabs';
@@ -204,7 +205,10 @@ export default async function JobDetailPage({
             {job.projectType.replace(/_/g, ' ')}
           </p>
         </div>
-        <JobStatusEditor jobId={job.id} initialStatus={job.status} />
+        <div className="flex flex-wrap items-center gap-2">
+          <JobInfoEditor job={job} />
+          <JobStatusEditor jobId={job.id} initialStatus={job.status} />
+        </div>
       </div>
 
       {job.bidDueDate && (

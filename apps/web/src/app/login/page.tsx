@@ -54,12 +54,11 @@ export default function LoginPage() {
     <main className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-sm rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
         <div className="mb-6 text-center">
-          <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-md bg-blue-700 text-sm font-bold text-white">
-            YGE
-          </div>
-          <h1 className="text-lg font-semibold text-gray-900">
-            {t('login.companyName')}
-          </h1>
+          <img
+            src="/yge-logo.jpg"
+            alt="Young General Engineering"
+            className="mx-auto mb-3 h-24 w-auto"
+          />
           <p className="mt-1 text-sm text-gray-500">
             {stage.kind === 'create-password'
               ? 'First time signing in — pick a password.'

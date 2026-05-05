@@ -142,13 +142,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <header className="flex items-center gap-3 border-b border-gray-200 bg-white px-4 py-3 sm:px-6">
         <MobileNav groups={NAV} />
         <Link href="/dashboard" className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-blue-700 text-xs font-bold text-white">
-            YGE
-          </div>
-          <div className="hidden sm:block">
-            <div className="text-sm font-semibold text-gray-900">{t('shell.companyName')}</div>
-            <div className="text-[11px] text-gray-500">{t('shell.companyTagline')}</div>
-          </div>
+          {/* New logo provided May 2026: Y in red over GE, with the
+           *  YOUNG / GENERAL ENGINEERING wordmark below. The image
+           *  already carries the full company name so we don't need
+           *  the side-by-side text labels we used with the old square
+           *  YGE tile. */}
+          <img
+            src="/yge-logo.jpg"
+            alt="Young General Engineering"
+            className="h-12 w-auto"
+          />
         </Link>
         <form action="/search" method="get" className="ml-auto hidden flex-1 max-w-md sm:block sm:mx-6">
           <div className="relative">
