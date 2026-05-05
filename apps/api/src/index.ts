@@ -56,6 +56,7 @@ import { bidTabsRouter } from './routes/bid-tabs';
 import { competitorsRouter } from './routes/competitors';
 import { credentialsRouter } from './routes/credentials';
 import { calendarEventsRouter } from './routes/calendar-events';
+import { calendarShareRouter } from './routes/calendar-share';
 
 const app = express();
 
@@ -142,6 +143,7 @@ app.use('/api/bid-tabs', bidTabsRouter);
 app.use('/api/competitors', competitorsRouter);
 app.use('/api/credentials', credentialsRouter);
 app.use('/api/calendar-events', calendarEventsRouter);
+app.use('/api/calendar-share', calendarShareRouter);
 
 // 404
 app.use((_req, res) => {

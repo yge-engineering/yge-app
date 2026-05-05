@@ -189,14 +189,12 @@ function EnterPasswordForm({
         required
         error={state.error}
       >
-        <input
+        <PasswordInput
           id="password"
           name="password"
-          type="password"
           autoComplete="current-password"
           required
           autoFocus
-          className={FORM_INPUT_CLASS}
         />
       </FormField>
 
@@ -248,31 +246,93 @@ function CreatePasswordForm({
         required
         error={state.error}
       >
-        <input
+        <PasswordInput
           id="password"
           name="password"
-          type="password"
           autoComplete="new-password"
           minLength={8}
           required
           autoFocus
-          className={FORM_INPUT_CLASS}
         />
       </FormField>
 
       <FormField name="confirm" label="Confirm password" required>
-        <input
+        <PasswordInput
           id="confirm"
           name="confirm"
-          type="password"
           autoComplete="new-password"
           minLength={8}
           required
-          className={FORM_INPUT_CLASS}
         />
       </FormField>
 
       <SubmitButton t={t} label="Create password & sign in" />
     </form>
+  );
+}
+
+// ---- Password input with show/hide toggle ------------------------------
+
+function PasswordInput({
+  id,
+  name,
+  autoComplete,
+  required,
+  minLength,
+  autoFocus,
+}: {
+  id: string;
+  name: string;
+  autoComplete: string;
+  required?: boolean;
+  minLength?: number;
+  autoFocus?: boolean;
+}) {
+  const [shown, setShown] = useState(false);
+  return (
+    <div className="relative">
+      <input
+        id={id}
+        name={name}
+        type={shown ? 'text' : 'password'}
+        autoComplete={autoComplete}
+        {...(minLength !== undefined ? { minLength } : {})}
+        {...(required ? { required: true } : {})}
+        {...(autoFocus ? { autoFocus: true } : {})}
+        className={`${FORM_INPUT_CLASS} pr-10`}
+      />
+      <button
+        type="button"
+        onClick={() => setShown((s) => !s)}
+        aria-label={shown ? 'Hide password' : 'Show password'}
+        aria-pressed={shown}
+        className="absolute inset-y-0 right-0 flex items-center px-2.5 text-gray-500 hover:text-gray-800"
+      >
+        {shown ? (
+          // eye-off icon
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            className="h-4 w-4"
+            aria-hidden="true"
+          >
+            <path d="M3.28 2.22a.75.75 0 00-1.06 1.06l2.06 2.06A11.6 11.6 0 001.5 10c1.5 3.6 4.7 6 8.5 6 1.4 0 2.7-.34 3.86-.93l2.4 2.4a.75.75 0 101.06-1.06L3.28 2.22zM10 14.5a4.5 4.5 0 01-4.5-4.5c0-.7.16-1.36.45-1.95l1.27 1.27a3 3 0 003.96 3.96l1.27 1.27A4.5 4.5 0 0110 14.5z" />
+            <path d="M18.5 10a11.5 11.5 0 01-2.04 3.5l-1.78-1.78A4.49 4.49 0 0014.5 10a4.5 4.5 0 00-6.78-3.86L5.97 4.4A8.6 8.6 0 0110 4c3.8 0 7 2.4 8.5 6z" />
+          </svg>
+        ) : (
+          // eye icon
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            className="h-4 w-4"
+            aria-hidden="true"
+          >
+            <path d="M10 4C5.5 4 2.2 6.7 1 10c1.2 3.3 4.5 6 9 6s7.8-2.7 9-6c-1.2-3.3-4.5-6-9-6zm0 10a4 4 0 110-8 4 4 0 010 8zm0-6.5A2.5 2.5 0 1010 12.5 2.5 2.5 0 0010 7.5z" />
+          </svg>
+        )}
+      </button>
+    </div>
   );
 }

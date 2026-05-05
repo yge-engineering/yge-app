@@ -141,6 +141,7 @@ export function CalendarView({
   const [events, setEvents] = useState<CalendarEvent[]>(initialEvents);
   const [editing, setEditing] = useState<CalendarEvent | null>(null);
   const [creatingDraft, setCreatingDraft] = useState<DraftEvent | null>(null);
+  const [showConnect, setShowConnect] = useState(false);
   /** True = show only events the current user owns or was invited to. */
   const [myOnly, setMyOnly] = useState<boolean>(currentUserEmail !== '');
 
@@ -275,12 +276,14 @@ export function CalendarView({
         todayDate={todayDate}
         myOnly={myOnly}
         showFilter={Boolean(currentUserEmail)}
+        showConnect={Boolean(currentUserEmail)}
         onViewChange={setView}
         onPrev={() => navigate(-1)}
         onNext={() => navigate(1)}
         onToday={() => setCursor(todayDate)}
         onNew={() => openCreate(cursor)}
         onToggleMyOnly={() => setMyOnly(!myOnly)}
+        onConnect={() => setShowConnect(true)}
       />
 
       {view === 'day' && (
@@ -319,6 +322,14 @@ export function CalendarView({
             setCursor(d);
             setView('month');
           }}
+        />
+      )}
+
+      {showConnect && (
+        <ConnectCalendarModal
+          email={currentUserEmail}
+          apiBaseUrl={apiBaseUrl}
+          onClose={() => setShowConnect(false)}
         />
       )}
 
@@ -372,24 +383,28 @@ function Toolbar({
   todayDate,
   myOnly,
   showFilter,
+  showConnect,
   onViewChange,
   onPrev,
   onNext,
   onToday,
   onNew,
   onToggleMyOnly,
+  onConnect,
 }: {
   view: ViewType;
   cursor: Date;
   todayDate: Date;
   myOnly: boolean;
   showFilter: boolean;
+  showConnect: boolean;
   onViewChange: (v: ViewType) => void;
   onPrev: () => void;
   onNext: () => void;
   onToday: () => void;
   onNew: () => void;
   onToggleMyOnly: () => void;
+  onConnect: () => void;
 }) {
   let title = '';
   if (view === 'day') title = fmtDateLong(cursor);
@@ -465,6 +480,15 @@ function Toolbar({
           </button>
         </div>
 
+        {showConnect && (
+          <button
+            type="button"
+            onClick={onConnect}
+            className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100"
+          >
+            Connect
+          </button>
+        )}
         <button
           type="button"
           onClick={onNew}
@@ -1265,6 +1289,223 @@ function AttendeePicker({
               </button>
             </>
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---- Connect-to-calendar modal ------------------------------------------
+
+function ConnectCalendarModal({
+  email,
+  apiBaseUrl,
+  onClose,
+}: {
+  email: string;
+  apiBaseUrl: string;
+  onClose: () => void;
+}) {
+  const [url, setUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [rotating, setRotating] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const res = await fetch(`${apiBaseUrl}/api/calendar-share/token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        const json = (await res.json()) as { url: string };
+        if (!cancelled) setUrl(json.url);
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Could not get URL');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [apiBaseUrl, email]);
+
+  async function copy() {
+    if (!url) return;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Older browsers / iframes — fall through, the URL is visible.
+    }
+  }
+
+  async function rotate() {
+    if (!confirm('Rotate the share URL? Any subscriptions using the current URL will stop syncing.'))
+      return;
+    setRotating(true);
+    setError(null);
+    try {
+      const res = await fetch(`${apiBaseUrl}/api/calendar-share/rotate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = (await res.json()) as { url: string };
+      setUrl(json.url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Rotate failed');
+    } finally {
+      setRotating(false);
+    }
+  }
+
+  // webcal:// is the iCalendar subscription URL scheme — Apple Calendar
+  // and Outlook on macOS hand-off to the calendar app when clicked.
+  const webcalUrl = url ? url.replace(/^https?:\/\//, 'webcal://') : '';
+  const googleAddUrl = url
+    ? `https://calendar.google.com/calendar/u/0/r?cid=${encodeURIComponent(webcalUrl)}`
+    : '';
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="w-full max-w-md rounded-xl bg-white p-5 shadow-lg">
+        <div className="mb-4 flex items-start justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">
+              Connect to your calendar
+            </h2>
+            <p className="mt-1 text-xs text-gray-500">
+              Read-only feed of events tagged for <strong>{email}</strong>.
+              Updates push automatically (~1–24 h depending on the app).
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-700"
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+
+        {error && (
+          <div className="mb-3 rounded border border-red-300 bg-red-50 p-2 text-sm text-red-800">
+            {error}
+          </div>
+        )}
+
+        {loading ? (
+          <div className="py-6 text-center text-sm text-gray-500">Loading…</div>
+        ) : url ? (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-700">
+                Subscription URL
+              </label>
+              <div className="mt-1 flex gap-2">
+                <input
+                  readOnly
+                  value={url}
+                  onClick={(e) => (e.target as HTMLInputElement).select()}
+                  className="flex-1 rounded border border-gray-300 bg-gray-50 px-2 py-1.5 font-mono text-[11px]"
+                />
+                <button
+                  type="button"
+                  onClick={copy}
+                  className="rounded border border-gray-300 bg-white px-2 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100"
+                >
+                  {copied ? 'Copied' : 'Copy'}
+                </button>
+              </div>
+            </div>
+
+            <div className="rounded-md border border-gray-200 p-3 text-sm">
+              <div className="mb-1 font-semibold text-gray-900">
+                Google Calendar
+              </div>
+              <p className="text-xs text-gray-600">
+                Easiest:{' '}
+                <a
+                  href={googleAddUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-700 underline"
+                >
+                  click here
+                </a>{' '}
+                to add it (Google will open in a new tab and ask you to
+                confirm).
+              </p>
+              <p className="mt-1 text-[11px] text-gray-500">
+                Or: Settings → Add calendar → From URL → paste the URL above.
+              </p>
+            </div>
+
+            <div className="rounded-md border border-gray-200 p-3 text-sm">
+              <div className="mb-1 font-semibold text-gray-900">
+                Outlook (web)
+              </div>
+              <p className="text-xs text-gray-600">
+                Settings → Calendar → Shared calendars → <em>Subscribe from
+                web</em> → paste the URL above → name it "YGE" → Import.
+              </p>
+            </div>
+
+            <div className="rounded-md border border-gray-200 p-3 text-sm">
+              <div className="mb-1 font-semibold text-gray-900">
+                Apple Calendar (Mac / iPhone)
+              </div>
+              <p className="text-xs text-gray-600">
+                Mac: File → New Calendar Subscription → paste URL.
+                <br />
+                iPhone: Settings → Calendar → Accounts → Add Account → Other
+                → Add Subscribed Calendar → paste URL.
+              </p>
+              <p className="mt-1 text-[11px] text-gray-500">
+                Or click{' '}
+                <a
+                  href={webcalUrl}
+                  className="text-blue-700 underline"
+                >
+                  this link
+                </a>{' '}
+                on your Mac/iPhone — Apple Calendar will offer to subscribe.
+              </p>
+            </div>
+
+            <div className="border-t border-gray-200 pt-3 text-right">
+              <button
+                type="button"
+                onClick={rotate}
+                disabled={rotating}
+                className="text-xs text-gray-500 hover:underline disabled:opacity-50"
+              >
+                {rotating ? 'Rotating…' : 'Rotate URL (revokes current subscriptions)'}
+              </button>
+            </div>
+          </div>
+        ) : null}
+
+        <div className="mt-5 text-right">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100"
+          >
+            Done
+          </button>
         </div>
       </div>
     </div>
