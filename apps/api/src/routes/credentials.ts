@@ -13,6 +13,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import {
+  clearPassword,
   hasPassword,
   setPassword,
   verifyPassword,
@@ -131,6 +132,40 @@ credentialsRouter.post('/change-password', async (req, res, next) => {
     }
     await setPassword(email, newPassword);
     return res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ---- POST /api/credentials/clear ---------------------------------------
+//
+// Admin path: Brook forgets her password, Ryan clicks "Reset password"
+// on /admin/portal-users → that calls this endpoint. The credential
+// row is wiped so the next sign-in forces the create-password flow.
+// Caller authorization is the web's own gate (the Reset button is
+// only on /admin/portal-users which is portalUsers:manage gated);
+// this route still confirms the email is on the access list so a
+// stray curl can't blow away a non-portal-user's password.
+
+const ClearBody = z.object({
+  email: z.string().email().max(120),
+});
+
+credentialsRouter.post('/clear', async (req, res, next) => {
+  try {
+    const parsed = ClearBody.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        error: 'Validation failed',
+        issues: parsed.error.issues,
+      });
+    }
+    const { email } = parsed.data;
+    if (!(await isAllowed(email))) {
+      return res.status(403).json({ error: 'Not on access list' });
+    }
+    const cleared = await clearPassword(email);
+    return res.json({ cleared });
   } catch (err) {
     next(err);
   }

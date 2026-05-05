@@ -80,6 +80,39 @@ export function PortalUsersClient({ initialUsers, jobs, apiBaseUrl }: Props) {
     }
   }
 
+  async function resetPassword(user: PortalUser) {
+    const ok = window.confirm(
+      `Reset ${user.name}'s password? Their existing password is wiped — they'll be asked to pick a new one on next sign-in. Send them the invite link below to proceed.`,
+    );
+    if (!ok) return;
+    setBusyId(user.id);
+    setError(null);
+    try {
+      const res = await fetch(`${apiBaseUrl}/api/credentials/clear`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: user.email }),
+      });
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new Error(`Reset failed (${res.status}): ${text.slice(0, 200)}`);
+      }
+      const origin =
+        typeof window !== 'undefined' ? window.location.origin : '';
+      const link = `${origin}/login?email=${encodeURIComponent(user.email)}`;
+      // Surface the same invite link as the invite flow uses, so Ryan
+      // can copy + paste it to the user.
+      window.alert(
+        `Password reset. Send this link to ${user.name}:\n\n${link}`,
+      );
+      await reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Reset failed.');
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   async function setAssignedJobs(id: string, jobIds: string[]) {
     setBusyId(id);
     setError(null);
@@ -306,6 +339,16 @@ export function PortalUsersClient({ initialUsers, jobs, apiBaseUrl }: Props) {
                     {formatWhen(u.lastLoginAt)}
                   </td>
                   <td className="px-3 py-2 text-right text-xs">
+                    {u.hasPassword && (
+                      <button
+                        type="button"
+                        onClick={() => void resetPassword(u)}
+                        disabled={busyId === u.id}
+                        className="mr-3 font-medium text-blue-700 hover:underline disabled:opacity-50"
+                      >
+                        Reset password
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => void toggleDisabled(u)}

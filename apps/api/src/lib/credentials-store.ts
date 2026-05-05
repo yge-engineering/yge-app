@@ -101,6 +101,20 @@ export async function setPassword(
   await writeAll(file);
 }
 
+/** Remove the credential row for this email so the next sign-in forces
+ *  a fresh password setup. Used by the admin Reset Password button on
+ *  /admin/portal-users for users who forgot their password. Returns
+ *  true if a row was removed, false if there was nothing to remove. */
+export async function clearPassword(email: string): Promise<boolean> {
+  const file = await readAll();
+  const norm = email.toLowerCase();
+  const before = file.credentials.length;
+  file.credentials = file.credentials.filter((c) => c.email !== norm);
+  if (file.credentials.length === before) return false;
+  await writeAll(file);
+  return true;
+}
+
 /** Verify that the password matches the stored hash for this email. */
 export async function verifyPassword(
   email: string,
