@@ -33,3 +33,6 @@ export { Avatar } from './avatar';
 export { ProgressBar } from './progress-bar';
 export { Alert, type AlertTone } from './alert';
 export { AuditBinderPanel } from './audit-binder-panel';
+export { EmployeeStatusEditor } from './employee-status-editor';
+export { EmployeeDeleteButton } from './employee-delete-button';
+export { EmployeeRowActions } from './employee-row-actions';

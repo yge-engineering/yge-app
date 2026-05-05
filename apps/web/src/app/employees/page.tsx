@@ -12,6 +12,7 @@ import {
   AppShell,
   Avatar,
   DataTable,
+  EmployeeRowActions,
   EmptyState,
   LinkButton,
   PageHeader,
@@ -25,6 +26,10 @@ function apiBaseUrl(): string {
   return (
     process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
   );
+}
+
+function publicApiBaseUrl(): string {
+  return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 }
 
 async function fetchEmployees(): Promise<Employee[]> {
@@ -116,6 +121,13 @@ export default async function EmployeesPage() {
                 key: 'phone',
                 header: t('employees.col.phone'),
                 cell: (e) => e.phone ?? <span className="text-gray-400">—</span>,
+              },
+              {
+                key: 'actions',
+                header: '',
+                cell: (e) => (
+                  <EmployeeRowActions employee={e} apiBaseUrl={publicApiBaseUrl()} />
+                ),
               },
             ]}
           />

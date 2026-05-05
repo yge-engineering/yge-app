@@ -6,6 +6,7 @@ import { Router } from 'express';
 import { EmployeeCreateSchema, EmployeePatchSchema } from '@yge/shared';
 import {
   createEmployee,
+  deleteEmployee,
   getEmployee,
   listEmployees,
   updateEmployee,
@@ -66,6 +67,23 @@ employeesRouter.patch('/:id', async (req, res, next) => {
       return res.status(404).json({ error: 'Employee not found' });
     }
     return res.json({ employee: updated });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /api/employees/:id — permanently remove. The audit log keeps
+// a before-snapshot for legal/HR retention even though the row is gone.
+// Caller should normally prefer PATCH { status: 'TERMINATED' } so payroll
+// + timecard history still resolves the employee name; delete is for
+// genuine "added by mistake" rows.
+employeesRouter.delete('/:id', async (req, res, next) => {
+  try {
+    const ok = await deleteEmployee(req.params.id);
+    if (!ok) {
+      return res.status(404).json({ error: 'Employee not found' });
+    }
+    return res.json({ deleted: true });
   } catch (err) {
     next(err);
   }

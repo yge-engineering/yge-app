@@ -102,6 +102,33 @@ export async function getEmployee(id: string): Promise<Employee | null> {
   }
 }
 
+/** Permanently remove an employee. Returns true if the row existed and
+ *  was deleted, false if not found. The audit event keeps the record
+ *  history visible after the row itself is gone. */
+export async function deleteEmployee(
+  id: string,
+  ctx?: AuditContext,
+): Promise<boolean> {
+  const existing = await getEmployee(id);
+  if (!existing) return false;
+  try {
+    await fs.unlink(employeePath(id));
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err;
+  }
+  const index = await readIndex();
+  const next = index.filter((e) => e.id !== id);
+  await writeIndex(next);
+  await recordAudit({
+    action: 'delete',
+    entityType: 'Employee',
+    entityId: id,
+    before: existing,
+    ctx,
+  });
+  return true;
+}
+
 export async function updateEmployee(
   id: string,
   patch: EmployeePatch,

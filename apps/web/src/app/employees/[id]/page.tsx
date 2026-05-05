@@ -20,6 +20,8 @@ import {
   AppShell,
   Avatar,
   DescriptionList,
+  EmployeeDeleteButton,
+  EmployeeStatusEditor,
   PageHeader,
   RoleBadge,
   StatusPill,
@@ -29,6 +31,9 @@ function apiBaseUrl(): string {
   return (
     process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
   );
+}
+function publicApiBaseUrl(): string {
+  return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 }
 
 async function fetchEmployee(id: string): Promise<Employee | null> {
@@ -141,6 +146,12 @@ export default async function EmployeeDetailPage({
                 {classificationLabel(employee.classification)}
               </span>
             </span>
+          }
+          actions={
+            <EmployeeStatusEditor
+              employee={employee}
+              apiBaseUrl={publicApiBaseUrl()}
+            />
           }
         />
 
@@ -271,6 +282,25 @@ export default async function EmployeeDetailPage({
             <p className="mt-2 whitespace-pre-wrap">{employee.notes}</p>
           </div>
         )}
+
+        {/* Danger zone */}
+        <section className="mt-10 rounded-lg border border-red-200 bg-red-50 p-4">
+          <div className="text-xs font-semibold uppercase tracking-wide text-red-700">
+            Danger zone
+          </div>
+          <p className="mt-1 text-sm text-gray-700">
+            Use the Status dropdown above to mark this employee Terminated —
+            that keeps payroll and timecard history intact. Only delete the
+            record if it was added by mistake.
+          </p>
+          <div className="mt-3">
+            <EmployeeDeleteButton
+              employeeId={employee.id}
+              name={displayName}
+              apiBaseUrl={publicApiBaseUrl()}
+            />
+          </div>
+        </section>
       </main>
     </AppShell>
   );
