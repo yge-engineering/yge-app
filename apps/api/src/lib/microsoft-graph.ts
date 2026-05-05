@@ -165,3 +165,27 @@ export async function graphGet<T>(email: string, urlPath: string): Promise<T> {
   }
   return (await res.json()) as T;
 }
+
+/** Download a binary blob from Graph (e.g. an attachment's $value endpoint).
+ *  Returns the bytes plus the response Content-Type header so the caller
+ *  can decide how to persist it. */
+export async function graphGetBinary(
+  email: string,
+  urlPath: string,
+): Promise<{ bytes: Buffer; contentType: string }> {
+  const token = await getAccessTokenFor(email);
+  const res = await fetch(`https://graph.microsoft.com/v1.0${urlPath}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(
+      `Graph GET ${urlPath} (binary) failed (${res.status}): ${text.slice(0, 200)}`,
+    );
+  }
+  const ab = await res.arrayBuffer();
+  return {
+    bytes: Buffer.from(ab),
+    contentType: res.headers.get('content-type') ?? 'application/octet-stream',
+  };
+}

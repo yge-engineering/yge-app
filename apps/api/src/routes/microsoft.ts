@@ -29,6 +29,7 @@ import {
   deleteMicrosoftToken,
   getMicrosoftToken,
 } from '../lib/microsoft-tokens-store';
+import { pollApInbox } from '../lib/ap-inbox-poller';
 
 export const microsoftRouter = Router();
 
@@ -162,6 +163,35 @@ interface OneDriveItem {
   file?: { mimeType?: string };
   folder?: unknown;
 }
+
+// AP inbox poll — pull recent invoices out of the shared mailbox
+// (default ap@youngge.com) and create draft AP invoice rows for each
+// new message. Caller passes their email so the API uses their stored
+// Microsoft tokens. Returns counts + list of created invoice ids.
+const InboxPollBody = z.object({
+  userEmail: z.string().email().max(120),
+  mailbox: z.string().max(120).optional(),
+  limit: z.number().int().min(1).max(100).optional(),
+});
+
+microsoftRouter.post('/ap-inbox-poll', async (req, res, next) => {
+  try {
+    const parsed = InboxPollBody.safeParse(req.body);
+    if (!parsed.success) {
+      return res
+        .status(400)
+        .json({ error: 'Validation failed', issues: parsed.error.issues });
+    }
+    const result = await pollApInbox({
+      userEmail: parsed.data.userEmail,
+      ...(parsed.data.mailbox ? { mailbox: parsed.data.mailbox } : {}),
+      ...(parsed.data.limit ? { limit: parsed.data.limit } : {}),
+    });
+    return res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
 
 microsoftRouter.get('/onedrive/recent', async (req, res, next) => {
   try {

@@ -8,6 +8,7 @@
 import Link from 'next/link';
 
 import {
+  ApInboxPullButton,
   AppShell,
   DataTable,
   EmptyState,
@@ -17,6 +18,7 @@ import {
   StatusPill,
   Tile,
 } from '../../components';
+import { getCurrentUser } from '../../lib/auth';
 import { getLocale, getTranslator } from '../../lib/locale';
 import {
   apDueLevel,
@@ -101,6 +103,7 @@ export default async function ApInvoicesPage({
   }${searchParams.jobId ? '&jobId=' + encodeURIComponent(searchParams.jobId) : ''}`;
   const t = getTranslator();
   const locale = getLocale();
+  const user = getCurrentUser();
 
   return (
     <AppShell>
@@ -109,7 +112,11 @@ export default async function ApInvoicesPage({
           title={t('ap.title')}
           subtitle={t('ap.subtitle')}
           actions={
-            <span className="flex gap-2">
+            <span className="flex flex-wrap items-start gap-2">
+              <ApInboxPullButton
+                apiBaseUrl={publicApiBaseUrl()}
+                userEmail={user?.email ?? ''}
+              />
               <a
                 href={csvHref}
                 className="inline-flex items-center rounded-md border border-blue-700 px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-50"
