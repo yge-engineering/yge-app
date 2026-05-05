@@ -20,12 +20,56 @@ export default function NewTimeCardPage() {
 
   useEffect(() => {
     const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
-    fetch(`${apiBase}/api/employees`, { cache: 'no-store' })
-      .then((r) => (r.ok ? r.json() : { employees: [] }))
-      .then((j: { employees: Employee[] }) => {
-        const active = (j.employees ?? []).filter((e) => e.status === 'ACTIVE');
-        setEmployees(active);
-        if (active[0]) setEmployeeId(active[0].id);
+    // Foreman scope: pull /api/me + portal-user-by-email so we can
+    // filter employees down to the foreman's own crew (employees
+    // whose foremanId equals the foreman's linked employee id).
+    // Owners + office + PM see all active employees as before.
+    async function loadMe(): Promise<{
+      role: string;
+      foremanEmployeeId: string | null;
+    } | null> {
+      try {
+        const meRes = await fetch('/api/me', { cache: 'no-store' });
+        if (!meRes.ok) return null;
+        const meJson = (await meRes.json()) as {
+          user?: { email?: string; role?: string };
+        };
+        const email = meJson.user?.email;
+        const role = meJson.user?.role ?? '';
+        if (!email) return null;
+        const puRes = await fetch(
+          `${apiBase}/api/portal-users/by-email?email=${encodeURIComponent(email)}`,
+          { cache: 'no-store' },
+        );
+        if (!puRes.ok) return { role, foremanEmployeeId: null };
+        const pu = (await puRes.json()) as {
+          user?: { employeeId?: string };
+        };
+        return { role, foremanEmployeeId: pu.user?.employeeId ?? null };
+      } catch {
+        return null;
+      }
+    }
+
+    void Promise.all([
+      fetch(`${apiBase}/api/employees`, { cache: 'no-store' })
+        .then((r) => (r.ok ? r.json() : { employees: [] }))
+        .then((j: { employees: Employee[] }) =>
+          (j.employees ?? []).filter((e) => e.status === 'ACTIVE'),
+        ),
+      loadMe(),
+    ])
+      .then(([active, me]) => {
+        let visible = active;
+        if (me?.role === 'FOREMAN' && me.foremanEmployeeId) {
+          visible = active.filter(
+            (e) =>
+              e.foremanId === me.foremanEmployeeId ||
+              e.id === me.foremanEmployeeId, // include self
+          );
+        }
+        setEmployees(visible);
+        if (visible[0]) setEmployeeId(visible[0].id);
       })
       .catch(() => setEmployees([]));
   }, []);
