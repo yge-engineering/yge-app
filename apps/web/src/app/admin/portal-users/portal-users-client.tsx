@@ -13,6 +13,7 @@ import { useState } from 'react';
 import {
   fullName,
   portalRoleLabel,
+  ROLE_PERMISSIONS,
   type Employee,
   type Job,
   type PortalRole,
@@ -515,6 +516,26 @@ export function PortalUsersClient({
                 rows.push(
                   <tr key={`${u.id}-notes`} className="bg-gray-50">
                     <td colSpan={6} className="px-4 py-3">
+                      <div className="mb-3 rounded border border-gray-200 bg-white p-2 text-[11px]">
+                        <div className="font-semibold uppercase tracking-wide text-gray-500">
+                          What this role can do
+                        </div>
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {(ROLE_PERMISSIONS[u.role] ?? []).map((perm) => (
+                            <span
+                              key={perm}
+                              className="rounded bg-blue-50 px-1.5 py-0.5 font-mono text-[10px] text-blue-800"
+                            >
+                              {perm}
+                            </span>
+                          ))}
+                          {(ROLE_PERMISSIONS[u.role] ?? []).length === 0 && (
+                            <span className="text-gray-500">
+                              No permissions — role is read-only.
+                            </span>
+                          )}
+                        </div>
+                      </div>
                       <div className="grid gap-3 sm:grid-cols-2">
                         <label className="block text-xs">
                           <span className="mb-1 block font-semibold uppercase tracking-wide text-gray-500">
