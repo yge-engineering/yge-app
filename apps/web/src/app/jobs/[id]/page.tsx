@@ -88,6 +88,30 @@ async function fetchEstimates(): Promise<EstimateSummary[]> {
   return json.estimates;
 }
 
+interface ImportedEstimateSummary {
+  id: string;
+  jobId?: string;
+  jobNumber: string;
+  projectName: string;
+  client?: string;
+  rateType: 'PW' | 'Private';
+  bidPriceCents: number;
+  directCostCents: number;
+  oppMarkupCents: number;
+  oppPercent: number;
+  lines: unknown[];
+  updatedAt: string;
+}
+
+async function fetchImportedEstimates(): Promise<ImportedEstimateSummary[]> {
+  const res = await fetch(`${apiBaseUrl()}/api/imported-estimates`, {
+    cache: 'no-store',
+  });
+  if (!res.ok) return [];
+  const json = (await res.json()) as { importedEstimates: ImportedEstimateSummary[] };
+  return json.importedEstimates;
+}
+
 function formatWhen(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
@@ -118,9 +142,10 @@ export default async function JobDetailPage({
   const job = await fetchJob(params.id);
   if (!job) notFound();
 
-  const [allDrafts, allEstimates] = await Promise.all([
+  const [allDrafts, allEstimates, allImported] = await Promise.all([
     fetchDrafts(),
     fetchEstimates(),
+    fetchImportedEstimates(),
   ]);
 
   // Sort newest-first so nextBidAction picks the most recent draft / estimate.
@@ -128,6 +153,9 @@ export default async function JobDetailPage({
     .filter((d) => d.jobId === job.id)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const estimates = allEstimates
+    .filter((e) => e.jobId === job.id)
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  const importedEstimates = allImported
     .filter((e) => e.jobId === job.id)
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 
@@ -405,6 +433,55 @@ export default async function JobDetailPage({
                 </li>
               );
             })}
+          </ul>
+        )}
+      </section>
+
+      {/* Imported estimates (from Excel) for this job */}
+      <section className="mt-10">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="text-xl font-semibold text-gray-900">Imported estimates</h2>
+          <p className="text-xs text-gray-500">
+            Loaded from the YGE Excel job-cost-system file.
+          </p>
+        </div>
+        {importedEstimates.length === 0 ? (
+          <p className="mt-2 text-sm text-gray-500">
+            No imported estimates linked to this job.{' '}
+            <Link
+              href="/imported-estimates"
+              className="text-yge-blue-500 hover:underline"
+            >
+              Browse all imported estimates →
+            </Link>
+          </p>
+        ) : (
+          <ul className="mt-3 divide-y divide-gray-100 rounded-lg border border-gray-200 bg-white shadow-sm">
+            {importedEstimates.map((e) => (
+              <li
+                key={e.id}
+                className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
+              >
+                <div className="min-w-0">
+                  <div className="text-sm font-medium text-gray-900">
+                    {e.projectName}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    Job {e.jobNumber} · {e.rateType} · {e.lines.length} line
+                    {e.lines.length === 1 ? '' : 's'} · Direct{' '}
+                    <Money cents={e.directCostCents} /> · O&amp;P{' '}
+                    <Money cents={e.oppMarkupCents} /> · Bid{' '}
+                    <Money cents={e.bidPriceCents} />
+                  </div>
+                </div>
+                <Link
+                  href={`/imported-estimates/${e.id}`}
+                  className="text-sm text-yge-blue-500 hover:underline"
+                >
+                  Open →
+                </Link>
+              </li>
+            ))}
           </ul>
         )}
       </section>

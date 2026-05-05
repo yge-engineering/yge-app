@@ -57,8 +57,14 @@ export const ImportedEstimateSchema = z.object({
   createdAt: z.string(),
   updatedAt: z.string(),
 
-  /** Excel `Job #` (e.g. '26-001'). The link key into Jobs. */
+  /** Excel `Job #` (e.g. '26-001'). The free-form Excel-side key. */
   jobNumber: z.string().min(1).max(40),
+  /** YGE Job entity id (e.g. `job-2026-...`). Set when the imported
+   *  estimate has been linked to a Job in the app — that's how it
+   *  shows up under /jobs/[id] alongside AI drafts + priced
+   *  estimates. Optional: imported estimates can exist before a Job
+   *  is created. */
+  jobId: z.string().max(120).optional(),
   projectName: z.string().min(1).max(300),
   client: z.string().max(300).optional(),
   rateType: ImportedEstimateRateTypeSchema.default('PW'),

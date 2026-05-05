@@ -49,13 +49,21 @@ export default async function ImportedEstimateDetailPage({
   return (
     <AppShell>
       <main className="mx-auto max-w-6xl">
-        <div className="mb-2">
+        <div className="mb-2 flex flex-wrap gap-3 text-xs">
           <Link
             href="/imported-estimates"
-            className="text-xs text-blue-700 hover:underline"
+            className="text-blue-700 hover:underline"
           >
             ← All imported estimates
           </Link>
+          {estimate.jobId && (
+            <Link
+              href={`/jobs/${estimate.jobId}`}
+              className="text-blue-700 hover:underline"
+            >
+              View linked Job →
+            </Link>
+          )}
         </div>
         <PageHeader
           title={estimate.projectName}
