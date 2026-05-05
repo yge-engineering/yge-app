@@ -356,19 +356,13 @@ export function EstimateDetail({ initial, costCodes }: Props) {
                   rename
                 </button>
               </h3>
-              <div className="flex items-center gap-3 text-xs text-gray-500">
-                <span>
-                  Direct {fmtMoneyCompact(sectionDirect)} · Bid{' '}
-                  {fmtMoneyCompact(sectionBid)}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => addLine(sec.sectionName)}
-                  className="text-blue-700 hover:underline"
-                >
-                  + Add line
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => addLine(sec.sectionName)}
+                className="text-xs text-blue-700 hover:underline"
+              >
+                + Add line
+              </button>
             </div>
             <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
               <table className="w-full text-sm">
@@ -397,6 +391,22 @@ export function EstimateDetail({ initial, costCodes }: Props) {
                       onDelete={() => deleteLine(idx)}
                     />
                   ))}
+                  {/* Section subtotal row — same column layout, money
+                   *  values right-aligned in the Total + Bid columns.
+                   *  Mirrors how the YGE Excel ends each section. */}
+                  <tr className="bg-gray-50 font-semibold">
+                    <td colSpan={7} className="px-2 py-1.5 text-right text-xs uppercase tracking-wide text-gray-700">
+                      Subtotal
+                    </td>
+                    <td className="px-2 py-1.5"></td>
+                    <td className="px-1 py-1.5 text-right font-mono text-xs text-gray-700">
+                      {fmtMoney(sectionDirect)}
+                    </td>
+                    <td className="px-1 py-1.5 text-right font-mono text-xs text-gray-900">
+                      {fmtMoney(sectionBid)}
+                    </td>
+                    <td></td>
+                  </tr>
                 </tbody>
               </table>
             </div>
