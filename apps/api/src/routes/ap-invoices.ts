@@ -64,6 +64,46 @@ apInvoicesRouter.get('/:id', async (req, res, next) => {
   }
 });
 
+// GET /api/ap-invoices/:id/attachment — streams the PDF that the AP
+// inbox poller saved alongside the row. The poller stores the path
+// in `notes` ("Attachment saved at: <abs path>") so the office can
+// view the original invoice while transcribing line items. We
+// constrain the served path to the AP inbox directory to avoid
+// directory-traversal exposure.
+apInvoicesRouter.get('/:id/attachment', async (req, res, next) => {
+  try {
+    const inv = await getApInvoice(req.params.id);
+    if (!inv) return res.status(404).json({ error: 'Invoice not found' });
+    const match = (inv.notes ?? '').match(/Attachment saved at:\s*(.+)/i);
+    const candidate = match?.[1]?.trim();
+    if (!candidate) {
+      return res.status(404).json({ error: 'No attachment for this invoice' });
+    }
+    const fs = await import('node:fs/promises');
+    const path = await import('node:path');
+    const inboxRoot = path.resolve(
+      process.env.AP_INBOX_DATA_DIR ??
+        path.resolve(process.cwd(), 'data', 'ap-inbox'),
+    );
+    const resolved = path.resolve(candidate);
+    if (!resolved.startsWith(inboxRoot + path.sep) && resolved !== inboxRoot) {
+      return res.status(403).json({ error: 'Attachment outside inbox dir' });
+    }
+    const bytes = await fs.readFile(resolved).catch(() => null);
+    if (!bytes) {
+      return res.status(404).json({ error: 'Attachment file missing' });
+    }
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `inline; filename="${path.basename(resolved).replace(/[^a-zA-Z0-9._-]/g, '_')}"`,
+    );
+    return res.end(bytes);
+  } catch (err) {
+    next(err);
+  }
+});
+
 apInvoicesRouter.post('/', async (req, res, next) => {
   try {
     const parsed = ApInvoiceCreateSchema.safeParse(req.body);
