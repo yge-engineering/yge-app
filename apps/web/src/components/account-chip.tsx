@@ -43,12 +43,23 @@ export function AccountChip() {
   }, []);
 
   if (!user) return null;
+  const isOwner = user.role === 'PRESIDENT' || user.role === 'VP';
   return (
     <div className="flex items-center gap-3">
       <Link href="/profile" className="flex items-center gap-2 hover:opacity-75">
         <Avatar name={user.name} size="md" />
         <span className="text-right hidden sm:inline-block">
-          <span className="block text-sm font-medium text-gray-900">{user.name}</span>
+          <span className="flex items-center justify-end gap-1 text-sm font-medium text-gray-900">
+            {user.name}
+            {isOwner && (
+              <span
+                className="rounded bg-blue-100 px-1 text-[9px] font-bold uppercase tracking-wide text-blue-800"
+                title="Owner — full admin access"
+              >
+                OWNER
+              </span>
+            )}
+          </span>
           <span className="block text-[11px] uppercase tracking-wide text-gray-500">{t(`accountChip.role.${user.role}`)}</span>
         </span>
       </Link>
