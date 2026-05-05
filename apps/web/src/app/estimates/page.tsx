@@ -54,6 +54,34 @@ async function fetchEstimates(): Promise<EstimateSummary[]> {
   return json.estimates;
 }
 
+interface ImportedEstimateSummary {
+  id: string;
+  jobId?: string;
+  jobNumber: string;
+  projectName: string;
+  client?: string;
+  rateType: 'PW' | 'Private';
+  bidPriceCents: number;
+  directCostCents: number;
+  oppMarkupCents: number;
+  oppPercent: number;
+  lines: unknown[];
+  updatedAt: string;
+}
+
+async function fetchImported(): Promise<ImportedEstimateSummary[]> {
+  try {
+    const res = await fetch(`${apiBaseUrl()}/api/imported-estimates`, {
+      cache: 'no-store',
+    });
+    if (!res.ok) return [];
+    const json = (await res.json()) as { importedEstimates: ImportedEstimateSummary[] };
+    return json.importedEstimates;
+  } catch {
+    return [];
+  }
+}
+
 function formatWhen(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
@@ -74,6 +102,7 @@ export default async function EstimatesPage() {
   } catch (err) {
     fetchError = err instanceof Error ? err.message : 'Unknown error';
   }
+  const imported = await fetchImported();
   const t = getTranslator();
 
   return (
@@ -90,6 +119,81 @@ export default async function EstimatesPage() {
 
       <h1 className="text-3xl font-bold text-yge-blue-500">{t('estimates.title')}</h1>
       <p className="mt-2 text-gray-700">{t('estimates.subtitle')}</p>
+
+      {/* Imported estimates from the YGE Excel master.
+       *  These are full Excel estimates with line items grouped by section.
+       *  Distinct from the AI-drafted PricedEstimates table below. */}
+      {imported.length > 0 && (
+        <section className="mt-8">
+          <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="text-lg font-semibold text-gray-900">Imported estimates</h2>
+            <p className="text-xs text-gray-500">
+              Loaded from the YGE Excel job-cost-system master.
+            </p>
+          </div>
+          <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+                <tr>
+                  <th className="px-4 py-2">Project</th>
+                  <th className="px-4 py-2">Job #</th>
+                  <th className="px-4 py-2">Client</th>
+                  <th className="px-4 py-2">Rate</th>
+                  <th className="px-4 py-2">Lines</th>
+                  <th className="px-4 py-2">Bid total</th>
+                  <th className="px-4 py-2">Updated</th>
+                  <th className="px-4 py-2"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {imported.map((e) => (
+                  <tr key={e.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3">
+                      <div className="font-medium text-gray-900">{e.projectName}</div>
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs text-gray-600">
+                      {e.jobNumber}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-gray-600">{e.client ?? '—'}</td>
+                    <td className="px-4 py-3 text-xs text-gray-600">{e.rateType}</td>
+                    <td className="px-4 py-3 text-gray-700">{e.lines.length}</td>
+                    <td className="px-4 py-3 font-medium text-gray-900">
+                      <Money cents={e.bidPriceCents} />
+                    </td>
+                    <td className="px-4 py-3 text-xs text-gray-600">
+                      {formatWhen(e.updatedAt)}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <Link
+                        href={`/imported-estimates/${e.id}`}
+                        className="mr-3 text-yge-blue-500 hover:underline"
+                      >
+                        Open
+                      </Link>
+                      {e.jobId && (
+                        <Link
+                          href={`/jobs/${e.jobId}`}
+                          className="text-yge-blue-500 hover:underline"
+                        >
+                          Job
+                        </Link>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
+      {/* AI-drafted priced estimates section header — only show when
+       *  imported estimates are above so the visual separation is clear. */}
+      {imported.length > 0 && (
+        <h2 className="mt-10 text-lg font-semibold text-gray-900">
+          AI-drafted estimates
+        </h2>
+      )}
 
       {fetchError && (
         <Alert tone="danger" className="mt-6" title={t('estimates.fetchError.title')}>
