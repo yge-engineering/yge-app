@@ -12,7 +12,8 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useFormState, useFormStatus } from 'react-dom';
 
 import {
@@ -113,6 +114,14 @@ function EnterEmailForm({
     checkEmail,
     initialEmailState,
   );
+  // Pre-fill the email when the URL has ?email=... — happens when an
+  // admin shares an invite link from /admin/portal-users.
+  const params = useSearchParams();
+  const presetEmail = params?.get('email') ?? '';
+  const [emailValue, setEmailValue] = useState(presetEmail);
+  useEffect(() => {
+    if (presetEmail) setEmailValue(presetEmail);
+  }, [presetEmail]);
 
   // When the action returns a step, advance the local stage.
   if (state.step && state.email && !state.error) {
@@ -136,6 +145,8 @@ function EnterEmailForm({
           autoComplete="email"
           required
           placeholder="ryoung@youngge.com"
+          value={emailValue}
+          onChange={(e) => setEmailValue(e.target.value)}
           className={FORM_INPUT_CLASS}
         />
       </FormField>

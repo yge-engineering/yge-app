@@ -201,8 +201,11 @@ export function PortalUsersClient({ initialUsers, jobs, apiBaseUrl }: Props) {
         const j = (await res.json().catch(() => ({}))) as { error?: string };
         throw new Error(j.error ?? `Invite failed (${res.status})`);
       }
+      const origin =
+        typeof window !== 'undefined' ? window.location.origin : '';
+      const link = `${origin}/login?email=${encodeURIComponent(inviteEmail.trim().toLowerCase())}`;
       setInviteSuccess(
-        `${inviteName.trim()} added. Send them app.youngge.com so they can sign in and pick a password.`,
+        `${inviteName.trim()} added. Send them this link so the email is pre-filled: ${link}`,
       );
       setInviteEmail('');
       setInviteName('');
