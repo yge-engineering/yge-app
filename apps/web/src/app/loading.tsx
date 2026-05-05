@@ -8,11 +8,13 @@ export default function GlobalLoading() {
   return (
     <main className="min-h-screen flex items-center justify-center px-4">
       <div className="text-center">
-        <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-md bg-blue-700 text-sm font-bold text-white">
-          YGE
-        </div>
+        <img
+          src="/yge-logo.jpg"
+          alt="Young General Engineering"
+          className="mx-auto mb-3 h-20 w-auto"
+        />
         <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
-          <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-blue-700" />
+          <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-red-800" />
           <span>Loading…</span>
         </div>
       </div>

@@ -17,6 +17,8 @@ import {
   Tile,
 } from '../../components';
 import { getLocale, getTranslator } from '../../lib/locale';
+import { fetchNwsForecast } from '../../lib/nws';
+import { ForecastStrip } from '../../components/forecast-strip';
 import {
   computeWeatherLogRollup,
   heatComplianceGap,
@@ -61,7 +63,10 @@ export default async function WeatherPage({
 }: {
   searchParams: { jobId?: string };
 }) {
-  const logs = await fetchLogs(searchParams);
+  const [logs, forecast] = await Promise.all([
+    fetchLogs(searchParams),
+    fetchNwsForecast(),
+  ]);
   const rollup = computeWeatherLogRollup(logs);
   const t = getTranslator();
   const locale = getLocale();
@@ -78,6 +83,10 @@ export default async function WeatherPage({
             </LinkButton>
           }
         />
+
+        <div className="mb-6">
+          <ForecastStrip forecast={forecast} />
+        </div>
 
         <section className="mb-6 grid gap-3 sm:grid-cols-4">
           <Tile label={t('weather.tile.daysLogged')} value={rollup.total} />

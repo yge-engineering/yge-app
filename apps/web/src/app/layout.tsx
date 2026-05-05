@@ -1,8 +1,16 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
+import { Manrope } from 'next/font/google';
 import './globals.css';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
+// Manrope was picked over Inter for readability: rounder, more open
+// letterforms hold up better at small sizes for the dense table-heavy
+// pages (estimates, daily reports, AP/AR aging). Variable weight is
+// loaded so we don't pay for multiple files.
+const manrope = Manrope({
+  subsets: ['latin'],
+  variable: '--font-yge-sans',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'YGE App — Young General Engineering',
@@ -23,8 +31,8 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={inter.variable}>
-      <body className="min-h-screen bg-gray-50 font-sans antialiased">{children}</body>
+    <html lang="en" className={manrope.variable}>
+      <body className="min-h-screen bg-gray-50 font-sans text-[15px] leading-relaxed antialiased">{children}</body>
     </html>
   );
 }
