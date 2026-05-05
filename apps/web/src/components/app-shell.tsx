@@ -16,6 +16,7 @@
 import Link from 'next/link';
 
 import { AccountChip } from './account-chip';
+import { PwaInstallButton } from './pwa-install-button';
 import { KeyboardShortcuts } from './keyboard-shortcuts';
 import { LocaleSwitcher } from './locale-switcher';
 import { MobileNav } from './mobile-nav';
@@ -175,6 +176,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </form>
         <div className="ml-auto flex items-center gap-3 sm:ml-0">
+          <PwaInstallButton />
           <LocaleSwitcher current={locale} />
           <AccountChip />
         </div>

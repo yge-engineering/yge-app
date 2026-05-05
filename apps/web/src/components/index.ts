@@ -38,3 +38,4 @@ export { EmployeeDeleteButton } from './employee-delete-button';
 export { EmployeeRowActions } from './employee-row-actions';
 export { ApInboxPullButton } from './ap-inbox-pull-button';
 export { OneDriveRecentPanel } from './onedrive-recent-panel';
+export { PwaInstallButton } from './pwa-install-button';

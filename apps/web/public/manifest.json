@@ -1,25 +1,72 @@
 {
+  "id": "/?source=pwa",
   "name": "Young General Engineering",
   "short_name": "YGE",
-  "description": "Estimating + bookkeeping for Young General Engineering, Inc.",
+  "description": "Estimating, job management, and bookkeeping for Young General Engineering, Inc.",
   "start_url": "/dashboard",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "orientation": "any",
   "background_color": "#ffffff",
   "theme_color": "#1d4ed8",
+  "categories": ["business", "productivity"],
   "icons": [
     {
       "src": "/icon-192.png",
       "type": "image/png",
       "sizes": "192x192",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "maskable"
     },
     {
       "src": "/icon-512.png",
       "type": "image/png",
       "sizes": "512x512",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "type": "image/png",
+      "sizes": "180x180",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Today's dispatch + open items",
+      "url": "/dashboard"
+    },
+    {
+      "name": "Jobs",
+      "short_name": "Jobs",
+      "description": "Active jobs and pursuits",
+      "url": "/jobs"
+    },
+    {
+      "name": "AP Invoices",
+      "short_name": "AP",
+      "description": "Vendor bills",
+      "url": "/ap-invoices"
+    },
+    {
+      "name": "Files",
+      "short_name": "Files",
+      "description": "Document explorer",
+      "url": "/files"
     }
   ]
 }
