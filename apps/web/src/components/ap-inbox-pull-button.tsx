@@ -23,7 +23,14 @@ interface PollResponse {
   scanned: number;
   ingested: number;
   skipped: number;
-  newInvoices: { id: string; vendorName: string; subject: string }[];
+  extracted: number;
+  newInvoices: {
+    id: string;
+    vendorName: string;
+    subject: string;
+    aiExtracted: boolean;
+    confidence?: 'HIGH' | 'MEDIUM' | 'LOW';
+  }[];
 }
 
 export function ApInboxPullButton({ apiBaseUrl, userEmail, mailbox }: Props) {
@@ -56,7 +63,9 @@ export function ApInboxPullButton({ apiBaseUrl, userEmail, mailbox }: Props) {
       const summary =
         data.ingested === 0
           ? `No new invoices (${data.scanned} message${data.scanned === 1 ? '' : 's'} scanned).`
-          : `${data.ingested} new invoice${data.ingested === 1 ? '' : 's'} created from ${data.scanned} message${data.scanned === 1 ? '' : 's'}.`;
+          : data.extracted === data.ingested
+            ? `${data.ingested} new AI-extracted invoice${data.ingested === 1 ? '' : 's'} from ${data.scanned} message${data.scanned === 1 ? '' : 's'}.`
+            : `${data.ingested} new invoice${data.ingested === 1 ? '' : 's'} from ${data.scanned} message${data.scanned === 1 ? '' : 's'} — ${data.extracted} AI-extracted, ${data.ingested - data.extracted} blank draft.`;
       setMessage(summary);
       if (data.ingested > 0) router.refresh();
     } catch (err) {

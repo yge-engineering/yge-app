@@ -21,6 +21,10 @@ import * as path from 'node:path';
 import { graphGet, graphGetBinary } from './microsoft-graph';
 import { createApInvoice } from './ap-invoices-store';
 import type { AuditContext } from './audit-store';
+import {
+  extractInvoiceFromPdf,
+  type ExtractedInvoice,
+} from './ap-invoice-extractor';
 
 interface MessageEmailAddress {
   emailAddress?: { name?: string; address?: string };
@@ -48,7 +52,15 @@ interface PollResult {
   scanned: number;
   ingested: number;
   skipped: number;
-  newInvoices: { id: string; vendorName: string; subject: string }[];
+  /** Number of invoices where AI extraction succeeded (vs. blank-draft fallback). */
+  extracted: number;
+  newInvoices: {
+    id: string;
+    vendorName: string;
+    subject: string;
+    aiExtracted: boolean;
+    confidence?: 'HIGH' | 'MEDIUM' | 'LOW';
+  }[];
 }
 
 function inboxDir(): string {
@@ -115,6 +127,7 @@ export async function pollApInbox(opts: PollOptions): Promise<PollResult> {
     scanned: 0,
     ingested: 0,
     skipped: 0,
+    extracted: 0,
     newInvoices: [],
   };
 
@@ -134,8 +147,11 @@ export async function pollApInbox(opts: PollOptions): Promise<PollResult> {
     }
 
     // Download any PDF attachments before creating the invoice so
-    // they're already on disk by the time the row exists.
+    // they're already on disk by the time the row exists. Also keep
+    // the bytes around so we can hand them straight to the AI
+    // extractor without re-reading from disk.
     let savedAttachmentPath: string | null = null;
+    let pdfBytes: Buffer | null = null;
     if (msg.hasAttachments) {
       try {
         const attRes = await graphGet<{ value: GraphAttachment[] }>(
@@ -154,6 +170,7 @@ export async function pollApInbox(opts: PollOptions): Promise<PollResult> {
           const fname = `${msg.id.slice(-12)}-${safeFilename(pdf.name)}`;
           savedAttachmentPath = path.join(inboxDir(), fname);
           await fs.writeFile(savedAttachmentPath, bin.bytes);
+          pdfBytes = bin.bytes;
         }
       } catch {
         // Don't let an attachment failure block the row creation —
@@ -161,10 +178,23 @@ export async function pollApInbox(opts: PollOptions): Promise<PollResult> {
       }
     }
 
-    const vendor = senderName(msg);
+    // Try AI extraction on the PDF. Failure leaves `extracted` null
+    // and we fall back to a minimal draft.
+    let extracted: ExtractedInvoice | null = null;
+    if (pdfBytes) {
+      extracted = await extractInvoiceFromPdf(pdfBytes);
+    }
+
+    const senderVendor = senderName(msg);
     const subject = (msg.subject ?? '(no subject)').slice(0, 200);
     const noteParts = [
-      `From: ${vendor}`,
+      extracted
+        ? `AI extraction (${extracted.promptVersion}, confidence ${extracted.confidence})`
+        : 'AI extraction not run (no PDF found or extractor unavailable).',
+      extracted?.extractionNotes
+        ? `Reviewer note: ${extracted.extractionNotes}`
+        : null,
+      `From: ${senderVendor}`,
       msg.receivedDateTime ? `Received: ${msg.receivedDateTime}` : null,
       msg.subject ? `Subject: ${msg.subject}` : null,
       savedAttachmentPath
@@ -174,10 +204,34 @@ export async function pollApInbox(opts: PollOptions): Promise<PollResult> {
       msg.bodyPreview ? `\nPreview:\n${msg.bodyPreview.slice(0, 500)}` : null,
     ].filter((s): s is string => s !== null);
 
+    // Build the create payload — extracted values win over fallbacks.
+    const vendor = extracted?.vendorName ?? senderVendor;
+    const invoiceDate = extracted?.invoiceDate ?? todayIso();
+    const lineItems = (extracted?.lineItems ?? []).map((li) => ({
+      description: li.description,
+      ...(li.unit ? { unit: li.unit } : {}),
+      quantity: li.quantity,
+      unitPriceCents: li.unitPriceCents,
+      lineTotalCents: li.lineTotalCents,
+    }));
+
     const invoice = await createApInvoice(
       {
         vendorName: vendor,
-        invoiceDate: todayIso(),
+        ...(extracted?.invoiceNumber ? { invoiceNumber: extracted.invoiceNumber } : {}),
+        invoiceDate,
+        ...(extracted?.dueDate ? { dueDate: extracted.dueDate } : {}),
+        ...(extracted?.subtotalCents !== undefined
+          ? { subtotalCents: extracted.subtotalCents }
+          : {}),
+        ...(extracted?.taxCents !== undefined ? { taxCents: extracted.taxCents } : {}),
+        ...(extracted?.freightCents !== undefined
+          ? { freightCents: extracted.freightCents }
+          : {}),
+        ...(extracted?.totalCents !== undefined
+          ? { totalCents: extracted.totalCents }
+          : {}),
+        lineItems,
         status: 'DRAFT',
         notes: noteParts.join('\n'),
       },
@@ -186,10 +240,13 @@ export async function pollApInbox(opts: PollOptions): Promise<PollResult> {
 
     seen.add(msg.id);
     result.ingested++;
+    if (extracted) result.extracted++;
     result.newInvoices.push({
       id: invoice.id,
       vendorName: vendor,
       subject,
+      aiExtracted: extracted !== null,
+      ...(extracted ? { confidence: extracted.confidence } : {}),
     });
   }
 

@@ -13,7 +13,7 @@
     "dry-run:ptoe": "tsx src/scripts/plans-to-estimate-cli.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.20.0",
+    "@anthropic-ai/sdk": "^0.33.0",
     "@types/multer": "^2.1.0",
     "@yge/db": "workspace:*",
     "@yge/shared": "workspace:*",
