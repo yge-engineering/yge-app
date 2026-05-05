@@ -17,6 +17,8 @@ import {
   type FolderNode,
 } from '@yge/shared';
 
+import { OneDriveRecentPanel } from '../../components/onedrive-recent-panel';
+
 interface Props {
   initialFolders: Folder[];
   initialDocuments: Document[];
@@ -455,6 +457,15 @@ export function FileExplorer({
           <div className="rounded border border-red-300 bg-red-50 p-2 text-sm text-red-800">
             {error}
           </div>
+        )}
+
+        {/* OneDrive recent files — only visible when connected. Click
+            an item to open it in OneDrive in a new tab. */}
+        {currentUserEmail && msStatus.configured && msStatus.connected && (
+          <OneDriveRecentPanel
+            apiBaseUrl={apiBaseUrl}
+            userEmail={currentUserEmail}
+          />
         )}
 
         {/* Subfolders + files grid */}
