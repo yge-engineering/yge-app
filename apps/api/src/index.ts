@@ -55,6 +55,7 @@ import { recordsRetentionRouter } from './routes/records-retention';
 import { bidTabsRouter } from './routes/bid-tabs';
 import { competitorsRouter } from './routes/competitors';
 import { credentialsRouter } from './routes/credentials';
+import { calendarEventsRouter } from './routes/calendar-events';
 
 const app = express();
 
@@ -140,6 +141,7 @@ app.use('/api/records-retention', recordsRetentionRouter);
 app.use('/api/bid-tabs', bidTabsRouter);
 app.use('/api/competitors', competitorsRouter);
 app.use('/api/credentials', credentialsRouter);
+app.use('/api/calendar-events', calendarEventsRouter);
 
 // 404
 app.use((_req, res) => {

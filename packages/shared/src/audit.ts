@@ -65,6 +65,7 @@ export const AuditEntityTypeSchema = z.enum([
   'BankRec',
   'BidItem',
   'BidResult',
+  'CalendarEvent',
   'Certificate',
   'CertifiedPayroll',
   'ChangeOrder',

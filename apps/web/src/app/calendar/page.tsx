@@ -1,128 +1,61 @@
-// /calendar — 14-day dispatch board.
+// /calendar — full-feature calendar with day/week/month/year views.
 //
-// Plain English: groups dispatches by day so you can see at a glance
-// who's working where over the next two weeks. Past days collapse,
-// today highlights, future days show a count + foreman list.
+// Plain English: this is the YGE company calendar. Pick a view, click
+// a day to add an event, click an event to edit it. Independent of
+// the dispatch board (which is operational — crew + equipment for
+// the day). The calendar holds meetings, bid deadlines, payroll
+// cutoffs, vacation, anything that needs to land on a date.
 
-import Link from 'next/link';
+import type { CalendarEvent } from '@yge/shared';
 
-import { AppShell, Card, EmptyState, PageHeader, StatusPill } from '../../components';
-import { getTranslator, type Translator } from '../../lib/locale';
-import type { Dispatch } from '@yge/shared';
+import { AppShell } from '../../components';
+import { CalendarView } from './calendar-view';
 
 function apiBaseUrl(): string {
   return (
     process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
   );
 }
+function publicApiBaseUrl(): string {
+  return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+}
 
-async function fetchDispatches(): Promise<Dispatch[]> {
+async function fetchEvents(): Promise<CalendarEvent[]> {
+  // Fetch a wide window — 3 months back to 12 months forward — once
+  // on first render. The CalendarView re-fetches client-side when
+  // the user pages outside that window.
+  const now = new Date();
+  const from = new Date(now);
+  from.setMonth(from.getMonth() - 3);
+  const to = new Date(now);
+  to.setMonth(to.getMonth() + 12);
+  const url =
+    `${apiBaseUrl()}/api/calendar-events?` +
+    new URLSearchParams({
+      from: from.toISOString().slice(0, 10),
+      to: to.toISOString().slice(0, 10),
+    }).toString();
   try {
-    const res = await fetch(`${apiBaseUrl()}/api/dispatches`, { cache: 'no-store' });
+    const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) return [];
-    const body = (await res.json()) as Record<string, unknown>;
-    const arr = body.dispatches;
-    return Array.isArray(arr) ? (arr as Dispatch[]) : [];
+    const body = (await res.json()) as { events?: CalendarEvent[] };
+    return body.events ?? [];
   } catch {
     return [];
   }
 }
 
-function dayLabel(iso: string, today: string, t: Translator): string {
-  if (iso === today) return t('cal.today');
-  const d = new Date(`${iso}T00:00:00`);
-  const tDate = new Date(`${today}T00:00:00`);
-  const ms = d.getTime() - tDate.getTime();
-  const days = Math.round(ms / 86_400_000);
-  if (days === 1) return t('cal.tomorrow');
-  if (days === -1) return t('cal.yesterday');
-  return d.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
-}
-
-function statusTone(s: string): 'success' | 'info' | 'muted' | 'neutral' {
-  switch (s) {
-    case 'COMPLETED': return 'success';
-    case 'POSTED': return 'info';
-    case 'CANCELLED': return 'muted';
-    default: return 'neutral';
-  }
-}
-
 export default async function CalendarPage() {
-  const dispatches = await fetchDispatches();
+  const events = await fetchEvents();
   const today = new Date().toISOString().slice(0, 10);
-
-  // Build a 14-day window centered on today (3 past + today + 10 future).
-  const days: string[] = [];
-  for (let offset = -3; offset <= 10; offset += 1) {
-    const d = new Date(`${today}T00:00:00`);
-    d.setDate(d.getDate() + offset);
-    days.push(d.toISOString().slice(0, 10));
-  }
-
-  // Group dispatches by scheduledFor.
-  const byDay = new Map<string, Dispatch[]>();
-  for (const d of dispatches) {
-    const arr = byDay.get(d.scheduledFor) ?? [];
-    arr.push(d);
-    byDay.set(d.scheduledFor, arr);
-  }
-
-  const totalInWindow = days.reduce((sum, d) => sum + (byDay.get(d)?.length ?? 0), 0);
-  const t = getTranslator();
-
   return (
     <AppShell>
-      <main className="mx-auto max-w-5xl">
-        <PageHeader
-          title={t('cal.title')}
-          subtitle={t('cal.subtitle', { count: totalInWindow })}
+      <main className="mx-auto max-w-6xl">
+        <CalendarView
+          initialEvents={events}
+          today={today}
+          apiBaseUrl={publicApiBaseUrl()}
         />
-
-        {dispatches.length === 0 ? (
-          <EmptyState
-            title={t('cal.empty.title')}
-            body={t('cal.empty.body')}
-            actions={[{ href: '/dispatch/new', label: t('cal.empty.action'), primary: true }]}
-          />
-        ) : (
-          <div className="space-y-3">
-            {days.map((iso) => {
-              const list = byDay.get(iso) ?? [];
-              const isToday = iso === today;
-              return (
-                <Card key={iso} className={isToday ? 'border-blue-500 bg-blue-50/40' : ''}>
-                  <div className="flex flex-wrap items-baseline justify-between gap-3">
-                    <div>
-                      <div className={`text-sm font-semibold ${isToday ? 'text-blue-900' : 'text-gray-900'}`}>
-                        {dayLabel(iso, today, t)}
-                      </div>
-                      <div className="text-[11px] uppercase tracking-wider text-gray-500">{iso}</div>
-                    </div>
-                    <div className="text-xs text-gray-600">
-                      {list.length === 0 ? <span className="text-gray-400">{t('cal.noDispatches')}</span> : t('cal.dispatchCount', { count: list.length, plural: list.length === 1 ? '' : 'es' })}
-                    </div>
-                  </div>
-                  {list.length > 0 && (
-                    <ul className="mt-3 space-y-1.5 text-sm">
-                      {list.map((d) => (
-                        <li key={d.id} className="flex items-center justify-between gap-3">
-                          <Link href={`/dispatch/${d.id}`} className="text-blue-700 hover:underline">
-                            {d.foremanName}
-                          </Link>
-                          <span className="truncate text-xs text-gray-500">
-                            {t('cal.crewEquipment', { crew: d.crew.length, equipment: d.equipment.length })}
-                          </span>
-                          <StatusPill label={d.status} tone={statusTone(d.status)} size="sm" />
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </Card>
-              );
-            })}
-          </div>
-        )}
       </main>
     </AppShell>
   );
