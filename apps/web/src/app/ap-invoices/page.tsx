@@ -133,7 +133,10 @@ export default async function ApInvoicesPage({
           }
         />
 
-        <ApInboxStatusBanner apiBaseUrl={publicApiBaseUrl()} />
+        <ApInboxStatusBanner
+          apiBaseUrl={publicApiBaseUrl()}
+          showRunNow={user?.role === 'PRESIDENT' || user?.role === 'VP'}
+        />
 
         <section className="mb-4 grid gap-3 sm:grid-cols-4">
           <Tile

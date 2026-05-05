@@ -28,6 +28,10 @@ interface Resp {
 
 interface Props {
   apiBaseUrl: string;
+  /** When true, render an admin "Run now" button that triggers
+   *  POST /api/microsoft/ap-inbox-run-now without waiting for the
+   *  next scheduled tick. Default false — only owners want this. */
+  showRunNow?: boolean;
 }
 
 function relWhen(iso: string): string {
@@ -39,34 +43,51 @@ function relWhen(iso: string): string {
   return `${Math.floor(sec / 86_400)} d ago`;
 }
 
-export function ApInboxStatusBanner({ apiBaseUrl }: Props) {
+export function ApInboxStatusBanner({ apiBaseUrl, showRunNow }: Props) {
   const [data, setData] = useState<RunSummary | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [runningNow, setRunningNow] = useState(false);
+
+  async function load() {
+    try {
+      const res = await fetch(`${apiBaseUrl}/api/microsoft/ap-inbox-status`, {
+        cache: 'no-store',
+      });
+      if (!res.ok) return;
+      const j = (await res.json()) as Resp;
+      setData(j.lastRun);
+    } catch {
+      // ignore — banner is best-effort
+    } finally {
+      setLoaded(true);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
-    async function load() {
-      try {
-        const res = await fetch(`${apiBaseUrl}/api/microsoft/ap-inbox-status`, {
-          cache: 'no-store',
-        });
-        if (!res.ok) return;
-        const j = (await res.json()) as Resp;
-        if (cancelled) return;
-        setData(j.lastRun);
-      } catch {
-        // ignore — banner is best-effort
-      } finally {
-        if (!cancelled) setLoaded(true);
-      }
-    }
     void load();
-    const t = setInterval(load, 60_000);
+    const t = setInterval(() => {
+      if (!cancelled) void load();
+    }, 60_000);
     return () => {
       cancelled = true;
       clearInterval(t);
     };
   }, [apiBaseUrl]);
+
+  async function runNow() {
+    setRunningNow(true);
+    try {
+      await fetch(`${apiBaseUrl}/api/microsoft/ap-inbox-run-now`, {
+        method: 'POST',
+      });
+      await load();
+    } catch {
+      // best-effort
+    } finally {
+      setRunningNow(false);
+    }
+  }
 
   if (!loaded) return null;
   if (!data) {
@@ -88,15 +109,29 @@ export function ApInboxStatusBanner({ apiBaseUrl }: Props) {
         ? 'border-green-300 bg-green-50 text-green-900'
         : 'border-gray-200 bg-gray-50 text-gray-700';
   return (
-    <div className={`mb-3 rounded-md border px-3 py-2 text-xs ${tone}`}>
-      Auto-poll last ran <strong>{relWhen(data.finishedAt)}</strong> ·{' '}
-      {data.perUser.length} connected user{data.perUser.length === 1 ? '' : 's'} ·{' '}
-      {totalIngested} new invoice{totalIngested === 1 ? '' : 's'} from{' '}
-      {totalScanned} message{totalScanned === 1 ? '' : 's'}
-      {errored.length > 0 && (
-        <span> · ⚠ {errored.length} error{errored.length === 1 ? '' : 's'}</span>
+    <div
+      className={`mb-3 flex flex-wrap items-center justify-between gap-2 rounded-md border px-3 py-2 text-xs ${tone}`}
+    >
+      <span>
+        Auto-poll last ran <strong>{relWhen(data.finishedAt)}</strong> ·{' '}
+        {data.perUser.length} connected user{data.perUser.length === 1 ? '' : 's'} ·{' '}
+        {totalIngested} new invoice{totalIngested === 1 ? '' : 's'} from{' '}
+        {totalScanned} message{totalScanned === 1 ? '' : 's'}
+        {errored.length > 0 && (
+          <span> · ⚠ {errored.length} error{errored.length === 1 ? '' : 's'}</span>
+        )}
+        .
+      </span>
+      {showRunNow && (
+        <button
+          type="button"
+          onClick={() => void runNow()}
+          disabled={runningNow}
+          className="rounded border border-current bg-white/60 px-2 py-0.5 font-medium hover:bg-white disabled:opacity-50"
+        >
+          {runningNow ? 'Polling…' : 'Run now (all users)'}
+        </button>
       )}
-      .
     </div>
   );
 }
