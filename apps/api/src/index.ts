@@ -57,6 +57,7 @@ import { competitorsRouter } from './routes/competitors';
 import { credentialsRouter } from './routes/credentials';
 import { calendarEventsRouter } from './routes/calendar-events';
 import { calendarShareRouter } from './routes/calendar-share';
+import { foldersRouter } from './routes/folders';
 
 const app = express();
 
@@ -144,6 +145,7 @@ app.use('/api/competitors', competitorsRouter);
 app.use('/api/credentials', credentialsRouter);
 app.use('/api/calendar-events', calendarEventsRouter);
 app.use('/api/calendar-share', calendarShareRouter);
+app.use('/api/folders', foldersRouter);
 
 // 404
 app.use((_req, res) => {

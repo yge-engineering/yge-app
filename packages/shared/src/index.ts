@@ -1,5 +1,6 @@
 export * from './audit';
 export * from './calendar-event';
+export * from './folder';
 export * from './bid-coach';
 export * from './bid-tab';
 export * from './bid-tab-link';

@@ -108,6 +108,7 @@ const NAV_SPEC: NavGroupSpec[] = [
       { key: 'nav.vendors', href: '/vendors' },
       { key: 'nav.employees', href: '/employees' },
       { key: 'nav.team', href: '/team' },
+      { key: 'nav.files', href: '/files' },
       { key: 'nav.documents', href: '/documents' },
     ],
   },

@@ -84,6 +84,27 @@ export const DocumentSchema = z.object({
   /** Free-form notes — what's in the doc, what to look out for. */
   notes: z.string().max(10_000).optional(),
 
+  // ---- File-vault helpers ----------------------------------------
+  // These get populated when the document is uploaded through
+  // POST /api/documents/upload (the new /files page). Pure metadata
+  // documents (legacy "url-only" rows) leave them blank and continue
+  // to work.
+
+  /** Folder the document belongs to in the /files explorer. null /
+   *  missing means root level. */
+  folderId: z.string().max(120).nullable().optional(),
+  /** Original file name as it was uploaded. Helps preserve user
+   *  intent ("Sulphur_Springs_Plans_RevB.pdf") even if the title is
+   *  edited. */
+  originalFileName: z.string().max(300).optional(),
+  /** MIME type captured at upload. */
+  mimeType: z.string().max(120).optional(),
+  /** Byte size of the uploaded blob. */
+  fileSize: z.number().int().nonnegative().optional(),
+  /** True iff a binary blob is stored on the server for this row.
+   *  When false, only `url` (the legacy pointer) is meaningful. */
+  hasBlob: z.boolean().default(false),
+
   // ---- Retention helpers -----------------------------------------
   // Optional fields the records-retention engine reads when the
   // document's kind has a specific statutory rule.
