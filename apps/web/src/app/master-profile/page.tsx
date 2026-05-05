@@ -13,6 +13,7 @@ import {
   PageHeader,
 } from '../../components';
 import { getTranslator } from '../../lib/locale';
+import { requirePermission } from '../../lib/permissions';
 import { MasterProfileEditor } from '@/components/master-profile-editor';
 import { MasterProfileOfficersEditor } from '@/components/master-profile-officers-editor';
 import { MasterProfileInsuranceEditor } from '@/components/master-profile-insurance-editor';
@@ -38,6 +39,7 @@ async function fetchProfile(): Promise<MasterProfile | null> {
 }
 
 export default async function MasterProfilePage() {
+  requirePermission('masterProfile:view');
   const profile = await fetchProfile();
   const t = getTranslator();
 
