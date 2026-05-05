@@ -1,14 +1,14 @@
 // Credential routes — first-time password setup + sign-in verify.
 //
-// Plain English: when a seeded user (Ryan, Brook) signs in, the web's
-// login server action POSTs here to either set a brand-new password
-// (first time) or verify the typed password against the stored hash
-// (subsequent sign-ins). The web app keeps the seeded-user allowlist;
-// this API just stores/checks credentials by email.
+// Plain English: when a portal user signs in, the web's login server
+// action POSTs here to either set a brand-new password (first time)
+// or verify the typed password against the stored hash (subsequent
+// sign-ins). The allowlist is the portal-users store — newly-invited
+// users via /admin/portal-users are recognized immediately. Disabled
+// users are rejected before the password layer runs.
 //
-// Defense in depth: the API also rejects unknown emails so a
-// misconfigured web (or a direct curl) can't fill the credentials
-// store with junk.
+// Defense in depth: the API rejects unknown emails so a misconfigured
+// web (or a direct curl) can't fill the credentials store with junk.
 
 import { Router } from 'express';
 import { z } from 'zod';
@@ -17,19 +17,17 @@ import {
   setPassword,
   verifyPassword,
 } from '../lib/credentials-store';
+import { getPortalUserByEmail } from '../lib/portal-users-store';
 
 export const credentialsRouter = Router();
 
-// Mirror of the web's seeded-user list. Keeps the two in sync until we
-// move auth onto Supabase. If you add a user here, also add them in
-// apps/web/src/lib/auth.ts.
-const ALLOWED_EMAILS = new Set<string>([
-  'ryoung@youngge.com',
-  'brookyoung@youngge.com',
-]);
-
-function isAllowed(email: string): boolean {
-  return ALLOWED_EMAILS.has(email.toLowerCase());
+/** True iff `email` belongs to an enabled portal user. Replaces the
+ *  legacy hardcoded allowlist — newly-invited users via
+ *  /admin/portal-users are now picked up automatically. Disabled
+ *  users are rejected here before the password layer runs. */
+async function isAllowed(email: string): Promise<boolean> {
+  const u = await getPortalUserByEmail(email);
+  return u !== null && !u.disabled;
 }
 
 // ---- GET /api/credentials/has-password ---------------------------------
@@ -48,7 +46,7 @@ credentialsRouter.get('/has-password', async (req, res, next) => {
       });
     }
     const { email } = parsed.data;
-    if (!isAllowed(email)) {
+    if (!(await isAllowed(email))) {
       // Don't leak whether the email is on the allowlist — pretend
       // every unknown email simply has no password yet. The web's
       // own allowlist will reject it at sign-in time.
@@ -77,7 +75,7 @@ credentialsRouter.post('/set-password', async (req, res, next) => {
       });
     }
     const { email, password } = parsed.data;
-    if (!isAllowed(email)) {
+    if (!(await isAllowed(email))) {
       return res.status(403).json({ error: 'Not on access list' });
     }
     if (await hasPassword(email)) {
@@ -127,7 +125,7 @@ credentialsRouter.post('/verify', async (req, res, next) => {
         retryAfterSec,
       });
     }
-    if (!isAllowed(email)) {
+    if (!(await isAllowed(email))) {
       lockoutModule.recordLoginFailure(ip, email);
       return res.json({ valid: false });
     }
