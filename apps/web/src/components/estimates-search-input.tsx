@@ -43,6 +43,40 @@ export function EstimatesSearchInput({ targetId, totalCount }: Props) {
 
   const [matched, setMatched] = useState<number>(totalCount);
   const [matchedCents, setMatchedCents] = useState<number>(0);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+
+  // Load recent searches on mount.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = window.localStorage.getItem('yge.estimates.recentSearches');
+      if (raw) {
+        const arr = JSON.parse(raw);
+        if (Array.isArray(arr)) {
+          setRecentSearches(arr.filter((x): x is string => typeof x === 'string').slice(0, 3));
+        }
+      }
+    } catch {}
+  }, []);
+
+  // Save current query to recent searches when it has 3+ chars and stops changing for 1s.
+  useEffect(() => {
+    const trimmed = q.trim();
+    if (trimmed.length < 3) return;
+    const handle = window.setTimeout(() => {
+      try {
+        const raw = window.localStorage.getItem('yge.estimates.recentSearches');
+        const existing = raw ? (JSON.parse(raw) as unknown) : [];
+        const list = Array.isArray(existing)
+          ? existing.filter((x): x is string => typeof x === 'string')
+          : [];
+        const next = [trimmed, ...list.filter((x) => x !== trimmed)].slice(0, 5);
+        window.localStorage.setItem('yge.estimates.recentSearches', JSON.stringify(next));
+        setRecentSearches(next.slice(0, 3));
+      } catch {}
+    }, 1000);
+    return () => window.clearTimeout(handle);
+  }, [q]);
 
   useEffect(() => {
     const ids = targetId.split(',').map((x) => x.trim()).filter(Boolean);
@@ -115,7 +149,22 @@ export function EstimatesSearchInput({ targetId, totalCount }: Props) {
         className="w-full max-w-xs rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-yge-blue-500 focus:outline-none focus:ring-1 focus:ring-yge-blue-500"
       />
       <span className="text-xs text-gray-600">
-        {q.trim().length > 0 ? (
+        {recentSearches.length > 0 && q.trim().length === 0 && (
+        <span className="flex items-center gap-1 text-xs">
+          <span className="text-gray-500">Recent:</span>
+          {recentSearches.map((r) => (
+            <button
+              key={r}
+              type="button"
+              onClick={() => setQ(r)}
+              className="rounded border border-gray-300 bg-white px-2 py-0.5 hover:bg-gray-50"
+            >
+              {r}
+            </button>
+          ))}
+        </span>
+      )}
+      {q.trim().length > 0 ? (
           <>
             {matched} of {totalCount} · subtotal{' '}
           </>
