@@ -7,6 +7,7 @@
 import Link from 'next/link';
 
 import { Alert, AppShell } from '../../components';
+import { DraftsSearchInput } from '../../components/drafts-search-input';
 import { getTranslator } from '../../lib/locale';
 
 interface DraftSummary {
@@ -109,8 +110,10 @@ export default async function DraftsPage() {
       )}
 
       {drafts.length > 0 && (
-        <div className="mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-          <table className="w-full text-left text-sm">
+        <div className="mt-6">
+          <DraftsSearchInput targetId="drafts-table" totalCount={drafts.length} />
+          <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+          <table id="drafts-table" className="w-full text-left text-sm">
             <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
               <tr>
                 <th className="px-4 py-2">{t('drafts.col.project')}</th>
@@ -123,7 +126,11 @@ export default async function DraftsPage() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {drafts.map((d) => (
-                <tr key={d.id} className="hover:bg-gray-50">
+                <tr
+                  key={d.id}
+                  data-search={`${d.projectName} ${d.ownerAgency ?? ''} ${d.projectType.replace(/_/g, ' ')}`}
+                  className="hover:bg-gray-50"
+                >
                   <td className="px-4 py-3">
                     <div className="font-medium">
                       <Link
@@ -168,6 +175,7 @@ export default async function DraftsPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </main>
