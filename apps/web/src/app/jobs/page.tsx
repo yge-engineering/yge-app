@@ -215,6 +215,7 @@ export default async function JobsPage({ searchParams }: PageProps) {
   const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
   const nowMs = Date.now();
   const estimateBidTotalsByJob: Record<string, number> = {};
+  const estimateReviewByJob: Record<string, { reviewed: number; total: number }> = {};
   for (const e of estimateLites) {
     const stat = estimateStatsByJob[e.jobId] ?? { count: 0, dueSoon: 0 };
     stat.count++;
@@ -226,6 +227,12 @@ export default async function JobsPage({ searchParams }: PageProps) {
     if (typeof e.bidTotalCents === 'number') {
       estimateBidTotalsByJob[e.jobId] =
         (estimateBidTotalsByJob[e.jobId] ?? 0) + e.bidTotalCents;
+    }
+    if (typeof e.reviewedLineCount === 'number' && typeof e.bidItemCount === 'number') {
+      const r = estimateReviewByJob[e.jobId] ?? { reviewed: 0, total: 0 };
+      r.reviewed += e.reviewedLineCount;
+      r.total += e.bidItemCount;
+      estimateReviewByJob[e.jobId] = r;
     }
   }
   const totalYgeBidCents = filteredJobs.reduce(
@@ -410,6 +417,11 @@ export default async function JobsPage({ searchParams }: PageProps) {
                             {estimateStatsByJob[j.id]!.dueSoon} due ≤ 7d
                           </span>
                         ) : null}
+                        {estimateReviewByJob[j.id] && estimateReviewByJob[j.id]!.total > 0 && estimateReviewByJob[j.id]!.reviewed < estimateReviewByJob[j.id]!.total && (
+                          <span className="ml-1">
+                            · {estimateReviewByJob[j.id]!.reviewed}/{estimateReviewByJob[j.id]!.total} reviewed
+                          </span>
+                        )}
                       </div>
                     )}
                     <div className="mt-0.5 text-[10px] text-gray-400" title={j.updatedAt}>
