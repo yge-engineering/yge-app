@@ -163,7 +163,7 @@ export default async function VendorsPage({
                   return (
                     <tr key={v.id} className={rowClass}>
                       <td className="px-4 py-3">
-                        <Link href={`/vendors/${v.id}`} className="font-medium text-blue-700 hover:underline">
+                        <Link href={`/vendors/${v.id}`} className="font-medium text-gray-900 hover:text-yge-blue-700 hover:underline">
                           {v.dbaName ?? v.legalName}
                         </Link>
                         {v.dbaName ? <div className="text-xs text-gray-500">{v.legalName}</div> : null}

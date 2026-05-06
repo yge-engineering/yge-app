@@ -154,7 +154,7 @@ export default async function CustomersPage({
                 {customers.map((c) => (
                   <tr key={c.id} className={c.onHold ? 'bg-red-50' : ''}>
                     <td className="px-4 py-3 text-sm">
-                      <Link href={`/customers/${c.id}`} className="font-medium text-blue-700 hover:underline">
+                      <Link href={`/customers/${c.id}`} className="font-medium text-gray-900 hover:text-yge-blue-700 hover:underline">
                         {customerDisplayName(c)}
                       </Link>
                       {c.dbaName ? <div className="text-xs text-gray-500">{c.legalName}</div> : null}
