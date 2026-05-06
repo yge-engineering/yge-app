@@ -180,7 +180,7 @@ export default async function SubmittalsPage({
                   return (
                     <tr key={s.id} className={rowClass}>
                       <td className="px-4 py-3 font-mono text-sm font-bold text-gray-900">
-                        <Link href={`/submittals/${s.id}`} className="text-blue-700 hover:underline">{s.submittalNumber}</Link>
+                        <Link href={`/submittals/${s.id}`} className="font-medium text-gray-900 hover:text-yge-blue-700 hover:underline">{s.submittalNumber}</Link>
                         {s.revision ? <span className="ml-1 text-gray-500">Rev {s.revision}</span> : null}
                       </td>
                       <td className="px-4 py-3">
@@ -197,7 +197,7 @@ export default async function SubmittalsPage({
                       </td>
                       <td className="px-4 py-3 text-sm">
                         {job ? (
-                          <Link href={`/jobs/${job.id}`} className="text-blue-700 hover:underline">{job.projectName}</Link>
+                          <Link href={`/jobs/${job.id}`} className="font-medium text-gray-900 hover:text-yge-blue-700 hover:underline">{job.projectName}</Link>
                         ) : (
                           <span className="text-gray-400">{s.jobId}</span>
                         )}

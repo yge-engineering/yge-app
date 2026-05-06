@@ -174,7 +174,7 @@ export default async function RfisPage({
                   return (
                     <tr key={r.id} className={rowClass}>
                       <td className="px-4 py-3 font-mono text-sm font-bold text-gray-900">
-                        <Link href={`/rfis/${r.id}`} className="text-blue-700 hover:underline">{r.rfiNumber}</Link>
+                        <Link href={`/rfis/${r.id}`} className="font-medium text-gray-900 hover:text-yge-blue-700 hover:underline">{r.rfiNumber}</Link>
                       </td>
                       <td className="px-4 py-3">
                         <div className="font-medium text-gray-900">{r.subject}</div>
@@ -187,7 +187,7 @@ export default async function RfisPage({
                       </td>
                       <td className="px-4 py-3 text-sm">
                         {job ? (
-                          <Link href={`/jobs/${job.id}`} className="text-blue-700 hover:underline">{job.projectName}</Link>
+                          <Link href={`/jobs/${job.id}`} className="font-medium text-gray-900 hover:text-yge-blue-700 hover:underline">{job.projectName}</Link>
                         ) : (
                           <span className="text-gray-400">{r.jobId}</span>
                         )}
