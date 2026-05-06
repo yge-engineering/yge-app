@@ -7,6 +7,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { AuditBinderPanel, Money } from '../../../components';
+import { relativeTime } from '../../../lib/relative-time';
 import { getTranslator } from '../../../lib/locale';
 import {
   contractTypeLabel,
@@ -446,7 +447,7 @@ export default async function JobDetailPage({
                     </Link>
                   </div>
                   <div className="text-xs text-gray-500">
-                    {t('jobDetail.drafts.itemCount', { count: d.bidItemCount, when: formatWhen(d.createdAt) })}
+                    {t('jobDetail.drafts.itemCount', { count: d.bidItemCount, when: relativeTime(d.createdAt) })}
                   </div>
                 </div>
                 <Link
@@ -477,7 +478,7 @@ export default async function JobDetailPage({
                 priced: e.pricedLineCount,
                 total: e.bidItemCount,
                 dollars: '__DOLLARS__',
-                when: formatWhen(e.updatedAt),
+                when: relativeTime(e.updatedAt),
               });
               const [pre, post] = summaryTpl.split('__DOLLARS__');
               return (
