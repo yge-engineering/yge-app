@@ -20,6 +20,7 @@ import { CopyEstimateLink } from '@/components/copy-estimate-link';
 import { relativeTime } from '@/lib/relative-time';
 import { CopyBidSummaryButton } from '@/components/copy-bid-summary-button';
 import { CopyPageUrlButton } from '@/components/copy-page-url-button';
+import { CopyIdChip } from '@/components/copy-id-chip';
 import { BidStatusSwitcher } from '@/components/bid-status-switcher';
 import { getTranslator } from '../../../lib/locale';
 
@@ -64,6 +65,7 @@ export default async function EstimateDetailPage({
           {t('estPg.back')}
         </Link>
         <div className="flex items-center gap-3 text-sm">
+          <CopyIdChip id={data.estimate.id} label="id" />
           <span
             className="text-xs text-gray-500"
             title={data.estimate.updatedAt}
