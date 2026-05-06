@@ -628,6 +628,14 @@ export default async function DashboardPage() {
               </span>
             </Link>
           )}
+          {pipelineData.submittedAwaiting.length > 0 && (
+            <Link href="/estimates?status=submitted" className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 font-medium text-blue-800 hover:bg-blue-100">
+              <span className="uppercase tracking-wide opacity-70">Awaiting</span>
+              <span className="font-mono font-semibold">
+                {pipelineData.submittedAwaiting.length}
+              </span>
+            </Link>
+          )}
           {pipelineData.centsByStatus.awarded > 0 && (
             <Link href="/jobs?status=awarded" className="inline-flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-3 py-1 font-medium text-green-800 hover:bg-green-100">
               <span className="uppercase tracking-wide opacity-70">Awarded</span>
