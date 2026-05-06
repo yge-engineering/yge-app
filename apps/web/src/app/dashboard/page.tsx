@@ -469,28 +469,28 @@ export default async function DashboardPage() {
       {pipelineData.pipelineCount > 0 && (
         <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
           {pipelineData.centsByStatus.pursuing > 0 && (
-            <span className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 font-medium text-amber-800">
+            <Link href="/estimates" className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 font-medium text-amber-800 hover:bg-amber-100">
               <span className="uppercase tracking-wide opacity-70">Pursuing</span>
               <span className="font-mono font-semibold">
                 <Money cents={pipelineData.centsByStatus.pursuing} />
               </span>
-            </span>
+            </Link>
           )}
           {pipelineData.centsByStatus.submitted > 0 && (
-            <span className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 font-medium text-blue-800">
+            <Link href="/estimates" className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 font-medium text-blue-800 hover:bg-blue-100">
               <span className="uppercase tracking-wide opacity-70">Submitted</span>
               <span className="font-mono font-semibold">
                 <Money cents={pipelineData.centsByStatus.submitted} />
               </span>
-            </span>
+            </Link>
           )}
           {pipelineData.centsByStatus.awarded > 0 && (
-            <span className="inline-flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-3 py-1 font-medium text-green-800">
+            <Link href="/jobs?status=awarded" className="inline-flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-3 py-1 font-medium text-green-800 hover:bg-green-100">
               <span className="uppercase tracking-wide opacity-70">Awarded</span>
               <span className="font-mono font-semibold">
                 <Money cents={pipelineData.centsByStatus.awarded} />
               </span>
-            </span>
+            </Link>
           )}
           {pipelineData.decided > 0 && (
             <span className="inline-flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-3 py-1 font-medium text-green-800">
