@@ -29,6 +29,7 @@ import { BidChecklistBanner } from './bid-checklist-banner';
 import { CostBuildupDrawer } from './cost-buildup-drawer';
 import { MarkupStackEditor } from './markup-stack-editor';
 import { HistoricalPricesPopover } from './historical-prices-popover';
+import { ExplainLinePopover } from './explain-line-popover';
 
 interface Props {
   initialEstimate: PricedEstimate;
@@ -812,6 +813,8 @@ function BidItemRow({
 
   // Per-row history popover open/closed state.
   const [historyOpen, setHistoryOpen] = useState(false);
+  // Per-row AI-explain popover open/closed state.
+  const [explainOpen, setExplainOpen] = useState(false);
   const [text, setText] = useState<string>(
     item.unitPriceCents == null ? '' : (item.unitPriceCents / 100).toFixed(2),
   );
@@ -934,6 +937,14 @@ function BidItemRow({
         <div className="flex items-center justify-end gap-1">
           <button
             type="button"
+            onClick={() => setExplainOpen((v) => !v)}
+            title="Ask the AI what this line typically covers"
+            className="rounded border border-gray-300 px-1 py-0.5 text-[10px] text-gray-500 hover:border-yge-blue-500 hover:text-yge-blue-700"
+          >
+            ❓
+          </button>
+          <button
+            type="button"
             onClick={() => setHistoryOpen((v) => !v)}
             title="Show what we bid for similar lines on past jobs"
             className="rounded border border-gray-300 px-1 py-0.5 text-[10px] text-gray-500 hover:border-yge-blue-500 hover:text-yge-blue-700"
@@ -1020,6 +1031,17 @@ function BidItemRow({
             excludeEstimateId={estimateId}
             onPick={(cents) => onPriceCommit(cents)}
             onClose={() => setHistoryOpen(false)}
+          />
+        )}
+        {explainOpen && (
+          <ExplainLinePopover
+            apiBaseUrl={apiBaseUrl}
+            estimateId={estimateId}
+            itemIndex={index}
+            currentUnitCentsHint={
+              text.trim() === '' ? undefined : Math.round(Number(text) * 100)
+            }
+            onClose={() => setExplainOpen(false)}
           />
         )}
       </td>
