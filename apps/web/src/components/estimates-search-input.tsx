@@ -73,6 +73,29 @@ export function EstimatesSearchInput({ targetId, totalCount }: Props) {
     }
     setMatched(count);
     setMatchedCents(cents);
+
+    // Show / hide a per-table empty-state row added once on mount.
+    for (const id of ids) {
+      const table = document.getElementById(id);
+      if (!table) continue;
+      const tbody = table.querySelector('tbody');
+      if (!tbody) continue;
+      let empty = tbody.querySelector('tr[data-empty-state="1"]') as HTMLTableRowElement | null;
+      if (!empty) {
+        empty = document.createElement('tr');
+        empty.dataset['emptyState'] = '1';
+        const td = document.createElement('td');
+        td.colSpan = 12; // safe overshoot; CSS hides extra cols
+        td.className = 'px-4 py-6 text-center text-sm text-gray-500';
+        td.textContent = 'No matches. Adjust the filters above.';
+        empty.appendChild(td);
+        tbody.appendChild(empty);
+      }
+      const allHidden = Array.from(
+        tbody.querySelectorAll<HTMLTableRowElement>('tr[data-search]'),
+      ).every((row) => row.style.display === 'none');
+      empty.style.display = allHidden ? '' : 'none';
+    }
   }, [q, targetId, totalCount]);
 
   return (
