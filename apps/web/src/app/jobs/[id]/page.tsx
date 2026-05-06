@@ -504,6 +504,14 @@ export default async function JobDetailPage({
               ).length;
               const won = estimates.filter((e) => e.bidStatus === 'awarded').length;
               const lost = estimates.filter((e) => e.bidStatus === 'lost').length;
+              const bidTotalsByStatus = estimates.reduce(
+                (acc, e) => {
+                  const k = (e.bidStatus ?? 'pursuing') as 'pursuing' | 'submitted' | 'awarded' | 'lost';
+                  acc[k] = (acc[k] ?? 0) + e.bidTotalCents;
+                  return acc;
+                },
+                {} as Record<string, number>,
+              );
               return (
                 <>
                   <span className="ml-3 inline-block rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs font-normal text-gray-600">
@@ -532,6 +540,35 @@ export default async function JobDetailPage({
             </Link>
           )}
         </div>
+        {estimates.length > 0 && (() => {
+          const totalsByStatus: Record<string, number> = {};
+          for (const e of estimates) {
+            const k = e.bidStatus ?? 'pursuing';
+            totalsByStatus[k] = (totalsByStatus[k] ?? 0) + e.bidTotalCents;
+          }
+          return (
+            <div className="mt-2 flex flex-wrap gap-2 text-xs">
+              {(['pursuing', 'submitted', 'awarded', 'lost'] as const).map((k) => {
+                const cents = totalsByStatus[k] ?? 0;
+                if (cents === 0) return null;
+                const tone =
+                  k === 'pursuing'
+                    ? 'border-amber-200 bg-amber-50 text-amber-800'
+                    : k === 'submitted'
+                      ? 'border-blue-200 bg-blue-50 text-blue-800'
+                      : k === 'awarded'
+                        ? 'border-green-200 bg-green-50 text-green-800'
+                        : 'border-gray-200 bg-gray-100 text-gray-700';
+                return (
+                  <span key={k} className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ${tone}`}>
+                    <span className="uppercase tracking-wide opacity-70">{k}</span>
+                    <span className="font-mono font-semibold"><Money cents={cents} /></span>
+                  </span>
+                );
+              })}
+            </div>
+          );
+        })()}
         {estimates.length === 0 ? (
           <div className="mt-3 rounded-lg border border-dashed border-gray-300 bg-gray-50 p-6 text-center">
             <p className="text-sm text-gray-700">{t('jobDetail.estimates.empty')}</p>
