@@ -206,11 +206,20 @@ export default async function JobDetailPage({
 
   return (
     <main className="mx-auto max-w-6xl p-8">
-      <div className="mb-6 flex items-center justify-between">
-        <Link href="/jobs" className="text-sm text-yge-blue-500 hover:underline">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
+        <Link
+          href="/jobs"
+          className="inline-flex items-center gap-1 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100"
+        >
           {t('jobDetail.backLink')}
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href={`/plans-to-estimate?jobId=${encodeURIComponent(job.id)}`}
+            className="rounded-md bg-yge-blue-500 px-3 py-1.5 text-sm font-semibold text-white hover:bg-yge-blue-700"
+          >
+            + Start new estimate
+          </Link>
           {canSeeFinancials && (
             <Link
               href={`/jobs/${job.id}/cost-breakdown`}
