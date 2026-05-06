@@ -21,6 +21,7 @@ const SHORTCUTS: Shortcut[] = [
   { keys: '/', labelKey: 'kbd.search' },
   { keys: 'n', labelKey: 'kbd.newEstimate', href: '/plans-to-estimate' },
   { keys: 'o', labelKey: 'kbd.openLatestBid' },
+  { keys: 'c', labelKey: 'kbd.copyUrl' },
   { keys: 'g d', labelKey: 'kbd.dashboard', href: '/dashboard' },
   { keys: 'g p', labelKey: 'kbd.newEstimate', href: '/plans-to-estimate' },
   { keys: 'g j', labelKey: 'kbd.jobs', href: '/jobs' },
@@ -76,6 +77,17 @@ export function KeyboardShortcuts() {
       if (e.key === 'n' && !prefix) {
         e.preventDefault();
         router.push('/plans-to-estimate');
+        return;
+      }
+      if (e.key === 'c' && !prefix) {
+        e.preventDefault();
+        try {
+          if (typeof window !== 'undefined') {
+            void navigator.clipboard?.writeText(window.location.href);
+          }
+        } catch {
+          // best effort
+        }
         return;
       }
       if (e.key === 'o' && !prefix) {
