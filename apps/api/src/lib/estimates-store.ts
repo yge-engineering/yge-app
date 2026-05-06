@@ -64,6 +64,9 @@ export interface EstimateSummary {
   unacknowledgedAddendumCount: number;
   /** Workflow status: pursuing / submitted / awarded / lost. */
   bidStatus?: 'pursuing' | 'submitted' | 'awarded' | 'lost';
+  bidSubmittedAt?: string;
+  notesPreview?: string;
+  reviewedLineCount: number;
 }
 
 export interface CreateFromDraftInput {
@@ -96,8 +99,10 @@ function makeId(projectName: string, when: Date): string {
 function summarize(est: PricedEstimate): EstimateSummary {
   let priced = 0;
   let unpriced = 0;
+  let reviewed = 0;
   let directCents = 0;
   for (const item of est.bidItems) {
+    if (item.reviewState === 'accepted') reviewed++;
     if (item.unitPriceCents == null) {
       unpriced += 1;
     } else {
@@ -126,6 +131,13 @@ function summarize(est: PricedEstimate): EstimateSummary {
     unacknowledgedAddendumCount:
       est.addenda?.filter((a) => !a.acknowledged).length ?? 0,
     bidStatus: est.bidStatus,
+    bidSubmittedAt: est.bidSubmittedAt,
+    notesPreview: est.notes
+      ? est.notes.length > 120
+        ? est.notes.slice(0, 120).trimEnd() + '…'
+        : est.notes
+      : undefined,
+    reviewedLineCount: reviewed,
   };
 }
 
