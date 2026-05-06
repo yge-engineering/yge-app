@@ -12,6 +12,7 @@ import { CopyEstimateLink } from '../../components/copy-estimate-link';
 import { EstimatesSearchInput } from '../../components/estimates-search-input';
 import { EstimatesSortHeaders } from '../../components/estimates-sort-headers';
 import { EstimatesShortcutsChip } from '../../components/estimates-shortcuts-chip';
+import { EstimatesStatusFilter } from '../../components/estimates-status-filter';
 import { getTranslator } from '../../lib/locale';
 import { requirePermission } from '../../lib/permissions';
 
@@ -203,6 +204,16 @@ export default async function EstimatesPage() {
   }
   estimates = sortByUrgency(estimates);
   const dueCounts = countDueBuckets(estimates);
+  const statusCounts: Record<'pursuing' | 'submitted' | 'awarded' | 'lost', number> = {
+    pursuing: 0,
+    submitted: 0,
+    awarded: 0,
+    lost: 0,
+  };
+  for (const e of estimates) {
+    const k = (e.bidStatus ?? 'pursuing') as 'pursuing' | 'submitted' | 'awarded' | 'lost';
+    statusCounts[k]++;
+  }
   const imported = await fetchImported();
   const t = getTranslator();
   const locale = coerceLocale(cookies().get('yge-locale')?.value);
@@ -345,6 +356,7 @@ export default async function EstimatesPage() {
         <div className="mt-6">
           <EstimatesSearchInput targetId="estimates-table,imported-estimates-table" totalCount={estimates.length + imported.length} />
           <EstimatesSortHeaders targetId="estimates-table" />
+          <EstimatesStatusFilter targetId="estimates-table" counts={statusCounts} total={estimates.length} />
           <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
           <table id="estimates-table" className="w-full text-left text-sm">
             <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
@@ -373,6 +385,7 @@ export default async function EstimatesPage() {
                   data-cents={e.bidTotalCents}
                   data-sort-cents={e.bidTotalCents}
                   data-sort-updated={e.updatedAt}
+                  data-status={e.bidStatus ?? 'pursuing'}
                   className="hover:bg-gray-50"
                 >
                   <td className="px-4 py-3">

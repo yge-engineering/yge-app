@@ -57,7 +57,10 @@ export function EstimatesSearchInput({ targetId, totalCount }: Props) {
       );
       rows.forEach((row) => {
         const hay = (row.dataset['search'] ?? '').toLowerCase();
-        const visible = needle.length === 0 || hay.includes(needle);
+        const matches = needle.length === 0 || hay.includes(needle);
+        row.dataset['searchHidden'] = matches ? '' : '1';
+        const statusHidden = row.dataset['statusHidden'] === '1';
+        const visible = matches && !statusHidden;
         row.style.display = visible ? '' : 'none';
         if (visible) {
           count++;
