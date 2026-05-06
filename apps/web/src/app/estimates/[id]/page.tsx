@@ -67,6 +67,28 @@ export default async function EstimateDetailPage({
           {t('estPg.back')}
         </Link>
         <div className="flex items-center gap-3 text-sm">
+          {(() => {
+            const unpriced = data.estimate.bidItems.filter((i) => i.unitPriceCents == null).length;
+            const unacked = (data.estimate.addenda ?? []).filter((a) => !a.acknowledged).length;
+            const issues = unpriced + unacked;
+            const status = data.estimate.bidStatus ?? 'pursuing';
+            if (status === 'awarded' || status === 'lost') return null;
+            if (issues === 0) {
+              return (
+                <span className="rounded border border-green-300 bg-green-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-green-800">
+                  ✓ Ready
+                </span>
+              );
+            }
+            return (
+              <span
+                className="rounded border border-red-300 bg-red-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-800"
+                title={`${unpriced} unpriced · ${unacked} un-acked`}
+              >
+                ✗ {issues} issue{issues === 1 ? '' : 's'}
+              </span>
+            );
+          })()}
           <span className="rounded border border-yge-blue-200 bg-yge-blue-50 px-2 py-0.5 text-xs font-mono font-semibold text-yge-blue-700" title="Bid total — click to copy">
             <CopyMoneyButton cents={data.totals.bidTotalCents}>
               <Money cents={data.totals.bidTotalCents} />
