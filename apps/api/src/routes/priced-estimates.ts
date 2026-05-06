@@ -201,6 +201,46 @@ const UpdateBody = z.object({
     .optional(),
 });
 
+
+/**
+ * Compute the next job status given the current job state and the
+ * new bid status. Returns null when no change is needed.
+ *
+ * Plain English: a bid going to 'awarded' means the job is awarded;
+ * a bid going to 'submitted' bumps a still-pursuing job to
+ * BID_SUBMITTED; a bid going to 'lost' marks the job lost (unless
+ * we already won it under a different estimate). 'pursuing' (the
+ * default) doesn't trigger a change — we don't downgrade a job.
+ */
+function inferNextJobStatus(
+  currentJobStatus: 'PROSPECT' | 'PURSUING' | 'BID_SUBMITTED' | 'AWARDED' | 'LOST' | 'NO_BID' | 'ARCHIVED',
+  newBidStatus: 'pursuing' | 'submitted' | 'awarded' | 'lost',
+):
+  | 'PROSPECT'
+  | 'PURSUING'
+  | 'BID_SUBMITTED'
+  | 'AWARDED'
+  | 'LOST'
+  | 'NO_BID'
+  | 'ARCHIVED'
+  | null {
+  if (currentJobStatus === 'ARCHIVED') return null;
+  if (newBidStatus === 'awarded') {
+    return currentJobStatus === 'AWARDED' ? null : 'AWARDED';
+  }
+  if (newBidStatus === 'lost') {
+    if (currentJobStatus === 'LOST' || currentJobStatus === 'AWARDED') return null;
+    return 'LOST';
+  }
+  if (newBidStatus === 'submitted') {
+    if (currentJobStatus === 'PROSPECT' || currentJobStatus === 'PURSUING') {
+      return 'BID_SUBMITTED';
+    }
+    return null;
+  }
+  return null;
+}
+
 // PATCH /api/priced-estimates/:id — update O&P / notes / full bid item list.
 pricedEstimatesRouter.patch('/:id', async (req, res, next) => {
   try {
