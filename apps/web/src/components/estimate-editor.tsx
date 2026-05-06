@@ -191,6 +191,44 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
     }
   }
 
+  // Renumber every bid item sequentially starting from "1". Useful
+  // after a bunch of duplicates, deletes, or reorders leave the
+  // numbering looking like "1 / 1 (copy) / 2 / 4 / 4A". Confirms
+  // before running because it overwrites all itemNumbers.
+  async function renumberRowsSequentially() {
+    if (
+      !window.confirm(
+        'Renumber every bid item 1, 2, 3, … in current order? This overwrites the existing item numbers.',
+      )
+    ) {
+      return;
+    }
+    const next = estimate.bidItems.map((it, i) => ({
+      ...it,
+      itemNumber: String(i + 1),
+    }));
+    setEstimate((e) => ({ ...e, bidItems: next }));
+    try {
+      const res = await fetch(
+        `${apiBaseUrl}/api/priced-estimates/${estimate.id}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bidItems: next }),
+        },
+      );
+      if (!res.ok) throw new Error(t('estEditor.errSaveStatus', { status: res.status }));
+      const json = (await res.json()) as {
+        estimate: PricedEstimate;
+        totals: PricedEstimateTotals;
+      };
+      setEstimate(json.estimate);
+      setTotals(json.totals);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('estEditor.errFallback'));
+    }
+  }
+
   // Reorder a row: move it up by 1 (delta = -1) or down by 1 (delta
   // = +1). Wrapping is intentionally not supported — clamping makes
   // the buttons feel "stuck at the edges" predictably.
@@ -855,6 +893,14 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
               title="Find / replace across line descriptions"
             >
               🔍 Find/replace
+            </button>
+            <button
+              type="button"
+              onClick={() => void renumberRowsSequentially()}
+              className="rounded border border-gray-300 px-2 py-0.5 font-medium text-gray-600 hover:border-yge-blue-500 hover:text-yge-blue-700"
+              title="Renumber every row 1, 2, 3, … in current order"
+            >
+              # Renumber
             </button>
             <span className="text-gray-600">
               {(() => {
