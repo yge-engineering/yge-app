@@ -11,6 +11,7 @@ import { relativeTime } from '../../lib/relative-time';
 import { DraftsSearchInput } from '../../components/drafts-search-input';
 import { DashboardRefreshButton } from '../../components/dashboard-refresh-button';
 import { DraftsPinButton, DraftsPinReorder } from '../../components/drafts-pin-button';
+import { DraftsPinFilterChip } from '../../components/drafts-pin-filter-chip';
 import { PinnedCountBadge } from '../../components/pinned-count-badge';
 import { EstimatesSortHeaders } from '../../components/estimates-sort-headers';
 import { getTranslator } from '../../lib/locale';
@@ -122,7 +123,10 @@ export default async function DraftsPage() {
 
       {drafts.length > 0 && (
         <div className="mt-6">
-          <DraftsSearchInput targetId="drafts-table" totalCount={drafts.length} />
+          <div className="flex flex-wrap items-center gap-2">
+            <DraftsSearchInput targetId="drafts-table" totalCount={drafts.length} />
+            <DraftsPinFilterChip targetId="drafts-table" />
+          </div>
           <EstimatesSortHeaders targetId="drafts-table" />
           <DraftsPinReorder targetId="drafts-table" />
           <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
