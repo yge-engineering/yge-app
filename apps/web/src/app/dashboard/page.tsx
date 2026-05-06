@@ -501,6 +501,22 @@ export default async function DashboardPage() {
           </span>
           <div className="min-w-0 flex-1">
             <div className="truncate text-base font-semibold text-gray-900">
+              {(() => {
+                const issues =
+                  (recentEstimates[0]!.unpricedLineCount ?? 0) +
+                  (recentEstimates[0]!.unacknowledgedAddendumCount ?? 0);
+                if (issues === 0) {
+                  return <span className="mr-2 text-base text-green-600" title="Ready to submit">✓</span>;
+                }
+                return (
+                  <span
+                    className="mr-2 text-base font-bold text-red-600"
+                    title={`${recentEstimates[0]!.unpricedLineCount ?? 0} unpriced · ${recentEstimates[0]!.unacknowledgedAddendumCount ?? 0} un-acked`}
+                  >
+                    ✗
+                  </span>
+                );
+              })()}
               {recentEstimates[0].projectName}
             </div>
             <div className="mt-1 flex items-center gap-2 text-xs">
