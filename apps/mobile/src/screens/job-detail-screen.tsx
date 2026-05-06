@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import { getJson } from '../lib/api';
+import { getJson, patchJson } from '../lib/api';
+import { NotesEditorModal } from '../components/notes-editor-modal';
 
 interface JobDetail {
   id: string;
@@ -36,18 +38,21 @@ export default function JobDetailScreen({ route }: { route: { params: { id: stri
   const [job, setJob] = useState<JobDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [notesOpen, setNotesOpen] = useState(false);
+
+  async function load() {
+    try {
+      const json = await getJson<{ job: JobDetail }>(`/api/jobs/${encodeURIComponent(id)}`);
+      setJob(json.job);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
-    void (async () => {
-      try {
-        const json = await getJson<{ job: JobDetail }>(`/api/jobs/${encodeURIComponent(id)}`);
-        setJob(json.job);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load');
-      } finally {
-        setLoading(false);
-      }
-    })();
+    void load();
   }, [id]);
 
   if (loading) {
@@ -110,12 +115,26 @@ export default function JobDetailScreen({ route }: { route: { params: { id: stri
         </View>
       )}
 
-      {job.notes && (
-        <View style={styles.card}>
-          <Text style={styles.label}>Pursuit notes</Text>
+      <Pressable onPress={() => setNotesOpen(true)} style={styles.card}>
+        <Text style={styles.label}>Pursuit notes (tap to edit)</Text>
+        {job.notes ? (
           <Text style={styles.notes}>{job.notes}</Text>
-        </View>
-      )}
+        ) : (
+          <Text style={[styles.notes, { color: '#94a3b8', fontStyle: 'italic' }]}>
+            No notes yet — tap to add.
+          </Text>
+        )}
+      </Pressable>
+
+      <NotesEditorModal
+        visible={notesOpen}
+        initial={job.notes ?? ''}
+        onCancel={() => setNotesOpen(false)}
+        onSave={async (next) => {
+          await patchJson(`/api/jobs/${encodeURIComponent(id)}`, { notes: next });
+          await load();
+        }}
+      />
 
       <View style={styles.card}>
         <Text style={styles.label}>Job ID</Text>
