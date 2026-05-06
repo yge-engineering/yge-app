@@ -209,6 +209,49 @@ export default async function EstimateDetailPage({
         />
       </div>
 
+      {(() => {
+        const unpriced = data.estimate.bidItems.filter((i) => i.unitPriceCents == null).length;
+        const checks = [
+          { ok: unpriced === 0, label: unpriced === 0 ? 'All lines priced' : `${unpriced} line${unpriced === 1 ? '' : 's'} unpriced` },
+          { ok: !!data.estimate.bidSecurity, label: data.estimate.bidSecurity ? 'Bid security set' : 'Bid security not set' },
+          (() => {
+            const addenda = data.estimate.addenda ?? [];
+            const unacked = addenda.filter((a) => !a.acknowledged).length;
+            if (addenda.length === 0) return { ok: true, label: 'No addenda logged' };
+            return {
+              ok: unacked === 0,
+              label: unacked === 0 ? 'All addenda acknowledged' : `${unacked} of ${addenda.length} un-acknowledged`,
+            };
+          })(),
+          {
+            ok: (data.estimate.subBids ?? []).length > 0,
+            label: (data.estimate.subBids ?? []).length > 0
+              ? `${(data.estimate.subBids ?? []).length} sub bid${(data.estimate.subBids ?? []).length === 1 ? '' : 's'} listed`
+              : 'No sub bids listed (§4104)',
+          },
+        ];
+        const allOk = checks.every((c) => c.ok);
+        return (
+          <div className={`mb-4 rounded-lg border p-3 ${allOk ? 'border-green-300 bg-green-50' : 'border-gray-200 bg-gray-50'}`}>
+            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-700">
+              Bid readiness
+            </div>
+            <ul className="space-y-1 text-xs">
+              {checks.map((c, i) => (
+                <li key={i} className="flex items-center gap-2">
+                  <span className={c.ok ? 'text-green-700' : 'text-red-700'}>
+                    {c.ok ? '✓' : '✗'}
+                  </span>
+                  <span className={c.ok ? 'text-gray-800' : 'text-red-800'}>
+                    {c.label}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        );
+      })()}
+
       <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <EstimateEditor
           initialEstimate={data.estimate}
