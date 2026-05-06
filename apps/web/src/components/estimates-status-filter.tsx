@@ -44,6 +44,17 @@ const STATUS_KEY = 'yge.estimates.statusFilter';
 export function EstimatesStatusFilter({ targetId, counts, total }: Props) {
   const [active, setActive] = useState<FilterValue>(() => {
     if (typeof window === 'undefined') return 'all';
+    // URL param takes precedence on first load.
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const u = params.get('status');
+      if (u === 'pursuing' || u === 'submitted' || u === 'awarded' || u === 'lost' || u === 'all') {
+        try {
+          window.localStorage.setItem(STATUS_KEY, u);
+        } catch {}
+        return u;
+      }
+    } catch {}
     const v = window.localStorage.getItem(STATUS_KEY);
     if (v === 'pursuing' || v === 'submitted' || v === 'awarded' || v === 'lost' || v === 'all') {
       return v;
