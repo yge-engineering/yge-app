@@ -3,7 +3,13 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SUPPORTED_LOCALES } from '@yge/shared';
 import { useTranslator } from '../lib/use-translator';
 import { clearAuth, readAuth, type AuthUser } from '../lib/auth-store';
-import { apiBaseUrl } from '../lib/api';
+import { invalidateApiBaseUrlCache } from '../lib/api';
+import {
+  PRESET_URLS,
+  readApiBaseUrl,
+  writeApiBaseUrl,
+  type ApiPreset,
+} from '../lib/api-base';
 
 interface Props {
   onSignOut: () => void;
@@ -12,10 +18,22 @@ interface Props {
 export default function MeScreen({ onSignOut }: Props) {
   const { t, locale, setLocale } = useTranslator();
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [apiUrl, setApiUrl] = useState<string>(PRESET_URLS.dev);
 
   useEffect(() => {
     void readAuth().then((a) => setUser(a.user));
+    void readApiBaseUrl().then(setApiUrl);
   }, []);
+
+  async function pickEnv(preset: ApiPreset) {
+    const url = PRESET_URLS[preset];
+    await writeApiBaseUrl(url);
+    invalidateApiBaseUrlCache();
+    setApiUrl(url);
+    // Force re-login since the auth token is env-specific.
+    await clearAuth();
+    onSignOut();
+  }
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: '#f8fafc' }} contentContainerStyle={{ padding: 16 }}>
@@ -31,7 +49,7 @@ export default function MeScreen({ onSignOut }: Props) {
 
       <View style={styles.card}>
         <Text style={styles.label}>{t('mobile.locale.label')}</Text>
-        <View style={styles.localeRow}>
+        <View style={styles.row}>
           {SUPPORTED_LOCALES.map((loc) => {
             const active = loc === locale;
             return (
@@ -51,7 +69,26 @@ export default function MeScreen({ onSignOut }: Props) {
 
       <View style={styles.card}>
         <Text style={styles.label}>API server</Text>
-        <Text style={styles.mono}>{apiBaseUrl()}</Text>
+        <Text style={styles.mono}>{apiUrl}</Text>
+        <View style={[styles.row, { marginTop: 8 }]}>
+          {(Object.keys(PRESET_URLS) as ApiPreset[]).map((preset) => {
+            const active = PRESET_URLS[preset] === apiUrl;
+            return (
+              <Pressable
+                key={preset}
+                onPress={() => void pickEnv(preset)}
+                style={[styles.chip, active && styles.chipActive]}
+              >
+                <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                  {preset === 'dev' ? 'Dev (local)' : 'Production'}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+        <Text style={styles.note}>
+          Switching env signs you out and you'll need to log in again.
+        </Text>
       </View>
 
       <Pressable
@@ -88,7 +125,7 @@ const styles = StyleSheet.create({
   value: { fontSize: 15, fontWeight: '600', color: '#0f172a' },
   sub: { fontSize: 12, color: '#64748b', marginTop: 2 },
   mono: { fontFamily: 'Courier', fontSize: 13, color: '#0f172a' },
-  localeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -100,6 +137,7 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: '#0a3a6b', borderColor: '#0a3a6b' },
   chipText: { fontSize: 12, color: '#334155' },
   chipTextActive: { color: '#ffffff', fontWeight: '600' },
+  note: { fontSize: 11, color: '#64748b', marginTop: 8, fontStyle: 'italic' },
   signOut: {
     marginTop: 8,
     paddingVertical: 12,
