@@ -10,6 +10,7 @@ import { bidDueCountdown, coerceLocale } from '@yge/shared';
 import { relativeTime } from '../../lib/relative-time';
 import { cookies } from 'next/headers';
 import { CopyEstimateLink } from '../../components/copy-estimate-link';
+import { CopyMoneyButton } from '../../components/copy-money-button';
 import { EstimatesSearchInput } from '../../components/estimates-search-input';
 import { EstimatesSortHeaders } from '../../components/estimates-sort-headers';
 import { EstimatesShortcutsChip } from '../../components/estimates-shortcuts-chip';
@@ -588,11 +589,16 @@ export default async function EstimatesPage() {
                   <td className="px-4 py-3 text-right font-mono font-medium tabular-nums text-gray-900">
                     {e.unpricedLineCount > 0 ? (
                       <span className="text-gray-500">
-                        <Money cents={e.bidTotalCents} />{' '}
+                        <CopyMoneyButton cents={e.bidTotalCents}>
+                          <Money cents={e.bidTotalCents} />
+                        </CopyMoneyButton>
+                        {' '}
                         <span className="text-[10px] uppercase">{t('estimates.bidTotal.running')}</span>
                       </span>
                     ) : (
-                      <Money cents={e.bidTotalCents} />
+                      <CopyMoneyButton cents={e.bidTotalCents}>
+                        <Money cents={e.bidTotalCents} />
+                      </CopyMoneyButton>
                     )}
                   </td>
                   <td className="hidden px-4 py-3 text-xs text-gray-600 sm:table-cell" title={formatWhen(e.updatedAt)}>
