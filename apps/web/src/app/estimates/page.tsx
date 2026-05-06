@@ -41,6 +41,8 @@ interface EstimateSummary {
   unacknowledgedAddendumCount?: number;
   /** Workflow status — set by the toolbar buttons on /estimates/[id]. */
   bidStatus?: 'pursuing' | 'submitted' | 'awarded' | 'lost';
+  /** First-submit timestamp; pre-feature rows lack this field. */
+  bidSubmittedAt?: string;
 }
 
 function apiBaseUrl(): string {
@@ -150,6 +152,34 @@ function formatWhen(iso: string): string {
     hour: 'numeric',
     minute: '2-digit',
   });
+}
+
+function SubmittedAgePill({
+  iso,
+  status,
+}: {
+  iso: string | undefined;
+  status: 'pursuing' | 'submitted' | 'awarded' | 'lost' | undefined;
+}) {
+  if (!iso) return null;
+  if (status !== 'submitted' && status !== 'awarded' && status !== 'lost') return null;
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return null;
+  const days = Math.max(0, Math.round((Date.now() - t) / (24 * 60 * 60 * 1000)));
+  // Stale (>21d) only meaningful while still 'submitted'. Once awarded/lost
+  // the badge is just informational.
+  const stale = status === 'submitted' && days > 21;
+  const tone = stale
+    ? 'border-red-300 bg-red-50 text-red-800'
+    : 'border-gray-300 bg-gray-50 text-gray-700';
+  const label = days === 0 ? 'today' : `${days}d ago`;
+  return (
+    <span
+      className={`mt-1 mr-1 inline-block rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${tone}`}
+    >
+      Submitted {label}
+    </span>
+  );
 }
 
 function BidStatusPill({ status }: { status: 'pursuing' | 'submitted' | 'awarded' | 'lost' | undefined }) {
@@ -398,6 +428,7 @@ export default async function EstimatesPage() {
                       <div className="text-xs text-gray-500">{e.ownerAgency}</div>
                     )}
                     <BidStatusPill status={e.bidStatus} />
+                    <SubmittedAgePill iso={e.bidSubmittedAt} status={e.bidStatus} />
                     <BidDuePill iso={e.bidDueDate} locale={locale} />
                   </td>
                   <td className="hidden px-4 py-3 text-xs text-gray-600 md:table-cell">
