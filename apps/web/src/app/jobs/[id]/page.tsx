@@ -502,6 +502,27 @@ export default async function JobDetailPage({
                 <li key={e.id} className="flex items-center justify-between px-4 py-3">
                   <div>
                     <div className="text-sm font-medium text-gray-900">
+                      {(() => {
+                        if (e.bidStatus === 'awarded' || e.bidStatus === 'lost') return null;
+                        const issues =
+                          (e.unpricedLineCount ?? 0) +
+                          (e.unacknowledgedAddendumCount ?? 0);
+                        if (issues === 0) {
+                          return (
+                            <span className="mr-2 text-xs text-green-700" title="Ready to submit">
+                              ✓
+                            </span>
+                          );
+                        }
+                        return (
+                          <span
+                            className="mr-2 text-xs font-semibold text-red-700"
+                            title={`${e.unpricedLineCount ?? 0} unpriced · ${e.unacknowledgedAddendumCount ?? 0} un-acked`}
+                          >
+                            ✗
+                          </span>
+                        );
+                      })()}
                       {e.projectName}
                       <JobBidStatusPill status={e.bidStatus} />
                     </div>
