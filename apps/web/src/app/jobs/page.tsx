@@ -331,6 +331,11 @@ export default async function JobsPage({ searchParams }: PageProps) {
                     {j.location && (
                       <div className="text-xs text-gray-500">{j.location}</div>
                     )}
+                    {j.notes && (
+                      <div className="mt-1 truncate text-[11px] italic text-gray-500" title={j.notes}>
+                        ✏ {j.notes.length > 120 ? `${j.notes.slice(0, 120).trimEnd()}…` : j.notes}
+                      </div>
+                    )}
                     {estimateStatsByJob[j.id] && estimateStatsByJob[j.id]!.count > 0 && (
                       <div className="mt-1 text-[10px] text-gray-500">
                         {estimateStatsByJob[j.id]!.count} estimate
