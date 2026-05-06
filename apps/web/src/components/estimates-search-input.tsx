@@ -77,7 +77,13 @@ export function EstimatesSearchInput({ targetId, totalCount }: Props) {
         type="search"
         value={q}
         onChange={(e) => setQ(e.target.value)}
-        placeholder="Filter by project or agency… (press /)"
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            setQ('');
+          }
+        }}
+        placeholder="Filter by project or agency… (press / · Esc to clear)"
         className="w-full max-w-xs rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-yge-blue-500 focus:outline-none focus:ring-1 focus:ring-yge-blue-500"
       />
       <span className="text-xs text-gray-600">
