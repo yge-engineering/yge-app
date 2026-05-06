@@ -38,6 +38,8 @@ interface EstimateLite {
   jobId: string;
   bidDueDate?: string;
   bidTotalCents?: number;
+  reviewedLineCount?: number;
+  bidItemCount?: number;
 }
 
 async function fetchEstimateLites(): Promise<EstimateLite[]> {
