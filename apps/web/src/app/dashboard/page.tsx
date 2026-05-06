@@ -629,9 +629,11 @@ export default async function DashboardPage() {
                     </span>
                     <span className="flex items-center gap-2 text-xs">
                       {typeof e.bidTotalCents === 'number' && (
-                        <span className="font-mono text-gray-700">
-                          <Money cents={e.bidTotalCents} />
-                        </span>
+                        <CopyMoneyButton cents={e.bidTotalCents}>
+                          <span className="font-mono text-gray-700">
+                            <Money cents={e.bidTotalCents} />
+                          </span>
+                        </CopyMoneyButton>
                       )}
                       <span className={subTone}>
                         Submitted {days === 0 ? 'today' : `${days}d ago`}
