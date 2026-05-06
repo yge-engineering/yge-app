@@ -191,6 +191,38 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
     }
   }
 
+  // Reorder a row: move it up by 1 (delta = -1) or down by 1 (delta
+  // = +1). Wrapping is intentionally not supported — clamping makes
+  // the buttons feel "stuck at the edges" predictably.
+  async function moveRow(itemIndex: number, delta: -1 | 1) {
+    const target = itemIndex + delta;
+    if (target < 0 || target >= estimate.bidItems.length) return;
+    const next = [...estimate.bidItems];
+    const [moved] = next.splice(itemIndex, 1);
+    if (!moved) return;
+    next.splice(target, 0, moved);
+    setEstimate((e) => ({ ...e, bidItems: next }));
+    try {
+      const res = await fetch(
+        `${apiBaseUrl}/api/priced-estimates/${estimate.id}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bidItems: next }),
+        },
+      );
+      if (!res.ok) throw new Error(t('estEditor.errSaveStatus', { status: res.status }));
+      const json = (await res.json()) as {
+        estimate: PricedEstimate;
+        totals: PricedEstimateTotals;
+      };
+      setEstimate(json.estimate);
+      setTotals(json.totals);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('estEditor.errFallback'));
+    }
+  }
+
   // Remove a row. Schema requires bidItems.length >= 1; bounce when
   // we're at one row (estimator can clear it manually if they want
   // to start over).
@@ -1024,6 +1056,10 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
                   }
                   onDuplicate={() => void duplicateRow(i)}
                   onDelete={() => void deleteRow(i)}
+                  onMoveUp={() => void moveRow(i, -1)}
+                  onMoveDown={() => void moveRow(i, 1)}
+                  isFirst={i === 0}
+                  isLast={i === estimate.bidItems.length - 1}
                   defaultMarkupPct={estimate.oppPercent}
                   variance={variance[i]}
                   selected={selectedIndices.has(i)}
@@ -1265,6 +1301,10 @@ function BidItemRow({
   onDescriptionChange,
   onDuplicate,
   onDelete,
+  onMoveUp,
+  onMoveDown,
+  isFirst,
+  isLast,
   defaultMarkupPct,
   variance,
   selected,
@@ -1303,6 +1343,12 @@ function BidItemRow({
   onDuplicate: () => void;
   /** Delete this row. Bounces if it's the last remaining row. */
   onDelete: () => void;
+  /** Move this row one slot up. Disabled when isFirst. */
+  onMoveUp: () => void;
+  /** Move this row one slot down. Disabled when isLast. */
+  onMoveDown: () => void;
+  isFirst: boolean;
+  isLast: boolean;
   /** Update the per-line markup override. undefined = inherit default. */
   onMarkupChange: (pct: number | undefined) => void;
   /** Estimate-level default markup, shown as the placeholder when this
@@ -1643,7 +1689,27 @@ function BidItemRow({
           >
             {item.confidence}
           </span>
-          <div className="flex items-center gap-1">
+          <div className="flex flex-wrap items-center gap-1">
+            <button
+              type="button"
+              onClick={onMoveUp}
+              disabled={isFirst}
+              title="Move this row up"
+              aria-label="Move this row up"
+              className="rounded border border-gray-300 px-1 py-0.5 text-[10px] text-gray-500 hover:border-yge-blue-500 hover:text-yge-blue-700 disabled:cursor-not-allowed disabled:opacity-30"
+            >
+              ↑
+            </button>
+            <button
+              type="button"
+              onClick={onMoveDown}
+              disabled={isLast}
+              title="Move this row down"
+              aria-label="Move this row down"
+              className="rounded border border-gray-300 px-1 py-0.5 text-[10px] text-gray-500 hover:border-yge-blue-500 hover:text-yge-blue-700 disabled:cursor-not-allowed disabled:opacity-30"
+            >
+              ↓
+            </button>
             <button
               type="button"
               onClick={onDuplicate}
