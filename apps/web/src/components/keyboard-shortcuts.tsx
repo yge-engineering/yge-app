@@ -14,6 +14,7 @@ interface Shortcut {
   keys: string;
   labelKey: string;
   href?: string;
+  group?: 'actions' | 'navigate' | 'other';
 }
 
 const SHORTCUTS: Shortcut[] = [
@@ -149,19 +150,32 @@ export function KeyboardShortcuts() {
             </svg>
           </button>
         </div>
-        <dl className="space-y-1.5 text-sm">
-          {SHORTCUTS.map((s) => (
-            <div key={s.keys} className="flex items-center justify-between gap-3 rounded px-2 py-1 hover:bg-gray-50">
-              <dt className="text-gray-700">{t(s.labelKey)}</dt>
-              <dd>
-                {s.keys.split(' ').map((part, i) => (
-                  <span key={i} className="ml-1 inline-block rounded border border-gray-300 bg-gray-50 px-1.5 py-0.5 font-mono text-[11px] text-gray-700">
-                    {part}
-                  </span>
+        <dl className="space-y-3 text-sm">
+          {(['actions', 'navigate', 'other'] as const).map((grp) => {
+            const items = SHORTCUTS.filter((sh) => (sh.group ?? 'other') === grp);
+            if (items.length === 0) return null;
+            const groupLabel =
+              grp === 'actions' ? 'Quick actions' : grp === 'navigate' ? 'Navigate' : 'Other';
+            return (
+              <div key={grp}>
+                <div className="mb-1 px-2 text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                  {groupLabel}
+                </div>
+                {items.map((sh) => (
+                  <div key={sh.keys} className="flex items-center justify-between gap-3 rounded px-2 py-1 hover:bg-gray-50">
+                    <dt className="text-gray-700">{t(sh.labelKey)}</dt>
+                    <dd>
+                      {sh.keys.split(' ').map((part, i) => (
+                        <span key={i} className="ml-1 inline-block rounded border border-gray-300 bg-gray-50 px-1.5 py-0.5 font-mono text-[11px] text-gray-700">
+                          {part}
+                        </span>
+                      ))}
+                    </dd>
+                  </div>
                 ))}
-              </dd>
-            </div>
-          ))}
+              </div>
+            );
+          })}
         </dl>
         <p className="mt-4 text-center text-xs text-gray-400">
           {escHintParts[0]}
