@@ -38,6 +38,8 @@ interface EstimateSummary {
   addendumCount?: number;
   /** Logged but un-acknowledged addenda. > 0 = bid is non-responsive. */
   unacknowledgedAddendumCount?: number;
+  /** Workflow status — set by the toolbar buttons on /estimates/[id]. */
+  bidStatus?: 'pursuing' | 'submitted' | 'awarded' | 'lost';
 }
 
 function apiBaseUrl(): string {
@@ -147,6 +149,26 @@ function formatWhen(iso: string): string {
     hour: 'numeric',
     minute: '2-digit',
   });
+}
+
+function BidStatusPill({ status }: { status: 'pursuing' | 'submitted' | 'awarded' | 'lost' | undefined }) {
+  const s = status ?? 'pursuing';
+  const tone =
+    s === 'awarded'
+      ? 'border-green-300 bg-green-50 text-green-800'
+      : s === 'lost'
+        ? 'border-gray-300 bg-gray-100 text-gray-600'
+        : s === 'submitted'
+          ? 'border-blue-300 bg-blue-50 text-blue-800'
+          : 'border-amber-300 bg-amber-50 text-amber-800';
+  const label = s.charAt(0).toUpperCase() + s.slice(1);
+  return (
+    <span
+      className={`mt-1 mr-1 inline-block rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${tone}`}
+    >
+      {label}
+    </span>
+  );
 }
 
 function BidDuePill({ iso, locale }: { iso: string | undefined; locale: 'en' | 'es' }) {
@@ -358,6 +380,7 @@ export default async function EstimatesPage() {
                     {e.ownerAgency && (
                       <div className="text-xs text-gray-500">{e.ownerAgency}</div>
                     )}
+                    <BidStatusPill status={e.bidStatus} />
                     <BidDuePill iso={e.bidDueDate} locale={locale} />
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-600">

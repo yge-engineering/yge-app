@@ -139,6 +139,14 @@ export const PricedEstimateSchema = z.object({
   /** Free-form estimator notes — not the same as draft assumptions. */
   notes: z.string().max(5_000).optional(),
 
+  /** Workflow status for the bid:
+   *   - 'pursuing' — actively building the estimate, bid not yet sent.
+   *   - 'submitted' — bid sent to the agency; awaiting award decision.
+   *   - 'awarded'  — YGE won the job. Promote to active job.
+   *   - 'lost'    — agency awarded to someone else.
+   *   - undefined  — pre-feature estimates default to 'pursuing' for display. */
+  bidStatus: z.enum(['pursuing', 'submitted', 'awarded', 'lost']).optional(),
+
   /** Markup stack — flat percentages applied on top of direct cost
    *  before O&P. Heavy-civil bids typically split these out so the
    *  estimator and the bond/insurance broker can see each line. All

@@ -175,6 +175,7 @@ const MarkupStackSchemaPatch = z.object({
 const UpdateBody = z.object({
   oppPercent: z.number().min(0).max(2).optional(),
   notes: z.string().max(5_000).optional(),
+  bidStatus: z.enum(['pursuing', 'submitted', 'awarded', 'lost']).optional(),
   bidItems: z.array(PricedBidItemSchema).min(1).optional(),
   subBids: z.array(SubBidSchema).optional(),
   /** Pass null to clear bid security (e.g. switching to private work). */

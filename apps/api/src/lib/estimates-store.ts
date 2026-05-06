@@ -62,6 +62,8 @@ export interface EstimateSummary {
    *  this in red so an estimate that's about to fail at bid open is
    *  visible without opening it. */
   unacknowledgedAddendumCount: number;
+  /** Workflow status: pursuing / submitted / awarded / lost. */
+  bidStatus?: 'pursuing' | 'submitted' | 'awarded' | 'lost';
 }
 
 export interface CreateFromDraftInput {
@@ -123,6 +125,7 @@ function summarize(est: PricedEstimate): EstimateSummary {
     addendumCount: est.addenda?.length ?? 0,
     unacknowledgedAddendumCount:
       est.addenda?.filter((a) => !a.acknowledged).length ?? 0,
+    bidStatus: est.bidStatus,
   };
 }
 
