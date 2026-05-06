@@ -87,36 +87,51 @@ export function SubLevelingClient({
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedJsonRef = useRef<string>(JSON.stringify(initialScopes));
 
-  // Debounced auto-save to /api/priced-estimates/:id whenever scopes
-  // change. 600 ms feels responsive without slamming the disk.
+  // Persist the current scopes immediately. Used both by the debounced
+  // auto-save below and by sendTo4104 — the latter has to flush in-
+  // flight edits before the promote endpoint reads from disk, otherwise
+  // a fast Award-then-Send sequence races the 600ms debounce and the
+  // server returns 400 ("no awarded bid").
+  async function persistScopes(snapshot: ScopeRow[]): Promise<boolean> {
+    const json = JSON.stringify(snapshot);
+    if (json === lastSavedJsonRef.current) return true;
+    try {
+      const res = await fetch(
+        `${apiBaseUrl}/api/priced-estimates/${encodeURIComponent(estimateId)}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subLeveling: snapshot }),
+        },
+      );
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new Error(`Save failed (${res.status}): ${text.slice(0, 200)}`);
+      }
+      lastSavedJsonRef.current = json;
+      setSavedAt(new Date().toISOString());
+      setSaveError(null);
+      return true;
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Save failed');
+      return false;
+    }
+  }
+
+  // Debounced auto-save: 600 ms feels responsive without slamming the
+  // disk. The promote button bypasses this with a synchronous flush —
+  // see sendTo4104.
   useEffect(() => {
     const json = JSON.stringify(scopes);
     if (json === lastSavedJsonRef.current) return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(async () => {
-      try {
-        const res = await fetch(
-          `${apiBaseUrl}/api/priced-estimates/${encodeURIComponent(estimateId)}`,
-          {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ subLeveling: scopes }),
-          },
-        );
-        if (!res.ok) {
-          const text = await res.text().catch(() => '');
-          throw new Error(`Save failed (${res.status}): ${text.slice(0, 200)}`);
-        }
-        lastSavedJsonRef.current = json;
-        setSavedAt(new Date().toISOString());
-        setSaveError(null);
-      } catch (err) {
-        setSaveError(err instanceof Error ? err.message : 'Save failed');
-      }
+    saveTimer.current = setTimeout(() => {
+      void persistScopes(scopes);
     }, 600);
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scopes, apiBaseUrl, estimateId]);
 
   function addScope() {
@@ -210,6 +225,24 @@ export function SubLevelingClient({
   // have to bounce a 400 for a UX problem we can prevent.
   async function sendTo4104(scope: ScopeRow, awarded: CompetingBid) {
     setPromoteState((prev) => ({ ...prev, [scope.id]: { kind: 'sending' } }));
+    // Flush any pending debounced save first. Without this, a fast
+    // Award-then-Send within the 600ms window leaves the awardedBidId
+    // un-persisted on disk and the promote endpoint returns 400.
+    if (saveTimer.current) {
+      clearTimeout(saveTimer.current);
+      saveTimer.current = null;
+    }
+    const flushed = await persistScopes(scopes);
+    if (!flushed) {
+      setPromoteState((prev) => ({
+        ...prev,
+        [scope.id]: {
+          kind: 'error',
+          reason: 'Could not save the leveling worksheet first',
+        },
+      }));
+      return;
+    }
     try {
       const res = await fetch(
         `${apiBaseUrl}/api/priced-estimates/${encodeURIComponent(
