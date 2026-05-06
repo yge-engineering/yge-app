@@ -119,8 +119,18 @@ export default async function EstimatesPage() {
         </Link>
       </div>
 
-      <h1 className="text-3xl font-bold text-yge-blue-500">{t('estimates.title')}</h1>
-      <p className="mt-2 text-gray-700">{t('estimates.subtitle')}</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-bold text-yge-blue-500">{t('estimates.title')}</h1>
+          <p className="mt-2 text-gray-700">{t('estimates.subtitle')}</p>
+        </div>
+        <Link
+          href="/plans-to-estimate"
+          className="rounded-md bg-yge-blue-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-yge-blue-700"
+        >
+          + Start new estimate
+        </Link>
+      </div>
 
       {/* Imported estimates from the YGE Excel master.
        *  These are full Excel estimates with line items grouped by section.
