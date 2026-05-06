@@ -78,6 +78,21 @@ export default async function EstimateDetailPage({
         </div>
       </div>
 
+      {(() => {
+        const unpricedCount = data.estimate.bidItems.filter(
+          (i) => i.unitPriceCents == null,
+        ).length;
+        if (unpricedCount === 0) return null;
+        return (
+          <div className="mb-4 inline-flex items-center gap-2 rounded border border-red-300 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-800">
+            <span>⚠</span>
+            <span>
+              {unpricedCount} unpriced line{unpricedCount === 1 ? '' : 's'} — finish before submitting.
+            </span>
+          </div>
+        );
+      })()}
+
       <div className="mb-4 flex flex-wrap gap-2 text-xs">
         <Link
           href={`/estimates/${data.estimate.id}/coach`}
