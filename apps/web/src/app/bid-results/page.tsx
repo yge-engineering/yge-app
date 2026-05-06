@@ -140,11 +140,11 @@ export default async function BidResultsPage() {
                     return (
                       <tr key={r.id} className={r.outcome === 'WON_BY_YGE' ? 'bg-emerald-50' : ''}>
                         <td className="px-4 py-3 font-mono text-xs text-gray-700">
-                          <Link href={`/bid-results/${r.id}`} className="text-blue-700 hover:underline">{r.bidOpenedAt}</Link>
+                          <Link href={`/bid-results/${r.id}`} className="font-medium text-gray-900 hover:text-yge-blue-700 hover:underline">{r.bidOpenedAt}</Link>
                         </td>
                         <td className="px-4 py-3 text-gray-700">
                           {job ? (
-                            <Link href={`/jobs/${job.id}`} className="text-blue-700 hover:underline">{job.projectName}</Link>
+                            <Link href={`/jobs/${job.id}`} className="font-medium text-gray-900 hover:text-yge-blue-700 hover:underline">{job.projectName}</Link>
                           ) : (
                             <span className="text-gray-400">{r.jobId}</span>
                           )}
