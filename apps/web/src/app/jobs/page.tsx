@@ -7,6 +7,7 @@ import Link from 'next/link';
 
 import { Alert, AppShell, Money } from '../../components';
 import { JobsSearchInput } from '../../components/jobs-search-input';
+import { JobsCreatedFilter } from '../../components/jobs-created-filter';
 import { getLocale, getTranslator } from '../../lib/locale';
 import { getCurrentUser } from '../../lib/auth';
 import {
@@ -276,7 +277,10 @@ export default async function JobsPage({ searchParams }: PageProps) {
 
       {filteredJobs.length > 0 && (
         <div className="mt-6">
-          <JobsSearchInput targetId="jobs-table" totalCount={filteredJobs.length} />
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <JobsSearchInput targetId="jobs-table" totalCount={filteredJobs.length} />
+            <JobsCreatedFilter targetId="jobs-table" />
+          </div>
           <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
           <table id="jobs-table" className="w-full text-left text-sm">
             <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
@@ -295,6 +299,7 @@ export default async function JobsPage({ searchParams }: PageProps) {
                 <tr
                   key={j.id}
                   data-search={`${j.projectName} ${j.ownerAgency ?? ''} ${j.location ?? ''}`}
+                  data-created={j.createdAt}
                   className="hover:bg-gray-50"
                 >
                   <td className="px-4 py-3">
