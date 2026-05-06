@@ -207,38 +207,38 @@ export default async function EstimateDetailPage({
         </Link>
         <Link
           href={`/estimates/${data.estimate.id}/print`}
-          className="rounded border border-yge-blue-500 px-3 py-1 font-medium text-yge-blue-500 hover:bg-yge-blue-50"
+          className="rounded border border-yge-blue-500 px-3 py-1 font-medium text-yge-blue-500 transition hover:bg-yge-blue-50 hover:shadow-sm"
         >
           {t('estPg.print')}
         </Link>
         <Link
           href={`/estimates/${data.estimate.id}/transmittal`}
-          className="rounded border border-yge-blue-500 px-3 py-1 font-medium text-yge-blue-500 hover:bg-yge-blue-50"
+          className="rounded border border-yge-blue-500 px-3 py-1 font-medium text-yge-blue-500 transition hover:bg-yge-blue-50 hover:shadow-sm"
         >
           {t('estPg.coverLetter')}
         </Link>
         <Link
           href={`/estimates/${data.estimate.id}/envelope`}
-          className="rounded border border-yge-blue-500 px-3 py-1 font-medium text-yge-blue-500 hover:bg-yge-blue-50"
+          className="rounded border border-yge-blue-500 px-3 py-1 font-medium text-yge-blue-500 transition hover:bg-yge-blue-50 hover:shadow-sm"
         >
           {t('estPg.envelope')}
         </Link>
         <span className="mx-1 hidden h-6 w-px bg-gray-200 sm:inline-block" aria-hidden="true" />
         <Link
           href={`/estimates/${data.estimate.id}/sub-list`}
-          className="rounded border border-yge-blue-500 px-3 py-1 font-medium text-yge-blue-500 hover:bg-yge-blue-50"
+          className="rounded border border-yge-blue-500 px-3 py-1 font-medium text-yge-blue-500 transition hover:bg-yge-blue-50 hover:shadow-sm"
         >
           {t('estPg.subList')}
         </Link>
         <Link
           href={`/estimates/${data.estimate.id}/sub-leveling`}
-          className="rounded border border-yge-blue-500 px-3 py-1 font-medium text-yge-blue-500 hover:bg-yge-blue-50"
+          className="rounded border border-yge-blue-500 px-3 py-1 font-medium text-yge-blue-500 transition hover:bg-yge-blue-50 hover:shadow-sm"
         >
           Sub leveling
         </Link>
         <Link
           href={`/estimates/${data.estimate.id}/addenda`}
-          className="rounded border border-yge-blue-500 px-3 py-1 font-medium text-yge-blue-500 hover:bg-yge-blue-50"
+          className="rounded border border-yge-blue-500 px-3 py-1 font-medium text-yge-blue-500 transition hover:bg-yge-blue-50 hover:shadow-sm"
         >
           {t('estPg.addenda')}
         </Link>
