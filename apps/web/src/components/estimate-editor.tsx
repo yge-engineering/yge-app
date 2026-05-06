@@ -684,7 +684,8 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
       )}
 
       <BidDueCountdown bidDueDate={estimate.bidDueDate} />
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-between">
+        <LastSavedPill updatedAt={estimate.updatedAt} />
         <button
           type="button"
           onClick={() => setShortcutsOpen(true)}
@@ -1756,6 +1757,37 @@ function OppEditor({
         {t('estEditor.markupHelp')}
       </p>
     </div>
+  );
+}
+
+// "Last saved" pill — re-ticks every 30 seconds so the estimator
+// can confirm the auto-save is alive. Reads estimate.updatedAt
+// which gets bumped server-side on every PATCH.
+function LastSavedPill({ updatedAt }: { updatedAt: string }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const handle = window.setInterval(() => setNow(Date.now()), 30_000);
+    return () => window.clearInterval(handle);
+  }, []);
+  const ms = Date.now() - Date.parse(updatedAt);
+  void now;
+  if (!Number.isFinite(ms) || ms < 0) {
+    return <span className="text-[10px] text-gray-400">Last saved —</span>;
+  }
+  const minutes = Math.round(ms / 60_000);
+  const label =
+    minutes < 1
+      ? 'Saved just now'
+      : minutes < 60
+        ? `Saved ${minutes} min ago`
+        : `Saved ${Math.round(minutes / 60)} hr ago`;
+  return (
+    <span
+      className="text-[10px] text-gray-500"
+      title={new Date(updatedAt).toLocaleString()}
+    >
+      ✓ {label}
+    </span>
   );
 }
 
