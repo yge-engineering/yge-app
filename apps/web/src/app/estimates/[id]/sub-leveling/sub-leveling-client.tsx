@@ -332,7 +332,122 @@ export function SubLevelingClient({
                 No quotes yet. Add each sub's bid below.
               </p>
             ) : (
-              <div className="mt-3 overflow-x-auto rounded border border-gray-200">
+              <>
+              {/* Mobile: stacked cards. The horizontal-scroll table is
+                  unreadable on a phone in the field, so under md: we
+                  show one card per quote with the same inputs vertically
+                  stacked and the same award + remove actions. */}
+              <div className="mt-3 space-y-2 md:hidden">
+                {scope.bids.map((bid) => {
+                  const isLow =
+                    lowBid !== null &&
+                    bid.bidAmountCents > 0 &&
+                    bid.bidAmountCents === lowBid.bidAmountCents;
+                  const delta =
+                    lowBid !== null && lowBid.bidAmountCents > 0
+                      ? bid.bidAmountCents - lowBid.bidAmountCents
+                      : 0;
+                  const isAwarded = scope.awardedBidId === bid.id;
+                  return (
+                    <div
+                      key={bid.id}
+                      className={`rounded border px-3 py-3 ${
+                        isAwarded
+                          ? 'border-green-300 bg-green-50'
+                          : isLow
+                            ? 'border-amber-300 bg-amber-50'
+                            : 'border-gray-200 bg-white'
+                      }`}
+                    >
+                      <input
+                        value={bid.contractorName}
+                        onChange={(e) =>
+                          updateBid(scope.id, bid.id, {
+                            contractorName: e.target.value,
+                          })
+                        }
+                        placeholder="Contractor name"
+                        className="w-full rounded border border-gray-300 px-2 py-2 text-base font-semibold"
+                      />
+                      <div className="mt-2 flex gap-2">
+                        <input
+                          value={bid.cslbLicense}
+                          onChange={(e) =>
+                            updateBid(scope.id, bid.id, {
+                              cslbLicense: e.target.value,
+                            })
+                          }
+                          placeholder="CSLB # 123456"
+                          className="flex-1 rounded border border-gray-300 px-2 py-2 font-mono text-sm"
+                        />
+                        <input
+                          inputMode="decimal"
+                          value={
+                            bid.bidAmountCents === 0
+                              ? ''
+                              : (bid.bidAmountCents / 100).toFixed(2)
+                          }
+                          onChange={(e) =>
+                            updateBid(scope.id, bid.id, {
+                              bidAmountCents: dollarsToCents(e.target.value),
+                            })
+                          }
+                          placeholder="0.00"
+                          className="w-32 rounded border border-gray-300 px-2 py-2 text-right font-mono text-sm"
+                        />
+                      </div>
+                      <input
+                        value={bid.notes}
+                        onChange={(e) =>
+                          updateBid(scope.id, bid.id, {
+                            notes: e.target.value,
+                          })
+                        }
+                        placeholder="exclusions / inclusions"
+                        className="mt-2 w-full rounded border border-gray-300 px-2 py-2 text-sm"
+                      />
+                      <div className="mt-2 flex items-center justify-between gap-2">
+                        <span className="font-mono text-xs">
+                          {bid.bidAmountCents === 0 ? (
+                            <span className="text-gray-400">—</span>
+                          ) : delta === 0 ? (
+                            <span className="text-amber-700">LOW</span>
+                          ) : (
+                            <span className="text-red-700">
+                              +{fmtMoney(delta)} vs low
+                            </span>
+                          )}
+                        </span>
+                        <span className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => void award(scope, bid)}
+                            className={`rounded px-3 py-1.5 text-xs font-semibold ${
+                              isAwarded
+                                ? 'bg-green-700 text-white'
+                                : 'border border-blue-700 text-blue-700 hover:bg-blue-50'
+                            }`}
+                          >
+                            {isAwarded ? '✓ Awarded' : 'Award + copy'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => removeBid(scope.id, bid.id)}
+                            className="text-gray-500 hover:text-red-700"
+                            title="Remove this quote"
+                            aria-label="Remove this quote"
+                          >
+                            ✕
+                          </button>
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop: side-by-side comparison table. */}
+              <div className="mt-3 hidden overflow-x-auto rounded border border-gray-200 md:block">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 text-left text-[11px] uppercase tracking-wide text-gray-500">
                     <tr>
@@ -456,6 +571,7 @@ export function SubLevelingClient({
                   </tbody>
                 </table>
               </div>
+              </>
             )}
 
             <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs">
