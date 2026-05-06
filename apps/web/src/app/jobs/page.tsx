@@ -300,7 +300,7 @@ export default async function JobsPage({ searchParams }: PageProps) {
                   {t('jobs.col.due')}
                   <span className="sort-arrow" />
                 </th>
-                <th data-sort-key="cents" className="select-none px-4 py-2 hover:bg-gray-100">
+                <th data-sort-key="cents" className="select-none px-4 py-2 text-right hover:bg-gray-100">
                   {t('jobs.col.engineerEstimate')}
                   <span className="sort-arrow" />
                 </th>
@@ -375,7 +375,7 @@ export default async function JobsPage({ searchParams }: PageProps) {
                       <span className="text-gray-400">—</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-xs text-gray-700">
+                  <td className="px-4 py-3 text-right font-mono text-xs tabular-nums text-gray-700">
                     {j.engineersEstimateCents !== undefined ? (
                       <Money cents={j.engineersEstimateCents} />
                     ) : (
