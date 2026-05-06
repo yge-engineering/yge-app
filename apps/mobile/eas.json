@@ -1,0 +1,33 @@
+{
+  "cli": {
+    "version": ">= 5.9.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal",
+      "ios": { "simulator": false },
+      "android": { "buildType": "apk" }
+    },
+    "production": {
+      "ios": { "resourceClass": "m-medium" },
+      "android": { "buildType": "app-bundle" }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "bundleIdentifier": "com.youngge.app",
+        "ascAppId": "TODO_FILL_AFTER_APP_STORE_CREATE",
+        "appleId": "TODO_FILL_RYAN_APPLE_ID"
+      },
+      "android": {
+        "track": "internal"
+      }
+    }
+  }
+}
