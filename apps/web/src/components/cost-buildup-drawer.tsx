@@ -13,17 +13,24 @@
 // .costBuildup). When Postgres lands the structure flips to a real
 // CostLine table; the drawer can stay the same.
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   buildupUnitPriceCents,
   formatUSD,
   totalBuildupCents,
+  totalFringeCents,
   type CostBuildup,
   type CostBuildupEquipment,
   type CostBuildupLabor,
   type CostBuildupMaterial,
+  type DirRate,
   type PricedBidItem,
 } from '@yge/shared';
+
+const API_BASE_URL =
+  typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_URL
+    ? process.env.NEXT_PUBLIC_API_URL
+    : 'http://localhost:4000';
 
 function newId(prefix: string): string {
   return `${prefix}-${Math.floor(Math.random() * 0xffffff)
@@ -222,13 +229,18 @@ export function CostBuildupDrawer({ item, onClose, onSave, onApplyUnitPrice }: P
                 return (
                   <tr key={l.id}>
                     <td className="px-1 py-1">
-                      <input
+                      <DirClassificationInput
                         value={l.classification}
-                        onChange={(e) =>
-                          patchLabor(l.id, { classification: e.target.value })
+                        onChange={(classification) =>
+                          patchLabor(l.id, { classification })
                         }
-                        placeholder="e.g. Operator Group 4"
-                        className="w-full rounded border border-gray-300 px-1 py-0.5"
+                        onPickRate={(rate) => {
+                          patchLabor(l.id, {
+                            classification: rate.classification,
+                            hourlyRateCents: rate.basicHourlyCents,
+                            fringeRateCents: totalFringeCents(rate),
+                          });
+                        }}
                       />
                     </td>
                     <NumberCell
@@ -622,5 +634,139 @@ function DollarCell({
         className={`${width} rounded border border-gray-300 px-1 py-0.5 text-right font-mono`}
       />
     </td>
+  );
+}
+
+// ---- DIR classification autocomplete -------------------------------------
+
+/**
+ * Type-ahead input that queries /api/dir-rates as the estimator types
+ * a labor classification. Picking a match auto-fills the base hourly
+ * rate and the rolled-up fringes — that's the moment that turns a
+ * 2026-vintage spreadsheet job into a 30-second one.
+ *
+ * The dropdown closes on outside click, Escape, or a successful pick.
+ * Fetches are debounced 200 ms.
+ */
+function DirClassificationInput({
+  value,
+  onChange,
+  onPickRate,
+}: {
+  value: string;
+  onChange: (classification: string) => void;
+  onPickRate: (rate: DirRate) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [matches, setMatches] = useState<DirRate[]>([]);
+  const [searching, setSearching] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Outside-click dismisses the dropdown.
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      if (
+        wrapperRef.current &&
+        !wrapperRef.current.contains(e.target as Node)
+      ) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, []);
+
+  function search(query: string) {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    if (query.trim().length < 2) {
+      setMatches([]);
+      return;
+    }
+    debounceTimer.current = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const url = new URL(
+          `${API_BASE_URL}/api/dir-rates`,
+          typeof window !== 'undefined' ? window.location.href : undefined,
+        );
+        url.searchParams.set('classification', query.trim());
+        const res = await fetch(url.toString(), { cache: 'no-store' });
+        if (!res.ok) {
+          setMatches([]);
+          return;
+        }
+        const json = (await res.json()) as { rates: DirRate[] };
+        // Limit to 8 — the dropdown gets unhelpful past that and the
+        // estimator can refine the query if they need more.
+        setMatches(json.rates.slice(0, 8));
+      } catch {
+        setMatches([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 200);
+  }
+
+  return (
+    <div className="relative" ref={wrapperRef}>
+      <input
+        value={value}
+        onChange={(e) => {
+          onChange(e.target.value);
+          setOpen(true);
+          search(e.target.value);
+        }}
+        onFocus={() => {
+          if (value.length >= 2) {
+            setOpen(true);
+            search(value);
+          }
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') setOpen(false);
+        }}
+        placeholder="e.g. Operator Group 4"
+        className="w-full rounded border border-gray-300 px-1 py-0.5"
+      />
+      {open && (matches.length > 0 || searching) && (
+        <div className="absolute left-0 right-0 top-full z-30 mt-0.5 max-h-64 overflow-y-auto rounded border border-gray-300 bg-white shadow-lg">
+          {searching && matches.length === 0 && (
+            <div className="px-2 py-1 text-[11px] italic text-gray-400">
+              Searching DIR rates…
+            </div>
+          )}
+          {matches.map((r) => {
+            const fringe = totalFringeCents(r);
+            return (
+              <button
+                key={r.id}
+                type="button"
+                onClick={() => {
+                  onPickRate(r);
+                  setOpen(false);
+                }}
+                className="flex w-full items-start justify-between gap-2 border-b border-gray-100 px-2 py-1.5 text-left text-[11px] hover:bg-yge-blue-50"
+              >
+                <div>
+                  <div className="font-medium text-gray-900">
+                    {r.classification}
+                  </div>
+                  <div className="text-[10px] text-gray-500">
+                    {r.county} · effective {r.effectiveDate}
+                  </div>
+                </div>
+                <div className="text-right font-mono">
+                  <div>{formatUSD(r.basicHourlyCents)}/hr base</div>
+                  <div className="text-[10px] text-gray-500">
+                    +{formatUSD(fringe)} fringe
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
