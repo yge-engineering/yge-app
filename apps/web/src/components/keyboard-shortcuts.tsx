@@ -23,6 +23,7 @@ const SHORTCUTS: Shortcut[] = [
   { keys: 'g p', labelKey: 'kbd.newEstimate', href: '/plans-to-estimate' },
   { keys: 'g j', labelKey: 'kbd.jobs', href: '/jobs' },
   { keys: 'g r', labelKey: 'kbd.bidResults', href: '/bid-results' },
+  { keys: 'g i', labelKey: 'kbd.imported', href: '/imported-estimates' },
   { keys: 'g c', labelKey: 'kbd.customers', href: '/customers' },
   { keys: 'g v', labelKey: 'kbd.vendors', href: '/vendors' },
   { keys: 'g e', labelKey: 'kbd.employees', href: '/employees' },
