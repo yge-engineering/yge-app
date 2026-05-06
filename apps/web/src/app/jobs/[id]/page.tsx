@@ -422,7 +422,7 @@ export default async function JobDetailPage({
           </h2>
           <Link
             href={`/plans-to-estimate?jobId=${encodeURIComponent(job.id)}`}
-            className="text-sm text-yge-blue-500 hover:underline"
+            className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50"
           >
             {t('jobDetail.newDraft')}
           </Link>
@@ -436,8 +436,13 @@ export default async function JobDetailPage({
             {drafts.map((d) => (
               <li key={d.id} className="flex items-center justify-between px-4 py-3">
                 <div>
-                  <div className="text-sm font-medium text-gray-900">
-                    {d.projectName}
+                  <div className="text-sm font-medium">
+                    <Link
+                      href={`/drafts/${d.id}`}
+                      className="text-gray-900 hover:text-yge-blue-700 hover:underline"
+                    >
+                      {d.projectName}
+                    </Link>
                   </div>
                   <div className="text-xs text-gray-500">
                     {t('jobDetail.drafts.itemCount', { count: d.bidItemCount, when: formatWhen(d.createdAt) })}
@@ -445,7 +450,7 @@ export default async function JobDetailPage({
                 </div>
                 <Link
                   href={`/drafts/${d.id}`}
-                  className="text-sm text-yge-blue-500 hover:underline"
+                  className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50"
                 >
                   {t('jobDetail.action.open')}
                 </Link>
@@ -525,7 +530,7 @@ export default async function JobDetailPage({
             No imported estimates linked to this job.{' '}
             <Link
               href="/imported-estimates"
-              className="text-yge-blue-500 hover:underline"
+              className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50"
             >
               Browse all imported estimates →
             </Link>
@@ -538,8 +543,13 @@ export default async function JobDetailPage({
                 className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
               >
                 <div className="min-w-0">
-                  <div className="text-sm font-medium text-gray-900">
-                    {e.projectName}
+                  <div className="text-sm font-medium">
+                    <Link
+                      href={`/imported-estimates/${e.id}`}
+                      className="text-gray-900 hover:text-yge-blue-700 hover:underline"
+                    >
+                      {e.projectName}
+                    </Link>
                   </div>
                   <div className="text-xs text-gray-500">
                     Job {e.jobNumber} · {e.rateType} · {e.lines.length} line
@@ -551,7 +561,7 @@ export default async function JobDetailPage({
                 </div>
                 <Link
                   href={`/imported-estimates/${e.id}`}
-                  className="text-sm text-yge-blue-500 hover:underline"
+                  className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50"
                 >
                   Open →
                 </Link>
