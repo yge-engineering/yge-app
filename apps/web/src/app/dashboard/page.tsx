@@ -369,7 +369,7 @@ export default async function DashboardPage() {
             )}
           </p>
         </div>
-        <Link href="/all-modules" className="text-sm text-yge-blue-500 hover:underline">
+        <Link href="/all-modules" className="rounded border border-yge-blue-500 px-3 py-1 text-sm font-medium text-yge-blue-500 hover:bg-yge-blue-50">
           {t('dashboard.allModules')} &rarr;
         </Link>
       </header>
@@ -570,7 +570,7 @@ export default async function DashboardPage() {
           {todayDispatches.length === 0 ? (
             <p className="text-sm text-gray-500">
               {t('dashboard.card.todayDispatch.empty')}{' '}
-              <Link href="/dispatch/new" className="text-yge-blue-500 hover:underline">
+              <Link href="/dispatch/new" className="rounded border border-yge-blue-500 px-2 py-0.5 text-[11px] font-medium text-yge-blue-500 hover:bg-yge-blue-50">
                 {t('dashboard.addDispatch')} &rarr;
               </Link>
             </p>
@@ -690,7 +690,7 @@ function CardHeader({ title, href }: { title: string; href?: string }) {
         {title}
       </h2>
       {href && (
-        <Link href={href} className="text-xs text-yge-blue-500 hover:underline">
+        <Link href={href} className="rounded border border-yge-blue-500 px-2 py-0.5 text-[11px] font-medium text-yge-blue-500 hover:bg-yge-blue-50">
           Open &rarr;
         </Link>
       )}
