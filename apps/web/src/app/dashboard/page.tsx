@@ -116,6 +116,8 @@ async function fetchEstimatesPipeline(): Promise<{
   /** Last up-to-10 decided bids in order, oldest → newest. */
   recentDecided: ('awarded' | 'lost')[];
   stalePursuing: PricedEstimateSummaryLite[];
+  /** Count of bids whose bidSubmittedAt falls in the last 30 days. */
+  submitted30d: number;
 }> {
   try {
     const res = await fetch(`${apiBaseUrl()}/api/priced-estimates`, {
@@ -132,6 +134,7 @@ async function fetchEstimatesPipeline(): Promise<{
         centsByStatus: { pursuing: 0, submitted: 0, awarded: 0 },
         recentDecided: [],
         stalePursuing: [],
+        submitted30d: 0,
       };
     const json = (await res.json()) as {
       estimates: PricedEstimateSummaryLite[];
@@ -188,6 +191,12 @@ async function fetchEstimatesPipeline(): Promise<{
       })
       .sort((a, b) => a.updatedAt.localeCompare(b.updatedAt))
       .slice(0, 5);
+    const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+    const submitted30d = all.filter((e) => {
+      if (!e.bidSubmittedAt) return false;
+      const t = new Date(e.bidSubmittedAt).getTime();
+      return !Number.isNaN(t) && Date.now() - t <= thirtyDaysMs;
+    }).length;
     return {
       recent,
       pipelineCents,
@@ -198,6 +207,7 @@ async function fetchEstimatesPipeline(): Promise<{
       centsByStatus,
       recentDecided,
       stalePursuing,
+      submitted30d,
     };
   } catch {
     return {
@@ -210,6 +220,7 @@ async function fetchEstimatesPipeline(): Promise<{
       centsByStatus: { pursuing: 0, submitted: 0, awarded: 0 },
       recentDecided: [],
       stalePursuing: [],
+      submitted30d: 0,
     };
   }
 }
@@ -574,6 +585,11 @@ export default async function DashboardPage() {
               <span className="opacity-70">
                 · {pipelineData.awarded} of {pipelineData.decided}
               </span>
+              {pipelineData.submitted30d > 0 && (
+                <span className="ml-1 inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-800">
+                  {pipelineData.submitted30d} submitted (30d)
+                </span>
+              )}
               {pipelineData.recentDecided.length > 0 && (
                 <span className="font-mono text-[10px] tracking-tight" title="Last decided bids (oldest → newest)">
                   {pipelineData.recentDecided.map((d, i) => (
