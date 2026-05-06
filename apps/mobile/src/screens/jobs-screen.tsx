@@ -12,6 +12,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { JobsStackParamList } from '../../App';
 import { getJson } from '../lib/api';
+import { cacheGet, cacheSet } from '../lib/cache';
 import { ErrorCard } from '../components/error-card';
 
 interface JobLite {
@@ -63,14 +64,24 @@ export default function JobsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [jobs, setJobs] = useState<JobLite[]>([]);
+  const [staleAgeMs, setStaleAgeMs] = useState<number | null>(null);
 
   async function load() {
     setError(null);
     try {
       const json = await getJson<{ jobs: JobLite[] }>('/api/jobs');
       setJobs(json.jobs ?? []);
+      setStaleAgeMs(null);
+      await cacheSet('cache.jobs', json.jobs ?? []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load');
+      const cached = await cacheGet<JobLite[]>('cache.jobs');
+      if (cached) {
+        setJobs(cached.value);
+        setStaleAgeMs(cached.ageMs);
+        setError(null);
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to load');
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -117,6 +128,13 @@ export default function JobsScreen() {
         </View>
       )}
 
+      {staleAgeMs != null && (
+        <View style={styles.offlineBanner}>
+          <Text style={styles.offlineText}>
+            🔌 Offline · last sync {Math.max(1, Math.round(staleAgeMs / 60000))} min ago
+          </Text>
+        </View>
+      )}
       {error && <ErrorCard message={error} onRetry={() => { setLoading(true); void load(); }} />}
 
       {active.map((j) => {
@@ -206,4 +224,13 @@ const styles = StyleSheet.create({
   cardSub: { fontSize: 12, color: '#64748b', marginTop: 2 },
   row: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 },
   engineersEst: { fontSize: 12, color: '#475569', marginTop: 8 },
+  offlineBanner: {
+    padding: 8,
+    borderRadius: 6,
+    backgroundColor: '#fef3c7',
+    borderWidth: 1,
+    borderColor: '#fcd34d',
+    marginBottom: 12,
+  },
+  offlineText: { color: '#92400e', fontSize: 12, fontWeight: '600', textAlign: 'center' },
 });

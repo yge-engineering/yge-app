@@ -13,6 +13,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { EstimatesStackParamList } from '../../App';
 import { getJson } from '../lib/api';
+import { cacheGet, cacheSet } from '../lib/cache';
 import { ErrorCard } from '../components/error-card';
 
 interface EstimateLite {
@@ -60,6 +61,7 @@ export default function EstimatesScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [estimates, setEstimates] = useState<EstimateLite[]>([]);
+  const [staleAgeMs, setStaleAgeMs] = useState<number | null>(null);
   const [query, setQuery] = useState('');
 
   async function load() {
@@ -69,8 +71,17 @@ export default function EstimatesScreen() {
         '/api/priced-estimates',
       );
       setEstimates(json.estimates ?? []);
+      setStaleAgeMs(null);
+      await cacheSet('cache.estimatesList', json.estimates ?? []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load');
+      const cached = await cacheGet<EstimateLite[]>('cache.estimatesList');
+      if (cached) {
+        setEstimates(cached.value);
+        setStaleAgeMs(cached.ageMs);
+        setError(null);
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to load');
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -127,6 +138,13 @@ export default function EstimatesScreen() {
         </View>
       )}
 
+      {staleAgeMs != null && (
+        <View style={styles.offlineBanner}>
+          <Text style={styles.offlineText}>
+            🔌 Offline · last sync {Math.max(1, Math.round(staleAgeMs / 60000))} min ago
+          </Text>
+        </View>
+      )}
       {error && <ErrorCard message={error} onRetry={() => { setLoading(true); void load(); }} />}
 
       {filtered.map((e) => {
@@ -253,4 +271,13 @@ const styles = StyleSheet.create({
   money: { fontFamily: 'Courier', fontSize: 14, fontWeight: '700', color: '#0a3a6b', marginLeft: 8 },
   cardSub: { fontSize: 12, color: '#64748b', marginTop: 2 },
   row: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 },
+  offlineBanner: {
+    padding: 8,
+    borderRadius: 6,
+    backgroundColor: '#fef3c7',
+    borderWidth: 1,
+    borderColor: '#fcd34d',
+    marginBottom: 12,
+  },
+  offlineText: { color: '#92400e', fontSize: 12, fontWeight: '600', textAlign: 'center' },
 });
