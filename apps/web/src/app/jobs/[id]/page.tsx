@@ -466,9 +466,15 @@ export default async function JobDetailPage({
       <section className="mt-10">
         <h2 className="text-xl font-semibold text-gray-900">{t('jobDetail.h.estimates')}</h2>
         {estimates.length === 0 ? (
-          <p className="mt-2 text-sm text-gray-500">
-            {t('jobDetail.estimates.empty')}
-          </p>
+          <div className="mt-3 rounded-lg border border-dashed border-gray-300 bg-gray-50 p-6 text-center">
+            <p className="text-sm text-gray-700">{t('jobDetail.estimates.empty')}</p>
+            <Link
+              href={`/plans-to-estimate?jobId=${encodeURIComponent(job.id)}`}
+              className="mt-3 inline-block rounded-md bg-yge-blue-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-yge-blue-700"
+            >
+              + Start AI draft
+            </Link>
+          </div>
         ) : (
           <ul className="mt-3 divide-y divide-gray-100 rounded-lg border border-gray-200 bg-white shadow-sm">
             {estimates.map((e) => {
