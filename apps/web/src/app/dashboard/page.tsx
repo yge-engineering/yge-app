@@ -101,6 +101,8 @@ interface PricedEstimateSummaryLite {
   bidStatus?: 'pursuing' | 'submitted' | 'awarded' | 'lost';
   bidSubmittedAt?: string;
   notesPreview?: string;
+  reviewedLineCount?: number;
+  bidItemCount?: number;
 }
 
 /** Pull every priced estimate plus a small slice of the most-recent ones
