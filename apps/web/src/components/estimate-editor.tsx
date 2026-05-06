@@ -32,6 +32,7 @@ import { MarkupStackEditor } from './markup-stack-editor';
 import { HistoricalPricesPopover } from './historical-prices-popover';
 import { ExplainLinePopover } from './explain-line-popover';
 import { BidDueCountdown } from './bid-due-countdown';
+import { CrossCheckAddendaButton } from './cross-check-addenda-button';
 
 interface Props {
   initialEstimate: PricedEstimate;
@@ -1010,14 +1011,24 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
         }}
       />
 
-      <AddendumEditor
-        estimate={estimate}
-        apiBaseUrl={apiBaseUrl}
-        onUpdated={(nextEstimate, nextTotals) => {
-          setEstimate(nextEstimate);
-          setTotals(nextTotals);
-        }}
-      />
+      <div className="flex items-center justify-between gap-2">
+        <AddendumEditor
+          estimate={estimate}
+          apiBaseUrl={apiBaseUrl}
+          onUpdated={(nextEstimate, nextTotals) => {
+            setEstimate(nextEstimate);
+            setTotals(nextTotals);
+          }}
+        />
+      </div>
+      {estimate.addenda.length > 0 && (
+        <div className="flex justify-end">
+          <CrossCheckAddendaButton
+            apiBaseUrl={apiBaseUrl}
+            estimateId={estimate.id}
+          />
+        </div>
+      )}
 
       <MarkupStackEditor
         markup={estimate.markup}

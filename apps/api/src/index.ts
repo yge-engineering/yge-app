@@ -69,6 +69,7 @@ import { pdfExtractRouter } from './routes/pdf-extract';
 import { explainLineRouter } from './routes/explain-line';
 import { subBidExtractRouter } from './routes/sub-bid-extract';
 import { takeoffExtractRouter } from './routes/takeoff-extract';
+import { crossCheckAddendaRouter } from './routes/cross-check-addenda';
 
 const app = express();
 
@@ -168,6 +169,7 @@ app.use('/api/pdf', pdfExtractRouter);
 app.use('/api/priced-estimates', explainLineRouter);
 app.use('/api/sub-bids', subBidExtractRouter);
 app.use('/api/takeoff', takeoffExtractRouter);
+app.use('/api/priced-estimates', crossCheckAddendaRouter);
 
 // 404
 app.use((_req, res) => {
