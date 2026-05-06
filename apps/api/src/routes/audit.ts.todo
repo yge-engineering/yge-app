@@ -1,2 +1,0 @@
-TODO: add GET /api/audit/recent endpoint that returns latest 10 audit entries.
-Bundle 1149 deferred until this exists.
