@@ -27,7 +27,8 @@
     "@react-navigation/native-stack": "^6.9.26",
     "react-native-screens": "~3.29.0",
     "react-native-gesture-handler": "~2.14.0",
-    "@react-native-async-storage/async-storage": "1.21.0"
+    "@react-native-async-storage/async-storage": "1.21.0",
+    "expo-clipboard": "~5.0.1"
   },
   "devDependencies": {
     "@babel/core": "^7.23.0",

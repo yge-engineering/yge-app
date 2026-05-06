@@ -8,6 +8,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { getJson, patchJson } from '../lib/api';
 import { NotesEditorModal } from '../components/notes-editor-modal';
 
@@ -138,15 +139,21 @@ export default function EstimateDetailScreen({ route }: { route: { params: { id:
       <Text style={styles.h1}>{e.projectName}</Text>
       {e.ownerAgency && <Text style={styles.sub}>{e.ownerAgency}</Text>}
 
-      <View style={[styles.card, { backgroundColor: '#0a3a6b', borderColor: '#0a3a6b' }]}>
-        <Text style={[styles.label, { color: '#cbd5e1' }]}>Bid total</Text>
+      <Pressable
+        onPress={async () => {
+          await Clipboard.setStringAsync(formatMoney(totals.bidTotalCents));
+          Alert.alert('Copied', formatMoney(totals.bidTotalCents) + ' copied to clipboard.');
+        }}
+        style={[styles.card, { backgroundColor: '#0a3a6b', borderColor: '#0a3a6b' }]}
+      >
+        <Text style={[styles.label, { color: '#cbd5e1' }]}>Bid total · tap to copy</Text>
         <Text style={[styles.value, { color: '#ffffff', fontSize: 28 }]}>
           {formatMoney(totals.bidTotalCents)}
         </Text>
         <Text style={[styles.sub, { color: '#cbd5e1', marginTop: 4 }]}>
           Direct {formatMoney(totals.directCents)} · O&P {formatMoney(totals.oppCents)}
         </Text>
-      </View>
+      </Pressable>
 
       <View style={styles.card}>
         <Text style={styles.label}>Status</Text>
