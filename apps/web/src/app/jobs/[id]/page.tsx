@@ -378,7 +378,7 @@ export default async function JobDetailPage({
         {job.location && (
           <div>
             <dt className="text-xs uppercase tracking-wide text-gray-500">{t('jobDetail.field.location')}</dt>
-            <dd className="mt-1 text-gray-900">{job.location}</dd>
+            <dd className="mt-1 text-gray-900"><a href={`https://maps.apple.com/?q=${encodeURIComponent(job.location ?? '')}`} target="_blank" rel="noopener noreferrer" className="text-yge-blue-500 hover:underline">{job.location}</a></dd>
           </div>
         )}
         {job.bidDueDate && (
