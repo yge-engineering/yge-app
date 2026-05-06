@@ -23,6 +23,24 @@ function apiBaseUrl(): string {
   );
 }
 
+interface EstimateLite {
+  jobId: string;
+  bidDueDate?: string;
+}
+
+async function fetchEstimateLites(): Promise<EstimateLite[]> {
+  try {
+    const res = await fetch(`${apiBaseUrl()}/api/priced-estimates`, {
+      cache: 'no-store',
+    });
+    if (!res.ok) return [];
+    const json = (await res.json()) as { estimates: EstimateLite[] };
+    return json.estimates ?? [];
+  } catch {
+    return [];
+  }
+}
+
 async function fetchJobs(): Promise<Job[]> {
   const res = await fetch(`${apiBaseUrl()}/api/jobs`, { cache: 'no-store' });
   if (!res.ok) throw new Error(`API returned ${res.status}`);
@@ -96,9 +114,10 @@ const FILTER_PRESETS: { labelKey: string; value: string; matches: (s: JobStatus)
 export default async function JobsPage({ searchParams }: PageProps) {
   const user = getCurrentUser();
   let jobs: Job[] = [];
+  let estimateLites: EstimateLite[] = [];
   let fetchError: string | null = null;
   try {
-    jobs = await fetchJobs();
+    [jobs, estimateLites] = await Promise.all([fetchJobs(), fetchEstimateLites()]);
   } catch (err) {
     fetchError = err instanceof Error ? err.message : 'Unknown error';
   }
@@ -122,6 +141,18 @@ export default async function JobsPage({ searchParams }: PageProps) {
   const preset = FILTER_PRESETS.find((p) => p.value === filterValue) ?? FILTER_PRESETS[1];
   const filteredJobs = preset ? jobs.filter((j) => preset.matches(j.status)) : jobs;
   const t = getTranslator();
+  const estimateStatsByJob: Record<string, { count: number; dueSoon: number }> = {};
+  const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+  const nowMs = Date.now();
+  for (const e of estimateLites) {
+    const stat = estimateStatsByJob[e.jobId] ?? { count: 0, dueSoon: 0 };
+    stat.count++;
+    if (e.bidDueDate) {
+      const t2 = new Date(e.bidDueDate).getTime();
+      if (!Number.isNaN(t2) && t2 - nowMs <= sevenDaysMs) stat.dueSoon++;
+    }
+    estimateStatsByJob[e.jobId] = stat;
+  }
   const locale = getLocale();
   const presetLabel = preset ? t(preset.labelKey) : '';
 
@@ -229,6 +260,17 @@ export default async function JobsPage({ searchParams }: PageProps) {
                     )}
                     {j.location && (
                       <div className="text-xs text-gray-500">{j.location}</div>
+                    )}
+                    {estimateStatsByJob[j.id] && estimateStatsByJob[j.id]!.count > 0 && (
+                      <div className="mt-1 text-[10px] text-gray-500">
+                        {estimateStatsByJob[j.id]!.count} estimate
+                        {estimateStatsByJob[j.id]!.count === 1 ? '' : 's'}
+                        {estimateStatsByJob[j.id]!.dueSoon > 0 ? (
+                          <span className="ml-1 inline-block rounded-full border border-amber-300 bg-amber-50 px-1.5 py-0.5 font-semibold uppercase tracking-wide text-amber-800">
+                            {estimateStatsByJob[j.id]!.dueSoon} due ≤ 7d
+                          </span>
+                        ) : null}
+                      </div>
                     )}
                   </td>
                   <td className="px-4 py-3">
