@@ -54,6 +54,8 @@ interface EstimateSummary {
   bidSubmittedAt?: string;
   /** First ~120 chars of estimator notes; undefined when missing. */
   notesPreview?: string;
+  /** Count of bidItems with reviewState='accepted'. */
+  reviewedLineCount?: number;
 }
 
 function apiBaseUrl(): string {
@@ -596,6 +598,11 @@ export default async function EstimatesPage() {
                     {e.unpricedLineCount > 0 && (
                       <span className="mt-1 inline-block rounded-full bg-yellow-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-yellow-800">
                         {t('estimates.lines.unpriced', { count: e.unpricedLineCount })}
+                      </span>
+                    )}
+                    {typeof e.reviewedLineCount === 'number' && e.bidItemCount > 0 && e.reviewedLineCount < e.bidItemCount && (
+                      <span className="ml-2 mt-1 inline-block rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-700">
+                        {e.reviewedLineCount}/{e.bidItemCount} reviewed
                       </span>
                     )}
                   </td>
