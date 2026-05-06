@@ -177,6 +177,11 @@ const UpdateBody = z.object({
   notes: z.string().max(5_000).optional(),
   bidStatus: z.enum(['pursuing', 'submitted', 'awarded', 'lost']).optional(),
   bidSubmittedAt: z.string().nullable().optional(),
+  /** When set, server appends this string to the existing notes
+   *  (with a leading newline if notes are non-empty). Used by the
+   *  Mark-Lost reason capture so the front-end doesn't have to
+   *  refetch + rewrite notes. */
+  notesAppend: z.string().max(500).optional(),
   bidItems: z.array(PricedBidItemSchema).min(1).optional(),
   subBids: z.array(SubBidSchema).optional(),
   /** Pass null to clear bid security (e.g. switching to private work). */

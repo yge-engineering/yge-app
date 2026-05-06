@@ -73,13 +73,39 @@ export function BidStatusSwitcher({
     if (next === value) return;
     setBusy(next);
     setError(null);
+
+    // Ask for a loss reason when transitioning to 'lost'. Cancellable.
+    let extraNotes: string | null = null;
+    if (next === 'lost') {
+      const reason = window.prompt(
+        'Why did we lose? (Price / Scope mismatch / Late / Lost to competitor / Other — type a few words)',
+        '',
+      );
+      if (reason == null) {
+        // User cancelled; abort the status flip too.
+        setBusy(null);
+        return;
+      }
+      const trimmed = reason.trim();
+      if (trimmed) {
+        const stamp = new Date().toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+        });
+        extraNotes = `[Lost ${stamp}] ${trimmed}`;
+      }
+    }
+
     try {
+      const body: Record<string, unknown> = { bidStatus: next };
+      if (extraNotes != null) body['notesAppend'] = extraNotes;
       const res = await fetch(
         `${apiBaseUrl}/api/priced-estimates/${encodeURIComponent(estimateId)}`,
         {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ bidStatus: next }),
+          body: JSON.stringify(body),
         },
       );
       if (!res.ok) {
