@@ -252,6 +252,7 @@ export default async function EstimatesPage() {
                   <tr
                     key={e.id}
                     data-search={`${e.projectName} ${e.client ?? ''} ${e.jobNumber}`}
+                    data-cents={e.bidPriceCents}
                     className="hover:bg-gray-50"
                   >
                     <td className="px-4 py-3">
@@ -335,6 +336,7 @@ export default async function EstimatesPage() {
                 <tr
                   key={e.id}
                   data-search={`${e.projectName} ${e.ownerAgency ?? ''} ${e.projectType.replace(/_/g, ' ')}`}
+                  data-cents={e.bidTotalCents}
                   className="hover:bg-gray-50"
                 >
                   <td className="px-4 py-3">

@@ -17,11 +17,13 @@ interface Props {
 export function EstimatesSearchInput({ targetId, totalCount }: Props) {
   const [q, setQ] = useState('');
   const [matched, setMatched] = useState<number>(totalCount);
+  const [matchedCents, setMatchedCents] = useState<number>(0);
 
   useEffect(() => {
     const ids = targetId.split(',').map((x) => x.trim()).filter(Boolean);
     const needle = q.trim().toLowerCase();
     let count = 0;
+    let cents = 0;
     for (const id of ids) {
       const table = document.getElementById(id);
       if (!table) continue;
@@ -32,10 +34,15 @@ export function EstimatesSearchInput({ targetId, totalCount }: Props) {
         const hay = (row.dataset['search'] ?? '').toLowerCase();
         const visible = needle.length === 0 || hay.includes(needle);
         row.style.display = visible ? '' : 'none';
-        if (visible) count++;
+        if (visible) {
+          count++;
+          const c = Number(row.dataset['cents'] ?? '0');
+          if (Number.isFinite(c)) cents += c;
+        }
       });
     }
     setMatched(count);
+    setMatchedCents(cents);
   }, [q, targetId, totalCount]);
 
   return (
@@ -47,11 +54,22 @@ export function EstimatesSearchInput({ targetId, totalCount }: Props) {
         placeholder="Filter by project or agency…"
         className="w-full max-w-xs rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-yge-blue-500 focus:outline-none focus:ring-1 focus:ring-yge-blue-500"
       />
-      {q.trim().length > 0 && (
-        <span className="text-xs text-gray-600">
-          {matched} of {totalCount} match
+      <span className="text-xs text-gray-600">
+        {q.trim().length > 0 ? (
+          <>
+            {matched} of {totalCount} · subtotal{' '}
+          </>
+        ) : (
+          <>Total · </>
+        )}
+        <span className="font-mono font-semibold text-gray-900">
+          {(matchedCents / 100).toLocaleString('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            maximumFractionDigits: 0,
+          })}
         </span>
-      )}
+      </span>
     </div>
   );
 }
