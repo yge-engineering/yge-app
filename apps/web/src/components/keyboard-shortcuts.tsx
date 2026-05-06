@@ -19,6 +19,7 @@ interface Shortcut {
 const SHORTCUTS: Shortcut[] = [
   { keys: '?', labelKey: 'kbd.show' },
   { keys: '/', labelKey: 'kbd.search' },
+  { keys: 'n', labelKey: 'kbd.newEstimate', href: '/plans-to-estimate' },
   { keys: 'g d', labelKey: 'kbd.dashboard', href: '/dashboard' },
   { keys: 'g p', labelKey: 'kbd.newEstimate', href: '/plans-to-estimate' },
   { keys: 'g j', labelKey: 'kbd.jobs', href: '/jobs' },
@@ -69,6 +70,11 @@ export function KeyboardShortcuts() {
       if (e.key === '?') {
         e.preventDefault();
         setOpen((v) => !v);
+        return;
+      }
+      if (e.key === 'n' && !prefix) {
+        e.preventDefault();
+        router.push('/plans-to-estimate');
         return;
       }
       if (e.key === '/') {
