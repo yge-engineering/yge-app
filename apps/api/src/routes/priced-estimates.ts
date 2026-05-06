@@ -16,6 +16,7 @@ import {
 } from '@yge/shared';
 import { getDraft } from '../lib/drafts-store';
 import {
+  computeVariance,
   createFromDraft,
   findHistoricalPrices,
   getEstimate,
@@ -231,6 +232,19 @@ pricedEstimatesRouter.put('/:id/sub-bids', async (req, res, next) => {
       estimate: updated,
       totals: computeEstimateTotals(updated),
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/priced-estimates/:id/variance — bulk variance scan. Returns
+// one row per bid item with the historical median + deviation, so the
+// editor can highlight cells that are meaningfully off past comparable
+// bids without making N+1 calls per line.
+pricedEstimatesRouter.get('/:id/variance', async (req, res, next) => {
+  try {
+    const rows = await computeVariance(req.params.id);
+    return res.json({ rows });
   } catch (err) {
     next(err);
   }

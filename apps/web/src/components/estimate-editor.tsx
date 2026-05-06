@@ -60,6 +60,54 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
   // line without staring at the rows they already accepted.
   const [showUnreviewedOnly, setShowUnreviewedOnly] = useState(false);
 
+  // Variance map: itemIndex → { median, deviation, count }. Fetched
+  // once on mount and again any time the bid items array length
+  // changes (paste-splat / template clone). Threshold is 50% in
+  // either direction — far enough off that it's worth a yellow chip
+  // but not so tight every reasonable bid lights up.
+  type VarianceRow = {
+    historicalMedianCents: number | null;
+    historicalCount: number;
+    deviation: number | null;
+  };
+  const [variance, setVariance] = useState<Record<number, VarianceRow>>({});
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(
+          `${apiBaseUrl}/api/priced-estimates/${encodeURIComponent(estimate.id)}/variance`,
+          { cache: 'no-store' },
+        );
+        if (!res.ok) return;
+        const json = (await res.json()) as {
+          rows: Array<{
+            itemIndex: number;
+            historicalMedianCents: number | null;
+            historicalCount: number;
+            deviation: number | null;
+          }>;
+        };
+        if (cancelled) return;
+        const map: Record<number, VarianceRow> = {};
+        for (const r of json.rows) {
+          map[r.itemIndex] = {
+            historicalMedianCents: r.historicalMedianCents,
+            historicalCount: r.historicalCount,
+            deviation: r.deviation,
+          };
+        }
+        setVariance(map);
+      } catch {
+        // Silent — variance is a non-critical decoration.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [estimate.id, estimate.bidItems.length]);
+
   const visibleRowFilter = (item: PricedEstimate['bidItems'][number]) =>
     !showUnreviewedOnly ||
     item.reviewState !== 'accepted';
@@ -504,6 +552,7 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
                     void applyItemPatch(i, { markupPct: pct })
                   }
                   defaultMarkupPct={estimate.oppPercent}
+                  variance={variance[i]}
                   apiBaseUrl={apiBaseUrl}
                   estimateId={estimate.id}
                   projectType={estimate.projectType}
@@ -708,6 +757,7 @@ function BidItemRow({
   onReviewStateChange,
   onMarkupChange,
   defaultMarkupPct,
+  variance,
   apiBaseUrl,
   estimateId,
   projectType,
@@ -739,6 +789,15 @@ function BidItemRow({
   /** Estimate-level default markup, shown as the placeholder when this
    *  line has no override. */
   defaultMarkupPct: number;
+  /** Historical-price variance for this row. Undefined while the
+   *  variance call is in flight. */
+  variance:
+    | {
+        historicalMedianCents: number | null;
+        historicalCount: number;
+        deviation: number | null;
+      }
+    | undefined;
   /** Passed through to the History popover so it can fetch and so the
    *  estimator's current estimate doesn't echo back in the matches. */
   apiBaseUrl: string;
@@ -789,8 +848,24 @@ function BidItemRow({
     onPriceCommit(cents);
   }
 
+  // Variance threshold: if the current unit price is more than 50%
+  // off the historical median, tint the row amber so the estimator
+  // can spot a typo at a glance. The tooltip on the input cell shows
+  // the median + match count. Don't override the unpriced-yellow
+  // tint; that's a different, blocking signal.
+  const variancePct =
+    variance?.deviation != null ? Math.abs(variance.deviation) : null;
+  const varianceFlagged =
+    variance != null && variancePct != null && variancePct >= 0.5;
+  const rowClass =
+    item.unitPriceCents == null
+      ? 'bg-yellow-50/40'
+      : varianceFlagged
+        ? 'bg-amber-50'
+        : '';
+
   return (
-    <tr className={item.unitPriceCents == null ? 'bg-yellow-50/40' : ''}>
+    <tr className={rowClass}>
       <td className="px-3 py-2 align-top text-xs text-gray-500">{item.itemNumber}</td>
       <td className="px-3 py-2 align-top">
         <div className="flex items-start justify-between gap-2">
@@ -925,6 +1000,17 @@ function BidItemRow({
           />
         </div>
         {saving && <div className="mt-0.5 text-[10px] text-gray-400">{t('estEditor.savingShort')}</div>}
+        {varianceFlagged && variance && (
+          <div
+            className="mt-0.5 text-[10px] text-amber-700"
+            title={`Median of ${variance.historicalCount} past bid${
+              variance.historicalCount === 1 ? '' : 's'
+            }: ${formatUSD(variance.historicalMedianCents ?? 0)}`}
+          >
+            ⚠ {variance.deviation! > 0 ? '+' : ''}
+            {(variance.deviation! * 100).toFixed(0)}% vs past
+          </div>
+        )}
         {historyOpen && (
           <HistoricalPricesPopover
             apiBaseUrl={apiBaseUrl}

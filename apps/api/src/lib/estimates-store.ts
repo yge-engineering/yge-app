@@ -456,6 +456,80 @@ export async function findHistoricalPrices(opts: {
 }
 
 /**
+ * One row of the variance check: how the line's current unit price
+ * compares to past bids on similar lines.
+ */
+export interface VarianceRow {
+  /** Index into the estimate's bidItems array. */
+  itemIndex: number;
+  /** Median of historical unit prices in cents. Null if no matches. */
+  historicalMedianCents: number | null;
+  /** How many historical bids backed the median. */
+  historicalCount: number;
+  /** Current vs. historical, decimal: 0 = matches, +0.5 = 50% above,
+   *  -0.3 = 30% below. Null if no historical data. */
+  deviation: number | null;
+}
+
+function median(nums: number[]): number {
+  const sorted = [...nums].sort((a, b) => a - b);
+  if (sorted.length === 0) return 0;
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0
+    ? Math.round((sorted[mid - 1]! + sorted[mid]!) / 2)
+    : sorted[mid]!;
+}
+
+/**
+ * Variance scan for every line in a saved estimate. For each priced
+ * line we look up similar lines in past estimates and compute the
+ * median historical unit price. The editor highlights any cell whose
+ * current price is meaningfully off (>50% in either direction) so
+ * the estimator catches typos and misreads at a glance.
+ */
+export async function computeVariance(id: string): Promise<VarianceRow[]> {
+  const est = await getEstimate(id);
+  if (!est) return [];
+  const out: VarianceRow[] = [];
+  for (let i = 0; i < est.bidItems.length; i += 1) {
+    const item = est.bidItems[i]!;
+    if (item.unitPriceCents == null) {
+      out.push({
+        itemIndex: i,
+        historicalMedianCents: null,
+        historicalCount: 0,
+        deviation: null,
+      });
+      continue;
+    }
+    const matches = await findHistoricalPrices({
+      description: item.description,
+      unit: item.unit,
+      excludeEstimateId: id,
+      limit: 25,
+    });
+    if (matches.length === 0) {
+      out.push({
+        itemIndex: i,
+        historicalMedianCents: null,
+        historicalCount: 0,
+        deviation: null,
+      });
+      continue;
+    }
+    const med = median(matches.map((m) => m.unitPriceCents));
+    const dev = med > 0 ? (item.unitPriceCents - med) / med : 0;
+    out.push({
+      itemIndex: i,
+      historicalMedianCents: med,
+      historicalCount: matches.length,
+      deviation: dev,
+    });
+  }
+  return out;
+}
+
+/**
  * Update a single line's unit price. Convenience for the editor's per-row
  * save pattern (faster than re-sending the whole bidItems array).
  */
