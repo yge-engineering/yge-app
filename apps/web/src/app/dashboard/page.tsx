@@ -423,7 +423,18 @@ export default async function DashboardPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] text-gray-500" title={renderedAt.toISOString()}>
+          <span
+            className="text-[10px] text-gray-500"
+            title={renderedAt.toLocaleString('en-US', {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+              hour: 'numeric',
+              minute: '2-digit',
+              second: '2-digit',
+            })}
+          >
             As of {renderedAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
           </span>
           <DashboardRefreshButton />
