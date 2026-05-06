@@ -591,6 +591,14 @@ export default async function DashboardPage() {
                   </span>
                 </CopyMoneyButton>
               )}
+              {typeof recentEstimates[0].reviewedLineCount === 'number' &&
+                typeof recentEstimates[0].bidItemCount === 'number' &&
+                recentEstimates[0].bidItemCount > 0 &&
+                recentEstimates[0].reviewedLineCount < recentEstimates[0].bidItemCount && (
+                  <span className="text-gray-500">
+                    · {recentEstimates[0].reviewedLineCount}/{recentEstimates[0].bidItemCount} reviewed
+                  </span>
+                )}
               <span className="text-gray-500" title={recentEstimates[0].updatedAt}>
                 · edited {relativeTime(recentEstimates[0].updatedAt)}
               </span>
