@@ -463,7 +463,7 @@ export default async function JobDetailPage({
                     </Link>
                   </div>
                   <div className="text-xs text-gray-500">
-                    {t('jobDetail.drafts.itemCount', { count: d.bidItemCount, when: relativeTime(d.createdAt) })}
+                    <span title={d.createdAt}>{t('jobDetail.drafts.itemCount', { count: d.bidItemCount, when: relativeTime(d.createdAt) })}</span>
                   </div>
                 </div>
                 <Link
@@ -510,9 +510,11 @@ export default async function JobDetailPage({
                 priced: e.pricedLineCount,
                 total: e.bidItemCount,
                 dollars: '__DOLLARS__',
-                when: relativeTime(e.updatedAt),
+                when: `__WHEN__`,
               });
+              const whenLabel = relativeTime(e.updatedAt);
               const [pre, post] = summaryTpl.split('__DOLLARS__');
+              const [postBefore, postAfter] = (post ?? '').split('__WHEN__');
               const tintClass =
                 e.bidStatus === 'awarded'
                   ? 'bg-green-50/50'
@@ -548,7 +550,9 @@ export default async function JobDetailPage({
                       <JobBidStatusPill status={e.bidStatus} />
                     </div>
                     <div className="text-xs text-gray-500">
-                      {pre}<Money cents={e.bidTotalCents} />{post}
+                      {pre}<Money cents={e.bidTotalCents} />{postBefore}
+                      <span title={e.updatedAt}>{whenLabel}</span>
+                      {postAfter}
                     </div>
                     {e.notesPreview && (
                       <div className="mt-1 text-[11px] italic text-gray-500">
