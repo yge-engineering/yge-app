@@ -112,6 +112,7 @@ async function fetchEstimatesPipeline(): Promise<{
   centsByStatus: { pursuing: number; submitted: number; awarded: number };
   /** Last up-to-10 decided bids in order, oldest → newest. */
   recentDecided: ('awarded' | 'lost')[];
+  stalePursuing: PricedEstimateSummaryLite[];
 }> {
   try {
     const res = await fetch(`${apiBaseUrl()}/api/priced-estimates`, {
@@ -127,6 +128,7 @@ async function fetchEstimatesPipeline(): Promise<{
         submittedAwaiting: [],
         centsByStatus: { pursuing: 0, submitted: 0, awarded: 0 },
         recentDecided: [],
+        stalePursuing: [],
       };
     const json = (await res.json()) as {
       estimates: PricedEstimateSummaryLite[];
@@ -173,6 +175,16 @@ async function fetchEstimatesPipeline(): Promise<{
       .sort((a, b) => a.updatedAt.localeCompare(b.updatedAt)) // oldest first
       .slice(-10)
       .map((e) => e.bidStatus as 'awarded' | 'lost');
+    const fourteenDaysMs = 14 * 24 * 60 * 60 * 1000;
+    const stalePursuing = all
+      .filter((e) => {
+        const status = e.bidStatus ?? 'pursuing';
+        if (status !== 'pursuing') return false;
+        const t = new Date(e.updatedAt).getTime();
+        return !Number.isNaN(t) && Date.now() - t > fourteenDaysMs;
+      })
+      .sort((a, b) => a.updatedAt.localeCompare(b.updatedAt))
+      .slice(0, 5);
     return {
       recent,
       pipelineCents,
@@ -182,6 +194,7 @@ async function fetchEstimatesPipeline(): Promise<{
       submittedAwaiting,
       centsByStatus,
       recentDecided,
+      stalePursuing,
     };
   } catch {
     return {
@@ -193,6 +206,7 @@ async function fetchEstimatesPipeline(): Promise<{
       submittedAwaiting: [],
       centsByStatus: { pursuing: 0, submitted: 0, awarded: 0 },
       recentDecided: [],
+      stalePursuing: [],
     };
   }
 }
@@ -592,6 +606,41 @@ export default async function DashboardPage() {
                     </span>
                     <span className={`text-xs ${subTone}`}>
                       Submitted {days === 0 ? 'today' : `${days}d ago`}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
+      {/* STALE PURSUING — bids in pursuit but untouched for 14+ days. */}
+      {pipelineData.stalePursuing.length > 0 && (
+        <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-3">
+          <div className="text-xs font-semibold uppercase tracking-wide text-amber-900">
+            Pursuing · stale (14d+)
+          </div>
+          <ul className="mt-2 divide-y divide-amber-100 text-sm">
+            {pipelineData.stalePursuing.map((e) => {
+              const days = Math.max(
+                0,
+                Math.round(
+                  (Date.now() - new Date(e.updatedAt).getTime()) /
+                    (24 * 60 * 60 * 1000),
+                ),
+              );
+              return (
+                <li key={e.id}>
+                  <Link
+                    href={`/estimates/${e.id}`}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded px-1 py-1.5 hover:bg-amber-100"
+                  >
+                    <span className="truncate font-medium text-amber-900">
+                      {e.projectName}
+                    </span>
+                    <span className="text-xs text-amber-800">
+                      Last edit {days}d ago
                     </span>
                   </Link>
                 </li>
