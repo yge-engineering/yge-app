@@ -9,6 +9,7 @@ import { Alert, AppShell, Money } from '../../components';
 import { JobsSearchInput } from '../../components/jobs-search-input';
 import { JobsCreatedFilter } from '../../components/jobs-created-filter';
 import { JobsResetFilters } from '../../components/jobs-reset-filters';
+import { DashboardRefreshButton } from '../../components/dashboard-refresh-button';
 import { relativeTime } from '../../lib/relative-time';
 import { CopyMoneyButton } from '../../components/copy-money-button';
 import { EstimatesSortHeaders } from '../../components/estimates-sort-headers';
@@ -220,12 +221,15 @@ export default async function JobsPage({ searchParams }: PageProps) {
     <main className="mx-auto max-w-6xl p-8">
       <div className="mb-6 flex items-center justify-between">
         <Link href="/dashboard" className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50">&larr; Dashboard</Link>
-        <Link
-          href="/jobs/new"
-          className="rounded bg-yge-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-yge-blue-700"
-        >
-          {t('jobs.newJob')}
-        </Link>
+        <div className="flex items-center gap-2">
+          <DashboardRefreshButton />
+          <Link
+            href="/jobs/new"
+            className="rounded bg-yge-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-yge-blue-700"
+          >
+            {t('jobs.newJob')}
+          </Link>
+        </div>
       </div>
 
       <h1 className="text-3xl font-bold text-yge-blue-500">{t('jobs.title')}</h1>
