@@ -85,13 +85,10 @@ export default async function DraftsPage() {
     <AppShell>
     <main className="mx-auto max-w-6xl p-8">
       <div className="mb-6 flex items-center justify-between">
-        <Link href="/dashboard" className="text-sm text-yge-blue-500 hover:underline">
+        <Link href="/dashboard" className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50">
           &larr; Dashboard
         </Link>
-        <Link
-          href="/plans-to-estimate"
-          className="text-sm text-yge-blue-500 hover:underline"
-        >
+        <Link href="/plans-to-estimate" className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50">
           {t('drafts.newDraft')} &rarr;
         </Link>
       </div>
