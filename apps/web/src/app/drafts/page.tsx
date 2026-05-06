@@ -7,6 +7,7 @@
 import Link from 'next/link';
 
 import { Alert, AppShell } from '../../components';
+import { relativeTime } from '../../lib/relative-time';
 import { DraftsSearchInput } from '../../components/drafts-search-input';
 import { EstimatesSortHeaders } from '../../components/estimates-sort-headers';
 import { getTranslator } from '../../lib/locale';
@@ -169,8 +170,8 @@ export default async function DraftsPage() {
                       {d.overallConfidence}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-xs text-gray-600">
-                    {formatWhen(d.createdAt)}
+                  <td className="px-4 py-3 text-xs text-gray-600" title={formatWhen(d.createdAt)}>
+                    {relativeTime(d.createdAt)}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex flex-wrap justify-end gap-1">
