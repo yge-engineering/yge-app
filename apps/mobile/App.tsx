@@ -6,6 +6,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import TodayScreen from './src/screens/today-screen';
 import DashboardScreen from './src/screens/dashboard-screen';
 import JobsScreen from './src/screens/jobs-screen';
 import JobDetailScreen from './src/screens/job-detail-screen';
@@ -73,6 +74,14 @@ function AuthedTabs({ onSignOut }: { onSignOut: () => void }) {
           headerTitleStyle: { fontWeight: '700' },
         }}
       >
+        <Tab.Screen
+          name="Today"
+          component={TodayScreen}
+          options={{
+            tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>☀️</Text>,
+            title: 'Today',
+          }}
+        />
         <Tab.Screen
           name="Dashboard"
           component={DashboardScreen}
