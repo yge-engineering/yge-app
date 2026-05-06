@@ -246,15 +246,16 @@ export default async function JobsPage({ searchParams }: PageProps) {
 
       {/* Filter pills */}
       <div className="mt-5 flex flex-wrap gap-2">
-        {FILTER_PRESETS.map((p) => {
-          const active = p.value === filterValue;
+        {FILTER_PRESETS.map((preset) => {
+          const active = preset.value === filterValue;
+          const count = jobs.filter((j) => preset.matches(j.status)).length;
           return (
             <Link
-              key={p.value}
-              href={p.value === 'all' ? '/jobs' : `/jobs?status=${p.value}`}
+              key={preset.value}
+              href={preset.value === 'all' ? '/jobs' : `/jobs?status=${preset.value}`}
               className={`rounded-full px-3 py-1 text-xs font-medium transition ${active ? 'bg-yge-blue-500 text-white' : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-100'}`}
             >
-              {t(p.labelKey)}
+              {t(preset.labelKey)} <span className="opacity-70">({count})</span>
             </Link>
           );
         })}
