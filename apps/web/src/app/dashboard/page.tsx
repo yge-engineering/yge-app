@@ -93,6 +93,7 @@ interface PricedEstimateSummaryLite {
   bidDueDate?: string;
   bidTotalCents?: number;
   unpricedLineCount?: number;
+  unacknowledgedAddendumCount?: number;
   updatedAt: string;
   bidStatus?: 'pursuing' | 'submitted' | 'awarded' | 'lost';
   bidSubmittedAt?: string;
@@ -965,6 +966,25 @@ function RecentEstimatesTile({
             >
               <div className="min-w-0 flex-1">
                 <div className="truncate font-medium text-gray-900">
+                  {(() => {
+                    const issues =
+                      (e.unpricedLineCount ?? 0) + (e.unacknowledgedAddendumCount ?? 0);
+                    if (issues === 0) {
+                      return (
+                        <span className="mr-2 text-xs text-green-700" title="Ready to submit">
+                          ✓
+                        </span>
+                      );
+                    }
+                    return (
+                      <span
+                        className="mr-2 text-xs font-semibold text-red-700"
+                        title={`${e.unpricedLineCount ?? 0} unpriced · ${e.unacknowledgedAddendumCount ?? 0} un-acked`}
+                      >
+                        ✗
+                      </span>
+                    );
+                  })()}
                   {e.projectName}
                   {e.bidStatus === 'submitted' && (
                     <span className="ml-2 inline-block rounded-full border border-blue-300 bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-800">
