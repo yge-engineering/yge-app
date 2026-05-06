@@ -15,6 +15,7 @@ import { EstimatesSearchInput } from '../../components/estimates-search-input';
 import { EstimatesSortHeaders } from '../../components/estimates-sort-headers';
 import { EstimatesShortcutsChip } from '../../components/estimates-shortcuts-chip';
 import { EstimatesPinButton, EstimatesPinReorder } from '../../components/estimates-pin-button';
+import { EstimatesPinFilterChip } from '../../components/estimates-pin-filter-chip';
 import { PinnedCountBadge } from '../../components/pinned-count-badge';
 import { DashboardRefreshButton } from '../../components/dashboard-refresh-button';
 import { EstimatesStatusFilter } from '../../components/estimates-status-filter';
@@ -479,6 +480,7 @@ export default async function EstimatesPage() {
             <EstimatesStatusFilter targetId="estimates-table" counts={statusCounts} total={estimates.length} />
             <EstimatesDueWeekChip targetId="estimates-table" count={dueCounts.overdue + dueCounts.dueSoon} />
             <EstimatesCreatedFilter targetId="estimates-table" />
+            <EstimatesPinFilterChip targetId="estimates-table" />
             <EstimatesResetFilters />
           </div>
           <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
