@@ -472,16 +472,33 @@ export default async function DashboardPage() {
                     (24 * 60 * 60 * 1000),
                 ),
               );
+              const tone =
+                days > 21
+                  ? 'bg-red-50 hover:bg-red-100 text-red-900'
+                  : days > 14
+                    ? 'bg-amber-50 hover:bg-amber-100 text-amber-900'
+                    : 'hover:bg-blue-100 text-blue-900';
+              const subTone =
+                days > 21
+                  ? 'text-red-800'
+                  : days > 14
+                    ? 'text-amber-800'
+                    : 'text-blue-800';
               return (
                 <li key={e.id}>
                   <Link
                     href={`/estimates/${e.id}`}
-                    className="flex flex-wrap items-center justify-between gap-2 px-1 py-1.5 hover:bg-blue-100"
+                    className={`flex flex-wrap items-center justify-between gap-2 rounded px-1 py-1.5 ${tone}`}
                   >
-                    <span className="truncate font-medium text-blue-900">
+                    <span className="truncate font-medium">
                       {e.projectName}
+                      {days > 21 && (
+                        <span className="ml-1 text-[10px] font-semibold uppercase tracking-wide text-red-700">
+                          · follow up
+                        </span>
+                      )}
                     </span>
-                    <span className="text-xs text-blue-800">
+                    <span className={`text-xs ${subTone}`}>
                       Submitted {days === 0 ? 'today' : `${days}d ago`}
                     </span>
                   </Link>
