@@ -14,6 +14,7 @@ import { CopyMoneyButton } from '../../components/copy-money-button';
 import { EstimatesSearchInput } from '../../components/estimates-search-input';
 import { EstimatesSortHeaders } from '../../components/estimates-sort-headers';
 import { EstimatesShortcutsChip } from '../../components/estimates-shortcuts-chip';
+import { EstimatesPinButton, EstimatesPinReorder } from '../../components/estimates-pin-button';
 import { DashboardRefreshButton } from '../../components/dashboard-refresh-button';
 import { EstimatesStatusFilter } from '../../components/estimates-status-filter';
 import { EstimatesDueWeekChip } from '../../components/estimates-due-week-chip';
@@ -469,6 +470,7 @@ export default async function EstimatesPage() {
         <div className="mt-6">
           <EstimatesSearchInput targetId="estimates-table,imported-estimates-table" totalCount={estimates.length + imported.length} />
           <EstimatesSortHeaders targetId="estimates-table" />
+          <EstimatesPinReorder targetId="estimates-table" />
           <EstimatesSortHeaders targetId="imported-estimates-table" />
           <div className="flex flex-wrap items-center gap-2">
             <EstimatesStatusFilter targetId="estimates-table" counts={statusCounts} total={estimates.length} />
@@ -503,6 +505,7 @@ export default async function EstimatesPage() {
               {estimates.map((e) => (
                 <tr
                   key={e.id}
+                  data-id={e.id}
                   data-search={`${e.projectName} ${e.ownerAgency ?? ''} ${e.projectType.replace(/_/g, ' ')}`}
                   data-cents={e.bidTotalCents}
                   data-sort-cents={e.bidTotalCents}
@@ -535,6 +538,7 @@ export default async function EstimatesPage() {
                     {e.ownerAgency && (
                       <div className="text-xs text-gray-500">{e.ownerAgency}</div>
                     )}
+                    <EstimatesPinButton estimateId={e.id} />
                     <BidStatusPill status={e.bidStatus} />
                     <ReadinessPill
                       unpriced={e.unpricedLineCount}
