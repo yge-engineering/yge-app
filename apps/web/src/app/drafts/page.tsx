@@ -125,7 +125,14 @@ export default async function DraftsPage() {
               {drafts.map((d) => (
                 <tr key={d.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3">
-                    <div className="font-medium text-gray-900">{d.projectName}</div>
+                    <div className="font-medium">
+                      <Link
+                        href={`/drafts/${d.id}`}
+                        className="text-gray-900 hover:text-yge-blue-700 hover:underline"
+                      >
+                        {d.projectName}
+                      </Link>
+                    </div>
                     {d.ownerAgency && (
                       <div className="text-xs text-gray-500">{d.ownerAgency}</div>
                     )}
@@ -145,18 +152,17 @@ export default async function DraftsPage() {
                     {formatWhen(d.createdAt)}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <Link
-                      href={`/drafts/${d.id}`}
-                      className="mr-3 text-yge-blue-500 hover:underline"
-                    >
-                      {t('drafts.action.open')}
-                    </Link>
-                    <a
-                      href={`${publicApiBaseUrl()}/api/plans-to-estimate/drafts/${d.id}/export.csv`}
-                      className="text-yge-blue-500 hover:underline"
-                    >
-                      {t('drafts.action.csv')}
-                    </a>
+                    <div className="flex flex-wrap justify-end gap-1">
+                      <Link href={`/drafts/${d.id}`} className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50">
+                        {t('drafts.action.open')}
+                      </Link>
+                      <a
+                        href={`${publicApiBaseUrl()}/api/plans-to-estimate/drafts/${d.id}/export.csv`}
+                        className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50"
+                      >
+                        {t('drafts.action.csv')}
+                      </a>
+                    </div>
                   </td>
                 </tr>
               ))}

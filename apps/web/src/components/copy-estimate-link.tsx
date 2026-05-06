@@ -64,7 +64,7 @@ export function CopyEstimateLink({
         type="button"
         onClick={() => void copy()}
         disabled={busy}
-        className="text-yge-blue-500 hover:underline disabled:opacity-60"
+        className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50 disabled:opacity-60"
         title="Start a new estimate using this one as a template"
       >
         {busy ? 'Copying…' : 'Copy →'}

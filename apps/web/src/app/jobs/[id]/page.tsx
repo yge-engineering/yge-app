@@ -485,41 +485,23 @@ export default async function JobDetailPage({
                       {pre}<Money cents={e.bidTotalCents} />{post}
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 text-sm">
-                    <Link
-                      href={`/estimates/${e.id}`}
-                      className="text-yge-blue-500 hover:underline"
-                    >
+                  <div className="flex flex-wrap items-center gap-1 text-sm">
+                    <Link href={`/estimates/${e.id}`} className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50">
                       {t('jobDetail.action.open')}
                     </Link>
-                    <Link
-                      href={`/estimates/${e.id}/print`}
-                      className="text-yge-blue-500 hover:underline"
-                    >
+                    <Link href={`/estimates/${e.id}/print`} className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50">
                       {t('jobDetail.action.print')}
                     </Link>
-                    <Link
-                      href={`/estimates/${e.id}/transmittal`}
-                      className="text-yge-blue-500 hover:underline"
-                    >
+                    <Link href={`/estimates/${e.id}/transmittal`} className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50">
                       {t('jobDetail.action.cover')}
                     </Link>
-                    <Link
-                      href={`/estimates/${e.id}/envelope`}
-                      className="text-yge-blue-500 hover:underline"
-                    >
+                    <Link href={`/estimates/${e.id}/envelope`} className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50">
                       {t('jobDetail.action.envelope')}
                     </Link>
-                    <Link
-                      href={`/estimates/${e.id}/sub-list`}
-                      className="text-yge-blue-500 hover:underline"
-                    >
+                    <Link href={`/estimates/${e.id}/sub-list`} className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50">
                       {t('jobDetail.action.subs')}
                     </Link>
-                    <Link
-                      href={`/estimates/${e.id}/addenda`}
-                      className="text-yge-blue-500 hover:underline"
-                    >
+                    <Link href={`/estimates/${e.id}/addenda`} className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50">
                       {t('jobDetail.action.addenda')}
                     </Link>
                   </div>
