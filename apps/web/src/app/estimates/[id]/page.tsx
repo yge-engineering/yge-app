@@ -17,6 +17,7 @@ import type { PricedEstimate, PricedEstimateTotals } from '@yge/shared';
 import { EstimateEditor } from '@/components/estimate-editor';
 import { BidDueBanner } from '@/components/bid-due-banner';
 import { Money } from '@/components';
+import { CopyMoneyButton } from '@/components/copy-money-button';
 import { CopyEstimateLink } from '@/components/copy-estimate-link';
 import { relativeTime } from '@/lib/relative-time';
 import { CopyBidSummaryButton } from '@/components/copy-bid-summary-button';
@@ -66,11 +67,10 @@ export default async function EstimateDetailPage({
           {t('estPg.back')}
         </Link>
         <div className="flex items-center gap-3 text-sm">
-          <span
-            className="rounded border border-yge-blue-200 bg-yge-blue-50 px-2 py-0.5 text-xs font-mono font-semibold text-yge-blue-700"
-            title="Bid total"
-          >
-            <Money cents={data.totals.bidTotalCents} />
+          <span className="rounded border border-yge-blue-200 bg-yge-blue-50 px-2 py-0.5 text-xs font-mono font-semibold text-yge-blue-700" title="Bid total — click to copy">
+            <CopyMoneyButton cents={data.totals.bidTotalCents}>
+              <Money cents={data.totals.bidTotalCents} />
+            </CopyMoneyButton>
           </span>
           <CopyIdChip id={data.estimate.id} label="id" />
           <span
