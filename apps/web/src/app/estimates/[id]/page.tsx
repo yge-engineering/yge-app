@@ -58,20 +58,20 @@ export default async function EstimateDetailPage({
     <AppShell>
     <main className="mx-auto max-w-6xl p-8">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
-        <Link href="/estimates" className="text-sm text-yge-blue-500 hover:underline">
+        <Link href="/estimates" className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50">
           {t('estPg.back')}
         </Link>
         <div className="flex items-center gap-3 text-sm">
           <Link
             href={`/jobs/${data.estimate.jobId}`}
-            className="text-yge-blue-500 hover:underline"
+            className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50"
             title="Open the job this estimate is attached to"
           >
             ↗ Open job
           </Link>
           <Link
             href={`/drafts/${data.estimate.fromDraftId}`}
-            className="text-yge-blue-500 hover:underline"
+            className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50"
           >
             {t('estPg.viewDraft')}
           </Link>

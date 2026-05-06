@@ -276,11 +276,11 @@ export function EstimateDetail({ initial, costCodes }: Props) {
     <div>
       <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-3 text-xs">
-          <Link href="/imported-estimates" className="text-blue-700 hover:underline">
+          <Link href="/imported-estimates" className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50">
             ← All imported estimates
           </Link>
           {estimate.jobId && (
-            <Link href={`/jobs/${estimate.jobId}`} className="text-blue-700 hover:underline">
+            <Link href={`/jobs/${estimate.jobId}`} className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50">
               View linked Job →
             </Link>
           )}
