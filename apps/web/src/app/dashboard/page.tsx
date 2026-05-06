@@ -18,6 +18,7 @@ import { getCurrentUser } from '../../lib/auth';
 import { getTranslator } from '../../lib/locale';
 import { bidDueCountdown } from '@yge/shared';
 import { DashboardRefreshButton } from '../../components/dashboard-refresh-button';
+import { MobileAppCallout } from '../../components/mobile-app-callout';
 import { CopyMoneyButton } from '../../components/copy-money-button';
 import { PinnedIndicator } from '../../components/pinned-indicator';
 import { relativeTime } from '../../lib/relative-time';
@@ -469,6 +470,8 @@ export default async function DashboardPage() {
           </Link>
         </div>
       </header>
+
+      <MobileAppCallout />
 
       {apiUnreachable && (
         <Alert tone="warn" title={t('dashboard.apiUnreachable.title')} className="mb-6">
