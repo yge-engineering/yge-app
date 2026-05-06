@@ -76,11 +76,10 @@ export default function PlansToEstimatePage() {
     };
   }, [preselectedJobId]);
 
-  // File drop handler. Phase 1 supports text files (.txt, .md, .csv).
-  // PDFs need server-side OCR — for those we route the user to the
-  // multi-pass page which will accept attachments next bundle. The
-  // textarea below has its own onDrop that calls this so a drop on
-  // the input itself doesn't paste the file path.
+  // File drop handler. Text files load instantly client-side; PDFs
+  // upload to /api/pdf/extract-text which runs Anthropic's document
+  // block to pull text out (handles scanned plan sets too). Anything
+  // else nudges the user to paste plain text.
   async function handleFileDrop(files: FileList | null): Promise<void> {
     setDropMessage(null);
     if (!files || files.length === 0) return;
@@ -90,15 +89,52 @@ export default function PlansToEstimatePage() {
       file.type.startsWith('text/') ||
       /\.(txt|md|markdown|csv|tsv|log)$/i.test(lower);
     const isPdf = file.type === 'application/pdf' || lower.endsWith('.pdf');
+
     if (isPdf) {
-      setDropMessage(
-        `PDF detected (${file.name}). PDF-to-text isn't wired into this page yet — open the PDF, copy the text, and paste it below. (Multi-pass page will accept PDFs in a future bundle.)`,
-      );
+      setDropMessage(`Extracting text from ${file.name}…`);
+      try {
+        const apiBase =
+          process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+        const form = new FormData();
+        form.append('file', file);
+        const res = await fetch(`${apiBase}/api/pdf/extract-text`, {
+          method: 'POST',
+          body: form,
+        });
+        if (!res.ok) {
+          const body = (await res.json().catch(() => ({}))) as {
+            error?: string;
+          };
+          setDropMessage(
+            body.error ?? `Could not extract text (HTTP ${res.status})`,
+          );
+          return;
+        }
+        const json = (await res.json()) as {
+          text: string;
+          filename: string;
+          elapsedMs?: number;
+        };
+        setDocumentText((prev) =>
+          prev.trim().length === 0 ? json.text : `${prev}\n\n${json.text}`,
+        );
+        const seconds = json.elapsedMs
+          ? ` in ${(json.elapsedMs / 1000).toFixed(1)}s`
+          : '';
+        setDropMessage(
+          `Extracted ${json.text.length.toLocaleString()} chars from ${json.filename}${seconds}.`,
+        );
+      } catch (err) {
+        setDropMessage(
+          `PDF upload failed: ${err instanceof Error ? err.message : 'unknown error'}`,
+        );
+      }
       return;
     }
+
     if (!isText) {
       setDropMessage(
-        `Drop a text file (.txt / .md / .csv) — got "${file.name}" (${file.type || 'unknown type'}). Plain text from your spec or RFP works best.`,
+        `Drop a text file (.txt / .md / .csv) or a PDF — got "${file.name}" (${file.type || 'unknown type'}). Plain text from your spec or RFP works best.`,
       );
       return;
     }
@@ -274,7 +310,7 @@ export default function PlansToEstimatePage() {
               />
               {dropHover && (
                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-yge-blue-50/80 text-sm font-semibold text-yge-blue-700">
-                  Drop a .txt / .md / .csv file to load it
+                  Drop a PDF or .txt / .md / .csv file to load it
                 </div>
               )}
             </div>
@@ -285,7 +321,7 @@ export default function PlansToEstimatePage() {
                 })}
               </span>
               <span className="text-gray-400">
-                Tip: drag a .txt / .md / .csv file onto the box above to load it
+                Tip: drag a PDF or .txt / .md / .csv onto the box above
               </span>
             </p>
             {dropMessage && (

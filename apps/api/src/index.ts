@@ -65,6 +65,7 @@ import { microsoftRouter } from './routes/microsoft';
 import { portalUsersRouter } from './routes/portal-users';
 import { p2eFeedbackRouter } from './routes/p2e-feedback';
 import { webauthnRouter } from './routes/webauthn';
+import { pdfExtractRouter } from './routes/pdf-extract';
 
 const app = express();
 
@@ -160,6 +161,7 @@ app.use('/api/microsoft', microsoftRouter);
 app.use('/api/portal-users', portalUsersRouter);
 app.use('/api/p2e-feedback', p2eFeedbackRouter);
 app.use('/api/webauthn', webauthnRouter);
+app.use('/api/pdf', pdfExtractRouter);
 
 // 404
 app.use((_req, res) => {
