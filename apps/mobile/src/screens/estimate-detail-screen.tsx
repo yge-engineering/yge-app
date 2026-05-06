@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { getJson, patchJson } from '../lib/api';
+import { NotesEditorModal } from '../components/notes-editor-modal';
 
 type BidStatus = 'pursuing' | 'submitted' | 'awarded' | 'lost';
 
@@ -65,6 +66,7 @@ export default function EstimateDetailScreen({ route }: { route: { params: { id:
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [savingStatus, setSavingStatus] = useState<BidStatus | null>(null);
+  const [notesOpen, setNotesOpen] = useState(false);
 
   async function load() {
     try {
@@ -192,12 +194,28 @@ export default function EstimateDetailScreen({ route }: { route: { params: { id:
         </View>
       )}
 
-      {e.notes && (
-        <View style={styles.card}>
-          <Text style={styles.label}>Notes</Text>
+      <Pressable onPress={() => setNotesOpen(true)} style={styles.card}>
+        <Text style={styles.label}>Notes (tap to edit)</Text>
+        {e.notes ? (
           <Text style={styles.notes}>{e.notes}</Text>
-        </View>
-      )}
+        ) : (
+          <Text style={[styles.notes, { color: '#94a3b8', fontStyle: 'italic' }]}>
+            No notes yet — tap to add.
+          </Text>
+        )}
+      </Pressable>
+
+      <NotesEditorModal
+        visible={notesOpen}
+        initial={e.notes ?? ''}
+        onCancel={() => setNotesOpen(false)}
+        onSave={async (next) => {
+          await patchJson(`/api/priced-estimates/${encodeURIComponent(id)}`, {
+            notes: next,
+          });
+          await load();
+        }}
+      />
 
       <Text style={[styles.h2, { marginTop: 16 }]}>Bid items</Text>
       {e.bidItems.slice(0, 50).map((item, idx) => (
