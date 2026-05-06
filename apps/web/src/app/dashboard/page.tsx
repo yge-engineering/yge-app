@@ -160,8 +160,13 @@ export default async function DashboardPage() {
       s.status === 'REVISE_RESUBMIT',
   ).length;
 
-  const activeJobs = jobs.filter(
-    (j) => j.status === 'AWARDED' || j.status === 'PURSUING',
+  // "Active" means jobs that are running in the field (status AWARDED).
+  // PURSUING + BID_SUBMITTED are bids in flight, not active jobs — keep
+  // them separate so the dashboard greeting doesn't read "3 active jobs"
+  // when those are really 3 bids we're working on.
+  const activeJobs = jobs.filter((j) => j.status === 'AWARDED').length;
+  const pursuingJobs = jobs.filter(
+    (j) => j.status === 'PURSUING' || j.status === 'BID_SUBMITTED',
   ).length;
 
   const todayDispatches = dispatches.filter(
@@ -197,6 +202,14 @@ export default async function DashboardPage() {
               day: 'numeric',
             })}{' '}
             · {t('dashboard.activeJobs', { count: activeJobs })}
+            {pursuingJobs > 0 && (
+              <>
+                {' · '}
+                {pursuingJobs === 1
+                  ? '1 bid in flight'
+                  : `${pursuingJobs} bids in flight`}
+              </>
+            )}
           </p>
         </div>
         <Link href="/all-modules" className="text-sm text-yge-blue-500 hover:underline">
