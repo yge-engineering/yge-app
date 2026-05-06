@@ -858,6 +858,9 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
                   onQuantityChange={(qty) =>
                     void applyItemPatch(i, { quantity: qty })
                   }
+                  onDescriptionChange={(d) =>
+                    void applyItemPatch(i, { description: d })
+                  }
                   defaultMarkupPct={estimate.oppPercent}
                   variance={variance[i]}
                   selected={selectedIndices.has(i)}
@@ -1066,6 +1069,7 @@ function BidItemRow({
   onReviewStateChange,
   onMarkupChange,
   onQuantityChange,
+  onDescriptionChange,
   defaultMarkupPct,
   variance,
   selected,
@@ -1098,6 +1102,8 @@ function BidItemRow({
   onReviewStateChange: (state: 'accepted' | 'flagged' | undefined) => void;
   /** Update the bid item quantity (editable inline + via PDF takeoff). */
   onQuantityChange: (quantity: number) => void;
+  /** Update the bid item description (editable inline). */
+  onDescriptionChange: (description: string) => void;
   /** Update the per-line markup override. undefined = inherit default. */
   onMarkupChange: (pct: number | undefined) => void;
   /** Estimate-level default markup, shown as the placeholder when this
@@ -1239,7 +1245,10 @@ function BidItemRow({
       <td className="px-3 py-2 align-top text-xs text-gray-500">{item.itemNumber}</td>
       <td className="px-3 py-2 align-top">
         <div className="flex items-start justify-between gap-2">
-          <div className="text-sm text-gray-900">{item.description}</div>
+          <DescriptionCell
+            value={item.description}
+            onCommit={(next) => onDescriptionChange(next)}
+          />
           <button
             type="button"
             onClick={onOpenBuildup}
@@ -1529,6 +1538,50 @@ function OppEditor({
         {t('estEditor.markupHelp')}
       </p>
     </div>
+  );
+}
+
+// Inline description editor. Click into the text to edit; commit
+// on blur. The text was previously read-only — finding/replace
+// from bundle 971 had to do all the work, but a one-off rename
+// like fixing a typo or adjusting wording for an addendum needs
+// per-row edit too.
+function DescriptionCell({
+  value,
+  onCommit,
+}: {
+  value: string;
+  onCommit: (next: string) => void;
+}) {
+  const [text, setText] = useState(value);
+  useEffect(() => setText(value), [value]);
+  return (
+    <textarea
+      value={text}
+      rows={Math.min(4, Math.max(1, Math.ceil(text.length / 60)))}
+      onChange={(e) => setText(e.target.value)}
+      onBlur={() => {
+        const trimmed = text;
+        if (trimmed === value) return;
+        if (trimmed.length === 0) {
+          // Empty descriptions get rejected by the schema; bounce.
+          setText(value);
+          return;
+        }
+        onCommit(trimmed);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          // Enter commits + blurs; Shift+Enter inserts a newline
+          // for multi-line descriptions.
+          e.preventDefault();
+          (e.target as HTMLTextAreaElement).blur();
+        }
+      }}
+      className="w-full resize-none rounded border border-transparent bg-transparent px-1 py-0.5 text-sm text-gray-900 hover:border-gray-200 focus:border-yge-blue-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-yge-blue-500"
+      aria-label="Bid item description"
+      maxLength={500}
+    />
   );
 }
 
