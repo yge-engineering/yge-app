@@ -161,6 +161,7 @@ export default async function EstimateDetailPage({
         >
           {t('estPg.envelope')}
         </Link>
+        <span className="mx-1 hidden h-6 w-px bg-gray-200 sm:inline-block" aria-hidden="true" />
         <Link
           href={`/estimates/${data.estimate.id}/sub-list`}
           className="rounded border border-yge-blue-500 px-3 py-1 font-medium text-yge-blue-500 hover:bg-yge-blue-50"
