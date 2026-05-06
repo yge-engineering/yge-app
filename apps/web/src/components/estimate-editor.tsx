@@ -154,6 +154,81 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
     }
   }
 
+  // Insert a duplicate of `itemIndex` immediately below it. The
+  // duplicate clears reviewState so the estimator looks at it
+  // fresh, and bumps itemNumber with a -2 / -3 / etc suffix when
+  // the existing item ends with a digit, so the bid form numbering
+  // doesn't collide. Saves through the bid-items PATCH.
+  async function duplicateRow(itemIndex: number) {
+    const source = estimate.bidItems[itemIndex];
+    if (!source) return;
+    const next = [...estimate.bidItems];
+    const cloned: PricedEstimate['bidItems'][number] = {
+      ...source,
+      itemNumber: `${source.itemNumber} (copy)`,
+      reviewState: undefined,
+    };
+    next.splice(itemIndex + 1, 0, cloned);
+    setEstimate((e) => ({ ...e, bidItems: next }));
+    try {
+      const res = await fetch(
+        `${apiBaseUrl}/api/priced-estimates/${estimate.id}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bidItems: next }),
+        },
+      );
+      if (!res.ok) throw new Error(t('estEditor.errSaveStatus', { status: res.status }));
+      const json = (await res.json()) as {
+        estimate: PricedEstimate;
+        totals: PricedEstimateTotals;
+      };
+      setEstimate(json.estimate);
+      setTotals(json.totals);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('estEditor.errFallback'));
+    }
+  }
+
+  // Remove a row. Schema requires bidItems.length >= 1; bounce when
+  // we're at one row (estimator can clear it manually if they want
+  // to start over).
+  async function deleteRow(itemIndex: number) {
+    if (estimate.bidItems.length <= 1) {
+      setError('Cannot delete the last row — every estimate needs at least one bid item.');
+      return;
+    }
+    if (
+      !window.confirm(
+        `Delete bid item ${estimate.bidItems[itemIndex]?.itemNumber ?? '?'}? This cannot be undone.`,
+      )
+    ) {
+      return;
+    }
+    const next = estimate.bidItems.filter((_, i) => i !== itemIndex);
+    setEstimate((e) => ({ ...e, bidItems: next }));
+    try {
+      const res = await fetch(
+        `${apiBaseUrl}/api/priced-estimates/${estimate.id}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bidItems: next }),
+        },
+      );
+      if (!res.ok) throw new Error(t('estEditor.errSaveStatus', { status: res.status }));
+      const json = (await res.json()) as {
+        estimate: PricedEstimate;
+        totals: PricedEstimateTotals;
+      };
+      setEstimate(json.estimate);
+      setTotals(json.totals);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('estEditor.errFallback'));
+    }
+  }
+
   // Multiply selected rows' quantities by a constant. Useful for a
   // "scale this whole schedule by 1.1" sweep.
   async function bulkMultiplyQty(factor: number) {
@@ -928,6 +1003,8 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
                   onDescriptionChange={(d) =>
                     void applyItemPatch(i, { description: d })
                   }
+                  onDuplicate={() => void duplicateRow(i)}
+                  onDelete={() => void deleteRow(i)}
                   defaultMarkupPct={estimate.oppPercent}
                   variance={variance[i]}
                   selected={selectedIndices.has(i)}
@@ -1011,13 +1088,30 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
             </tfoot>
           </table>
         </div>
-        <p className="mt-2 text-xs text-gray-500">
-          {totals.unpricedLineCount > 0
-            ? totals.unpricedLineCount === 1
-              ? t('estEditor.unpricedOne')
-              : t('estEditor.unpricedMany', { count: totals.unpricedLineCount })
-            : t('estEditor.allPriced')}
-        </p>
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <p className="text-xs text-gray-500">
+            {totals.unpricedLineCount > 0
+              ? totals.unpricedLineCount === 1
+                ? t('estEditor.unpricedOne')
+                : t('estEditor.unpricedMany', { count: totals.unpricedLineCount })
+              : t('estEditor.allPriced')}
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              // Append a blank row at the bottom of the bid items.
+              // Goes through duplicateRow's append path by cloning the
+              // last row and clearing the description so the user gets
+              // a sensible default unit/quantity to overwrite.
+              const lastIdx = estimate.bidItems.length - 1;
+              if (lastIdx < 0) return;
+              void duplicateRow(lastIdx);
+            }}
+            className="rounded-md border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-700 hover:bg-yge-blue-50"
+          >
+            + Add row at end
+          </button>
+        </div>
       </section>
 
       <section className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
@@ -1150,6 +1244,8 @@ function BidItemRow({
   onMarkupChange,
   onQuantityChange,
   onDescriptionChange,
+  onDuplicate,
+  onDelete,
   defaultMarkupPct,
   variance,
   selected,
@@ -1184,6 +1280,10 @@ function BidItemRow({
   onQuantityChange: (quantity: number) => void;
   /** Update the bid item description (editable inline). */
   onDescriptionChange: (description: string) => void;
+  /** Insert a duplicate of this row immediately below it. */
+  onDuplicate: () => void;
+  /** Delete this row. Bounces if it's the last remaining row. */
+  onDelete: () => void;
   /** Update the per-line markup override. undefined = inherit default. */
   onMarkupChange: (pct: number | undefined) => void;
   /** Estimate-level default markup, shown as the placeholder when this
@@ -1524,6 +1624,26 @@ function BidItemRow({
           >
             {item.confidence}
           </span>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={onDuplicate}
+              title="Insert a duplicate of this row below"
+              aria-label="Duplicate this row"
+              className="rounded border border-gray-300 px-1 py-0.5 text-[10px] text-gray-500 hover:border-yge-blue-500 hover:text-yge-blue-700"
+            >
+              ⊕
+            </button>
+            <button
+              type="button"
+              onClick={onDelete}
+              title="Delete this row"
+              aria-label="Delete this row"
+              className="rounded border border-gray-300 px-1 py-0.5 text-[10px] text-gray-500 hover:border-red-500 hover:text-red-700"
+            >
+              ✕
+            </button>
+          </div>
           <div className="flex items-center gap-1">
             <button
               type="button"
