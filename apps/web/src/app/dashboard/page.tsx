@@ -19,6 +19,7 @@ import { getTranslator } from '../../lib/locale';
 import { bidDueCountdown } from '@yge/shared';
 import { DashboardRefreshButton } from '../../components/dashboard-refresh-button';
 import { CopyMoneyButton } from '../../components/copy-money-button';
+import { PinnedIndicator } from '../../components/pinned-indicator';
 import { relativeTime } from '../../lib/relative-time';
 import { ygeHour, ygeToday } from '../../lib/yge-time';
 import {
@@ -1047,6 +1048,7 @@ function RecentEstimatesTile({
             >
               <div className="min-w-0 flex-1">
                 <div className="truncate font-medium text-gray-900">
+                  <PinnedIndicator storageKey="yge.estimates.pinnedIds" eventName="yge:pinned-changed" id={e.id} />
                   {(() => {
                     const issues =
                       (e.unpricedLineCount ?? 0) + (e.unacknowledgedAddendumCount ?? 0);
