@@ -1106,6 +1106,9 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
                   onMoveDown={() => void moveRow(i, 1)}
                   isFirst={i === 0}
                   isLast={i === estimate.bidItems.length - 1}
+                  onItemNumberChange={(next) =>
+                    void applyItemPatch(i, { itemNumber: next })
+                  }
                   defaultMarkupPct={estimate.oppPercent}
                   variance={variance[i]}
                   selected={selectedIndices.has(i)}
@@ -1351,6 +1354,7 @@ function BidItemRow({
   onMoveDown,
   isFirst,
   isLast,
+  onItemNumberChange,
   defaultMarkupPct,
   variance,
   selected,
@@ -1395,6 +1399,8 @@ function BidItemRow({
   onMoveDown: () => void;
   isFirst: boolean;
   isLast: boolean;
+  /** Update the bid item number (editable inline). */
+  onItemNumberChange: (next: string) => void;
   /** Update the per-line markup override. undefined = inherit default. */
   onMarkupChange: (pct: number | undefined) => void;
   /** Estimate-level default markup, shown as the placeholder when this
@@ -1533,7 +1539,12 @@ function BidItemRow({
           {statusSymbol}
         </span>
       </td>
-      <td className="px-3 py-2 align-top text-xs text-gray-500">{item.itemNumber}</td>
+      <td className="px-2 py-2 align-top">
+        <ItemNumberCell
+          value={item.itemNumber}
+          onCommit={(next) => onItemNumberChange(next)}
+        />
+      </td>
       <td className="px-3 py-2 align-top">
         <div className="flex items-start justify-between gap-2">
           <DescriptionCell
@@ -2025,6 +2036,45 @@ function PinnedNotes({
         maxLength={5_000}
       />
     </div>
+  );
+}
+
+// Inline item-number editor. Schema requires min(1) so empty
+// input bounces. Width tracked to ~5 chars so common bid form
+// numbering ("1", "1A", "12.5") fits without padding.
+function ItemNumberCell({
+  value,
+  onCommit,
+}: {
+  value: string;
+  onCommit: (next: string) => void;
+}) {
+  const [text, setText] = useState(value);
+  useEffect(() => setText(value), [value]);
+  return (
+    <input
+      type="text"
+      value={text}
+      onChange={(e) => setText(e.target.value)}
+      onBlur={() => {
+        const trimmed = text.trim();
+        if (!trimmed) {
+          setText(value);
+          return;
+        }
+        if (trimmed === value) return;
+        onCommit(trimmed);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          (e.target as HTMLInputElement).blur();
+        }
+      }}
+      maxLength={20}
+      aria-label="Bid item number"
+      className="w-12 rounded border border-transparent bg-transparent px-1 py-0.5 text-xs text-gray-700 hover:border-gray-200 focus:border-yge-blue-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-yge-blue-500"
+    />
   );
 }
 
