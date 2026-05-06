@@ -14,6 +14,7 @@ import { CopyMoneyButton } from '../../components/copy-money-button';
 import { EstimatesSearchInput } from '../../components/estimates-search-input';
 import { EstimatesSortHeaders } from '../../components/estimates-sort-headers';
 import { EstimatesShortcutsChip } from '../../components/estimates-shortcuts-chip';
+import { DashboardRefreshButton } from '../../components/dashboard-refresh-button';
 import { EstimatesStatusFilter } from '../../components/estimates-status-filter';
 import { EstimatesDueWeekChip } from '../../components/estimates-due-week-chip';
 import { EstimatesResetFilters } from '../../components/estimates-reset-filters';
@@ -332,6 +333,7 @@ export default async function EstimatesPage() {
           )}
         </div>
         <div className="flex items-center gap-2">
+          <DashboardRefreshButton />
           <EstimatesShortcutsChip />
           <Link
             href="/plans-to-estimate"
