@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { Alert, AppShell } from '../../components';
 import { relativeTime } from '../../lib/relative-time';
 import { DraftsSearchInput } from '../../components/drafts-search-input';
+import { DashboardRefreshButton } from '../../components/dashboard-refresh-button';
 import { EstimatesSortHeaders } from '../../components/estimates-sort-headers';
 import { getTranslator } from '../../lib/locale';
 
@@ -88,9 +89,12 @@ export default async function DraftsPage() {
         <Link href="/dashboard" className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50">
           &larr; Dashboard
         </Link>
-        <Link href="/plans-to-estimate" className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50">
-          {t('drafts.newDraft')} &rarr;
-        </Link>
+        <div className="flex items-center gap-2">
+          <DashboardRefreshButton />
+          <Link href="/plans-to-estimate" className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50">
+            {t('drafts.newDraft')} &rarr;
+          </Link>
+        </div>
       </div>
 
       <h1 className="text-3xl font-bold text-yge-blue-500">{t('drafts.title')}</h1>
