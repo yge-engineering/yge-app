@@ -17,6 +17,7 @@ import {
 import { getDraft } from '../lib/drafts-store';
 import {
   createFromDraft,
+  findHistoricalPrices,
   getEstimate,
   listEstimates,
   promoteAwardedToSubList,
@@ -63,6 +64,38 @@ pricedEstimatesRouter.get('/', async (_req, res, next) => {
   try {
     const estimates = await listEstimates();
     return res.json({ estimates });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/priced-estimates/historical-prices — search past estimates for
+// lines that look like the supplied description. Must precede the
+// generic /:id route below; otherwise Express treats it as an id.
+pricedEstimatesRouter.get('/historical-prices', async (req, res, next) => {
+  try {
+    const description =
+      typeof req.query.description === 'string' ? req.query.description : '';
+    if (!description.trim()) {
+      return res.status(400).json({ error: 'description is required' });
+    }
+    const matches = await findHistoricalPrices({
+      description,
+      unit: typeof req.query.unit === 'string' ? req.query.unit : undefined,
+      projectType:
+        typeof req.query.projectType === 'string'
+          ? req.query.projectType
+          : undefined,
+      excludeEstimateId:
+        typeof req.query.excludeEstimateId === 'string'
+          ? req.query.excludeEstimateId
+          : undefined,
+      limit:
+        typeof req.query.limit === 'string'
+          ? Math.max(1, Math.min(50, Number.parseInt(req.query.limit, 10) || 10))
+          : 10,
+    });
+    return res.json({ matches });
   } catch (err) {
     next(err);
   }

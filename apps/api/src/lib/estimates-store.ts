@@ -365,6 +365,97 @@ export async function promoteAwardedToSubList(
 }
 
 /**
+ * Historical-prices match. The editor surfaces these to the
+ * estimator so they can see what they bid for the same kind of
+ * line on past jobs.
+ */
+export interface HistoricalPriceMatch {
+  estimateId: string;
+  projectName: string;
+  projectType: string;
+  bidDueDate?: string;
+  itemNumber: string;
+  description: string;
+  unit: string;
+  quantity: number;
+  unitPriceCents: number;
+  confidence: 'HIGH' | 'MEDIUM' | 'LOW';
+  /** ISO timestamp the estimate was created. Sort key. */
+  createdAt: string;
+}
+
+/** Normalize a string for fuzzy matching: lowercase, strip non-alphanumeric. */
+function normalizeForMatch(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+/**
+ * Search every priced estimate on disk for bid item lines whose
+ * description normalizes to the same words as the query. Returns the
+ * matches newest-first so the editor can show last-bid first.
+ *
+ * Filters out the current estimate so the search doesn't echo back
+ * the line the user is staring at. Filters out unpriced lines so a
+ * stale draft doesn't pollute the results.
+ *
+ * Phase 1 brute-force: walks each estimate file. With a few hundred
+ * estimates this is fine (sub-second). When Postgres lands a real
+ * GIN/trigram index replaces this loop.
+ */
+export async function findHistoricalPrices(opts: {
+  description: string;
+  unit?: string;
+  projectType?: string;
+  excludeEstimateId?: string;
+  limit?: number;
+}): Promise<HistoricalPriceMatch[]> {
+  const target = normalizeForMatch(opts.description);
+  if (!target) return [];
+  const targetWords = new Set(target.split(' ').filter((w) => w.length >= 3));
+  if (targetWords.size === 0) return [];
+
+  const summaries = await listEstimates();
+  const matches: HistoricalPriceMatch[] = [];
+
+  for (const summary of summaries) {
+    if (summary.id === opts.excludeEstimateId) continue;
+    const est = await getEstimate(summary.id);
+    if (!est) continue;
+    if (opts.projectType && est.projectType !== opts.projectType) continue;
+    for (const item of est.bidItems) {
+      if (item.unitPriceCents == null) continue;
+      if (opts.unit && item.unit !== opts.unit) continue;
+      const desc = normalizeForMatch(item.description);
+      if (!desc) continue;
+      // Score = number of target words present in the candidate
+      // description. Require at least 60% overlap so noise lines
+      // ("Item 3", etc.) don't crowd the list.
+      const descWords = new Set(desc.split(' '));
+      let hit = 0;
+      for (const w of targetWords) if (descWords.has(w)) hit += 1;
+      const overlap = hit / targetWords.size;
+      if (overlap < 0.6) continue;
+      matches.push({
+        estimateId: est.id,
+        projectName: est.projectName,
+        projectType: est.projectType,
+        bidDueDate: est.bidDueDate,
+        itemNumber: item.itemNumber,
+        description: item.description,
+        unit: item.unit,
+        quantity: item.quantity,
+        unitPriceCents: item.unitPriceCents,
+        confidence: item.confidence,
+        createdAt: est.createdAt,
+      });
+    }
+  }
+
+  matches.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return matches.slice(0, opts.limit ?? 10);
+}
+
+/**
  * Update a single line's unit price. Convenience for the editor's per-row
  * save pattern (faster than re-sending the whole bidItems array).
  */

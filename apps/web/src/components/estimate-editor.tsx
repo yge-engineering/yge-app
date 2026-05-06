@@ -28,6 +28,7 @@ import { AddendumEditor } from './addendum-editor';
 import { BidChecklistBanner } from './bid-checklist-banner';
 import { CostBuildupDrawer } from './cost-buildup-drawer';
 import { MarkupStackEditor } from './markup-stack-editor';
+import { HistoricalPricesPopover } from './historical-prices-popover';
 
 interface Props {
   initialEstimate: PricedEstimate;
@@ -499,6 +500,9 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
                   onReviewStateChange={(state) =>
                     void applyItemPatch(i, { reviewState: state })
                   }
+                  apiBaseUrl={apiBaseUrl}
+                  estimateId={estimate.id}
+                  projectType={estimate.projectType}
                 />
               ))}
             </tbody>
@@ -698,6 +702,9 @@ function BidItemRow({
   onScheduleChange,
   onAlternateChange,
   onReviewStateChange,
+  apiBaseUrl,
+  estimateId,
+  projectType,
   t,
 }: {
   index: number;
@@ -721,12 +728,20 @@ function BidItemRow({
   onAlternateChange: (alt: boolean) => void;
   /** Update the AI-draft review state. undefined = unreviewed. */
   onReviewStateChange: (state: 'accepted' | 'flagged' | undefined) => void;
+  /** Passed through to the History popover so it can fetch and so the
+   *  estimator's current estimate doesn't echo back in the matches. */
+  apiBaseUrl: string;
+  estimateId: string;
+  projectType: string;
   t: Translator;
 }) {
   // totalRows is only consumed as documentation right now; surfaced
   // here so the row component knows when it's the last one without
   // having to look it up from outside.
   void totalRows;
+
+  // Per-row history popover open/closed state.
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [text, setText] = useState<string>(
     item.unitPriceCents == null ? '' : (item.unitPriceCents / 100).toFixed(2),
   );
@@ -824,8 +839,16 @@ function BidItemRow({
         {item.quantity.toLocaleString()}
       </td>
       <td className="px-3 py-2 align-top text-xs text-gray-600">{item.unit}</td>
-      <td className="px-3 py-2 text-right align-top">
+      <td className="relative px-3 py-2 text-right align-top">
         <div className="flex items-center justify-end gap-1">
+          <button
+            type="button"
+            onClick={() => setHistoryOpen((v) => !v)}
+            title="Show what we bid for similar lines on past jobs"
+            className="rounded border border-gray-300 px-1 py-0.5 text-[10px] text-gray-500 hover:border-yge-blue-500 hover:text-yge-blue-700"
+          >
+            🕐
+          </button>
           <span className="text-xs text-gray-500">$</span>
           <input
             ref={inputRef}
@@ -886,6 +909,17 @@ function BidItemRow({
           />
         </div>
         {saving && <div className="mt-0.5 text-[10px] text-gray-400">{t('estEditor.savingShort')}</div>}
+        {historyOpen && (
+          <HistoricalPricesPopover
+            apiBaseUrl={apiBaseUrl}
+            description={item.description}
+            unit={item.unit}
+            projectType={projectType}
+            excludeEstimateId={estimateId}
+            onPick={(cents) => onPriceCommit(cents)}
+            onClose={() => setHistoryOpen(false)}
+          />
+        )}
       </td>
       <td className="px-3 py-2 text-right align-top font-mono text-sm text-gray-900">
         {item.unitPriceCents == null ? (
