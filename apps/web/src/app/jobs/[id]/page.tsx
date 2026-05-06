@@ -274,6 +274,9 @@ export default async function JobDetailPage({
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs text-gray-500" title={job.updatedAt}>
+            Last edit {relativeTime(job.updatedAt)}
+          </span>
           <JobInfoEditor job={job} />
           <JobStatusEditor jobId={job.id} initialStatus={job.status} />
         </div>
