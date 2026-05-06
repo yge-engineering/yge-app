@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { postJson } from '../lib/api';
 import { writeAuth } from '../lib/auth-store';
+import { registerForPush } from '../lib/push';
 
 interface Props {
   onSignedIn: () => void;
@@ -35,6 +36,8 @@ export default function LoginScreen({ onSignedIn }: Props) {
         password,
       });
       await writeAuth(json.token, json.user);
+      // Best-effort push registration. Ignored in simulator / no permission.
+      void registerForPush();
       onSignedIn();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Sign-in failed');
