@@ -502,7 +502,9 @@ export default async function EstimatesPage() {
                   data-due={e.bidDueDate ?? ''}
                   data-created={e.createdAt}
                   className={`${(() => {
-                    if (!e.bidDueDate || e.bidStatus === 'awarded' || e.bidStatus === 'lost') return 'hover:bg-gray-50';
+                    if (e.bidStatus === 'awarded') return 'bg-green-50/40 hover:bg-green-100';
+                    if (e.bidStatus === 'lost') return 'bg-gray-50/60 hover:bg-gray-100 opacity-80';
+                    if (!e.bidDueDate) return 'hover:bg-gray-50';
                     const t = new Date(e.bidDueDate).getTime();
                     if (Number.isNaN(t)) return 'hover:bg-gray-50';
                     const diffMs = t - Date.now();
