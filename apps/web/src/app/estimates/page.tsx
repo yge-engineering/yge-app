@@ -362,15 +362,15 @@ export default async function EstimatesPage() {
             <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
               <tr>
                 <th className="px-4 py-2">{t('estimates.col.project')}</th>
-                <th className="px-4 py-2">{t('estimates.col.type')}</th>
-                <th className="px-4 py-2">{t('estimates.col.lines')}</th>
-                <th className="px-4 py-2">{t('estimates.col.subs')}</th>
-                <th className="px-4 py-2">{t('estimates.col.addenda')}</th>
+                <th className="hidden px-4 py-2 md:table-cell">{t('estimates.col.type')}</th>
+                <th className="hidden px-4 py-2 sm:table-cell">{t('estimates.col.lines')}</th>
+                <th className="hidden px-4 py-2 lg:table-cell">{t('estimates.col.subs')}</th>
+                <th className="hidden px-4 py-2 lg:table-cell">{t('estimates.col.addenda')}</th>
                 <th data-sort-key="cents" className="select-none px-4 py-2 hover:bg-gray-100">
                   {t('estimates.col.bidTotal')}
                   <span className="sort-arrow" />
                 </th>
-                <th data-sort-key="updated" className="select-none px-4 py-2 hover:bg-gray-100">
+                <th data-sort-key="updated" className="hidden select-none px-4 py-2 hover:bg-gray-100 sm:table-cell">
                   {t('estimates.col.updated')}
                   <span className="sort-arrow" />
                 </th>
@@ -396,10 +396,10 @@ export default async function EstimatesPage() {
                     <BidStatusPill status={e.bidStatus} />
                     <BidDuePill iso={e.bidDueDate} locale={locale} />
                   </td>
-                  <td className="px-4 py-3 text-xs text-gray-600">
+                  <td className="hidden px-4 py-3 text-xs text-gray-600 md:table-cell">
                     {e.projectType.replace(/_/g, ' ')}
                   </td>
-                  <td className="px-4 py-3 text-gray-700">
+                  <td className="hidden px-4 py-3 text-gray-700 sm:table-cell">
                     {e.pricedLineCount} of {e.bidItemCount}
                     {e.unpricedLineCount > 0 && (
                       <span className="ml-2 inline-block rounded-full bg-yellow-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-yellow-800">
@@ -407,7 +407,7 @@ export default async function EstimatesPage() {
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-xs text-gray-700">
+                  <td className="hidden px-4 py-3 text-xs text-gray-700 lg:table-cell">
                     {e.subBidCount && e.subBidCount > 0 ? (
                       <span>
                         {t('estimates.subs.count', { count: e.subBidCount, plural: e.subBidCount === 1 ? '' : 's' })}
@@ -416,7 +416,7 @@ export default async function EstimatesPage() {
                       <span className="text-gray-400">{t('estimates.subs.none')}</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-xs text-gray-700">
+                  <td className="hidden px-4 py-3 text-xs text-gray-700 lg:table-cell">
                     {e.addendumCount && e.addendumCount > 0 ? (
                       <span>
                         {e.addendumCount} addend
@@ -442,7 +442,7 @@ export default async function EstimatesPage() {
                       <Money cents={e.bidTotalCents} />
                     )}
                   </td>
-                  <td className="px-4 py-3 text-xs text-gray-600">
+                  <td className="hidden px-4 py-3 text-xs text-gray-600 sm:table-cell">
                     {formatWhen(e.updatedAt)}
                   </td>
                   <td className="px-4 py-3 text-right">
