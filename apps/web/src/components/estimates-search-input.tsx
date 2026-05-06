@@ -5,7 +5,7 @@
 // this component sits above it and toggles row visibility based on
 // each row's data-search attribute. No server round-trip.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface Props {
   /** Comma-separated list of table IDs to filter, OR a single table id.
@@ -16,6 +16,31 @@ interface Props {
 
 export function EstimatesSearchInput({ targetId, totalCount }: Props) {
   const [q, setQ] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // '/' focuses the search box when no other input is focused — same
+  // shortcut GitHub uses for repo search. Skipped if Cmd/Ctrl/Alt
+  // are held so we don't fight existing browser shortcuts.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== '/') return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const t = e.target as HTMLElement | null;
+      if (
+        t &&
+        (t.tagName === 'INPUT' ||
+          t.tagName === 'TEXTAREA' ||
+          (t as HTMLElement).isContentEditable)
+      ) {
+        return;
+      }
+      e.preventDefault();
+      inputRef.current?.focus();
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
+
   const [matched, setMatched] = useState<number>(totalCount);
   const [matchedCents, setMatchedCents] = useState<number>(0);
 
@@ -48,10 +73,11 @@ export function EstimatesSearchInput({ targetId, totalCount }: Props) {
   return (
     <div className="mb-3 flex flex-wrap items-center gap-3 text-sm">
       <input
+        ref={inputRef}
         type="search"
         value={q}
         onChange={(e) => setQ(e.target.value)}
-        placeholder="Filter by project or agency…"
+        placeholder="Filter by project or agency… (press /)"
         className="w-full max-w-xs rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-yge-blue-500 focus:outline-none focus:ring-1 focus:ring-yge-blue-500"
       />
       <span className="text-xs text-gray-600">
