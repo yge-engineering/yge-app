@@ -503,8 +503,14 @@ export default async function JobDetailPage({
                 when: relativeTime(e.updatedAt),
               });
               const [pre, post] = summaryTpl.split('__DOLLARS__');
+              const tintClass =
+                e.bidStatus === 'awarded'
+                  ? 'bg-green-50/50'
+                  : e.bidStatus === 'lost'
+                    ? 'bg-gray-50'
+                    : '';
               return (
-                <li key={e.id} className="flex items-center justify-between px-4 py-3">
+                <li key={e.id} className={`flex items-center justify-between px-4 py-3 ${tintClass}`}>
                   <div>
                     <div className="text-sm font-medium text-gray-900">
                       {(() => {
