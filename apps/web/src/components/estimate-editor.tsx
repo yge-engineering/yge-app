@@ -764,6 +764,9 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
                   onMarkupChange={(pct) =>
                     void applyItemPatch(i, { markupPct: pct })
                   }
+                  onQuantityChange={(qty) =>
+                    void applyItemPatch(i, { quantity: qty })
+                  }
                   defaultMarkupPct={estimate.oppPercent}
                   variance={variance[i]}
                   selected={selectedIndices.has(i)}
@@ -971,6 +974,7 @@ function BidItemRow({
   onAlternateChange,
   onReviewStateChange,
   onMarkupChange,
+  onQuantityChange,
   defaultMarkupPct,
   variance,
   selected,
@@ -1001,6 +1005,8 @@ function BidItemRow({
   onAlternateChange: (alt: boolean) => void;
   /** Update the AI-draft review state. undefined = unreviewed. */
   onReviewStateChange: (state: 'accepted' | 'flagged' | undefined) => void;
+  /** Update the bid item quantity (editable inline + via PDF takeoff). */
+  onQuantityChange: (quantity: number) => void;
   /** Update the per-line markup override. undefined = inherit default. */
   onMarkupChange: (pct: number | undefined) => void;
   /** Estimate-level default markup, shown as the placeholder when this
@@ -1199,8 +1205,17 @@ function BidItemRow({
             );
           })()}
       </td>
-      <td className="px-3 py-2 text-right align-top font-mono text-sm text-gray-700">
-        {item.quantity.toLocaleString()}
+      <td className="px-3 py-2 text-right align-top">
+        <QuantityCell
+          value={item.quantity}
+          onCommit={(qty) => onQuantityChange(qty)}
+        />
+        <TakeoffButton
+          apiBaseUrl={apiBaseUrl}
+          itemDescription={item.description}
+          itemUnit={item.unit}
+          onApply={(qty) => onQuantityChange(qty)}
+        />
       </td>
       <td className="px-3 py-2 align-top text-xs text-gray-600">{item.unit}</td>
       <td className="relative px-3 py-2 text-right align-top">
@@ -1423,6 +1438,136 @@ function OppEditor({
         {t('estEditor.markupHelp')}
       </p>
     </div>
+  );
+}
+
+// Inline quantity editor. Mirrors the unit-price editor pattern:
+// commit on blur or Enter, validate non-negative numeric, reset
+// to the last good value on bad input.
+function QuantityCell({
+  value,
+  onCommit,
+}: {
+  value: number;
+  onCommit: (n: number) => void;
+}) {
+  const [text, setText] = useState(value === 0 ? '' : String(value));
+  useEffect(() => {
+    setText(value === 0 ? '' : String(value));
+  }, [value]);
+  return (
+    <input
+      type="text"
+      inputMode="decimal"
+      value={text}
+      onChange={(e) => setText(e.target.value)}
+      onBlur={() => {
+        const trimmed = text.trim();
+        if (trimmed === '') {
+          if (value !== 0) onCommit(0);
+          return;
+        }
+        const n = Number(trimmed.replace(/[,\s]/g, ''));
+        if (!Number.isFinite(n) || n < 0) {
+          setText(value === 0 ? '' : String(value));
+          return;
+        }
+        const rounded = Math.round(n * 1000) / 1000;
+        if (rounded === value) return;
+        onCommit(rounded);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          (e.target as HTMLInputElement).blur();
+        }
+      }}
+      placeholder="0"
+      aria-label="Bid item quantity"
+      className="w-24 rounded border border-gray-300 px-2 py-1 text-right font-mono text-sm focus:border-yge-blue-500 focus:outline-none focus:ring-1 focus:ring-yge-blue-500"
+    />
+  );
+}
+
+// 📐 Takeoff button. Pops a file picker; upload a plan-set PDF and
+// the API runs Anthropic with a prompt scoped to THIS row's
+// description + unit. Returns a numeric quantity (best effort) +
+// reasoning. Estimator confirms before applying so a wild guess
+// doesn't clobber a hand-typed quantity.
+function TakeoffButton({
+  apiBaseUrl,
+  itemDescription,
+  itemUnit,
+  onApply,
+}: {
+  apiBaseUrl: string;
+  itemDescription: string;
+  itemUnit: string;
+  onApply: (qty: number) => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <label
+      className={`mt-1 inline-flex cursor-pointer items-center gap-1 rounded border px-1 py-0.5 text-[10px] ${
+        busy
+          ? 'cursor-wait border-gray-300 text-gray-500'
+          : 'border-gray-300 text-gray-500 hover:border-yge-blue-500 hover:text-yge-blue-700'
+      }`}
+      title="Pick a plan-set PDF and the AI will pull this line's takeoff out"
+    >
+      <span aria-hidden>📐</span>
+      <span>{busy ? 'Reading…' : 'Takeoff'}</span>
+      <input
+        type="file"
+        accept="application/pdf,.pdf"
+        className="hidden"
+        disabled={busy}
+        onChange={async (e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          setBusy(true);
+          setError(null);
+          try {
+            const form = new FormData();
+            form.append('file', file);
+            form.append('description', itemDescription);
+            form.append('unit', itemUnit);
+            const res = await fetch(`${apiBaseUrl}/api/takeoff/extract`, {
+              method: 'POST',
+              body: form,
+            });
+            if (!res.ok) {
+              const body = (await res.json().catch(() => ({}))) as {
+                error?: string;
+              };
+              throw new Error(body.error ?? `HTTP ${res.status}`);
+            }
+            const json = (await res.json()) as {
+              quantity: number | null;
+              reasoning?: string;
+              pageRef?: string;
+            };
+            if (json.quantity == null) {
+              throw new Error('AI could not find this scope in the PDF.');
+            }
+            const ok = window.confirm(
+              `AI suggests ${json.quantity.toLocaleString()} ${itemUnit}` +
+                (json.pageRef ? ` (${json.pageRef})` : '') +
+                (json.reasoning ? `\n\n${json.reasoning}` : '') +
+                '\n\nApply this quantity?',
+            );
+            if (ok) onApply(json.quantity);
+          } catch (err) {
+            setError(err instanceof Error ? err.message : 'Takeoff failed');
+          } finally {
+            setBusy(false);
+            e.target.value = '';
+          }
+        }}
+      />
+      {error && <span className="ml-1 text-red-700">⚠</span>}
+    </label>
   );
 }
 

@@ -68,6 +68,7 @@ import { webauthnRouter } from './routes/webauthn';
 import { pdfExtractRouter } from './routes/pdf-extract';
 import { explainLineRouter } from './routes/explain-line';
 import { subBidExtractRouter } from './routes/sub-bid-extract';
+import { takeoffExtractRouter } from './routes/takeoff-extract';
 
 const app = express();
 
@@ -166,6 +167,7 @@ app.use('/api/webauthn', webauthnRouter);
 app.use('/api/pdf', pdfExtractRouter);
 app.use('/api/priced-estimates', explainLineRouter);
 app.use('/api/sub-bids', subBidExtractRouter);
+app.use('/api/takeoff', takeoffExtractRouter);
 
 // 404
 app.use((_req, res) => {
