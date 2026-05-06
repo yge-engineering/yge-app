@@ -44,6 +44,8 @@ interface EstimateSummary {
   bidStatus?: 'pursuing' | 'submitted' | 'awarded' | 'lost';
   /** First-submit timestamp; pre-feature rows lack this field. */
   bidSubmittedAt?: string;
+  /** First ~120 chars of estimator notes; undefined when missing. */
+  notesPreview?: string;
 }
 
 function apiBaseUrl(): string {
@@ -458,6 +460,11 @@ export default async function EstimatesPage() {
                     <BidStatusPill status={e.bidStatus} />
                     <SubmittedAgePill iso={e.bidSubmittedAt} status={e.bidStatus} />
                     <BidDuePill iso={e.bidDueDate} locale={locale} />
+                    {e.notesPreview && (
+                      <div className="mt-1 text-[11px] italic text-gray-500">
+                        ✏ {e.notesPreview}
+                      </div>
+                    )}
                   </td>
                   <td className="hidden px-4 py-3 text-xs text-gray-600 md:table-cell">
                     {e.projectType.replace(/_/g, ' ')}
