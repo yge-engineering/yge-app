@@ -258,6 +258,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </aside>
         <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">{children}</main>
       </div>
+      {/* Mobile FAB — only on small screens since header has the same CTA */}
+      <Link
+        href="/plans-to-estimate"
+        data-fab-new-estimate="1"
+        className="fixed bottom-4 right-4 z-50 inline-flex items-center justify-center rounded-full bg-yge-blue-500 px-4 py-3 text-sm font-semibold text-white shadow-lg hover:bg-yge-blue-700 sm:hidden"
+        title="Start a new estimate"
+      >
+        + Estimate
+      </Link>
       <footer className="border-t border-gray-200 bg-white px-6 py-3 text-center text-xs text-gray-400">
         {t('shell.footer')}{' '}
         <Link href="/changelog" className="hover:underline">{t('shell.footer.whatsNew')}</Link>
