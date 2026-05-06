@@ -9,6 +9,7 @@ import { Alert, AppShell, Money } from '../../components';
 import { JobsSearchInput } from '../../components/jobs-search-input';
 import { JobsCreatedFilter } from '../../components/jobs-created-filter';
 import { JobsResetFilters } from '../../components/jobs-reset-filters';
+import { CopyMoneyButton } from '../../components/copy-money-button';
 import { EstimatesSortHeaders } from '../../components/estimates-sort-headers';
 import { getLocale, getTranslator } from '../../lib/locale';
 import { getCurrentUser } from '../../lib/auth';
@@ -400,7 +401,9 @@ export default async function JobsPage({ searchParams }: PageProps) {
                   </td>
                   <td className="px-4 py-3 text-right font-mono text-xs tabular-nums text-gray-700">
                     {j.engineersEstimateCents !== undefined ? (
-                      <Money cents={j.engineersEstimateCents} />
+                      <CopyMoneyButton cents={j.engineersEstimateCents}>
+                        <Money cents={j.engineersEstimateCents} />
+                      </CopyMoneyButton>
                     ) : (
                       <span className="text-gray-400">—</span>
                     )}
