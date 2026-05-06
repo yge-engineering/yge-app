@@ -9,6 +9,7 @@ import { Alert, AppShell, Money } from '../../components';
 import { bidDueCountdown, coerceLocale } from '@yge/shared';
 import { cookies } from 'next/headers';
 import { CopyEstimateLink } from '../../components/copy-estimate-link';
+import { EstimatesSearchInput } from '../../components/estimates-search-input';
 import { getTranslator } from '../../lib/locale';
 import { requirePermission } from '../../lib/permissions';
 
@@ -309,8 +310,10 @@ export default async function EstimatesPage() {
       )}
 
       {estimates.length > 0 && (
-        <div className="mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-          <table className="w-full text-left text-sm">
+        <div className="mt-6">
+          <EstimatesSearchInput targetId="estimates-table" totalCount={estimates.length} />
+          <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+          <table id="estimates-table" className="w-full text-left text-sm">
             <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
               <tr>
                 <th className="px-4 py-2">{t('estimates.col.project')}</th>
@@ -325,7 +328,11 @@ export default async function EstimatesPage() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {estimates.map((e) => (
-                <tr key={e.id} className="hover:bg-gray-50">
+                <tr
+                  key={e.id}
+                  data-search={`${e.projectName} ${e.ownerAgency ?? ''} ${e.projectType.replace(/_/g, ' ')}`}
+                  className="hover:bg-gray-50"
+                >
                   <td className="px-4 py-3">
                     <div className="font-medium text-gray-900">{e.projectName}</div>
                     {e.ownerAgency && (
@@ -424,6 +431,7 @@ export default async function EstimatesPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </main>
