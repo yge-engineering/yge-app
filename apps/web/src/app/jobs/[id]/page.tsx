@@ -482,7 +482,25 @@ export default async function JobDetailPage({
       {/* Priced estimates for this job */}
       <section className="mt-10">
         <div className="flex items-end justify-between">
-          <h2 className="text-xl font-semibold text-gray-900">{t('jobDetail.h.estimates')}</h2>
+          <h2 className="text-xl font-semibold text-gray-900">
+            {t('jobDetail.h.estimates')}
+            {(() => {
+              const active = estimates.filter(
+                (e) => e.bidStatus !== 'awarded' && e.bidStatus !== 'lost',
+              );
+              if (active.length === 0) return null;
+              const ready = active.filter(
+                (e) =>
+                  (e.unpricedLineCount ?? 0) === 0 &&
+                  (e.unacknowledgedAddendumCount ?? 0) === 0,
+              ).length;
+              return (
+                <span className="ml-3 inline-block rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs font-normal text-gray-600">
+                  {ready} of {active.length} active ready
+                </span>
+              );
+            })()}
+          </h2>
           {estimates.length > 0 && (
             <Link
               href={`/plans-to-estimate?jobId=${encodeURIComponent(job.id)}`}
