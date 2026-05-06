@@ -337,7 +337,14 @@ export default async function EstimatesPage() {
                     className="hover:bg-gray-50"
                   >
                     <td className="px-4 py-3">
-                      <div className="font-medium text-gray-900">{e.projectName}</div>
+                      <div className="font-medium">
+                        <Link
+                          href={`/imported-estimates/${e.id}`}
+                          className="text-gray-900 hover:text-yge-blue-700 hover:underline"
+                        >
+                          {e.projectName}
+                        </Link>
+                      </div>
                     </td>
                     <td className="px-4 py-3 font-mono text-xs text-gray-600">
                       {e.jobNumber}
@@ -352,20 +359,16 @@ export default async function EstimatesPage() {
                       {formatWhen(e.updatedAt)}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <Link
-                        href={`/imported-estimates/${e.id}`}
-                        className="mr-3 text-yge-blue-500 hover:underline"
-                      >
-                        Open
-                      </Link>
-                      {e.jobId && (
-                        <Link
-                          href={`/jobs/${e.jobId}`}
-                          className="text-yge-blue-500 hover:underline"
-                        >
-                          Job
+                      <div className="flex flex-wrap justify-end gap-1">
+                        <Link href={`/imported-estimates/${e.id}`} className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50">
+                          Open
                         </Link>
-                      )}
+                        {e.jobId && (
+                          <Link href={`/jobs/${e.jobId}`} className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50">
+                            Job
+                          </Link>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -441,7 +444,14 @@ export default async function EstimatesPage() {
                   className="hover:bg-gray-50"
                 >
                   <td className="px-4 py-3">
-                    <div className="font-medium text-gray-900">{e.projectName}</div>
+                    <div className="font-medium">
+                      <Link
+                        href={`/estimates/${e.id}`}
+                        className="text-gray-900 hover:text-yge-blue-700 hover:underline"
+                      >
+                        {e.projectName}
+                      </Link>
+                    </div>
                     {e.ownerAgency && (
                       <div className="text-xs text-gray-500">{e.ownerAgency}</div>
                     )}
@@ -499,42 +509,32 @@ export default async function EstimatesPage() {
                     {formatWhen(e.updatedAt)}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <Link
-                      href={`/estimates/${e.id}`}
-                      className="mr-3 text-yge-blue-500 hover:underline"
-                    >
-                      {t('estimates.action.open')}
-                    </Link>
-                    <Link
-                      href={`/estimates/${e.id}/print`}
-                      className="mr-3 text-yge-blue-500 hover:underline"
-                    >
-                      {t('estimates.action.print')}
-                    </Link>
-                    <Link
-                      href={`/estimates/${e.id}/transmittal`}
-                      className="mr-3 text-yge-blue-500 hover:underline"
-                    >
-                      {t('estimates.action.cover')}
-                    </Link>
-                    <Link
-                      href={`/estimates/${e.id}/envelope`}
-                      className="mr-3 text-yge-blue-500 hover:underline"
-                    >
-                      {t('estimates.action.envelope')}
-                    </Link>
-                    <a
-                      href={`${publicApiBaseUrl()}/api/priced-estimates/${e.id}/export.csv`}
-                      className="mr-3 text-yge-blue-500 hover:underline"
-                    >
-                      {t('estimates.action.csv')}
-                    </a>
-                    <CopyEstimateLink
-                      sourceId={e.id}
-                      sourceProjectName={e.projectName}
-                      sourceJobId={e.jobId}
-                      apiBaseUrl={publicApiBaseUrl()}
-                    />
+                    <div className="flex flex-wrap justify-end gap-1">
+                      <Link href={`/estimates/${e.id}`} className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50">
+                        {t('estimates.action.open')}
+                      </Link>
+                      <Link href={`/estimates/${e.id}/print`} className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50">
+                        {t('estimates.action.print')}
+                      </Link>
+                      <Link href={`/estimates/${e.id}/transmittal`} className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50">
+                        {t('estimates.action.cover')}
+                      </Link>
+                      <Link href={`/estimates/${e.id}/envelope`} className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50">
+                        {t('estimates.action.envelope')}
+                      </Link>
+                      <a
+                        href={`${publicApiBaseUrl()}/api/priced-estimates/${e.id}/export.csv`}
+                        className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50"
+                      >
+                        {t('estimates.action.csv')}
+                      </a>
+                      <CopyEstimateLink
+                        sourceId={e.id}
+                        sourceProjectName={e.projectName}
+                        sourceJobId={e.jobId}
+                        apiBaseUrl={publicApiBaseUrl()}
+                      />
+                    </div>
                   </td>
                 </tr>
               ))}
