@@ -212,6 +212,42 @@ export default async function EstimateDetailPage({
       </div>
 
       {(() => {
+        const status = data.estimate.bidStatus ?? 'pursuing';
+        const STEPS = [
+          { id: 'pursuing', label: 'Pursuing' },
+          { id: 'submitted', label: 'Submitted' },
+          { id: status === 'lost' ? 'lost' : 'awarded', label: status === 'lost' ? 'Lost' : 'Awarded' },
+        ];
+        const activeIdx =
+          status === 'awarded' || status === 'lost' ? 2 : status === 'submitted' ? 1 : 0;
+        return (
+          <ol className="mb-4 flex items-center gap-1 text-xs">
+            {STEPS.map((step, i) => {
+              const reached = i <= activeIdx;
+              const tone = reached
+                ? status === 'lost' && i === 2
+                  ? 'border-gray-300 bg-gray-100 text-gray-700'
+                  : status === 'awarded' && i === 2
+                    ? 'border-green-300 bg-green-50 text-green-800'
+                    : status === 'submitted' && i === 1
+                      ? 'border-blue-300 bg-blue-50 text-blue-800'
+                      : 'border-amber-300 bg-amber-50 text-amber-800'
+                : 'border-gray-200 bg-white text-gray-400';
+              return (
+                <li
+                  key={step.id}
+                  className={`flex items-center gap-2 rounded-full border px-2.5 py-0.5 ${tone}`}
+                >
+                  <span className="font-mono text-[10px] opacity-60">{i + 1}</span>
+                  <span>{step.label}</span>
+                </li>
+              );
+            })}
+          </ol>
+        );
+      })()}
+
+      {(() => {
         const unpriced = data.estimate.bidItems.filter((i) => i.unitPriceCents == null).length;
         const checks = [
           { ok: unpriced === 0, label: unpriced === 0 ? 'All lines priced' : `${unpriced} line${unpriced === 1 ? '' : 's'} unpriced` },
