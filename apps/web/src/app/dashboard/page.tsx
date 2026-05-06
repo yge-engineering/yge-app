@@ -106,6 +106,28 @@ interface PricedEstimateSummaryLite {
 /** Pull every priced estimate plus a small slice of the most-recent ones
  *  for the dashboard. Sharing the fetch avoids a second request just for
  *  the pipeline-value tile. */
+interface AuditEventLite {
+  id: string;
+  createdAt: string;
+  action: string;
+  entityType: string;
+  entityId: string;
+  actorEmail?: string;
+}
+
+async function fetchRecentAudit(): Promise<AuditEventLite[]> {
+  try {
+    const res = await fetch(`${apiBaseUrl()}/api/audit-events?limit=5`, {
+      cache: 'no-store',
+    });
+    if (!res.ok) return [];
+    const json = (await res.json()) as { events?: AuditEventLite[] };
+    return json.events ?? [];
+  } catch {
+    return [];
+  }
+}
+
 async function fetchEstimatesPipeline(): Promise<{
   recent: PricedEstimateSummaryLite[];
   pipelineCents: number;
@@ -326,6 +348,7 @@ export default async function DashboardPage() {
   ]);
   const apInboxStatus = await fetchApInboxStatus();
   const pipelineData = await fetchEstimatesPipeline();
+  const recentAudit = await fetchRecentAudit();
   const recentEstimates = pipelineData.recent;
 
   const arRollup = computeArRollup(arInvoices);
