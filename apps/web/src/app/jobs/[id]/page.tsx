@@ -285,6 +285,9 @@ export default async function JobDetailPage({
           <span className="text-xs text-gray-500" title={job.updatedAt}>
             Last edit {relativeTime(job.updatedAt)}
           </span>
+          {estimates.length === 1 && estimates[0]!.bidStatus && (
+            <JobBidStatusPill status={estimates[0]!.bidStatus} />
+          )}
           <JobInfoEditor job={job} />
           <JobStatusEditor jobId={job.id} initialStatus={job.status} />
         </div>
