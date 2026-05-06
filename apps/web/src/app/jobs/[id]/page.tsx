@@ -271,6 +271,14 @@ export default async function JobDetailPage({
           <p className="mt-1 text-sm uppercase tracking-wide text-gray-500">
             {contractTypeLabel(job.contractType)} &middot;{' '}
             {job.projectType.replace(/_/g, ' ')}
+            {estimates.length > 0 && (
+              <>
+                {' · '}
+                {estimates.length} estimate{estimates.length === 1 ? '' : 's'}
+                {' · '}
+                <Money cents={estimates.reduce((sum, e) => sum + e.bidTotalCents, 0)} /> total
+              </>
+            )}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
