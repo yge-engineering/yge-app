@@ -6,6 +6,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
@@ -68,6 +69,7 @@ export default function EstimateDetailScreen({ route }: { route: { params: { id:
   const [loading, setLoading] = useState(true);
   const [savingStatus, setSavingStatus] = useState<BidStatus | null>(null);
   const [notesOpen, setNotesOpen] = useState(false);
+  const [lineQuery, setLineQuery] = useState('');
 
   async function load() {
     try {
@@ -224,8 +226,30 @@ export default function EstimateDetailScreen({ route }: { route: { params: { id:
         }}
       />
 
-      <Text style={[styles.h2, { marginTop: 16 }]}>Bid items</Text>
-      {e.bidItems.slice(0, 50).map((item, idx) => (
+      <Text style={[styles.h2, { marginTop: 16 }]}>Bid items ({e.bidItems.length})</Text>
+
+      <TextInput
+        value={lineQuery}
+        onChangeText={setLineQuery}
+        placeholder="Filter line items…"
+        autoCapitalize="none"
+        autoCorrect={false}
+        style={styles.lineSearch}
+      />
+
+      {(() => {
+        const needle = lineQuery.trim().toLowerCase();
+        const filtered = needle
+          ? e.bidItems.filter(
+              (item) =>
+                item.description.toLowerCase().includes(needle) ||
+                item.itemNumber.toLowerCase().includes(needle),
+            )
+          : e.bidItems;
+        const display = filtered.slice(0, 50);
+        return (
+          <>
+            {display.map((item, idx) => (
         <View key={idx} style={styles.lineCard}>
           <View style={{ flex: 1 }}>
             <Text style={styles.lineTitle}>
@@ -245,10 +269,18 @@ export default function EstimateDetailScreen({ route }: { route: { params: { id:
             </Text>
           )}
         </View>
-      ))}
-      {e.bidItems.length > 50 && (
-        <Text style={styles.note}>… {e.bidItems.length - 50} more lines hidden. Open in web to edit.</Text>
-      )}
+            ))}
+            {filtered.length === 0 && needle && (
+              <Text style={styles.note}>No matches for "{lineQuery}".</Text>
+            )}
+            {filtered.length > 50 && (
+              <Text style={styles.note}>
+                … {filtered.length - 50} more line{filtered.length - 50 === 1 ? '' : 's'} hidden. Refine the filter to see them.
+              </Text>
+            )}
+          </>
+        );
+      })()}
     </ScrollView>
   );
 }
@@ -305,4 +337,14 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   note: { fontSize: 12, color: '#64748b', fontStyle: 'italic', marginTop: 8 },
+  lineSearch: {
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#ffffff',
+    fontSize: 14,
+    marginBottom: 8,
+  },
 });
