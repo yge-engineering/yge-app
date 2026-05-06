@@ -86,6 +86,25 @@ async function fetchImported(): Promise<ImportedEstimateSummary[]> {
   }
 }
 
+function countDueBuckets(rows: { bidDueDate?: string }[]): {
+  overdue: number;
+  dueSoon: number;
+} {
+  const now = Date.now();
+  const sevenDays = 7 * 24 * 60 * 60 * 1000;
+  let overdue = 0;
+  let dueSoon = 0;
+  for (const r of rows) {
+    if (!r.bidDueDate) continue;
+    const t = new Date(r.bidDueDate).getTime();
+    if (Number.isNaN(t)) continue;
+    const delta = t - now;
+    if (delta < 0) overdue++;
+    else if (delta <= sevenDays) dueSoon++;
+  }
+  return { overdue, dueSoon };
+}
+
 function urgencyKey(iso: string | undefined, now: number): number {
   // Smaller key = more urgent. Buckets the rows so:
   //   - overdue (negative deltas) sort top, most-overdue first
@@ -158,6 +177,7 @@ export default async function EstimatesPage() {
     fetchError = err instanceof Error ? err.message : 'Unknown error';
   }
   estimates = sortByUrgency(estimates);
+  const dueCounts = countDueBuckets(estimates);
   const imported = await fetchImported();
   const t = getTranslator();
   const locale = coerceLocale(cookies().get('yge-locale')?.value);
@@ -178,6 +198,20 @@ export default async function EstimatesPage() {
         <div>
           <h1 className="text-3xl font-bold text-yge-blue-500">{t('estimates.title')}</h1>
           <p className="mt-2 text-gray-700">{t('estimates.subtitle')}</p>
+          {(dueCounts.overdue > 0 || dueCounts.dueSoon > 0) && (
+            <div className="mt-2 flex flex-wrap gap-2 text-xs">
+              {dueCounts.overdue > 0 && (
+                <span className="inline-block rounded-full border border-red-300 bg-red-50 px-2 py-0.5 font-semibold text-red-800">
+                  {dueCounts.overdue} overdue
+                </span>
+              )}
+              {dueCounts.dueSoon > 0 && (
+                <span className="inline-block rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 font-semibold text-amber-800">
+                  {dueCounts.dueSoon} due in 7 days
+                </span>
+              )}
+            </div>
+          )}
         </div>
         <Link
           href="/plans-to-estimate"
