@@ -1184,6 +1184,11 @@ function RecentEstimatesTile({
                       · {e.unpricedLineCount} unpriced
                     </span>
                   ) : null}
+                  {typeof e.reviewedLineCount === 'number' && typeof e.bidItemCount === 'number' && e.bidItemCount > 0 && e.reviewedLineCount < e.bidItemCount && (
+                    <span className="ml-2 text-gray-500">
+                      · {e.reviewedLineCount}/{e.bidItemCount} reviewed
+                    </span>
+                  )}
                   <span className="ml-2 text-gray-500" title={e.updatedAt}>
                     · {relativeTime(e.updatedAt)}
                   </span>
