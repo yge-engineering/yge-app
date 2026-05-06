@@ -93,6 +93,7 @@ interface PricedEstimateSummaryLite {
   bidTotalCents?: number;
   unpricedLineCount?: number;
   updatedAt: string;
+  bidStatus?: 'pursuing' | 'submitted' | 'awarded' | 'lost';
 }
 
 /** Pull every priced estimate plus a small slice of the most-recent ones
@@ -102,12 +103,15 @@ async function fetchEstimatesPipeline(): Promise<{
   recent: PricedEstimateSummaryLite[];
   pipelineCents: number;
   pipelineCount: number;
+  decided: number;
+  awarded: number;
 }> {
   try {
     const res = await fetch(`${apiBaseUrl()}/api/priced-estimates`, {
       cache: 'no-store',
     });
-    if (!res.ok) return { recent: [], pipelineCents: 0, pipelineCount: 0 };
+    if (!res.ok)
+      return { recent: [], pipelineCents: 0, pipelineCount: 0, decided: 0, awarded: 0 };
     const json = (await res.json()) as {
       estimates: PricedEstimateSummaryLite[];
     };
@@ -119,9 +123,21 @@ async function fetchEstimatesPipeline(): Promise<{
       (sum, e) => sum + (typeof e.bidTotalCents === 'number' ? e.bidTotalCents : 0),
       0,
     );
-    return { recent, pipelineCents, pipelineCount: all.length };
+    let awarded = 0;
+    let lost = 0;
+    for (const e of all) {
+      if (e.bidStatus === 'awarded') awarded++;
+      else if (e.bidStatus === 'lost') lost++;
+    }
+    return {
+      recent,
+      pipelineCents,
+      pipelineCount: all.length,
+      decided: awarded + lost,
+      awarded,
+    };
   } catch {
-    return { recent: [], pipelineCents: 0, pipelineCount: 0 };
+    return { recent: [], pipelineCents: 0, pipelineCount: 0, decided: 0, awarded: 0 };
   }
 }
 
@@ -384,14 +400,27 @@ export default async function DashboardPage() {
 
       {/* BID PIPELINE — sum of bid totals across all priced estimates. */}
       {pipelineData.pipelineCount > 0 && (
-        <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-yge-blue-200 bg-yge-blue-50 px-3 py-1 text-xs font-medium text-yge-blue-700">
-          <span className="uppercase tracking-wide opacity-70">Bid pipeline</span>
-          <span className="font-mono font-semibold">
-            <Money cents={pipelineData.pipelineCents} />
+        <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
+          <span className="inline-flex items-center gap-2 rounded-full border border-yge-blue-200 bg-yge-blue-50 px-3 py-1 font-medium text-yge-blue-700">
+            <span className="uppercase tracking-wide opacity-70">Bid pipeline</span>
+            <span className="font-mono font-semibold">
+              <Money cents={pipelineData.pipelineCents} />
+            </span>
+            <span className="opacity-70">
+              · {pipelineData.pipelineCount} estimate{pipelineData.pipelineCount === 1 ? '' : 's'}
+            </span>
           </span>
-          <span className="opacity-70">
-            · {pipelineData.pipelineCount} estimate{pipelineData.pipelineCount === 1 ? '' : 's'}
-          </span>
+          {pipelineData.decided > 0 && (
+            <span className="inline-flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-3 py-1 font-medium text-green-800">
+              <span className="uppercase tracking-wide opacity-70">Win rate</span>
+              <span className="font-mono font-semibold">
+                {Math.round((pipelineData.awarded / pipelineData.decided) * 100)}%
+              </span>
+              <span className="opacity-70">
+                · {pipelineData.awarded} of {pipelineData.decided}
+              </span>
+            </span>
+          )}
         </div>
       )}
 
