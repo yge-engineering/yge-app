@@ -49,6 +49,41 @@ function apiBaseUrl(): string {
 /** Tracks whether ANY fetch in the page failed at the network level. */
 let apiUnreachable = false;
 
+/** Lightweight pull of /health/integrations to surface AP-inbox
+ *  freshness on the dashboard. Kept tolerant of failures so the
+ *  rest of the dashboard renders even if the health probe times
+ *  out. */
+async function fetchApInboxStatus(): Promise<{
+  status: 'ok' | 'degraded';
+  ageMs?: number;
+  lastFinishedAt?: string;
+  reason?: string;
+}> {
+  try {
+    const res = await fetch(`${apiBaseUrl()}/health/integrations`, {
+      cache: 'no-store',
+    });
+    if (!res.ok) return { status: 'degraded' };
+    const json = (await res.json()) as {
+      apInbox?: {
+        status?: 'ok' | 'degraded';
+        ageMs?: number;
+        lastFinishedAt?: string;
+        reason?: string;
+      };
+    };
+    const a = json.apInbox;
+    return {
+      status: a?.status === 'ok' ? 'ok' : 'degraded',
+      ageMs: a?.ageMs,
+      lastFinishedAt: a?.lastFinishedAt,
+      reason: a?.reason,
+    };
+  } catch {
+    return { status: 'degraded' };
+  }
+}
+
 async function fetchMasterProfile(): Promise<MasterProfile | null> {
   try {
     const res = await fetch(`${apiBaseUrl()}/api/master-profile`, {
@@ -117,6 +152,7 @@ export default async function DashboardPage() {
     fetchJson<SwpppInspection>('/api/swppp-inspections', 'inspections'),
     fetchMasterProfile(),
   ]);
+  const apInboxStatus = await fetchApInboxStatus();
 
   const arRollup = computeArRollup(arInvoices);
   const arPaymentRollup = computeArPaymentRollup(arPayments);
@@ -276,6 +312,14 @@ export default async function DashboardPage() {
           ok={t('dashboard.compliance.dispatchConflicts.ok')}
         />
       </div>
+
+      {/* AP INBOX FRESHNESS — last-poll age. Blank when unknown so
+          we don't shout at first boot before the scheduler ticks. */}
+      {(apInboxStatus.lastFinishedAt || apInboxStatus.reason) && (
+        <div className="mb-6">
+          <ApInboxFreshnessTile status={apInboxStatus} />
+        </div>
+      )}
 
       {/* AP NEEDS REVIEW — auto-poll DRAFT rows waiting for human pass */}
       {apNeedsReview > 0 && (
@@ -524,6 +568,69 @@ function QuickAction({ href, label, sub }: { href: string; label: string; sub: s
     >
       <div className="text-sm font-semibold text-gray-900">{label}</div>
       <div className="mt-0.5 text-xs text-gray-500">{sub}</div>
+    </Link>
+  );
+}
+
+// AP-inbox freshness tile. Reads the apInbox subobject from
+// /health/integrations and surfaces age + status in a single
+// glance-friendly tile. Green if last poll under 30 minutes ago,
+// amber under 90, red over 90 (or never). Clicking jumps to AP
+// invoices DRAFT view where ingested invoices land.
+function ApInboxFreshnessTile({
+  status,
+}: {
+  status: {
+    status: 'ok' | 'degraded';
+    ageMs?: number;
+    lastFinishedAt?: string;
+    reason?: string;
+  };
+}) {
+  const ageMs = status.ageMs ?? Number.POSITIVE_INFINITY;
+  const minutes = Math.round(ageMs / 60_000);
+  const tone =
+    status.status === 'ok' && ageMs <= 30 * 60_000
+      ? 'border-green-300 bg-green-50 text-green-900'
+      : ageMs <= 90 * 60_000
+        ? 'border-amber-300 bg-amber-50 text-amber-900'
+        : 'border-red-300 bg-red-50 text-red-900';
+  const label =
+    status.lastFinishedAt && Number.isFinite(ageMs)
+      ? minutes < 1
+        ? 'Just now'
+        : minutes < 60
+          ? `${minutes} min ago`
+          : `${Math.round(minutes / 60)} hr ago`
+      : 'No poll yet';
+  return (
+    <Link
+      href="/ap-invoices?status=DRAFT"
+      className={`block rounded-lg border px-4 py-3 shadow-sm hover:opacity-90 ${tone}`}
+    >
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide opacity-80">
+            AP inbox auto-poll
+          </div>
+          <div className="mt-0.5 text-base font-semibold">
+            Last poll: {label}
+          </div>
+          {status.reason && (
+            <div className="mt-0.5 text-[11px] opacity-80">{status.reason}</div>
+          )}
+        </div>
+        <div className="text-right text-[11px] opacity-70">
+          {status.lastFinishedAt
+            ? new Date(status.lastFinishedAt).toLocaleString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
+              })
+            : ''}
+        </div>
+      </div>
     </Link>
   );
 }
