@@ -166,6 +166,9 @@ export default async function DraftsPage() {
                       >
                         {d.projectName}
                       </Link>
+                      <span className="ml-2 inline-block rounded-full border border-purple-200 bg-purple-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-purple-700">
+                        🤖 AI
+                      </span>
                     </div>
                     {d.ownerAgency && (
                       <div className="text-xs text-gray-500">{d.ownerAgency}</div>
