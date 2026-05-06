@@ -446,8 +446,14 @@ export default async function EstimatesPage() {
       )}
 
       {!fetchError && estimates.length === 0 && (
-        <div className="mt-6 rounded border border-gray-200 bg-gray-50 p-6 text-sm text-gray-600">
-          {t('estimates.empty.no_estimates')}
+        <div className="mt-6 rounded-lg border border-dashed border-gray-300 bg-gray-50 p-10 text-center">
+          <p className="text-sm text-gray-700">{t('estimates.empty.no_estimates')}</p>
+          <Link
+            href="/plans-to-estimate"
+            className="mt-4 inline-block rounded-md bg-yge-blue-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-yge-blue-700"
+          >
+            + Start AI draft
+          </Link>
         </div>
       )}
 
