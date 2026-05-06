@@ -216,7 +216,14 @@ export default async function JobsPage({ searchParams }: PageProps) {
               {filteredJobs.map((j) => (
                 <tr key={j.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3">
-                    <div className="font-medium text-gray-900">{j.projectName}</div>
+                    <div className="font-medium">
+                      <Link
+                        href={`/jobs/${j.id}`}
+                        className="text-gray-900 hover:text-yge-blue-700 hover:underline"
+                      >
+                        {j.projectName}
+                      </Link>
+                    </div>
                     {j.ownerAgency && (
                       <div className="text-xs text-gray-500">{j.ownerAgency}</div>
                     )}
@@ -252,7 +259,7 @@ export default async function JobsPage({ searchParams }: PageProps) {
                   <td className="px-4 py-3 text-right">
                     <Link
                       href={`/jobs/${j.id}`}
-                      className="text-yge-blue-500 hover:underline"
+                      className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50"
                     >
                       {t('jobs.open')}
                     </Link>
