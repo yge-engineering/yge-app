@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { Alert, AppShell, Money } from '../../components';
 import { JobsSearchInput } from '../../components/jobs-search-input';
 import { JobsCreatedFilter } from '../../components/jobs-created-filter';
+import { EstimatesSortHeaders } from '../../components/estimates-sort-headers';
 import { getLocale, getTranslator } from '../../lib/locale';
 import { getCurrentUser } from '../../lib/auth';
 import {
@@ -281,16 +282,26 @@ export default async function JobsPage({ searchParams }: PageProps) {
             <JobsSearchInput targetId="jobs-table" totalCount={filteredJobs.length} />
             <JobsCreatedFilter targetId="jobs-table" />
           </div>
+          <EstimatesSortHeaders targetId="jobs-table" />
           <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
           <table id="jobs-table" className="w-full text-left text-sm">
             <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
               <tr>
-                <th className="px-4 py-2">{t('jobs.col.project')}</th>
+                <th data-sort-key="name" className="select-none px-4 py-2 hover:bg-gray-100">
+                  {t('jobs.col.project')}
+                  <span className="sort-arrow" />
+                </th>
                 <th className="px-4 py-2">{t('jobs.col.status')}</th>
                 <th className="px-4 py-2">{t('jobs.col.type')}</th>
                 <th className="px-4 py-2">{t('jobs.col.contract')}</th>
-                <th className="px-4 py-2">{t('jobs.col.due')}</th>
-                <th className="px-4 py-2">{t('jobs.col.engineerEstimate')}</th>
+                <th data-sort-key="due" className="select-none px-4 py-2 hover:bg-gray-100">
+                  {t('jobs.col.due')}
+                  <span className="sort-arrow" />
+                </th>
+                <th data-sort-key="cents" className="select-none px-4 py-2 hover:bg-gray-100">
+                  {t('jobs.col.engineerEstimate')}
+                  <span className="sort-arrow" />
+                </th>
                 <th className="px-4 py-2"></th>
               </tr>
             </thead>
@@ -300,6 +311,9 @@ export default async function JobsPage({ searchParams }: PageProps) {
                   key={j.id}
                   data-search={`${j.projectName} ${j.ownerAgency ?? ''} ${j.location ?? ''}`}
                   data-created={j.createdAt}
+                  data-sort-name={j.projectName.toLowerCase()}
+                  data-sort-due={j.bidDueDate ?? ''}
+                  data-sort-cents={j.engineersEstimateCents ?? 0}
                   className="hover:bg-gray-50"
                 >
                   <td className="px-4 py-3">
