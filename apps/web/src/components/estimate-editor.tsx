@@ -12,9 +12,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslator, type Translator } from '../lib/use-translator';
 import {
+  buildupUnitPriceCents,
   computeEstimateTotals,
   formatUSD,
   pricedEstimateToCsv,
+  type CostBuildup,
   type PricedEstimate,
   type PricedEstimateTotals,
   type PtoEItemConfidence,
@@ -24,6 +26,7 @@ import { SubBidEditor } from './sub-bid-editor';
 import { BidSecurityEditor } from './bid-security-editor';
 import { AddendumEditor } from './addendum-editor';
 import { BidChecklistBanner } from './bid-checklist-banner';
+import { CostBuildupDrawer } from './cost-buildup-drawer';
 
 interface Props {
   initialEstimate: PricedEstimate;
@@ -44,6 +47,10 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
   // between rows). Length tracks bidItems on every render via the
   // data-row-idx prop on each input.
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
+
+  // Crew-buildup drawer state. Index of the row whose buildup is open,
+  // or null if no drawer.
+  const [buildupRowIdx, setBuildupRowIdx] = useState<number | null>(null);
 
   // Cell-level undo stack. Each entry captures the row index and the
   // old unit price in cents so ⌘Z (Cmd/Ctrl-Z) reverts the most recent
@@ -128,6 +135,41 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
     const entry = popUndo();
     if (!entry) return;
     applyPriceChange(entry.itemIndex, entry.oldCents, { skipUndo: true });
+  }
+
+  // Save just the costBuildup of one row. Updates locally then fires
+  // a PATCH with the whole bidItems array (the existing endpoint's
+  // shape) — small enough not to matter, atomic at the file level.
+  async function applyBuildupChange(itemIndex: number, buildup: CostBuildup) {
+    const existing = estimate.bidItems[itemIndex];
+    if (!existing) return;
+    const next = {
+      ...estimate,
+      bidItems: estimate.bidItems.map((it, idx) =>
+        idx === itemIndex ? { ...it, costBuildup: buildup } : it,
+      ),
+    };
+    setEstimate(next);
+    recomputeLocal(next);
+    try {
+      const res = await fetch(
+        `${apiBaseUrl}/api/priced-estimates/${estimate.id}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bidItems: next.bidItems }),
+        },
+      );
+      if (!res.ok) throw new Error(t('estEditor.errSaveStatus', { status: res.status }));
+      const json = (await res.json()) as {
+        estimate: PricedEstimate;
+        totals: PricedEstimateTotals;
+      };
+      setEstimate(json.estimate);
+      setTotals(json.totals);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('estEditor.errFallback'));
+    }
   }
 
   async function pushLineUpdate(itemIndex: number, unitPriceCents: number | null) {
@@ -305,6 +347,7 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
                   onAdvance={(direction) => focusRow(i, direction)}
                   onUndo={handleUndo}
                   onMultiLinePaste={(raw) => applyMultiLinePaste(i, raw)}
+                  onOpenBuildup={() => setBuildupRowIdx(i)}
                 />
               ))}
             </tbody>
@@ -394,6 +437,17 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
           setEstimate((prev) => ({ ...prev, subBids: subs }));
         }}
       />
+
+      {/* Crew buildup drawer overlay. Mounted only when a row is open
+          so unmount fires the buildup component's cleanup on close. */}
+      {buildupRowIdx !== null && estimate.bidItems[buildupRowIdx] && (
+        <CostBuildupDrawer
+          item={estimate.bidItems[buildupRowIdx]!}
+          onClose={() => setBuildupRowIdx(null)}
+          onSave={(b) => applyBuildupChange(buildupRowIdx, b)}
+          onApplyUnitPrice={(c) => applyPriceChange(buildupRowIdx, c)}
+        />
+      )}
     </div>
   );
 }
@@ -445,6 +499,7 @@ function BidItemRow({
   onAdvance,
   onUndo,
   onMultiLinePaste,
+  onOpenBuildup,
   t,
 }: {
   index: number;
@@ -460,6 +515,8 @@ function BidItemRow({
   onUndo: () => void;
   /** Paste-from-Excel splat. Returns the number of rows that absorbed the paste. */
   onMultiLinePaste: (raw: string) => number;
+  /** Open the crew-buildup drawer for this row. */
+  onOpenBuildup: () => void;
   t: Translator;
 }) {
   // totalRows is only consumed as documentation right now; surfaced
@@ -506,13 +563,41 @@ function BidItemRow({
     <tr className={item.unitPriceCents == null ? 'bg-yellow-50/40' : ''}>
       <td className="px-3 py-2 align-top text-xs text-gray-500">{item.itemNumber}</td>
       <td className="px-3 py-2 align-top">
-        <div className="text-sm text-gray-900">{item.description}</div>
+        <div className="flex items-start justify-between gap-2">
+          <div className="text-sm text-gray-900">{item.description}</div>
+          <button
+            type="button"
+            onClick={onOpenBuildup}
+            title="Open crew buildup for this line"
+            className={`shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-medium ${
+              item.costBuildup
+                ? 'border-yge-blue-500 text-yge-blue-700 hover:bg-yge-blue-50'
+                : 'border-gray-300 text-gray-500 hover:border-yge-blue-500 hover:text-yge-blue-700'
+            }`}
+          >
+            {item.costBuildup ? '📊 Buildup' : '+ Buildup'}
+          </button>
+        </div>
         {item.pageReference && (
           <div className="text-xs text-gray-500">{item.pageReference}</div>
         )}
         {item.notes && (
           <div className="mt-0.5 text-xs italic text-gray-500">{item.notes}</div>
         )}
+        {item.costBuildup &&
+          (() => {
+            const calc = buildupUnitPriceCents(item.costBuildup, item.quantity);
+            if (calc == null) return null;
+            return (
+              <div className="mt-1 text-[11px] text-gray-500">
+                Calculated:{' '}
+                <span className="font-mono text-yge-blue-700">
+                  {formatUSD(calc)}
+                </span>{' '}
+                / {item.unit}
+              </div>
+            );
+          })()}
       </td>
       <td className="px-3 py-2 text-right align-top font-mono text-sm text-gray-700">
         {item.quantity.toLocaleString()}

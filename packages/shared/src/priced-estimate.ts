@@ -20,10 +20,72 @@ import { SubBidSchema } from './sub-bid';
 import { BidSecuritySchema } from './bid-security';
 import { AddendumSchema } from './addendum';
 
+/** Crew-buildup line — labor, equipment, or material — that, when
+ *  multiplied out across a bid item's quantity, justifies the unit
+ *  price. Phase 1 keeps each list flat; per-line buildup nests under
+ *  the bid item itself in `PricedBidItem.costBuildup`. */
+export const CostBuildupLaborSchema = z.object({
+  id: z.string().min(1).max(60),
+  /** DIR / CSLB classification or plain text (e.g. "Operator
+   *  Group 4", "Laborer", "Foreman"). */
+  classification: z.string().max(120).default(''),
+  /** Crew size. Fractional allowed for utility/sharing setups. */
+  crewSize: z.number().nonnegative().default(0),
+  /** Hours per unit if `perUnit` is true; otherwise total hours. */
+  hours: z.number().nonnegative().default(0),
+  /** Base hourly rate in cents. Excludes fringes — those go below. */
+  hourlyRateCents: z.number().int().nonnegative().default(0),
+  /** Per-hour fringes (health, retirement, training, etc.) in cents.
+   *  CA prevailing-wage jobs typically split base + fringes. */
+  fringeRateCents: z.number().int().nonnegative().default(0),
+  /** True = hours and crewSize are per quantity unit (the whole line
+   *  scales with `quantity` × `crewSize` × `hours`). False = lump
+   *  sum (whole-line crewSize × hours regardless of quantity). */
+  perUnit: z.boolean().default(false),
+});
+export type CostBuildupLabor = z.infer<typeof CostBuildupLaborSchema>;
+
+export const CostBuildupEquipmentSchema = z.object({
+  id: z.string().min(1).max(60),
+  name: z.string().max(120).default(''),
+  hours: z.number().nonnegative().default(0),
+  hourlyRateCents: z.number().int().nonnegative().default(0),
+  perUnit: z.boolean().default(false),
+});
+export type CostBuildupEquipment = z.infer<typeof CostBuildupEquipmentSchema>;
+
+export const CostBuildupMaterialSchema = z.object({
+  id: z.string().min(1).max(60),
+  name: z.string().max(120).default(''),
+  /** Material quantity. perUnit=true → per quantity unit; false →
+   *  lump sum for the whole line. */
+  quantity: z.number().nonnegative().default(0),
+  unitCostCents: z.number().int().nonnegative().default(0),
+  perUnit: z.boolean().default(false),
+});
+export type CostBuildupMaterial = z.infer<typeof CostBuildupMaterialSchema>;
+
+export const CostBuildupSchema = z.object({
+  labor: z.array(CostBuildupLaborSchema).default([]),
+  equipment: z.array(CostBuildupEquipmentSchema).default([]),
+  materials: z.array(CostBuildupMaterialSchema).default([]),
+  /** A flat sub-bid amount, e.g. when this line is fully subbed out
+   *  and we just need the dollar number on the buildup. */
+  subLumpSumCents: z.number().int().nonnegative().optional(),
+  /** Free-form notes — assumptions, productivity reasoning, etc. */
+  notes: z.string().max(500).optional(),
+});
+export type CostBuildup = z.infer<typeof CostBuildupSchema>;
+
 /** A bid item with the estimator's unit price layered on. */
 export const PricedBidItemSchema = PtoEBidItemSchema.extend({
   /** Cents per `unit`. null means the estimator hasn't priced it yet. */
   unitPriceCents: z.number().int().nonnegative().nullable(),
+  /** Optional crew buildup. When present the editor surfaces a
+   *  computed "calculated unit price" alongside the manual one and
+   *  lets the estimator promote it. Older estimate files parse fine
+   *  because the field is optional. */
+  costBuildup: CostBuildupSchema.optional(),
 });
 export type PricedBidItem = z.infer<typeof PricedBidItemSchema>;
 
@@ -141,4 +203,42 @@ export function computeEstimateTotals(est: PricedEstimate): PricedEstimateTotals
 /** Build a fresh PricedEstimate from a saved draft's bid items. */
 export function blankPricedItemsFromDraft(items: PtoEBidItem[]): PricedBidItem[] {
   return items.map((it) => ({ ...it, unitPriceCents: null }));
+}
+
+// ---- Crew buildup math --------------------------------------------------
+
+/**
+ * Total cost in cents for a single buildup, applied across the bid
+ * item's `quantity`. Each labor/equipment/material line carries a
+ * `perUnit` flag — if true, the cost scales with quantity (typical
+ * for productivity-driven lines like "labor: 0.5 hr/CY"). If false,
+ * it's a lump sum applied once for the whole bid item.
+ */
+export function totalBuildupCents(b: CostBuildup, quantity: number): Cents {
+  let total = 0;
+  for (const l of b.labor) {
+    const perHour = l.hourlyRateCents + l.fringeRateCents;
+    const hours = l.perUnit ? l.crewSize * l.hours * quantity : l.crewSize * l.hours;
+    total += Math.round(hours * perHour);
+  }
+  for (const e of b.equipment) {
+    const hours = e.perUnit ? e.hours * quantity : e.hours;
+    total += Math.round(hours * e.hourlyRateCents);
+  }
+  for (const m of b.materials) {
+    const qty = m.perUnit ? m.quantity * quantity : m.quantity;
+    total += Math.round(qty * m.unitCostCents);
+  }
+  if (b.subLumpSumCents) total += b.subLumpSumCents;
+  return total;
+}
+
+/** Calculated unit price = total buildup ÷ bid quantity. Null if
+ *  quantity is 0 or negative (avoids divide-by-zero). */
+export function buildupUnitPriceCents(
+  b: CostBuildup,
+  quantity: number,
+): Cents | null {
+  if (quantity <= 0) return null;
+  return Math.round(totalBuildupCents(b, quantity) / quantity);
 }
