@@ -13,6 +13,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { EstimatesStackParamList } from '../../App';
 import { getJson } from '../lib/api';
+import { ErrorCard } from '../components/error-card';
 
 interface EstimateLite {
   id: string;
@@ -126,11 +127,7 @@ export default function EstimatesScreen() {
         </View>
       )}
 
-      {error && (
-        <View style={[styles.card, { borderColor: '#fecaca', backgroundColor: '#fef2f2' }]}>
-          <Text style={{ color: '#991b1b', fontSize: 14 }}>⚠ {error}</Text>
-        </View>
-      )}
+      {error && <ErrorCard message={error} onRetry={() => { setLoading(true); void load(); }} />}
 
       {filtered.map((e) => {
         const status = e.bidStatus ?? 'pursuing';

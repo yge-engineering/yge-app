@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import { getJson } from '../lib/api';
+import { ErrorCard } from '../components/error-card';
 
 interface DispatchRow {
   id: string;
@@ -82,11 +83,7 @@ export default function TodayScreen() {
         </View>
       )}
 
-      {error && (
-        <View style={[styles.card, { borderColor: '#fecaca', backgroundColor: '#fef2f2' }]}>
-          <Text style={{ color: '#991b1b', fontSize: 14 }}>⚠ {error}</Text>
-        </View>
-      )}
+      {error && <ErrorCard message={error} onRetry={() => { setLoading(true); void load(); }} />}
 
       {!loading && items.length === 0 && !error && (
         <View style={[styles.card, { borderColor: '#e5e7eb' }]}>

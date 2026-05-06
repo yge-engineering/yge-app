@@ -12,6 +12,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { JobsStackParamList } from '../../App';
 import { getJson } from '../lib/api';
+import { ErrorCard } from '../components/error-card';
 
 interface JobLite {
   id: string;
@@ -116,11 +117,7 @@ export default function JobsScreen() {
         </View>
       )}
 
-      {error && (
-        <View style={[styles.card, { borderColor: '#fecaca', backgroundColor: '#fef2f2' }]}>
-          <Text style={{ color: '#991b1b', fontSize: 14 }}>⚠ {error}</Text>
-        </View>
-      )}
+      {error && <ErrorCard message={error} onRetry={() => { setLoading(true); void load(); }} />}
 
       {active.map((j) => {
         const tone = STATUS_TONE[j.status] ?? STATUS_TONE['PROSPECT']!;

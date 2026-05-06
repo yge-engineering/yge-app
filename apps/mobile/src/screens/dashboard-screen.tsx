@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import { getJson } from '../lib/api';
+import { ErrorCard } from '../components/error-card';
 import { useTranslator } from '../lib/use-translator';
 
 interface EstimateLite {
@@ -116,14 +117,7 @@ export default function DashboardScreen() {
         </View>
       )}
 
-      {error && (
-        <View style={[styles.card, { borderColor: '#fecaca', backgroundColor: '#fef2f2' }]}>
-          <Text style={{ color: '#991b1b', fontSize: 14 }}>⚠ {error}</Text>
-          <Text style={{ color: '#991b1b', fontSize: 12, marginTop: 4 }}>
-            Make sure the API is running and reachable from this device.
-          </Text>
-        </View>
-      )}
+      {error && <ErrorCard message={error} onRetry={() => { setLoading(true); void load(); }} />}
 
       {!loading && estimates.length > 0 && (
         <>
