@@ -272,6 +272,7 @@ export default async function EstimatesPage() {
     fetchError = err instanceof Error ? err.message : 'Unknown error';
   }
   estimates = sortByUrgency(estimates);
+  const totalPipelineCents = estimates.reduce((sum, e) => sum + (e.bidTotalCents ?? 0), 0);
   const dueCounts = countDueBuckets(estimates);
   const statusCounts: Record<'pursuing' | 'submitted' | 'awarded' | 'lost', number> = {
     pursuing: 0,
@@ -307,6 +308,13 @@ export default async function EstimatesPage() {
               <>
                 <span className="font-semibold text-gray-900">{estimates.length}</span>
                 {' '}estimate{estimates.length === 1 ? '' : 's'}
+                {totalPipelineCents > 0 && (
+                  <>
+                    {' '}· <span className="font-mono font-semibold text-gray-900">
+                      <Money cents={totalPipelineCents} />
+                    </span> total
+                  </>
+                )}
                 {(['pursuing', 'submitted', 'awarded', 'lost'] as const).map((k) =>
                   statusCounts[k] > 0 ? (
                     <span key={k}>
