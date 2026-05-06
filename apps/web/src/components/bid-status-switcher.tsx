@@ -76,6 +76,15 @@ export function BidStatusSwitcher({
 
   async function update(next: BidStatus) {
     if (next === value) return;
+
+    // Confirm 'awarded' since it auto-promotes the job to AWARDED.
+    if (next === 'awarded') {
+      const ok = window.confirm(
+        'Mark this bid as Awarded?\n\nThis will also flip the linked job to AWARDED.',
+      );
+      if (!ok) return;
+    }
+
     setBusy(next);
     setError(null);
 
