@@ -146,6 +146,12 @@ export const PricedEstimateSchema = z.object({
    *   - 'lost'    — agency awarded to someone else.
    *   - undefined  — pre-feature estimates default to 'pursuing' for display. */
   bidStatus: z.enum(['pursuing', 'submitted', 'awarded', 'lost']).optional(),
+  /** ISO timestamp of when the estimator first marked the bid as
+   *  'submitted'. Written server-side once on the first transition
+   *  and never auto-overwritten thereafter (you can clear it via
+   *  PATCH if you marked submitted by accident). Older estimates
+   *  pre-feature simply lack this field. */
+  bidSubmittedAt: z.string().optional(),
 
   /** Markup stack — flat percentages applied on top of direct cost
    *  before O&P. Heavy-civil bids typically split these out so the

@@ -249,10 +249,24 @@ export async function updateEstimate(
   const existing = await getEstimate(id);
   if (!existing) return null;
 
+  // Auto-stamp bidSubmittedAt the first time the bid flips to 'submitted'.
+  // Estimator can still override or clear via the bidSubmittedAt patch field.
+  const flippingToSubmitted =
+    patch.bidStatus === 'submitted' && existing.bidStatus !== 'submitted';
+  const autoSubmittedAt = flippingToSubmitted && !existing.bidSubmittedAt
+    ? new Date().toISOString()
+    : undefined;
+
   const updated: PricedEstimate = {
     ...existing,
     ...(patch.oppPercent != null ? { oppPercent: patch.oppPercent } : {}),
     ...(patch.notes !== undefined ? { notes: patch.notes } : {}),
+    ...(patch.bidStatus ? { bidStatus: patch.bidStatus } : {}),
+    ...(patch.bidSubmittedAt !== undefined
+      ? { bidSubmittedAt: patch.bidSubmittedAt ?? undefined }
+      : autoSubmittedAt
+        ? { bidSubmittedAt: autoSubmittedAt }
+        : {}),
     ...(patch.bidItems ? { bidItems: patch.bidItems } : {}),
     ...(patch.subBids ? { subBids: patch.subBids } : {}),
     ...(patch.bidSecurity !== undefined
