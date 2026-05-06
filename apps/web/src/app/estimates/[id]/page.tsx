@@ -17,6 +17,7 @@ import type { PricedEstimate, PricedEstimateTotals } from '@yge/shared';
 import { EstimateEditor } from '@/components/estimate-editor';
 import { BidDueBanner } from '@/components/bid-due-banner';
 import { CopyEstimateLink } from '@/components/copy-estimate-link';
+import { relativeTime } from '@/lib/relative-time';
 import { CopyBidSummaryButton } from '@/components/copy-bid-summary-button';
 import { BidStatusSwitcher } from '@/components/bid-status-switcher';
 import { getTranslator } from '../../../lib/locale';
@@ -62,6 +63,12 @@ export default async function EstimateDetailPage({
           {t('estPg.back')}
         </Link>
         <div className="flex items-center gap-3 text-sm">
+          <span
+            className="text-xs text-gray-500"
+            title={data.estimate.updatedAt}
+          >
+            Last edit {relativeTime(data.estimate.updatedAt)}
+          </span>
           <Link
             href={`/jobs/${data.estimate.jobId}`}
             className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50"
