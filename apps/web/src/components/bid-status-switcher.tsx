@@ -142,7 +142,9 @@ export function BidStatusSwitcher({
             className={`rounded-full border px-2 py-0.5 font-medium transition ${
               active
                 ? `${opt.tone} ring-1 ring-offset-1`
-                : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50'
+                : value === 'pursuing' && (opt.value === 'awarded' || opt.value === 'lost')
+                  ? 'border-gray-200 bg-white text-gray-400 hover:bg-gray-50'
+                  : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50'
             } disabled:opacity-60`}
             title={opt.description}
           >
