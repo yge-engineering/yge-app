@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -70,6 +71,7 @@ export default function EstimateDetailScreen({ route }: { route: { params: { id:
   const [savingStatus, setSavingStatus] = useState<BidStatus | null>(null);
   const [notesOpen, setNotesOpen] = useState(false);
   const [lineQuery, setLineQuery] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
 
   async function load() {
     try {
@@ -137,7 +139,19 @@ export default function EstimateDetailScreen({ route }: { route: { params: { id:
   const unpriced = e.bidItems.filter((i) => i.unitPriceCents == null).length;
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: '#f8fafc' }} contentContainerStyle={{ padding: 16, maxWidth: 720, width: '100%', alignSelf: 'center' }}>
+    <ScrollView
+      style={{ flex: 1, backgroundColor: '#f8fafc' }}
+      contentContainerStyle={{ padding: 16, maxWidth: 720, width: '100%', alignSelf: 'center' }}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={() => {
+            setRefreshing(true);
+            void load().finally(() => setRefreshing(false));
+          }}
+        />
+      }
+    >
       <Text style={styles.h1}>{e.projectName}</Text>
       {e.ownerAgency && <Text style={styles.sub}>{e.ownerAgency}</Text>}
 

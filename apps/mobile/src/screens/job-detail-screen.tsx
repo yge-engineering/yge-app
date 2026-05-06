@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -39,6 +40,7 @@ export default function JobDetailScreen({ route }: { route: { params: { id: stri
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [notesOpen, setNotesOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   async function load() {
     try {
@@ -71,7 +73,19 @@ export default function JobDetailScreen({ route }: { route: { params: { id: stri
   }
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: '#f8fafc' }} contentContainerStyle={{ padding: 16, maxWidth: 720, width: '100%', alignSelf: 'center' }}>
+    <ScrollView
+      style={{ flex: 1, backgroundColor: '#f8fafc' }}
+      contentContainerStyle={{ padding: 16, maxWidth: 720, width: '100%', alignSelf: 'center' }}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={() => {
+            setRefreshing(true);
+            void load().finally(() => setRefreshing(false));
+          }}
+        />
+      }
+    >
       <Text style={styles.h1}>{job.projectName}</Text>
       <Text style={styles.sub}>
         {job.contractType ?? ''}
