@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { getJson } from '../lib/api';
 import { cacheGet, cacheSet } from '../lib/cache';
+import { useIsTablet } from '../lib/use-is-tablet';
 import { ErrorCard } from '../components/error-card';
 import { useTranslator } from '../lib/use-translator';
 
@@ -48,6 +49,7 @@ function relativeTime(iso: string): string {
 }
 
 export default function DashboardScreen() {
+  const isTablet = useIsTablet();
   const { t } = useTranslator();
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
