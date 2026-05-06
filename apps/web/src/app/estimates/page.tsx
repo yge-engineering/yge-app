@@ -86,6 +86,35 @@ async function fetchImported(): Promise<ImportedEstimateSummary[]> {
   }
 }
 
+function urgencyKey(iso: string | undefined, now: number): number {
+  // Smaller key = more urgent. Buckets the rows so:
+  //   - overdue (negative deltas) sort top, most-overdue first
+  //   - upcoming sort next, soonest first
+  //   - missing due-date sort last
+  if (!iso) return Number.POSITIVE_INFINITY;
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return Number.POSITIVE_INFINITY;
+  const delta = t - now;
+  // Overdue: shift to a strictly-negative range so they always sort first.
+  // Use the raw delta (already negative) so most-overdue float to the top.
+  return delta;
+}
+
+function sortByUrgency<T extends { bidDueDate?: string; updatedAt: string }>(
+  rows: T[],
+): T[] {
+  const now = Date.now();
+  return [...rows].sort((a, b) => {
+    const ua = urgencyKey(a.bidDueDate, now);
+    const ub = urgencyKey(b.bidDueDate, now);
+    if (ua !== ub) return ua - ub;
+    // Tiebreaker: most-recently-updated first.
+    const ta = new Date(a.updatedAt).getTime();
+    const tb = new Date(b.updatedAt).getTime();
+    return tb - ta;
+  });
+}
+
 function formatWhen(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
@@ -128,6 +157,7 @@ export default async function EstimatesPage() {
   } catch (err) {
     fetchError = err instanceof Error ? err.message : 'Unknown error';
   }
+  estimates = sortByUrgency(estimates);
   const imported = await fetchImported();
   const t = getTranslator();
   const locale = coerceLocale(cookies().get('yge-locale')?.value);
