@@ -335,7 +335,7 @@ export default async function EstimatesPage() {
                   <th className="px-4 py-2">Client</th>
                   <th className="px-4 py-2">Rate</th>
                   <th className="px-4 py-2">Lines</th>
-                  <th data-sort-key="cents" className="select-none px-4 py-2 hover:bg-gray-100">
+                  <th data-sort-key="cents" className="select-none px-4 py-2 text-right hover:bg-gray-100">
                     Bid total
                     <span className="sort-arrow" />
                   </th>
@@ -373,7 +373,7 @@ export default async function EstimatesPage() {
                     <td className="px-4 py-3 text-xs text-gray-600">{e.client ?? '—'}</td>
                     <td className="px-4 py-3 text-xs text-gray-600">{e.rateType}</td>
                     <td className="px-4 py-3 text-gray-700">{e.lines.length}</td>
-                    <td className="px-4 py-3 font-medium text-gray-900">
+                    <td className="px-4 py-3 text-right font-mono font-medium tabular-nums text-gray-900">
                       <Money cents={e.bidPriceCents} />
                     </td>
                     <td className="px-4 py-3 text-xs text-gray-600">
@@ -442,7 +442,7 @@ export default async function EstimatesPage() {
                 <th className="hidden px-4 py-2 sm:table-cell">{t('estimates.col.lines')}</th>
                 <th className="hidden px-4 py-2 lg:table-cell">{t('estimates.col.subs')}</th>
                 <th className="hidden px-4 py-2 lg:table-cell">{t('estimates.col.addenda')}</th>
-                <th data-sort-key="cents" className="select-none px-4 py-2 hover:bg-gray-100">
+                <th data-sort-key="cents" className="select-none px-4 py-2 text-right hover:bg-gray-100">
                   {t('estimates.col.bidTotal')}
                   <span className="sort-arrow" />
                 </th>
@@ -541,7 +541,7 @@ export default async function EstimatesPage() {
                       <span className="text-gray-400">{t('estimates.addenda.none')}</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 font-medium text-gray-900">
+                  <td className="px-4 py-3 text-right font-mono font-medium tabular-nums text-gray-900">
                     {e.unpricedLineCount > 0 ? (
                       <span className="text-gray-500">
                         <Money cents={e.bidTotalCents} />{' '}
