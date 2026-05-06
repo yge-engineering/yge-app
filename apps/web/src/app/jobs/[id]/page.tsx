@@ -9,6 +9,7 @@ import { notFound } from 'next/navigation';
 import { AuditBinderPanel, Money } from '../../../components';
 import { relativeTime } from '../../../lib/relative-time';
 import { CopyIdChip } from '../../../components/copy-id-chip';
+import { DashboardRefreshButton } from '../../../components/dashboard-refresh-button';
 import { PinnedIndicator } from '../../../components/pinned-indicator';
 import { CopyMoneyButton } from '../../../components/copy-money-button';
 import { getTranslator } from '../../../lib/locale';
@@ -285,6 +286,7 @@ export default async function JobDetailPage({
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <DashboardRefreshButton />
           <PinnedIndicator storageKey="yge.jobs.pinnedIds" eventName="yge:jobs-pinned-changed" id={job.id} />
           <CopyIdChip id={job.id} label="job" />
           <span className="text-xs text-gray-500" title={job.updatedAt}>
