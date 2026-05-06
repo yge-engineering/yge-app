@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     marginBottom: 12,
   },
-  statsRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
+  statsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
   statCard: {
     flex: 1,
     padding: 12,
