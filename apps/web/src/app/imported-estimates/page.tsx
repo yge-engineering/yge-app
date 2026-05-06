@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { EstimatesSortHeaders } from '../../components/estimates-sort-headers';
 import { EstimatesSearchInput } from '../../components/estimates-search-input';
+import { CopyMoneyButton } from '../../components/copy-money-button';
 import type { ImportedEstimate } from '@yge/shared';
 
 import { AppShell, PageHeader } from '../../components';
@@ -95,7 +96,7 @@ export default async function ImportedEstimatesPage() {
                     <td className="px-3 py-2 text-xs">{e.rateType}</td>
                     <td className="px-3 py-2 text-right font-mono text-xs">{fmtMoney(e.directCostCents)}</td>
                     <td className="px-3 py-2 text-right font-mono text-xs">{fmtMoney(e.oppMarkupCents)}</td>
-                    <td className="px-3 py-2 text-right font-mono text-xs font-semibold">{fmtMoney(e.bidPriceCents)}</td>
+                    <td className="px-3 py-2 text-right font-mono text-xs font-semibold"><CopyMoneyButton cents={e.bidPriceCents}>{fmtMoney(e.bidPriceCents)}</CopyMoneyButton></td>
                     <td className="px-3 py-2 text-right text-xs text-gray-500">
                       {e.lines.length}
                     </td>
