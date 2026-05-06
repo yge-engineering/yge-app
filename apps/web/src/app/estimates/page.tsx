@@ -361,7 +361,10 @@ export default async function EstimatesPage() {
           <table id="estimates-table" className="w-full text-left text-sm">
             <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
               <tr>
-                <th className="px-4 py-2">{t('estimates.col.project')}</th>
+                <th data-sort-key="name" className="select-none px-4 py-2 hover:bg-gray-100">
+                  {t('estimates.col.project')}
+                  <span className="sort-arrow" />
+                </th>
                 <th className="hidden px-4 py-2 md:table-cell">{t('estimates.col.type')}</th>
                 <th className="hidden px-4 py-2 sm:table-cell">{t('estimates.col.lines')}</th>
                 <th className="hidden px-4 py-2 lg:table-cell">{t('estimates.col.subs')}</th>
@@ -385,6 +388,7 @@ export default async function EstimatesPage() {
                   data-cents={e.bidTotalCents}
                   data-sort-cents={e.bidTotalCents}
                   data-sort-updated={e.updatedAt}
+                  data-sort-name={e.projectName.toLowerCase()}
                   data-status={e.bidStatus ?? 'pursuing'}
                   className="hover:bg-gray-50"
                 >
