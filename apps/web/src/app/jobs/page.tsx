@@ -134,6 +134,25 @@ const FILTER_PRESETS: { labelKey: string; value: string; matches: (s: JobStatus)
   { labelKey: 'jobs.filter.archived', value: 'ARCHIVED', matches: (s) => s === 'ARCHIVED' },
 ];
 
+function sortJobsByUrgency(rows: Job[]): Job[] {
+  const now = Date.now();
+  return [...rows].sort((a, b) => {
+    const ka = jobUrgencyKey(a.bidDueDate, now);
+    const kb = jobUrgencyKey(b.bidDueDate, now);
+    if (ka !== kb) return ka - kb;
+    const ua = new Date(a.updatedAt).getTime();
+    const ub = new Date(b.updatedAt).getTime();
+    return ub - ua;
+  });
+}
+
+function jobUrgencyKey(iso: string | undefined, now: number): number {
+  if (!iso) return Number.POSITIVE_INFINITY;
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return Number.POSITIVE_INFINITY;
+  return t - now;
+}
+
 export default async function JobsPage({ searchParams }: PageProps) {
   const user = getCurrentUser();
   let jobs: Job[] = [];
@@ -162,6 +181,9 @@ export default async function JobsPage({ searchParams }: PageProps) {
 
   const filterValue = searchParams?.status ?? 'active';
   const preset = FILTER_PRESETS.find((p) => p.value === filterValue) ?? FILTER_PRESETS[1];
+  // Sort within the preset by bid-due urgency so the most-pressing rows
+  // float to the top regardless of which preset is selected.
+  jobs = sortJobsByUrgency(jobs);
   const filteredJobs = preset ? jobs.filter((j) => preset.matches(j.status)) : jobs;
   const t = getTranslator();
   const estimateStatsByJob: Record<string, { count: number; dueSoon: number }> = {};
