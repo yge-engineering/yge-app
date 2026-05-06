@@ -149,6 +149,25 @@ export default async function ProfilePage() {
           />
         </div>
 
+        <div className="mb-6">
+          <Card>
+            <h2 className="mb-2 text-sm font-semibold text-gray-900">
+              Face ID / Touch ID sign-in
+            </h2>
+            <p className="mb-3 text-xs text-gray-600">
+              Set up a passkey on this device so you can sign in without
+              typing your password. Each device needs its own passkey —
+              register one on each computer or phone you use.
+            </p>
+            <Link
+              href="/account/passkeys"
+              className="inline-block rounded-md border border-blue-700 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-50"
+            >
+              Set up Face ID / Touch ID →
+            </Link>
+          </Card>
+        </div>
+
         <Card>
           <h2 className="mb-3 text-sm font-semibold text-gray-900">{t('profile.companyInfo')}</h2>
           <p className="mb-3 text-xs text-gray-500">
