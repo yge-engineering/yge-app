@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import { getJson } from '../lib/api';
+import { cacheGet, cacheSet } from '../lib/cache';
 import { ErrorCard } from '../components/error-card';
 import { useTranslator } from '../lib/use-translator';
 
@@ -52,6 +53,7 @@ export default function DashboardScreen() {
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [estimates, setEstimates] = useState<EstimateLite[]>([]);
+  const [staleAgeMs, setStaleAgeMs] = useState<number | null>(null);
 
   async function load() {
     setError(null);
@@ -60,8 +62,18 @@ export default function DashboardScreen() {
         '/api/priced-estimates',
       );
       setEstimates(json.estimates ?? []);
+      setStaleAgeMs(null);
+      await cacheSet('cache.estimates', json.estimates ?? []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load');
+      // On network failure, fall back to cache.
+      const cached = await cacheGet<EstimateLite[]>('cache.estimates');
+      if (cached) {
+        setEstimates(cached.value);
+        setStaleAgeMs(cached.ageMs);
+        setError(null); // suppress error since we have data
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to load');
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -118,6 +130,14 @@ export default function DashboardScreen() {
       )}
 
       {error && <ErrorCard message={error} onRetry={() => { setLoading(true); void load(); }} />}
+
+      {staleAgeMs != null && (
+        <View style={styles.offlineBanner}>
+          <Text style={styles.offlineText}>
+            🔌 Offline · last sync {Math.max(1, Math.round(staleAgeMs / 60000))} min ago
+          </Text>
+        </View>
+      )}
 
       {!loading && estimates.length > 0 && (
         <>
@@ -242,4 +262,13 @@ const styles = StyleSheet.create({
   listTitle: { fontSize: 14, fontWeight: '600', color: '#0f172a' },
   listSub: { fontSize: 11, color: '#64748b', marginTop: 2 },
   listMoney: { fontSize: 14, fontFamily: 'Courier', color: '#0f172a', marginLeft: 8 },
+  offlineBanner: {
+    padding: 8,
+    borderRadius: 6,
+    backgroundColor: '#fef3c7',
+    borderWidth: 1,
+    borderColor: '#fcd34d',
+    marginBottom: 12,
+  },
+  offlineText: { color: '#92400e', fontSize: 12, fontWeight: '600', textAlign: 'center' },
 });
