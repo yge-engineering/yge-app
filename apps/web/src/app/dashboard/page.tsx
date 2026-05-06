@@ -84,6 +84,34 @@ async function fetchApInboxStatus(): Promise<{
   }
 }
 
+interface PricedEstimateSummaryLite {
+  id: string;
+  jobId: string;
+  projectName: string;
+  bidDueDate?: string;
+  bidTotalCents?: number;
+  unpricedLineCount?: number;
+  updatedAt: string;
+}
+
+/** Pull the 5 most-recent priced estimates for the dashboard tile. */
+async function fetchRecentEstimates(): Promise<PricedEstimateSummaryLite[]> {
+  try {
+    const res = await fetch(`${apiBaseUrl()}/api/priced-estimates`, {
+      cache: 'no-store',
+    });
+    if (!res.ok) return [];
+    const json = (await res.json()) as {
+      estimates: PricedEstimateSummaryLite[];
+    };
+    return [...json.estimates]
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+      .slice(0, 5);
+  } catch {
+    return [];
+  }
+}
+
 async function fetchMasterProfile(): Promise<MasterProfile | null> {
   try {
     const res = await fetch(`${apiBaseUrl()}/api/master-profile`, {
@@ -153,6 +181,7 @@ export default async function DashboardPage() {
     fetchMasterProfile(),
   ]);
   const apInboxStatus = await fetchApInboxStatus();
+  const recentEstimates = await fetchRecentEstimates();
 
   const arRollup = computeArRollup(arInvoices);
   const arPaymentRollup = computeArPaymentRollup(arPayments);
@@ -318,6 +347,13 @@ export default async function DashboardPage() {
       {(apInboxStatus.lastFinishedAt || apInboxStatus.reason) && (
         <div className="mb-6">
           <ApInboxFreshnessTile status={apInboxStatus} />
+        </div>
+      )}
+
+      {/* RECENT ESTIMATES — most-recently-edited bids. */}
+      {recentEstimates.length > 0 && (
+        <div className="mb-6">
+          <RecentEstimatesTile estimates={recentEstimates} />
         </div>
       )}
 
@@ -569,6 +605,62 @@ function QuickAction({ href, label, sub }: { href: string; label: string; sub: s
       <div className="text-sm font-semibold text-gray-900">{label}</div>
       <div className="mt-0.5 text-xs text-gray-500">{sub}</div>
     </Link>
+  );
+}
+
+// Recent estimates tile. The 5 most-recently-edited bids with
+// project name, bid total, due date, and an unpriced-line count
+// hint. Click any row to jump straight into the editor.
+function RecentEstimatesTile({
+  estimates,
+}: {
+  estimates: PricedEstimateSummaryLite[];
+}) {
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
+      <header className="flex items-center justify-between border-b border-gray-200 px-4 py-2">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+          Recent estimates
+        </h3>
+        <Link
+          href="/estimates"
+          className="text-xs text-yge-blue-500 hover:underline"
+        >
+          See all →
+        </Link>
+      </header>
+      <ul className="divide-y divide-gray-100 text-sm">
+        {estimates.map((e) => (
+          <li key={e.id}>
+            <Link
+              href={`/estimates/${e.id}`}
+              className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 hover:bg-gray-50"
+            >
+              <div className="min-w-0 flex-1">
+                <div className="truncate font-medium text-gray-900">
+                  {e.projectName}
+                </div>
+                <div className="text-[11px] text-gray-500">
+                  {e.bidDueDate ? `Due ${e.bidDueDate}` : 'No bid date'}
+                  {(e.unpricedLineCount ?? 0) > 0 ? (
+                    <span className="ml-2 text-amber-700">
+                      · {e.unpricedLineCount} unpriced
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+              <div className="text-right font-mono">
+                {typeof e.bidTotalCents === 'number' ? (
+                  <Money cents={e.bidTotalCents} />
+                ) : (
+                  <span className="text-gray-300">—</span>
+                )}
+              </div>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
