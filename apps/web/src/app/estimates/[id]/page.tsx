@@ -17,6 +17,7 @@ import type { PricedEstimate, PricedEstimateTotals } from '@yge/shared';
 import { EstimateEditor } from '@/components/estimate-editor';
 import { BidDueBanner } from '@/components/bid-due-banner';
 import { CopyEstimateLink } from '@/components/copy-estimate-link';
+import { CopyBidSummaryButton } from '@/components/copy-bid-summary-button';
 import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
@@ -125,6 +126,12 @@ export default async function EstimateDetailPage({
         >
           {t('estPg.addenda')}
         </Link>
+        <CopyBidSummaryButton
+          projectName={data.estimate.projectName}
+          bidTotalCents={data.totals.bidTotalCents}
+          bidItemCount={data.estimate.bidItems.length}
+          subBidCount={data.estimate.subBids?.length ?? 0}
+        />
         <CopyEstimateLink
           sourceId={data.estimate.id}
           sourceProjectName={data.estimate.projectName}
