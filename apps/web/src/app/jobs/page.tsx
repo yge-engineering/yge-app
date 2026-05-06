@@ -9,6 +9,7 @@ import { Alert, AppShell, Money } from '../../components';
 import { JobsSearchInput } from '../../components/jobs-search-input';
 import { JobsCreatedFilter } from '../../components/jobs-created-filter';
 import { JobsResetFilters } from '../../components/jobs-reset-filters';
+import { relativeTime } from '../../lib/relative-time';
 import { CopyMoneyButton } from '../../components/copy-money-button';
 import { EstimatesSortHeaders } from '../../components/estimates-sort-headers';
 import { getLocale, getTranslator } from '../../lib/locale';
@@ -373,6 +374,9 @@ export default async function JobsPage({ searchParams }: PageProps) {
                         ) : null}
                       </div>
                     )}
+                    <div className="mt-0.5 text-[10px] text-gray-400" title={j.updatedAt}>
+                      Edited {relativeTime(j.updatedAt)}
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     <span
