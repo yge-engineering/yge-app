@@ -271,6 +271,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {t('shell.footer')}{' '}
         <Link href="/changelog" className="hover:underline">{t('shell.footer.whatsNew')}</Link>
         {' · '}
+        <Link href="/mobile" className="hover:underline">Mobile app</Link>
+        {' · '}
         <Link href="/terms" className="hover:underline">{t('shell.footer.terms')}</Link>
         {' · '}
         <Link href="/privacy" className="hover:underline">{t('shell.footer.privacy')}</Link>
