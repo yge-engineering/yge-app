@@ -7,6 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import TodayScreen from './src/screens/today-screen';
+import DailyReportsScreen from './src/screens/daily-reports-screen';
 import DashboardScreen from './src/screens/dashboard-screen';
 import JobsScreen from './src/screens/jobs-screen';
 import JobDetailScreen from './src/screens/job-detail-screen';
@@ -17,6 +18,10 @@ import LoginScreen from './src/screens/login-screen';
 import { readAuth } from './src/lib/auth-store';
 import { useTranslator } from './src/lib/use-translator';
 
+export type TodayStackParamList = {
+  TodayHome: undefined;
+  DailyReports: undefined;
+};
 export type JobsStackParamList = {
   JobsList: undefined;
   JobDetail: { id: string };
@@ -27,8 +32,24 @@ export type EstimatesStackParamList = {
 };
 
 const Tab = createBottomTabNavigator();
+const TodayStack = createNativeStackNavigator<TodayStackParamList>();
 const JobsStack = createNativeStackNavigator<JobsStackParamList>();
 const EstimatesStack = createNativeStackNavigator<EstimatesStackParamList>();
+
+function TodayStackNav() {
+  return (
+    <TodayStack.Navigator
+      screenOptions={{
+        headerStyle: { backgroundColor: '#0a3a6b' },
+        headerTintColor: '#ffffff',
+        headerTitleStyle: { fontWeight: '700' },
+      }}
+    >
+      <TodayStack.Screen name="TodayHome" component={TodayScreen} options={{ title: 'Today' }} />
+      <TodayStack.Screen name="DailyReports" component={DailyReportsScreen} options={{ title: 'Daily reports' }} />
+    </TodayStack.Navigator>
+  );
+}
 
 function JobsStackNav() {
   return (
@@ -76,10 +97,11 @@ function AuthedTabs({ onSignOut }: { onSignOut: () => void }) {
       >
         <Tab.Screen
           name="Today"
-          component={TodayScreen}
+          component={TodayStackNav}
           options={{
             tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>☀️</Text>,
             title: 'Today',
+            headerShown: false,
           }}
         />
         <Tab.Screen

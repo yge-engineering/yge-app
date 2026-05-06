@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { TodayStackParamList } from '../../App';
 import { getJson } from '../lib/api';
 import { ErrorCard } from '../components/error-card';
 
@@ -28,7 +32,9 @@ function todayIso(): string {
   return `${y}-${m}-${day}`;
 }
 
+type Nav = NativeStackNavigationProp<TodayStackParamList, 'TodayHome'>;
 export default function TodayScreen() {
+  const navigation = useNavigation<Nav>();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -84,6 +90,29 @@ export default function TodayScreen() {
       )}
 
       {error && <ErrorCard message={error} onRetry={() => { setLoading(true); void load(); }} />}
+
+      <Pressable
+        onPress={() => navigation.navigate('DailyReports')}
+        style={{
+          marginBottom: 12,
+          padding: 14,
+          borderRadius: 8,
+          borderWidth: 1,
+          borderColor: '#bfdbfe',
+          backgroundColor: '#eff6ff',
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <View>
+          <Text style={{ fontSize: 14, fontWeight: '700', color: '#1e40af' }}>📋 Daily reports</Text>
+          <Text style={{ fontSize: 12, color: '#3b82f6', marginTop: 2 }}>
+            View / submit end-of-day reports
+          </Text>
+        </View>
+        <Text style={{ fontSize: 18, color: '#1e40af' }}>→</Text>
+      </Pressable>
 
       {!loading && items.length === 0 && !error && (
         <View style={[styles.card, { borderColor: '#e5e7eb' }]}>
