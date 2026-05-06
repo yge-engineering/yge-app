@@ -290,11 +290,12 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
   }
 
   // Generic estimate-level PATCH for fields that don't need their own
-  // helper (perUnitPrice, etc.). Mirrors what applyMarkupChange does
-  // for markup but takes any subset of the EstimatePatch shape.
+  // helper (perUnitPrice, notes, etc.). Mirrors what applyMarkupChange
+  // does for markup but takes any subset of the EstimatePatch shape.
   async function applyEstimatePatch(
     patch: Partial<{
       perUnitPrice: PricedEstimate['perUnitPrice'] | null;
+      notes: string;
     }>,
   ) {
     const next = {
@@ -302,6 +303,7 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
       ...(patch.perUnitPrice !== undefined
         ? { perUnitPrice: patch.perUnitPrice ?? undefined }
         : {}),
+      ...(patch.notes !== undefined ? { notes: patch.notes || undefined } : {}),
     } as PricedEstimate;
     setEstimate(next);
     recomputeLocal(next);
@@ -590,6 +592,10 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
       )}
 
       <BidDueCountdown bidDueDate={estimate.bidDueDate} />
+      <PinnedNotes
+        notes={estimate.notes ?? ''}
+        onCommit={(next) => void applyEstimatePatch({ notes: next })}
+      />
       <BidChecklistBanner estimate={estimate} totals={totals} />
       <BidRiskBanner estimate={estimate} totals={totals} />
 
@@ -1581,6 +1587,61 @@ function OppEditor({
       <p className="ml-4 text-xs text-gray-500">
         {t('estEditor.markupHelp')}
       </p>
+    </div>
+  );
+}
+
+// Pinned notes — a small note field at the top of the editor that
+// stays visible while the estimator works. Maps to estimate.notes
+// in the schema; just rendered up here so it isn't buried below
+// the bid grid. Auto-saves on blur.
+function PinnedNotes({
+  notes,
+  onCommit,
+}: {
+  notes: string;
+  onCommit: (next: string) => void;
+}) {
+  const [text, setText] = useState(notes);
+  const [expanded, setExpanded] = useState(notes.trim().length > 0);
+  useEffect(() => setText(notes), [notes]);
+  if (!expanded) {
+    return (
+      <button
+        type="button"
+        onClick={() => setExpanded(true)}
+        className="self-start rounded border border-dashed border-gray-300 px-3 py-1 text-xs text-gray-500 hover:border-yge-blue-500 hover:text-yge-blue-700"
+      >
+        📌 Add pinned notes
+      </button>
+    );
+  }
+  return (
+    <div className="rounded-md border border-yellow-200 bg-yellow-50 px-3 py-2">
+      <div className="mb-1 flex items-center justify-between text-[10px] uppercase tracking-wide text-amber-800">
+        <span>📌 Pinned notes</span>
+        {text.trim() === '' && (
+          <button
+            type="button"
+            onClick={() => setExpanded(false)}
+            className="text-amber-700 hover:underline"
+          >
+            collapse
+          </button>
+        )}
+      </div>
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onBlur={() => {
+          if (text === notes) return;
+          onCommit(text.slice(0, 5_000));
+        }}
+        placeholder="Reminders, gotchas, internal context — visible at the top of the editor and not printed on the bid."
+        className="w-full resize-y rounded border border-yellow-200 bg-white px-2 py-1 text-xs"
+        rows={2}
+        maxLength={5_000}
+      />
     </div>
   );
 }
