@@ -713,6 +713,14 @@ export default async function DashboardPage() {
                       )}
                     </span>
                     <span className="flex items-center gap-2 text-xs">
+                      {typeof e.reviewedLineCount === 'number' &&
+                        typeof e.bidItemCount === 'number' &&
+                        e.bidItemCount > 0 &&
+                        e.reviewedLineCount < e.bidItemCount && (
+                          <span className="text-gray-500">
+                            {e.reviewedLineCount}/{e.bidItemCount} reviewed
+                          </span>
+                        )}
                       {typeof e.bidTotalCents === 'number' && (
                         <CopyMoneyButton cents={e.bidTotalCents}>
                           <span className="font-mono text-gray-700">
