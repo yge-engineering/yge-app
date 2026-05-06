@@ -816,6 +816,7 @@ export default async function DashboardPage() {
                     className="flex flex-wrap items-center justify-between gap-2 rounded px-1 py-1.5 hover:bg-amber-100"
                   >
                     <span className="truncate font-medium text-amber-900">
+                      <PinnedIndicator storageKey="yge.estimates.pinnedIds" eventName="yge:pinned-changed" id={e.id} />
                       {e.projectName}
                     </span>
                     <span className="flex items-center gap-2 text-xs">
