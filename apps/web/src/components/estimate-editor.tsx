@@ -53,6 +53,16 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
   // or null if no drawer.
   const [buildupRowIdx, setBuildupRowIdx] = useState<number | null>(null);
 
+  // Filter for AI-drafted line review. The editor surfaces a
+  // "Show unreviewed only" toggle so the estimator can run down the
+  // list once after a Plans-to-Estimate draft lands and approve each
+  // line without staring at the rows they already accepted.
+  const [showUnreviewedOnly, setShowUnreviewedOnly] = useState(false);
+
+  const visibleRowFilter = (item: PricedEstimate['bidItems'][number]) =>
+    !showUnreviewedOnly ||
+    item.reviewState !== 'accepted';
+
   // Cell-level undo stack. Each entry captures the row index and the
   // old unit price in cents so ⌘Z (Cmd/Ctrl-Z) reverts the most recent
   // edit. Capped at 50 entries — that's plenty for "I overwrote the
@@ -396,9 +406,50 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
       <BidChecklistBanner estimate={estimate} totals={totals} />
 
       <section>
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-500">
-          {t('estEditor.bidItemsHeader')}
-        </h2>
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+            {t('estEditor.bidItemsHeader')}
+          </h2>
+          <div className="flex items-center gap-3 text-xs">
+            <span className="text-gray-600">
+              {(() => {
+                const total = estimate.bidItems.length;
+                const accepted = estimate.bidItems.filter(
+                  (it) => it.reviewState === 'accepted',
+                ).length;
+                const flagged = estimate.bidItems.filter(
+                  (it) => it.reviewState === 'flagged',
+                ).length;
+                return (
+                  <>
+                    <span className="font-mono">
+                      {accepted}/{total}
+                    </span>{' '}
+                    reviewed
+                    {flagged > 0 && (
+                      <>
+                        {' '}
+                        ·{' '}
+                        <span className="font-mono text-amber-700">
+                          {flagged}
+                        </span>{' '}
+                        flagged
+                      </>
+                    )}
+                  </>
+                );
+              })()}
+            </span>
+            <label className="inline-flex items-center gap-1">
+              <input
+                type="checkbox"
+                checked={showUnreviewedOnly}
+                onChange={(e) => setShowUnreviewedOnly(e.target.checked)}
+              />
+              <span className="text-gray-700">Show unreviewed only</span>
+            </label>
+          </div>
+        </div>
         {/* The table sits inside a max-h scroller so the header and the
             totals footer stay pinned while the line items scroll. The
             sticky positioning on <thead> + <tfoot> is what an
@@ -418,7 +469,10 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {estimate.bidItems.map((item, i) => (
+              {estimate.bidItems
+                .map((item, i) => ({ item, i }))
+                .filter(({ item }) => visibleRowFilter(item))
+                .map(({ item, i }) => (
                 <BidItemRow
                   key={i}
                   index={i}
@@ -441,6 +495,9 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
                   }
                   onAlternateChange={(alt) =>
                     void applyItemPatch(i, { isAlternate: alt })
+                  }
+                  onReviewStateChange={(state) =>
+                    void applyItemPatch(i, { reviewState: state })
                   }
                 />
               ))}
@@ -640,6 +697,7 @@ function BidItemRow({
   onOpenBuildup,
   onScheduleChange,
   onAlternateChange,
+  onReviewStateChange,
   t,
 }: {
   index: number;
@@ -661,6 +719,8 @@ function BidItemRow({
   onScheduleChange: (schedule: string) => void;
   /** Toggle the line's alternate flag. */
   onAlternateChange: (alt: boolean) => void;
+  /** Update the AI-draft review state. undefined = unreviewed. */
+  onReviewStateChange: (state: 'accepted' | 'flagged' | undefined) => void;
   t: Translator;
 }) {
   // totalRows is only consumed as documentation right now; surfaced
@@ -835,11 +895,47 @@ function BidItemRow({
         )}
       </td>
       <td className="px-3 py-2 align-top">
-        <span
-          className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${confidenceClasses(item.confidence)}`}
-        >
-          {item.confidence}
-        </span>
+        <div className="flex flex-col items-start gap-1">
+          <span
+            className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${confidenceClasses(item.confidence)}`}
+          >
+            {item.confidence}
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() =>
+                onReviewStateChange(
+                  item.reviewState === 'accepted' ? undefined : 'accepted',
+                )
+              }
+              title="Mark this line as reviewed"
+              className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                item.reviewState === 'accepted'
+                  ? 'bg-green-700 text-white'
+                  : 'border border-gray-300 text-gray-500 hover:border-green-700 hover:text-green-700'
+              }`}
+            >
+              {item.reviewState === 'accepted' ? '✓ OK' : 'OK?'}
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                onReviewStateChange(
+                  item.reviewState === 'flagged' ? undefined : 'flagged',
+                )
+              }
+              title="Flag for another look"
+              className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                item.reviewState === 'flagged'
+                  ? 'bg-amber-500 text-white'
+                  : 'border border-gray-300 text-gray-500 hover:border-amber-500 hover:text-amber-700'
+              }`}
+            >
+              ⚠
+            </button>
+          </div>
+        </div>
       </td>
     </tr>
   );

@@ -97,6 +97,14 @@ export const PricedBidItemSchema = PtoEBidItemSchema.extend({
    *  can decide which alternates to submit. Phase 1 simple flag —
    *  per-alternate accept/reject states layer on later. */
   isAlternate: z.boolean().optional(),
+  /** Estimator's review state for AI-drafted lines.
+   *   - 'accepted'  — the estimator has eyeballed this line and is
+   *                   happy with the AI's quantity / description.
+   *   - 'flagged'   — needs another look (open question, weird
+   *                   quantity, sub source unknown, etc.).
+   *   - undefined   — not yet reviewed; the editor's "X unreviewed"
+   *                   count includes this one. */
+  reviewState: z.enum(['accepted', 'flagged']).optional(),
 });
 export type PricedBidItem = z.infer<typeof PricedBidItemSchema>;
 
