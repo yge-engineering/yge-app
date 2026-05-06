@@ -675,6 +675,7 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
                     aria-label="Select all rows"
                   />
                 </th>
+                <th className="w-6 py-2" title="Row status indicator (red = blocker, amber = warning, green = reviewed)" />
                 <th className="px-3 py-2">{t('estEditor.thNum')}</th>
                 <th className="px-3 py-2">{t('estEditor.thDescription')}</th>
                 <th className="px-3 py-2 text-right">{t('estEditor.thQty')}</th>
@@ -740,7 +741,7 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
                       <tr key={`sch-${key}`}>
                         <td
                           className="px-3 py-1 text-xs uppercase tracking-wide text-gray-500"
-                          colSpan={6}
+                          colSpan={7}
                         >
                           {key === '' ? '(unscheduled)' : key}
                         </td>
@@ -753,7 +754,7 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
                 </>
               )}
               <tr>
-                <td className="px-3 py-2 text-xs uppercase tracking-wide text-gray-500" colSpan={6}>
+                <td className="px-3 py-2 text-xs uppercase tracking-wide text-gray-500" colSpan={7}>
                   {t('estEditor.totalsDirect')}
                 </td>
                 <td className="px-3 py-2 text-right font-mono">
@@ -762,7 +763,7 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
                 <td />
               </tr>
               <tr>
-                <td className="px-3 py-2 text-xs uppercase tracking-wide text-gray-500" colSpan={6}>
+                <td className="px-3 py-2 text-xs uppercase tracking-wide text-gray-500" colSpan={7}>
                   {t('estEditor.totalsOpp', {
                     percent: (estimate.oppPercent * 100).toFixed(1),
                   })}
@@ -773,7 +774,7 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
                 <td />
               </tr>
               <tr className="border-t-2 border-gray-300">
-                <td className="px-3 py-2 text-xs uppercase tracking-wide text-yge-blue-700" colSpan={6}>
+                <td className="px-3 py-2 text-xs uppercase tracking-wide text-yge-blue-700" colSpan={7}>
                   {t('estEditor.totalsBid')}
                 </td>
                 <td className="px-3 py-2 text-right font-mono text-base text-yge-blue-700">
@@ -785,7 +786,7 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
                 <tr>
                   <td
                     className="px-3 py-1 text-xs uppercase tracking-wide text-gray-500"
-                    colSpan={6}
+                    colSpan={7}
                   >
                     Alternates (not in base bid)
                   </td>
@@ -1040,6 +1041,40 @@ function BidItemRow({
         ? 'bg-amber-50'
         : '';
 
+  // Status dot for the inline error rail. One symbol per row so the
+  // estimator can scan the left margin and see exactly which lines
+  // need attention without reading every column.
+  //
+  //   🔴 red    — blocker: no unit price.
+  //   🟡 yellow — warn: variance flag, LOW conf unreviewed, flagged.
+  //   ✓ green   — reviewed/accepted (also covers a clean priced row
+  //                 without a review state, which we leave neutral).
+  //   ·  gray   — neutral: priced and not flagged, not yet reviewed.
+  let statusSymbol = '·';
+  let statusClass = 'text-gray-300';
+  let statusTitle = 'Priced — review when ready';
+  if (item.unitPriceCents == null) {
+    statusSymbol = '●';
+    statusClass = 'text-red-600';
+    statusTitle = 'Blocker — line is unpriced';
+  } else if (varianceFlagged) {
+    statusSymbol = '●';
+    statusClass = 'text-amber-600';
+    statusTitle = `Variance — ${(variance!.deviation! * 100).toFixed(0)}% off historical median`;
+  } else if (item.reviewState === 'flagged') {
+    statusSymbol = '●';
+    statusClass = 'text-amber-600';
+    statusTitle = 'Flagged — needs another look';
+  } else if (item.confidence === 'LOW' && item.reviewState !== 'accepted') {
+    statusSymbol = '●';
+    statusClass = 'text-amber-600';
+    statusTitle = 'LOW confidence — review before submission';
+  } else if (item.reviewState === 'accepted') {
+    statusSymbol = '✓';
+    statusClass = 'text-green-600';
+    statusTitle = 'Reviewed';
+  }
+
   return (
     <tr className={`${rowClass}${selected ? ' bg-yge-blue-50/40' : ''}`}>
       <td className="w-8 px-2 py-2 align-top">
@@ -1049,6 +1084,15 @@ function BidItemRow({
           onChange={(e) => onToggleSelected((e.nativeEvent as MouseEvent).shiftKey)}
           aria-label={`Select bid item ${item.itemNumber}`}
         />
+      </td>
+      <td className="w-6 py-2 text-center align-top">
+        <span
+          className={`text-sm font-bold ${statusClass}`}
+          title={statusTitle}
+          aria-label={statusTitle}
+        >
+          {statusSymbol}
+        </span>
       </td>
       <td className="px-3 py-2 align-top text-xs text-gray-500">{item.itemNumber}</td>
       <td className="px-3 py-2 align-top">
