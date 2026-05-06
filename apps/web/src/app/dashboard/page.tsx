@@ -456,6 +456,7 @@ export default async function DashboardPage() {
           <span className="truncate font-medium text-gray-900">
             {recentEstimates[0].projectName}
           </span>
+          <RecentEstimateDuePill iso={recentEstimates[0].bidDueDate} />
           {typeof recentEstimates[0].bidTotalCents === 'number' && (
             <span className="ml-auto font-mono text-sm text-gray-700">
               <Money cents={recentEstimates[0].bidTotalCents} />
