@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { AuditBinderPanel, Money } from '../../../components';
 import { relativeTime } from '../../../lib/relative-time';
+import { CopyIdChip } from '../../../components/copy-id-chip';
 import { getTranslator } from '../../../lib/locale';
 import {
   contractTypeLabel,
@@ -282,6 +283,7 @@ export default async function JobDetailPage({
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <CopyIdChip id={job.id} label="job" />
           <span className="text-xs text-gray-500" title={job.updatedAt}>
             Last edit {relativeTime(job.updatedAt)}
           </span>
