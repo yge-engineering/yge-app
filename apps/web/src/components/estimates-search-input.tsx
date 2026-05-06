@@ -61,7 +61,8 @@ export function EstimatesSearchInput({ targetId, totalCount }: Props) {
         row.dataset['searchHidden'] = matches ? '' : '1';
         const statusHidden = row.dataset['statusHidden'] === '1';
         const dueHidden = row.dataset['dueHidden'] === '1';
-        const visible = matches && !statusHidden && !dueHidden;
+        const createdHidden = row.dataset['createdHidden'] === '1';
+        const visible = matches && !statusHidden && !dueHidden && !createdHidden;
         row.style.display = visible ? '' : 'none';
         if (visible) {
           count++;

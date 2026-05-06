@@ -51,8 +51,9 @@ export function EstimatesDueWeekChip({ targetId, count }: Props) {
         const searchHidden = row.dataset['searchHidden'] === '1';
         const statusHidden = row.dataset['statusHidden'] === '1';
         const dueHidden = row.dataset['dueHidden'] === '1';
+        const createdHidden = row.dataset['createdHidden'] === '1';
         row.style.display =
-          searchHidden || statusHidden || dueHidden ? 'none' : '';
+          searchHidden || statusHidden || dueHidden || createdHidden ? 'none' : '';
       });
     }
   }, [active, targetId]);

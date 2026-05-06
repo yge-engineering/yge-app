@@ -12,6 +12,7 @@ const KEYS = [
   'yge.estimates.dueWeekFilter',
   'yge.estimates.sortKey',
   'yge.estimates.sortDir',
+  'yge.estimates.createdFilter',
 ];
 
 export function EstimatesResetFilters() {
@@ -22,10 +23,12 @@ export function EstimatesResetFilters() {
     const status = window.localStorage.getItem('yge.estimates.statusFilter');
     const due = window.localStorage.getItem('yge.estimates.dueWeekFilter');
     const sortKey = window.localStorage.getItem('yge.estimates.sortKey');
+    const created = window.localStorage.getItem('yge.estimates.createdFilter');
     const any =
       (status && status !== 'all') ||
       due === '1' ||
-      (sortKey && sortKey.length > 0);
+      (sortKey && sortKey.length > 0) ||
+      (created && created !== 'all');
     setHasState(Boolean(any));
   }, []);
 

@@ -15,6 +15,7 @@ import { EstimatesShortcutsChip } from '../../components/estimates-shortcuts-chi
 import { EstimatesStatusFilter } from '../../components/estimates-status-filter';
 import { EstimatesDueWeekChip } from '../../components/estimates-due-week-chip';
 import { EstimatesResetFilters } from '../../components/estimates-reset-filters';
+import { EstimatesCreatedFilter } from '../../components/estimates-created-filter';
 import { getTranslator } from '../../lib/locale';
 import { requirePermission } from '../../lib/permissions';
 
@@ -409,6 +410,7 @@ export default async function EstimatesPage() {
           <div className="flex flex-wrap items-center gap-2">
             <EstimatesStatusFilter targetId="estimates-table" counts={statusCounts} total={estimates.length} />
             <EstimatesDueWeekChip targetId="estimates-table" count={dueCounts.overdue + dueCounts.dueSoon} />
+            <EstimatesCreatedFilter targetId="estimates-table" />
             <EstimatesResetFilters />
           </div>
           <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
@@ -445,6 +447,7 @@ export default async function EstimatesPage() {
                   data-sort-name={e.projectName.toLowerCase()}
                   data-status={e.bidStatus ?? 'pursuing'}
                   data-due={e.bidDueDate ?? ''}
+                  data-created={e.createdAt}
                   className="hover:bg-gray-50"
                 >
                   <td className="px-4 py-3">

@@ -74,8 +74,9 @@ export function EstimatesStatusFilter({ targetId, counts, total }: Props) {
       row.dataset['statusHidden'] = visible ? '' : '1';
       const searchHidden = row.dataset['searchHidden'] === '1';
       const dueHidden = row.dataset['dueHidden'] === '1';
+      const createdHidden = row.dataset['createdHidden'] === '1';
       row.style.display =
-        visible && !searchHidden && !dueHidden ? '' : 'none';
+        visible && !searchHidden && !dueHidden && !createdHidden ? '' : 'none';
     });
   }, [active, targetId]);
 
