@@ -36,6 +36,7 @@ function apiBaseUrl(): string {
 interface EstimateLite {
   jobId: string;
   bidDueDate?: string;
+  bidTotalCents?: number;
 }
 
 async function fetchEstimateLites(): Promise<EstimateLite[]> {
@@ -210,6 +211,7 @@ export default async function JobsPage({ searchParams }: PageProps) {
   const estimateStatsByJob: Record<string, { count: number; dueSoon: number }> = {};
   const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
   const nowMs = Date.now();
+  const estimateBidTotalsByJob: Record<string, number> = {};
   for (const e of estimateLites) {
     const stat = estimateStatsByJob[e.jobId] ?? { count: 0, dueSoon: 0 };
     stat.count++;
@@ -218,6 +220,10 @@ export default async function JobsPage({ searchParams }: PageProps) {
       if (!Number.isNaN(t2) && t2 - nowMs <= sevenDaysMs) stat.dueSoon++;
     }
     estimateStatsByJob[e.jobId] = stat;
+    if (typeof e.bidTotalCents === 'number') {
+      estimateBidTotalsByJob[e.jobId] =
+        (estimateBidTotalsByJob[e.jobId] ?? 0) + e.bidTotalCents;
+    }
   }
   const locale = getLocale();
   const presetLabel = preset ? t(preset.labelKey) : '';
@@ -429,9 +435,29 @@ export default async function JobsPage({ searchParams }: PageProps) {
                   </td>
                   <td className="px-4 py-3 text-right font-mono text-xs tabular-nums text-gray-700">
                     {j.engineersEstimateCents !== undefined ? (
-                      <CopyMoneyButton cents={j.engineersEstimateCents}>
-                        <Money cents={j.engineersEstimateCents} />
-                      </CopyMoneyButton>
+                      <div className="flex flex-col items-end gap-0.5">
+                        <CopyMoneyButton cents={j.engineersEstimateCents}>
+                          <Money cents={j.engineersEstimateCents} />
+                        </CopyMoneyButton>
+                        {(() => {
+                          const ourBid = estimateBidTotalsByJob[j.id];
+                          if (typeof ourBid !== 'number' || ourBid === 0) return null;
+                          const delta = ourBid - j.engineersEstimateCents!;
+                          const pct = (delta / j.engineersEstimateCents!) * 100;
+                          const sign = delta >= 0 ? '+' : '';
+                          const tone =
+                            Math.abs(pct) <= 10
+                              ? 'text-green-700'
+                              : Math.abs(pct) <= 25
+                                ? 'text-amber-700'
+                                : 'text-red-700';
+                          return (
+                            <span className={`text-[10px] font-semibold ${tone}`}>
+                              YGE {sign}{pct.toFixed(0)}%
+                            </span>
+                          );
+                        })()}
+                      </div>
                     ) : (
                       <span className="text-gray-400">—</span>
                     )}
