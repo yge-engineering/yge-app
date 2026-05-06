@@ -719,6 +719,58 @@ export default async function DashboardPage() {
         </div>
       )}
 
+      {/* EDIT LOG — last few audit log entries. */}
+      {recentAudit.length > 0 && (
+        <div className="mb-6 rounded-lg border border-gray-200 bg-white shadow-sm">
+          <header className="flex items-center justify-between border-b border-gray-200 px-4 py-2">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Edit log · last 5
+            </h3>
+            <Link href="/audit" className="rounded border border-yge-blue-500 px-2 py-0.5 text-[11px] font-medium text-yge-blue-500 hover:bg-yge-blue-50">
+              See all →
+            </Link>
+          </header>
+          <ul className="divide-y divide-gray-100 text-sm">
+            {recentAudit.map((a) => {
+              const t = new Date(a.createdAt).getTime();
+              const minutes = Math.max(0, Math.round((Date.now() - t) / 60000));
+              const ago = minutes < 60
+                ? `${minutes}m ago`
+                : minutes < 1440
+                  ? `${Math.round(minutes / 60)}h ago`
+                  : `${Math.round(minutes / 1440)}d ago`;
+              const ROUTE_MAP: Record<string, string | undefined> = {
+                Estimate: '/estimates/',
+                Job: '/jobs/',
+                BidResult: '/bid-results/',
+              };
+              const route = ROUTE_MAP[a.entityType];
+              const idLabel = `${a.entityId.slice(0, 16)}…`;
+              return (
+                <li key={a.id} className="flex items-baseline justify-between gap-2 px-4 py-1.5">
+                  <span className="truncate text-xs text-gray-700">
+                    <span className="font-mono text-[10px] text-gray-500">{a.action}</span>{' '}
+                    <span className="font-medium">{a.entityType}</span>{' '}
+                    {route ? (
+                      <Link
+                        href={`${route}${a.entityId}`}
+                        className="font-mono text-gray-700 hover:text-yge-blue-700 hover:underline"
+                      >
+                        {idLabel}
+                      </Link>
+                    ) : (
+                      <span className="font-mono text-gray-500">{idLabel}</span>
+                    )}
+                    {a.actorEmail && <span className="ml-1 text-gray-500">by {a.actorEmail}</span>}
+                  </span>
+                  <span className="shrink-0 text-[11px] text-gray-500" title={a.createdAt}>{ago}</span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
       {/* STALE PURSUING — bids in pursuit but untouched for 14+ days. */}
       {pipelineData.stalePursuing.length > 0 && (
         <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-3">
