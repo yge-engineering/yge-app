@@ -744,12 +744,20 @@ export default async function DashboardPage() {
                 Job: '/jobs/',
                 BidResult: '/bid-results/',
               };
+              const ACTION_LABEL: Record<string, string> = {
+                update: 'edited',
+                create: 'created',
+                submit: 'submitted',
+                sign: 'signed',
+                archive: 'archived',
+              };
+              const verb = ACTION_LABEL[a.action] ?? a.action;
               const route = ROUTE_MAP[a.entityType];
               const idLabel = `${a.entityId.slice(0, 16)}…`;
               return (
                 <li key={a.id} className="flex items-baseline justify-between gap-2 px-4 py-1.5">
                   <span className="truncate text-xs text-gray-700">
-                    <span className="font-mono text-[10px] text-gray-500">{a.action}</span>{' '}
+                    <span className="text-[11px] italic text-gray-500">{verb}</span>{' '}
                     <span className="font-medium">{a.entityType}</span>{' '}
                     {route ? (
                       <Link
