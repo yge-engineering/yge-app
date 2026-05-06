@@ -668,8 +668,15 @@ export default async function DashboardPage() {
                     <span className="truncate font-medium text-amber-900">
                       {e.projectName}
                     </span>
-                    <span className="text-xs text-amber-800">
-                      Last edit {days}d ago
+                    <span className="flex items-center gap-2 text-xs">
+                      {typeof e.bidTotalCents === 'number' && (
+                        <span className="font-mono text-amber-900">
+                          <Money cents={e.bidTotalCents} />
+                        </span>
+                      )}
+                      <span className="text-amber-800">
+                        Last edit {days}d ago
+                      </span>
                     </span>
                   </Link>
                 </li>
