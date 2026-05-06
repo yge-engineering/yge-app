@@ -365,6 +365,68 @@ export async function promoteAwardedToSubList(
 }
 
 /**
+ * Clone an existing estimate as the starting point for a new bid.
+ * Carries over bid items (with their unit prices, schedule labels,
+ * costBuildup, markupPct overrides, isAlternate flag) but resets
+ * the per-line reviewState so the estimator runs through them
+ * fresh, and clears the §4104 sub list, addenda, and bid-leveling
+ * which are bid-specific and shouldn't reuse.
+ *
+ * Returns the saved new estimate.
+ */
+export async function createFromTemplate(input: {
+  sourceEstimateId: string;
+  jobId: string;
+  projectName?: string;
+  oppPercent?: number;
+}, ctx?: AuditContext): Promise<PricedEstimate | null> {
+  const source = await getEstimate(input.sourceEstimateId);
+  if (!source) return null;
+
+  await ensureDir();
+  const now = new Date();
+  const projectName = input.projectName?.trim() || source.projectName;
+  const id = makeId(projectName, now);
+  const iso = now.toISOString();
+  const newEst: PricedEstimate = {
+    id,
+    fromDraftId: source.fromDraftId,
+    jobId: input.jobId,
+    createdAt: iso,
+    updatedAt: iso,
+    projectName,
+    projectType: source.projectType,
+    location: source.location,
+    ownerAgency: source.ownerAgency,
+    bidDueDate: undefined,
+    bidItems: source.bidItems.map((it) => ({
+      ...it,
+      // Reset per-line review state so the estimator looks again.
+      reviewState: undefined,
+    })),
+    oppPercent: input.oppPercent ?? source.oppPercent,
+    notes: source.notes,
+    subBids: [],
+    addenda: [],
+    subLeveling: [],
+    ...(source.markup ? { markup: source.markup } : {}),
+  };
+  PricedEstimateSchema.parse(newEst);
+  await fs.writeFile(estimatePath(id), JSON.stringify(newEst, null, 2), 'utf8');
+  const index = await readIndex();
+  index.unshift(summarize(newEst));
+  await writeIndex(index);
+  await recordAudit({
+    action: 'create',
+    entityType: 'Estimate',
+    entityId: id,
+    after: newEst,
+    ctx,
+  });
+  return newEst;
+}
+
+/**
  * Historical-prices match. The editor surfaces these to the
  * estimator so they can see what they bid for the same kind of
  * line on past jobs.

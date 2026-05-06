@@ -18,6 +18,7 @@ import { getDraft } from '../lib/drafts-store';
 import {
   computeVariance,
   createFromDraft,
+  createFromTemplate,
   findHistoricalPrices,
   getEstimate,
   listEstimates,
@@ -55,6 +56,35 @@ pricedEstimatesRouter.post('/from-draft', async (req, res, next) => {
       oppPercent: parsed.data.oppPercent,
     });
     return res.status(201).json({ estimate });
+  } catch (err) {
+    next(err);
+  }
+});
+
+const FromTemplateBody = z.object({
+  sourceEstimateId: z.string().min(1),
+  jobId: z.string().min(1),
+  projectName: z.string().max(200).optional(),
+  oppPercent: z.number().min(0).max(2).optional(),
+});
+
+// POST /api/priced-estimates/from-template — clone an existing estimate.
+// Carries bid items (with prices, schedules, buildups, markup overrides,
+// alt flag) but resets reviewState and clears bid-specific stuff (subBids,
+// addenda, sub-leveling). Use when the next bid looks like a previous one.
+pricedEstimatesRouter.post('/from-template', async (req, res, next) => {
+  try {
+    const parsed = FromTemplateBody.safeParse(req.body);
+    if (!parsed.success) {
+      return res
+        .status(400)
+        .json({ error: 'Validation failed', issues: parsed.error.issues });
+    }
+    const est = await createFromTemplate(parsed.data);
+    if (!est) {
+      return res.status(404).json({ error: 'Source estimate not found' });
+    }
+    return res.status(201).json({ estimate: est });
   } catch (err) {
     next(err);
   }

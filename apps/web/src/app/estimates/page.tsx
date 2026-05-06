@@ -6,6 +6,7 @@
 import Link from 'next/link';
 
 import { Alert, AppShell, Money } from '../../components';
+import { CopyEstimateLink } from '../../components/copy-estimate-link';
 import { getTranslator } from '../../lib/locale';
 import { requirePermission } from '../../lib/permissions';
 
@@ -319,10 +320,16 @@ export default async function EstimatesPage() {
                     </Link>
                     <a
                       href={`${publicApiBaseUrl()}/api/priced-estimates/${e.id}/export.csv`}
-                      className="text-yge-blue-500 hover:underline"
+                      className="mr-3 text-yge-blue-500 hover:underline"
                     >
                       {t('estimates.action.csv')}
                     </a>
+                    <CopyEstimateLink
+                      sourceId={e.id}
+                      sourceProjectName={e.projectName}
+                      sourceJobId={e.jobId}
+                      apiBaseUrl={publicApiBaseUrl()}
+                    />
                   </td>
                 </tr>
               ))}
