@@ -6,6 +6,7 @@
 import Link from 'next/link';
 
 import { Alert, AppShell, Money } from '../../components';
+import { JobsSearchInput } from '../../components/jobs-search-input';
 import { getLocale, getTranslator } from '../../lib/locale';
 import { getCurrentUser } from '../../lib/auth';
 import {
@@ -230,8 +231,10 @@ export default async function JobsPage({ searchParams }: PageProps) {
       )}
 
       {filteredJobs.length > 0 && (
-        <div className="mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-          <table className="w-full text-left text-sm">
+        <div className="mt-6">
+          <JobsSearchInput targetId="jobs-table" totalCount={filteredJobs.length} />
+          <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+          <table id="jobs-table" className="w-full text-left text-sm">
             <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
               <tr>
                 <th className="px-4 py-2">{t('jobs.col.project')}</th>
@@ -245,7 +248,11 @@ export default async function JobsPage({ searchParams }: PageProps) {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {filteredJobs.map((j) => (
-                <tr key={j.id} className="hover:bg-gray-50">
+                <tr
+                  key={j.id}
+                  data-search={`${j.projectName} ${j.ownerAgency ?? ''} ${j.location ?? ''}`}
+                  className="hover:bg-gray-50"
+                >
                   <td className="px-4 py-3">
                     <div className="font-medium">
                       <Link
@@ -310,6 +317,7 @@ export default async function JobsPage({ searchParams }: PageProps) {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </main>
