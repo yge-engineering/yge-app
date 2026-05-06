@@ -227,7 +227,7 @@ export default async function JobsPage({ searchParams }: PageProps) {
             <Link
               key={p.value}
               href={p.value === 'all' ? '/jobs' : `/jobs?status=${p.value}`}
-              className={`rounded-full px-3 py-1 text-xs font-medium ${active ? 'bg-blue-700 text-white' : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-100'}`}
+              className={`rounded-full px-3 py-1 text-xs font-medium transition ${active ? 'bg-yge-blue-500 text-white' : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-100'}`}
             >
               {t(p.labelKey)}
             </Link>
