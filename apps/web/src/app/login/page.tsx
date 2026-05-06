@@ -70,7 +70,15 @@ export default function LoginPage() {
         </div>
 
         {stage.kind === 'enter-email' && (
-          <EnterEmailForm t={t} onAdvance={setStage} />
+          <>
+            <MicrosoftSsoButton />
+            <div className="mb-4 flex items-center gap-2 text-[11px] uppercase tracking-wider text-gray-400">
+              <span className="h-px flex-1 bg-gray-200" />
+              <span>or</span>
+              <span className="h-px flex-1 bg-gray-200" />
+            </div>
+            <EnterEmailForm t={t} onAdvance={setStage} />
+          </>
         )}
         {stage.kind === 'enter-password' && (
           <EnterPasswordForm
@@ -93,12 +101,90 @@ export default function LoginPage() {
           />
         )}
 
+        <SsoStatusNotice />
+
         <p className="mt-6 text-center text-xs text-gray-400">
           {t('login.footer')}
         </p>
       </div>
     </main>
   );
+}
+
+// ---- SSO sign-in button -------------------------------------------------
+
+function MicrosoftSsoButton() {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function start() {
+    setBusy(true);
+    setError(null);
+    try {
+      const apiBase =
+        process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+      const ret =
+        typeof window !== 'undefined'
+          ? new URL(window.location.href).searchParams.get('return') ??
+            '/dashboard'
+          : '/dashboard';
+      const url = new URL(`${apiBase}/api/microsoft/auth-url`);
+      url.searchParams.set('purpose', 'signin');
+      if (ret) url.searchParams.set('return', ret);
+      const res = await fetch(url.toString(), { cache: 'no-store' });
+      if (!res.ok) {
+        throw new Error(`SSO unavailable (HTTP ${res.status})`);
+      }
+      const j = (await res.json()) as { url?: string };
+      if (!j.url) throw new Error('SSO endpoint returned no URL');
+      window.location.href = j.url;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'SSO start failed');
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mb-4">
+      <button
+        type="button"
+        onClick={start}
+        disabled={busy}
+        className="flex w-full items-center justify-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+      >
+        <span aria-hidden className="text-base">🪟</span>
+        {busy ? 'Connecting…' : 'Sign in with Microsoft'}
+      </button>
+      {error && <p className="mt-1 text-xs text-red-700">{error}</p>}
+    </div>
+  );
+}
+
+// ---- SSO status notice (?sso=error|denied) -----------------------------
+
+function SsoStatusNotice() {
+  const params = useSearchParams();
+  const sso = params?.get('sso');
+  const reason = params?.get('reason');
+  const email = params?.get('email');
+  if (!sso) return null;
+  if (sso === 'denied') {
+    return (
+      <div className="mt-4 rounded border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900">
+        <strong>Not on the access list.</strong> {email ?? 'That account'} signed in
+        to Microsoft but isn't a YGE portal user yet. Ask Ryan to add you on
+        /admin/portal-users.
+      </div>
+    );
+  }
+  if (sso === 'error') {
+    return (
+      <div className="mt-4 rounded border border-red-300 bg-red-50 p-2 text-xs text-red-800">
+        <strong>SSO failed.</strong> {reason ? reason : 'Try again or sign in with email + password.'}
+      </div>
+    );
+  }
+  return null;
 }
 
 // ---- Step 1 -------------------------------------------------------------
