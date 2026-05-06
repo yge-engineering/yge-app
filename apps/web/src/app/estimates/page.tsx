@@ -533,6 +533,14 @@ export default async function EstimatesPage() {
                     />
                     <SubmittedAgePill iso={e.bidSubmittedAt} status={e.bidStatus} />
                     <BidDuePill iso={e.bidDueDate} locale={locale} />
+                    <Link
+                      href={`/jobs/${e.jobId}`}
+                      onClick={(ev) => ev.stopPropagation()}
+                      className="mt-1 mr-1 inline-block rounded-full border border-gray-300 bg-white px-2 py-0.5 text-[10px] font-semibold text-gray-700 hover:bg-gray-50"
+                      title="Open the linked job"
+                    >
+                      ↗ Job
+                    </Link>
                     {e.notesPreview && (
                       <div className="mt-1 text-[11px] italic text-gray-500">
                         ✏ {e.notesPreview}
