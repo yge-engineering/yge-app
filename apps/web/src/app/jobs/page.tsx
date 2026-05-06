@@ -239,6 +239,15 @@ export default async function JobsPage({ searchParams }: PageProps) {
     (sum, j) => sum + (estimateBidTotalsByJob[j.id] ?? 0),
     0,
   );
+  let totalReviewed = 0;
+  let totalLines = 0;
+  for (const j of filteredJobs) {
+    const r = estimateReviewByJob[j.id];
+    if (r) {
+      totalReviewed += r.reviewed;
+      totalLines += r.total;
+    }
+  }
   const locale = getLocale();
   const presetLabel = preset ? t(preset.labelKey) : '';
 
