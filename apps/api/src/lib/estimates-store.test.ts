@@ -523,3 +523,51 @@ describe('promoteAwardedToSubList', () => {
     expect(result.status).toBe(400);
   });
 });
+
+describe('bidStatus auto-stamp', () => {
+  it('stamps bidSubmittedAt the first time a bid flips to submitted', async () => {
+    const est = await createFromDraft({
+      fromDraftId: 'd-status-1',
+      jobId: 'cltest000000000000000000',
+      draft: sampleDraft,
+    });
+    expect(est.bidStatus).toBeUndefined();
+    expect(est.bidSubmittedAt).toBeUndefined();
+
+    const t0 = Date.now();
+    const after = await updateEstimate(est.id, { bidStatus: 'submitted' });
+    expect(after?.bidStatus).toBe('submitted');
+    expect(after?.bidSubmittedAt).toBeDefined();
+    const stampMs = new Date(after!.bidSubmittedAt!).getTime();
+    expect(stampMs).toBeGreaterThanOrEqual(t0 - 1000);
+    expect(stampMs).toBeLessThanOrEqual(Date.now() + 1000);
+  });
+
+  it('does not overwrite an existing bidSubmittedAt on subsequent flips', async () => {
+    const est = await createFromDraft({
+      fromDraftId: 'd-status-2',
+      jobId: 'cltest000000000000000000',
+      draft: sampleDraft,
+    });
+    const first = await updateEstimate(est.id, { bidStatus: 'submitted' });
+    const stamp = first?.bidSubmittedAt;
+    expect(stamp).toBeDefined();
+
+    // Flip to pursuing then back to submitted — original stamp should stick.
+    await updateEstimate(est.id, { bidStatus: 'pursuing' });
+    await new Promise((r) => setTimeout(r, 5));
+    const back = await updateEstimate(est.id, { bidStatus: 'submitted' });
+    expect(back?.bidSubmittedAt).toBe(stamp);
+  });
+
+  it('clears bidSubmittedAt when patched to null', async () => {
+    const est = await createFromDraft({
+      fromDraftId: 'd-status-3',
+      jobId: 'cltest000000000000000000',
+      draft: sampleDraft,
+    });
+    await updateEstimate(est.id, { bidStatus: 'submitted' });
+    const cleared = await updateEstimate(est.id, { bidSubmittedAt: null });
+    expect(cleared?.bidSubmittedAt).toBeUndefined();
+  });
+});
