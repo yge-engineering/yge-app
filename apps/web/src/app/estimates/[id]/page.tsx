@@ -19,6 +19,7 @@ import { BidDueBanner } from '@/components/bid-due-banner';
 import { CopyEstimateLink } from '@/components/copy-estimate-link';
 import { relativeTime } from '@/lib/relative-time';
 import { CopyBidSummaryButton } from '@/components/copy-bid-summary-button';
+import { CopyPageUrlButton } from '@/components/copy-page-url-button';
 import { BidStatusSwitcher } from '@/components/bid-status-switcher';
 import { getTranslator } from '../../../lib/locale';
 
@@ -182,6 +183,7 @@ export default async function EstimateDetailPage({
           current={data.estimate.bidStatus}
           submittedAt={data.estimate.bidSubmittedAt}
         />
+        <CopyPageUrlButton />
         <CopyBidSummaryButton
           projectName={data.estimate.projectName}
           bidTotalCents={data.totals.bidTotalCents}
