@@ -793,6 +793,24 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
             {t('estEditor.bidItemsHeader')}
           </h2>
           <div className="flex items-center gap-3 text-xs">
+            {(showUnreviewedOnly ||
+              openFindReplace ||
+              selectedIndices.size > 0) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setShowUnreviewedOnly(false);
+                  setOpenFindReplace(false);
+                  setFindText('');
+                  setReplaceText('');
+                  clearSelection();
+                }}
+                className="rounded border border-gray-400 bg-white px-2 py-0.5 font-medium text-gray-700 hover:border-gray-600 hover:bg-gray-100"
+                title="Clear all filters and selections"
+              >
+                Reset filters
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setOpenFindReplace((v) => !v)}
