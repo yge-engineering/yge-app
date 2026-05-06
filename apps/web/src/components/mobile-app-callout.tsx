@@ -31,6 +31,12 @@ export function MobileAppCallout() {
         </div>
       </div>
       <div className="flex items-center gap-2">
+        <a
+          href="/mobile"
+          className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-100"
+        >
+          Learn more
+        </a>
         <button
           type="button"
           onClick={() => {
