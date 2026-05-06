@@ -71,7 +71,7 @@ export default function JobDetailScreen({ route }: { route: { params: { id: stri
   }
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: '#f8fafc' }} contentContainerStyle={{ padding: 16 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: '#f8fafc' }} contentContainerStyle={{ padding: 16, maxWidth: 720, width: '100%', alignSelf: 'center' }}>
       <Text style={styles.h1}>{job.projectName}</Text>
       <Text style={styles.sub}>
         {job.contractType ?? ''}

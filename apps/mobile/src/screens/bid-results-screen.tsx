@@ -59,7 +59,7 @@ export default function BidResultsScreen() {
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: '#f8fafc' }}
-      contentContainerStyle={{ padding: 16 }}
+      contentContainerStyle={{ padding: 16, maxWidth: 720, width: '100%', alignSelf: 'center' }}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}

@@ -137,7 +137,7 @@ export default function EstimateDetailScreen({ route }: { route: { params: { id:
   const unpriced = e.bidItems.filter((i) => i.unitPriceCents == null).length;
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: '#f8fafc' }} contentContainerStyle={{ padding: 16 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: '#f8fafc' }} contentContainerStyle={{ padding: 16, maxWidth: 720, width: '100%', alignSelf: 'center' }}>
       <Text style={styles.h1}>{e.projectName}</Text>
       {e.ownerAgency && <Text style={styles.sub}>{e.ownerAgency}</Text>}
 

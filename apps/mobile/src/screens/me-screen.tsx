@@ -41,7 +41,7 @@ export default function MeScreen({ onSignOut }: Props) {
   }
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: '#f8fafc' }} contentContainerStyle={{ padding: 16 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: '#f8fafc' }} contentContainerStyle={{ padding: 16, maxWidth: 720, width: '100%', alignSelf: 'center' }}>
       <Text style={styles.h1}>{t('mobile.tab.me')}</Text>
 
       {user && (
