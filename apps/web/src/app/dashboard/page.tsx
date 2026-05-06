@@ -118,6 +118,7 @@ async function fetchEstimatesPipeline(): Promise<{
   stalePursuing: PricedEstimateSummaryLite[];
   /** Count of bids whose bidSubmittedAt falls in the last 30 days. */
   submitted30d: number;
+  awardedThisYearCents: number;
 }> {
   try {
     const res = await fetch(`${apiBaseUrl()}/api/priced-estimates`, {
@@ -135,6 +136,7 @@ async function fetchEstimatesPipeline(): Promise<{
         recentDecided: [],
         stalePursuing: [],
         submitted30d: 0,
+        awardedThisYearCents: 0,
       };
     const json = (await res.json()) as {
       estimates: PricedEstimateSummaryLite[];
@@ -197,6 +199,14 @@ async function fetchEstimatesPipeline(): Promise<{
       const t = new Date(e.bidSubmittedAt).getTime();
       return !Number.isNaN(t) && Date.now() - t <= thirtyDaysMs;
     }).length;
+    const yearStart = new Date(new Date().getFullYear(), 0, 1).getTime();
+    const awardedThisYearCents = all
+      .filter((e) => {
+        if (e.bidStatus !== 'awarded') return false;
+        const t = new Date(e.updatedAt).getTime();
+        return !Number.isNaN(t) && t >= yearStart;
+      })
+      .reduce((sum, e) => sum + (e.bidTotalCents ?? 0), 0);
     return {
       recent,
       pipelineCents,
@@ -208,6 +218,7 @@ async function fetchEstimatesPipeline(): Promise<{
       recentDecided,
       stalePursuing,
       submitted30d,
+      awardedThisYearCents,
     };
   } catch {
     return {
@@ -221,6 +232,7 @@ async function fetchEstimatesPipeline(): Promise<{
       recentDecided: [],
       stalePursuing: [],
       submitted30d: 0,
+      awardedThisYearCents: 0,
     };
   }
 }
@@ -585,6 +597,11 @@ export default async function DashboardPage() {
               <span className="opacity-70">
                 · {pipelineData.awarded} of {pipelineData.decided}
               </span>
+              {pipelineData.awardedThisYearCents > 0 && (
+                <span className="ml-1 inline-flex items-center gap-1 rounded-full border border-green-200 bg-green-50 px-2 py-0.5 text-[10px] font-semibold text-green-800">
+                  Won YTD <span className="font-mono"><Money cents={pipelineData.awardedThisYearCents} /></span>
+                </span>
+              )}
               {pipelineData.submitted30d > 0 && (
                 <span className="ml-1 inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-800">
                   {pipelineData.submitted30d} submitted (30d)
