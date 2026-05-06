@@ -285,6 +285,7 @@ export default async function JobDetailPage({
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <PinnedIndicator storageKey="yge.jobs.pinnedIds" eventName="yge:jobs-pinned-changed" id={job.id} />
           <CopyIdChip id={job.id} label="job" />
           <span className="text-xs text-gray-500" title={job.updatedAt}>
             Last edit {relativeTime(job.updatedAt)}
