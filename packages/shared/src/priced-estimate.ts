@@ -105,6 +105,12 @@ export const PricedBidItemSchema = PtoEBidItemSchema.extend({
    *   - undefined   — not yet reviewed; the editor's "X unreviewed"
    *                   count includes this one. */
   reviewState: z.enum(['accepted', 'flagged']).optional(),
+  /** Per-line markup % override. Decimal fraction (0.10 = 10%).
+   *  When set, this line's contribution to the bid's O&P uses this
+   *  value instead of the estimate-level oppPercent. Lets the
+   *  estimator drop a subcontractor line to 10% while the rest of
+   *  the bid stays at the standard 20%. Undefined = inherit. */
+  markupPct: z.number().min(0).max(2).optional(),
 });
 export type PricedBidItem = z.infer<typeof PricedBidItemSchema>;
 
@@ -261,6 +267,11 @@ export function computeEstimateTotals(est: PricedEstimate): PricedEstimateTotals
   let directCents = 0;
   let alternateCents = 0;
   let unpricedLineCount = 0;
+  // Per-line markup sum. When a bid item has its own markupPct set
+  // we use it; otherwise the line inherits est.oppPercent. This lets
+  // the estimator drop a subcontractor line to 10% while the rest
+  // of the bid stays at the standard 20%.
+  let perLineOppCents = 0;
   const perSchedule: Record<string, Cents> = {};
   for (const item of est.bidItems) {
     const lineCents = lineExtendedCents(item);
@@ -268,6 +279,8 @@ export function computeEstimateTotals(est: PricedEstimate): PricedEstimateTotals
       alternateCents += lineCents;
     } else {
       directCents += lineCents;
+      const lineMarkup = item.markupPct ?? est.oppPercent;
+      perLineOppCents += markupAmount(lineCents, lineMarkup);
     }
     if (item.unitPriceCents == null) unpricedLineCount += 1;
     const key = (item.schedule ?? '').trim();
@@ -290,7 +303,7 @@ export function computeEstimateTotals(est: PricedEstimate): PricedEstimateTotals
     bondCents: markupAmount(directCents, bond),
     insuranceCents: markupAmount(directCents, insurance),
     contingencyCents: markupAmount(directCents, contingency),
-    oppCents: markupAmount(directCents, est.oppPercent),
+    oppCents: perLineOppCents,
   };
   const oppCents =
     breakdown.laborBurdenCents +

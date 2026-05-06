@@ -500,6 +500,10 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
                   onReviewStateChange={(state) =>
                     void applyItemPatch(i, { reviewState: state })
                   }
+                  onMarkupChange={(pct) =>
+                    void applyItemPatch(i, { markupPct: pct })
+                  }
+                  defaultMarkupPct={estimate.oppPercent}
                   apiBaseUrl={apiBaseUrl}
                   estimateId={estimate.id}
                   projectType={estimate.projectType}
@@ -702,6 +706,8 @@ function BidItemRow({
   onScheduleChange,
   onAlternateChange,
   onReviewStateChange,
+  onMarkupChange,
+  defaultMarkupPct,
   apiBaseUrl,
   estimateId,
   projectType,
@@ -728,6 +734,11 @@ function BidItemRow({
   onAlternateChange: (alt: boolean) => void;
   /** Update the AI-draft review state. undefined = unreviewed. */
   onReviewStateChange: (state: 'accepted' | 'flagged' | undefined) => void;
+  /** Update the per-line markup override. undefined = inherit default. */
+  onMarkupChange: (pct: number | undefined) => void;
+  /** Estimate-level default markup, shown as the placeholder when this
+   *  line has no override. */
+  defaultMarkupPct: number;
   /** Passed through to the History popover so it can fetch and so the
    *  estimator's current estimate doesn't echo back in the matches. */
   apiBaseUrl: string;
@@ -813,6 +824,11 @@ function BidItemRow({
             />
             <span>Alternate</span>
           </label>
+          <MarkupOverrideField
+            value={item.markupPct}
+            defaultPct={defaultMarkupPct}
+            onCommit={onMarkupChange}
+          />
         </div>
         {item.pageReference && (
           <div className="text-xs text-gray-500">{item.pageReference}</div>
@@ -1029,5 +1045,69 @@ function OppEditor({
         {t('estEditor.markupHelp')}
       </p>
     </div>
+  );
+}
+
+// Per-line markup override input. Renders the placeholder as the
+// estimate-level default so the estimator can see "20% (default)"
+// when no override is set, and "10% (override)" when it is. Empty
+// input clears the override.
+function MarkupOverrideField({
+  value,
+  defaultPct,
+  onCommit,
+}: {
+  value: number | undefined;
+  defaultPct: number;
+  onCommit: (pct: number | undefined) => void;
+}) {
+  const [text, setText] = useState(
+    value == null ? '' : (value * 100).toFixed(1),
+  );
+  useEffect(() => {
+    setText(value == null ? '' : (value * 100).toFixed(1));
+  }, [value]);
+  const isOverridden = value != null;
+  return (
+    <span className="inline-flex items-center gap-1">
+      <span className="uppercase tracking-wide">Markup</span>
+      <input
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onBlur={() => {
+          const trimmed = text.trim();
+          if (trimmed === '') {
+            if (value != null) onCommit(undefined);
+            return;
+          }
+          const n = Number(trimmed.replace(/[%,\s]/g, ''));
+          if (!Number.isFinite(n) || n < 0 || n > 200) {
+            setText(value == null ? '' : (value * 100).toFixed(1));
+            return;
+          }
+          const pct = n / 100;
+          if (Math.abs(pct - (value ?? -1)) < 0.0001) return;
+          onCommit(pct);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            (e.target as HTMLInputElement).blur();
+          }
+        }}
+        placeholder={(defaultPct * 100).toFixed(1)}
+        title={
+          isOverridden
+            ? `Override: ${(value * 100).toFixed(1)}% (default ${(defaultPct * 100).toFixed(1)}%)`
+            : `Inheriting estimate default ${(defaultPct * 100).toFixed(1)}%`
+        }
+        className={`w-12 rounded border px-1 py-0.5 text-right font-mono text-[10px] ${
+          isOverridden
+            ? 'border-yge-blue-500 bg-yge-blue-50 text-yge-blue-800'
+            : 'border-gray-200 text-gray-500'
+        }`}
+      />
+      <span>%</span>
+    </span>
   );
 }
