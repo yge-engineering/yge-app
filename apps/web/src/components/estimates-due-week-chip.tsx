@@ -12,10 +12,22 @@ interface Props {
   count: number;
 }
 
+const DUE_KEY = 'yge.estimates.dueWeekFilter';
+
 export function EstimatesDueWeekChip({ targetId, count }: Props) {
-  const [active, setActive] = useState(false);
+  const [active, setActive] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem(DUE_KEY) === '1';
+  });
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage.setItem(DUE_KEY, active ? '1' : '0');
+      } catch {
+        // non-fatal
+      }
+    }
     const ids = targetId.split(',').map((x) => x.trim()).filter(Boolean);
     const sevenDays = 7 * 24 * 60 * 60 * 1000;
     const now = Date.now();

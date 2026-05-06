@@ -39,10 +39,26 @@ const ORDER: ReadonlyArray<{ value: FilterValue; label: string; tone: string }> 
   },
 ];
 
+const STATUS_KEY = 'yge.estimates.statusFilter';
+
 export function EstimatesStatusFilter({ targetId, counts, total }: Props) {
-  const [active, setActive] = useState<FilterValue>('all');
+  const [active, setActive] = useState<FilterValue>(() => {
+    if (typeof window === 'undefined') return 'all';
+    const v = window.localStorage.getItem(STATUS_KEY);
+    if (v === 'pursuing' || v === 'submitted' || v === 'awarded' || v === 'lost' || v === 'all') {
+      return v;
+    }
+    return 'all';
+  });
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage.setItem(STATUS_KEY, active);
+      } catch {
+        // Quota exceeded etc. — non-fatal.
+      }
+    }
     const table = document.getElementById(targetId);
     if (!table) return;
     const rows = table.querySelectorAll<HTMLTableRowElement>(
