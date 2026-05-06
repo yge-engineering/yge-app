@@ -3,6 +3,9 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SUPPORTED_LOCALES } from '@yge/shared';
 import { useTranslator } from '../lib/use-translator';
 import { clearAuth, readAuth, type AuthUser } from '../lib/auth-store';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { MeStackParamList } from '../../App';
 import { invalidateApiBaseUrlCache } from '../lib/api';
 import {
   PRESET_URLS,
@@ -15,7 +18,9 @@ interface Props {
   onSignOut: () => void;
 }
 
+type Nav = NativeStackNavigationProp<MeStackParamList, 'MeHome'>;
 export default function MeScreen({ onSignOut }: Props) {
+  const navigation = useNavigation<Nav>();
   const { t, locale, setLocale } = useTranslator();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [apiUrl, setApiUrl] = useState<string>(PRESET_URLS.dev);
@@ -90,6 +95,17 @@ export default function MeScreen({ onSignOut }: Props) {
           Switching env signs you out and you'll need to log in again.
         </Text>
       </View>
+
+      <Pressable
+        onPress={() => navigation.navigate('BidResults')}
+        style={[styles.card, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
+      >
+        <View>
+          <Text style={styles.label}>Bid results</Text>
+          <Text style={styles.value}>Wins, losses, lifetime stats</Text>
+        </View>
+        <Text style={{ fontSize: 18, color: '#0a3a6b' }}>→</Text>
+      </Pressable>
 
       <Pressable
         onPress={async () => {

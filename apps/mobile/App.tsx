@@ -14,6 +14,7 @@ import JobDetailScreen from './src/screens/job-detail-screen';
 import EstimatesScreen from './src/screens/estimates-screen';
 import EstimateDetailScreen from './src/screens/estimate-detail-screen';
 import MeScreen from './src/screens/me-screen';
+import BidResultsScreen from './src/screens/bid-results-screen';
 import LoginScreen from './src/screens/login-screen';
 import { readAuth } from './src/lib/auth-store';
 import { useTranslator } from './src/lib/use-translator';
@@ -26,6 +27,10 @@ export type JobsStackParamList = {
   JobsList: undefined;
   JobDetail: { id: string };
 };
+export type MeStackParamList = {
+  MeHome: undefined;
+  BidResults: undefined;
+};
 export type EstimatesStackParamList = {
   EstimatesList: undefined;
   EstimateDetail: { id: string };
@@ -35,6 +40,7 @@ const Tab = createBottomTabNavigator();
 const TodayStack = createNativeStackNavigator<TodayStackParamList>();
 const JobsStack = createNativeStackNavigator<JobsStackParamList>();
 const EstimatesStack = createNativeStackNavigator<EstimatesStackParamList>();
+const MeStack = createNativeStackNavigator<MeStackParamList>();
 
 function TodayStackNav() {
   return (
@@ -78,6 +84,23 @@ function EstimatesStackNav() {
       <EstimatesStack.Screen name="EstimatesList" component={EstimatesScreen} options={{ title: 'Estimates' }} />
       <EstimatesStack.Screen name="EstimateDetail" component={EstimateDetailScreen} options={{ title: 'Estimate' }} />
     </EstimatesStack.Navigator>
+  );
+}
+
+function MeStackNav({ onSignOut }: { onSignOut: () => void }) {
+  return (
+    <MeStack.Navigator
+      screenOptions={{
+        headerStyle: { backgroundColor: '#0a3a6b' },
+        headerTintColor: '#ffffff',
+        headerTitleStyle: { fontWeight: '700' },
+      }}
+    >
+      <MeStack.Screen name="MeHome" options={{ title: 'Me' }}>
+        {() => <MeScreen onSignOut={onSignOut} />}
+      </MeStack.Screen>
+      <MeStack.Screen name="BidResults" component={BidResultsScreen} options={{ title: 'Bid results' }} />
+    </MeStack.Navigator>
   );
 }
 
@@ -135,9 +158,10 @@ function AuthedTabs({ onSignOut }: { onSignOut: () => void }) {
           options={{
             tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>👤</Text>,
             title: t('mobile.tab.me'),
+            headerShown: false,
           }}
         >
-          {() => <MeScreen onSignOut={onSignOut} />}
+          {() => <MeStackNav onSignOut={onSignOut} />}
         </Tab.Screen>
       </Tab.Navigator>
     </NavigationContainer>
