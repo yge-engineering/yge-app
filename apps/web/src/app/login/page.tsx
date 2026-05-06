@@ -1,10 +1,11 @@
 // /login — sign-in page.
 //
-// Plain English: the gate. Two-step:
-//   1. Type your work email, hit Continue. If you've signed in before,
-//      we ask for your password. If you haven't, we ask you to pick a
-//      password right now.
-//   2. Type the password (or set + confirm a new one) and you're in.
+// Plain English: the gate. One screen with email + password.
+//   - Returning user: type both, hit Sign in, you're in.
+//   - First-timer: type email + a password, submit. We surface a
+//     "confirm password" field below; re-type the same password and
+//     submit again to set it and sign in.
+//   - Microsoft SSO: one click, no password.
 //
 // Access is by email allowlist (Ryan + Brook today) plus a scrypt
 // password the user picks the first time. Until Supabase Auth is
@@ -17,16 +18,12 @@ import { useSearchParams } from 'next/navigation';
 import { useFormState, useFormStatus } from 'react-dom';
 
 import {
-  checkEmail,
-  setPasswordAndSignIn,
-  signInWithPassword,
-  type CheckEmailState,
+  signInOrSetup,
   type SignInState,
 } from './actions';
 import { FormField, FORM_INPUT_CLASS } from '../../components/form-field';
 import { useTranslator, type Translator } from '../../lib/use-translator';
 
-const initialEmailState: CheckEmailState = {};
 const initialSignInState: SignInState = {};
 
 function SubmitButton({ t, label }: { t: Translator; label: string }) {
@@ -42,13 +39,7 @@ function SubmitButton({ t, label }: { t: Translator; label: string }) {
   );
 }
 
-type Stage =
-  | { kind: 'enter-email' }
-  | { kind: 'enter-password'; email: string }
-  | { kind: 'create-password'; email: string };
-
 export default function LoginPage() {
-  const [stage, setStage] = useState<Stage>({ kind: 'enter-email' });
   const t = useTranslator();
 
   return (
@@ -60,46 +51,16 @@ export default function LoginPage() {
             alt="Young General Engineering"
             className="mx-auto mb-3 h-24 w-auto"
           />
-          <p className="mt-1 text-sm text-gray-500">
-            {stage.kind === 'create-password'
-              ? 'First time signing in — pick a password.'
-              : stage.kind === 'enter-password'
-                ? 'Welcome back. Enter your password.'
-                : t('login.subtitle')}
-          </p>
+          <p className="mt-1 text-sm text-gray-500">{t('login.subtitle')}</p>
         </div>
 
-        {stage.kind === 'enter-email' && (
-          <>
-            <MicrosoftSsoButton />
-            <div className="mb-4 flex items-center gap-2 text-[11px] uppercase tracking-wider text-gray-400">
-              <span className="h-px flex-1 bg-gray-200" />
-              <span>or</span>
-              <span className="h-px flex-1 bg-gray-200" />
-            </div>
-            <EnterEmailForm t={t} onAdvance={setStage} />
-          </>
-        )}
-        {stage.kind === 'enter-password' && (
-          <EnterPasswordForm
-            t={t}
-            email={stage.email}
-            onBack={() => setStage({ kind: 'enter-email' })}
-            onPasswordWasSet={(email) =>
-              setStage({ kind: 'enter-password', email })
-            }
-          />
-        )}
-        {stage.kind === 'create-password' && (
-          <CreatePasswordForm
-            t={t}
-            email={stage.email}
-            onBack={() => setStage({ kind: 'enter-email' })}
-            onPasswordWasSet={(email) =>
-              setStage({ kind: 'enter-password', email })
-            }
-          />
-        )}
+        <MicrosoftSsoButton />
+        <div className="mb-4 flex items-center gap-2 text-[11px] uppercase tracking-wider text-gray-400">
+          <span className="h-px flex-1 bg-gray-200" />
+          <span>or</span>
+          <span className="h-px flex-1 bg-gray-200" />
+        </div>
+        <SignInForm t={t} />
 
         <SsoStatusNotice />
 
@@ -187,34 +148,32 @@ function SsoStatusNotice() {
   return null;
 }
 
-// ---- Step 1 -------------------------------------------------------------
+// ---- Single-screen sign-in form ----------------------------------------
 
-function EnterEmailForm({
-  t,
-  onAdvance,
-}: {
-  t: Translator;
-  onAdvance: (next: Stage) => void;
-}) {
-  const [state, formAction] = useFormState<CheckEmailState, FormData>(
-    checkEmail,
-    initialEmailState,
+function SignInForm({ t }: { t: Translator }) {
+  const [state, formAction] = useFormState<SignInState, FormData>(
+    signInOrSetup,
+    initialSignInState,
   );
   // Pre-fill the email when the URL has ?email=... — happens when an
-  // admin shares an invite link from /admin/portal-users.
+  // admin shares an invite link from /admin/portal-users. Also re-
+  // populate from the action's returned state so a failed submit
+  // doesn't blank the field the user just typed.
   const params = useSearchParams();
   const presetEmail = params?.get('email') ?? '';
   const [emailValue, setEmailValue] = useState(presetEmail);
   useEffect(() => {
-    if (presetEmail) setEmailValue(presetEmail);
-  }, [presetEmail]);
+    if (state.email) setEmailValue(state.email);
+    else if (presetEmail) setEmailValue(presetEmail);
+  }, [state.email, presetEmail]);
 
-  // When the action returns a step, advance the local stage.
-  if (state.step && state.email && !state.error) {
-    queueMicrotask(() =>
-      onAdvance({ kind: state.step!, email: state.email! }),
-    );
-  }
+  // When the action returns step:'create-password', the second submit
+  // needs the confirm field. Until then we hide it so returning users
+  // see the simplest possible form.
+  const showConfirm = state.step === 'create-password';
+  const submitLabel = showConfirm
+    ? 'Create password & sign in'
+    : t('login.signIn');
 
   return (
     <form action={formAction} className="space-y-4">
@@ -222,7 +181,7 @@ function EnterEmailForm({
         name="email"
         label={t('login.emailLabel')}
         required
-        error={state.error}
+        error={!showConfirm ? state.error : undefined}
       >
         <input
           id="email"
@@ -237,132 +196,35 @@ function EnterEmailForm({
         />
       </FormField>
 
-      <SubmitButton t={t} label="Continue" />
-    </form>
-  );
-}
-
-// ---- Step 2a — existing user ------------------------------------------
-
-function EnterPasswordForm({
-  t,
-  email,
-  onBack,
-  onPasswordWasSet,
-}: {
-  t: Translator;
-  email: string;
-  onBack: () => void;
-  onPasswordWasSet: (email: string) => void;
-}) {
-  const [state, formAction] = useFormState<SignInState, FormData>(
-    signInWithPassword,
-    initialSignInState,
-  );
-
-  if (state.step === 'create-password' && state.email) {
-    queueMicrotask(() => onPasswordWasSet(state.email!));
-  }
-
-  return (
-    <form action={formAction} className="space-y-4">
-      <input type="hidden" name="email" value={email} />
-
-      <div className="rounded-md bg-blue-50 px-3 py-2 text-xs text-blue-900">
-        Signing in as <strong>{email}</strong>{' '}
-        <button
-          type="button"
-          onClick={onBack}
-          className="ml-1 underline hover:no-underline"
-        >
-          change
-        </button>
-      </div>
-
       <FormField
         name="password"
-        label="Password"
+        label={showConfirm ? 'Choose a password (at least 8 characters)' : 'Password'}
         required
-        error={state.error}
+        error={showConfirm ? state.error : undefined}
       >
         <PasswordInput
           id="password"
           name="password"
-          autoComplete="current-password"
+          autoComplete={showConfirm ? 'new-password' : 'current-password'}
           required
-          autoFocus
+          minLength={showConfirm ? 8 : undefined}
         />
       </FormField>
 
-      <SubmitButton t={t} label={t('login.signIn')} />
-    </form>
-  );
-}
+      {showConfirm && (
+        <FormField name="confirm" label="Confirm password" required>
+          <PasswordInput
+            id="confirm"
+            name="confirm"
+            autoComplete="new-password"
+            required
+            minLength={8}
+            autoFocus
+          />
+        </FormField>
+      )}
 
-// ---- Step 2b — first-time user ----------------------------------------
-
-function CreatePasswordForm({
-  t,
-  email,
-  onBack,
-  onPasswordWasSet,
-}: {
-  t: Translator;
-  email: string;
-  onBack: () => void;
-  onPasswordWasSet: (email: string) => void;
-}) {
-  const [state, formAction] = useFormState<SignInState, FormData>(
-    setPasswordAndSignIn,
-    initialSignInState,
-  );
-
-  if (state.step === 'enter-password' && state.email) {
-    queueMicrotask(() => onPasswordWasSet(state.email!));
-  }
-
-  return (
-    <form action={formAction} className="space-y-4">
-      <input type="hidden" name="email" value={email} />
-
-      <div className="rounded-md bg-blue-50 px-3 py-2 text-xs text-blue-900">
-        Setting up <strong>{email}</strong>{' '}
-        <button
-          type="button"
-          onClick={onBack}
-          className="ml-1 underline hover:no-underline"
-        >
-          change
-        </button>
-      </div>
-
-      <FormField
-        name="password"
-        label="Choose a password (at least 8 characters)"
-        required
-        error={state.error}
-      >
-        <PasswordInput
-          id="password"
-          name="password"
-          autoComplete="new-password"
-          minLength={8}
-          required
-          autoFocus
-        />
-      </FormField>
-
-      <FormField name="confirm" label="Confirm password" required>
-        <PasswordInput
-          id="confirm"
-          name="confirm"
-          autoComplete="new-password"
-          minLength={8}
-          required
-        />
-      </FormField>
-
-      <SubmitButton t={t} label="Create password & sign in" />
+      <SubmitButton t={t} label={submitLabel} />
     </form>
   );
 }

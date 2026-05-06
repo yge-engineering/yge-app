@@ -222,6 +222,159 @@ export async function setPasswordAndSignIn(
   redirect('/dashboard');
 }
 
+// ---- Unified single-screen sign-in --------------------------------------
+
+/**
+ * Single-screen sign-in: email + password on one form. If the user has
+ * never signed in we ask once, then on the second submit (with the
+ * confirm field) we set the password and sign them in.
+ *
+ * Why one action: the two-step flow (check email → then password) made
+ * sign-in feel like two requests for what is conceptually one action.
+ * This collapses to a single submit for the common case of returning
+ * users; first-timers see a "confirm password" field appear inline.
+ */
+export async function signInOrSetup(
+  _prev: SignInState,
+  formData: FormData,
+): Promise<SignInState> {
+  const emailRaw = formData.get('email');
+  const passwordRaw = formData.get('password');
+  const confirmRaw = formData.get('confirm');
+  const email = typeof emailRaw === 'string' ? emailRaw.trim() : '';
+  const password = typeof passwordRaw === 'string' ? passwordRaw : '';
+  const confirm = typeof confirmRaw === 'string' ? confirmRaw : '';
+
+  if (!email) return { error: 'Enter your work email.' };
+  if (!password) {
+    return { email, error: 'Enter your password.' };
+  }
+
+  const user = await findPortalUser(email);
+  if (!user) {
+    return {
+      error: 'That email is not on the access list. Ask Ryan to add you.',
+    };
+  }
+
+  // Branch on whether the user already has a password set.
+  let hasPassword = false;
+  try {
+    const res = await fetch(
+      `${API_BASE_URL}/api/credentials/has-password?email=${encodeURIComponent(email)}`,
+      { cache: 'no-store' },
+    );
+    if (res.ok) {
+      const json = (await res.json()) as { hasPassword?: boolean };
+      hasPassword = Boolean(json.hasPassword);
+    }
+  } catch {
+    return {
+      email,
+      error: "Can't reach the server right now. Try again in a moment.",
+    };
+  }
+
+  if (hasPassword) {
+    // Returning user — verify and sign in.
+    let valid = false;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/credentials/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+        cache: 'no-store',
+      });
+      if (res.status === 429) {
+        const json = (await res.json().catch(() => ({}))) as {
+          retryAfterSec?: number;
+        };
+        const minutes = Math.max(
+          1,
+          Math.ceil((json.retryAfterSec ?? 900) / 60),
+        );
+        return {
+          email,
+          error: `Too many failed attempts. Try again in ~${minutes} minutes.`,
+        };
+      }
+      if (res.ok) {
+        const json = (await res.json()) as { valid?: boolean };
+        valid = Boolean(json.valid);
+      }
+    } catch {
+      return {
+        email,
+        error: "Can't reach the server right now. Try again in a moment.",
+      };
+    }
+
+    if (!valid) {
+      return { email, error: 'Wrong password. Try again.' };
+    }
+
+    setSessionCookie(user);
+    redirect('/dashboard');
+  }
+
+  // First-time user — needs a confirm step before we set the password.
+  if (password.length < 8) {
+    return {
+      step: 'create-password',
+      email,
+      error:
+        'First time signing in. Pick a password (at least 8 characters) and confirm it below.',
+    };
+  }
+  if (!confirm) {
+    return {
+      step: 'create-password',
+      email,
+      error:
+        'First time signing in. Re-type the password below to confirm, then submit.',
+    };
+  }
+  if (password !== confirm) {
+    return {
+      step: 'create-password',
+      email,
+      error: "Passwords don't match. Re-type the same password in both fields.",
+    };
+  }
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/credentials/set-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+      cache: 'no-store',
+    });
+    if (!res.ok) {
+      if (res.status === 409) {
+        return {
+          email,
+          error:
+            'A password is already set. Try signing in without the confirm field.',
+        };
+      }
+      return {
+        step: 'create-password',
+        email,
+        error: 'Could not save the password. Try again.',
+      };
+    }
+  } catch {
+    return {
+      step: 'create-password',
+      email,
+      error: "Can't reach the server right now. Try again in a moment.",
+    };
+  }
+
+  setSessionCookie(user);
+  redirect('/dashboard');
+}
+
 // ---- Sign out -----------------------------------------------------------
 
 export async function signOut(): Promise<void> {
