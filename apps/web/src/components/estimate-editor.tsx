@@ -62,6 +62,38 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
   // line without staring at the rows they already accepted.
   const [showUnreviewedOnly, setShowUnreviewedOnly] = useState(false);
 
+  // Find/replace toolbar state. When openFindReplace is true, the
+  // strip above the grid takes input. Matches are case-insensitive
+  // substring matches against item.description.
+  const [openFindReplace, setOpenFindReplace] = useState(false);
+  const [findText, setFindText] = useState('');
+  const [replaceText, setReplaceText] = useState('');
+  const findMatches =
+    findText.trim() === ''
+      ? []
+      : estimate.bidItems
+          .map((item, i) => ({ item, i }))
+          .filter(({ item }) =>
+            item.description.toLowerCase().includes(findText.toLowerCase()),
+          );
+
+  async function applyFindReplace() {
+    if (findText.trim() === '') return;
+    const pattern = findText;
+    const replacement = replaceText;
+    // Case-insensitive global replace.
+    const re = new RegExp(
+      pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+      'gi',
+    );
+    for (const { i, item } of findMatches) {
+      const next = item.description.replace(re, replacement);
+      if (next === item.description) continue;
+      // eslint-disable-next-line no-await-in-loop
+      await applyItemPatch(i, { description: next });
+    }
+  }
+
   // Bulk-select state. selectedIndices is the set of currently
   // selected row indices; lastSelectedIdx is used for shift-click
   // range selects. The bulk-actions toolbar shows up when size > 0.
@@ -647,6 +679,18 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
             {t('estEditor.bidItemsHeader')}
           </h2>
           <div className="flex items-center gap-3 text-xs">
+            <button
+              type="button"
+              onClick={() => setOpenFindReplace((v) => !v)}
+              className={`rounded border px-2 py-0.5 font-medium ${
+                openFindReplace
+                  ? 'border-yge-blue-500 bg-yge-blue-50 text-yge-blue-700'
+                  : 'border-gray-300 text-gray-600 hover:border-yge-blue-500 hover:text-yge-blue-700'
+              }`}
+              title="Find / replace across line descriptions"
+            >
+              🔍 Find/replace
+            </button>
             <span className="text-gray-600">
               {(() => {
                 const total = estimate.bidItems.length;
@@ -686,6 +730,53 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
             </label>
           </div>
         </div>
+        {openFindReplace && (
+          <div className="mb-2 flex flex-wrap items-center gap-2 rounded border border-gray-200 bg-gray-50 px-3 py-2 text-xs">
+            <span className="font-semibold uppercase tracking-wide text-gray-500">
+              Find / replace
+            </span>
+            <input
+              type="text"
+              value={findText}
+              onChange={(e) => setFindText(e.target.value)}
+              placeholder="Find text in descriptions"
+              className="w-48 rounded border border-gray-300 px-2 py-1"
+              aria-label="Find text"
+            />
+            <span className="text-gray-500">→</span>
+            <input
+              type="text"
+              value={replaceText}
+              onChange={(e) => setReplaceText(e.target.value)}
+              placeholder="Replace with"
+              className="w-48 rounded border border-gray-300 px-2 py-1"
+              aria-label="Replace with"
+            />
+            <span className="text-gray-600">
+              {findMatches.length === 0
+                ? 'No matches'
+                : `${findMatches.length} row${findMatches.length === 1 ? '' : 's'} match`}
+            </span>
+            <button
+              type="button"
+              disabled={findMatches.length === 0}
+              onClick={() => void applyFindReplace()}
+              className="ml-auto rounded bg-yge-blue-500 px-3 py-1 font-semibold text-white hover:bg-yge-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Replace in {findMatches.length}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setFindText('');
+                setReplaceText('');
+              }}
+              className="rounded px-2 py-1 text-gray-600 hover:bg-gray-200"
+            >
+              Clear
+            </button>
+          </div>
+        )}
         {/* The table sits inside a max-h scroller so the header and the
             totals footer stay pinned while the line items scroll. The
             sticky positioning on <thead> + <tfoot> is what an
