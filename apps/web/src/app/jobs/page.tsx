@@ -10,6 +10,7 @@ import { JobsSearchInput } from '../../components/jobs-search-input';
 import { JobsCreatedFilter } from '../../components/jobs-created-filter';
 import { JobsResetFilters } from '../../components/jobs-reset-filters';
 import { DashboardRefreshButton } from '../../components/dashboard-refresh-button';
+import { JobsPinButton, JobsPinReorder } from '../../components/jobs-pin-button';
 import { relativeTime } from '../../lib/relative-time';
 import { CopyMoneyButton } from '../../components/copy-money-button';
 import { EstimatesSortHeaders } from '../../components/estimates-sort-headers';
@@ -327,6 +328,7 @@ export default async function JobsPage({ searchParams }: PageProps) {
             <JobsResetFilters />
           </div>
           <EstimatesSortHeaders targetId="jobs-table" />
+          <JobsPinReorder targetId="jobs-table" />
           <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
           <table id="jobs-table" className="w-full text-left text-sm">
             <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
@@ -353,6 +355,7 @@ export default async function JobsPage({ searchParams }: PageProps) {
               {filteredJobs.map((j) => (
                 <tr
                   key={j.id}
+                  data-id={j.id}
                   data-search={`${j.projectName} ${j.ownerAgency ?? ''} ${j.location ?? ''}`}
                   data-created={j.createdAt}
                   data-sort-name={j.projectName.toLowerCase()}
@@ -369,6 +372,7 @@ export default async function JobsPage({ searchParams }: PageProps) {
                         {j.projectName}
                       </Link>
                     </div>
+                    <JobsPinButton jobId={j.id} />
                     {j.ownerAgency && (
                       <div className="text-xs text-gray-500">{j.ownerAgency}</div>
                     )}
