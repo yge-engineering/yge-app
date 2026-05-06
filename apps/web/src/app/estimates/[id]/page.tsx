@@ -16,6 +16,7 @@ import { notFound } from 'next/navigation';
 import type { PricedEstimate, PricedEstimateTotals } from '@yge/shared';
 import { EstimateEditor } from '@/components/estimate-editor';
 import { BidDueBanner } from '@/components/bid-due-banner';
+import { CopyEstimateLink } from '@/components/copy-estimate-link';
 import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
@@ -115,6 +116,12 @@ export default async function EstimateDetailPage({
         >
           {t('estPg.addenda')}
         </Link>
+        <CopyEstimateLink
+          sourceId={data.estimate.id}
+          sourceProjectName={data.estimate.projectName}
+          sourceJobId={data.estimate.jobId}
+          apiBaseUrl={publicApiBaseUrl()}
+        />
       </div>
 
       <div className="mb-4">
