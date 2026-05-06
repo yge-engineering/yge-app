@@ -107,6 +107,7 @@ async function fetchEstimatesPipeline(): Promise<{
   decided: number;
   awarded: number;
   submittedAwaiting: PricedEstimateSummaryLite[];
+  centsByStatus: { pursuing: number; submitted: number; awarded: number };
 }> {
   try {
     const res = await fetch(`${apiBaseUrl()}/api/priced-estimates`, {
@@ -120,6 +121,7 @@ async function fetchEstimatesPipeline(): Promise<{
         decided: 0,
         awarded: 0,
         submittedAwaiting: [],
+        centsByStatus: { pursuing: 0, submitted: 0, awarded: 0 },
       };
     const json = (await res.json()) as {
       estimates: PricedEstimateSummaryLite[];
@@ -153,6 +155,14 @@ async function fetchEstimatesPipeline(): Promise<{
         return ta.localeCompare(tb); // oldest first
       })
       .slice(0, 5);
+    const centsByStatus = { pursuing: 0, submitted: 0, awarded: 0 };
+    for (const e of all) {
+      const cents = typeof e.bidTotalCents === 'number' ? e.bidTotalCents : 0;
+      const k = e.bidStatus ?? 'pursuing';
+      if (k === 'pursuing' || k === 'submitted' || k === 'awarded') {
+        centsByStatus[k] += cents;
+      }
+    }
     return {
       recent,
       pipelineCents,
@@ -160,6 +170,7 @@ async function fetchEstimatesPipeline(): Promise<{
       decided: awarded + lost,
       awarded,
       submittedAwaiting,
+      centsByStatus,
     };
   } catch {
     return {
@@ -169,6 +180,7 @@ async function fetchEstimatesPipeline(): Promise<{
       decided: 0,
       awarded: 0,
       submittedAwaiting: [],
+      centsByStatus: { pursuing: 0, submitted: 0, awarded: 0 },
     };
   }
 }
@@ -433,15 +445,30 @@ export default async function DashboardPage() {
       {/* BID PIPELINE — sum of bid totals across all priced estimates. */}
       {pipelineData.pipelineCount > 0 && (
         <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
-          <span className="inline-flex items-center gap-2 rounded-full border border-yge-blue-200 bg-yge-blue-50 px-3 py-1 font-medium text-yge-blue-700">
-            <span className="uppercase tracking-wide opacity-70">Bid pipeline</span>
-            <span className="font-mono font-semibold">
-              <Money cents={pipelineData.pipelineCents} />
+          {pipelineData.centsByStatus.pursuing > 0 && (
+            <span className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 font-medium text-amber-800">
+              <span className="uppercase tracking-wide opacity-70">Pursuing</span>
+              <span className="font-mono font-semibold">
+                <Money cents={pipelineData.centsByStatus.pursuing} />
+              </span>
             </span>
-            <span className="opacity-70">
-              · {pipelineData.pipelineCount} estimate{pipelineData.pipelineCount === 1 ? '' : 's'}
+          )}
+          {pipelineData.centsByStatus.submitted > 0 && (
+            <span className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 font-medium text-blue-800">
+              <span className="uppercase tracking-wide opacity-70">Submitted</span>
+              <span className="font-mono font-semibold">
+                <Money cents={pipelineData.centsByStatus.submitted} />
+              </span>
             </span>
-          </span>
+          )}
+          {pipelineData.centsByStatus.awarded > 0 && (
+            <span className="inline-flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-3 py-1 font-medium text-green-800">
+              <span className="uppercase tracking-wide opacity-70">Awarded</span>
+              <span className="font-mono font-semibold">
+                <Money cents={pipelineData.centsByStatus.awarded} />
+              </span>
+            </span>
+          )}
           {pipelineData.decided > 0 && (
             <span className="inline-flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-3 py-1 font-medium text-green-800">
               <span className="uppercase tracking-wide opacity-70">Win rate</span>
