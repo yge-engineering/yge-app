@@ -16,6 +16,7 @@ import { Money } from '../../components/money';
 import { RecentActivity } from '../../components/recent-activity';
 import { getCurrentUser } from '../../lib/auth';
 import { getTranslator } from '../../lib/locale';
+import { bidDueCountdown } from '@yge/shared';
 import { ygeHour, ygeToday } from '../../lib/yge-time';
 import {
   computeArPaymentRollup,
@@ -611,6 +612,29 @@ function QuickAction({ href, label, sub }: { href: string; label: string; sub: s
 // Recent estimates tile. The 5 most-recently-edited bids with
 // project name, bid total, due date, and an unpriced-line count
 // hint. Click any row to jump straight into the editor.
+function RecentEstimateDuePill({ iso }: { iso: string | undefined }) {
+  const c = bidDueCountdown(iso, undefined, 'en');
+  if (c.level === 'none') {
+    return <span className="text-gray-500">No bid date</span>;
+  }
+  const tone =
+    c.level === 'red'
+      ? 'border-red-300 bg-red-50 text-red-800'
+      : c.level === 'orange'
+        ? 'border-orange-300 bg-orange-50 text-orange-800'
+        : c.level === 'yellow'
+          ? 'border-yellow-300 bg-yellow-50 text-yellow-800'
+          : 'border-green-300 bg-green-50 text-green-800';
+  return (
+    <span
+      title={c.longLabel}
+      className={`inline-block rounded-full border px-1.5 py-0.5 font-semibold uppercase tracking-wide ${tone}`}
+    >
+      Due · {c.shortLabel}
+    </span>
+  );
+}
+
 function RecentEstimatesTile({
   estimates,
 }: {
@@ -641,7 +665,7 @@ function RecentEstimatesTile({
                   {e.projectName}
                 </div>
                 <div className="text-[11px] text-gray-500">
-                  {e.bidDueDate ? `Due ${e.bidDueDate}` : 'No bid date'}
+                  <RecentEstimateDuePill iso={e.bidDueDate} />
                   {(e.unpricedLineCount ?? 0) > 0 ? (
                     <span className="ml-2 text-amber-700">
                       · {e.unpricedLineCount} unpriced
