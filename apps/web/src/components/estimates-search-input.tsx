@@ -8,8 +8,8 @@
 import { useEffect, useState } from 'react';
 
 interface Props {
-  /** ID of the table whose rows we filter. Each row should
-   *  have a data-search attribute with the searchable text. */
+  /** Comma-separated list of table IDs to filter, OR a single table id.
+   *  Each row should have a data-search attribute with the searchable text. */
   targetId: string;
   totalCount: number;
 }
@@ -19,17 +19,22 @@ export function EstimatesSearchInput({ targetId, totalCount }: Props) {
   const [matched, setMatched] = useState<number>(totalCount);
 
   useEffect(() => {
-    const table = document.getElementById(targetId);
-    if (!table) return;
+    const ids = targetId.split(',').map((x) => x.trim()).filter(Boolean);
     const needle = q.trim().toLowerCase();
     let count = 0;
-    const rows = table.querySelectorAll<HTMLTableRowElement>('tbody > tr[data-search]');
-    rows.forEach((row) => {
-      const hay = (row.dataset['search'] ?? '').toLowerCase();
-      const visible = needle.length === 0 || hay.includes(needle);
-      row.style.display = visible ? '' : 'none';
-      if (visible) count++;
-    });
+    for (const id of ids) {
+      const table = document.getElementById(id);
+      if (!table) continue;
+      const rows = table.querySelectorAll<HTMLTableRowElement>(
+        'tbody > tr[data-search]',
+      );
+      rows.forEach((row) => {
+        const hay = (row.dataset['search'] ?? '').toLowerCase();
+        const visible = needle.length === 0 || hay.includes(needle);
+        row.style.display = visible ? '' : 'none';
+        if (visible) count++;
+      });
+    }
     setMatched(count);
   }, [q, targetId, totalCount]);
 

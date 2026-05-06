@@ -234,7 +234,7 @@ export default async function EstimatesPage() {
             </p>
           </div>
           <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-            <table className="w-full text-left text-sm">
+            <table id="imported-estimates-table" className="w-full text-left text-sm">
               <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
                 <tr>
                   <th className="px-4 py-2">Project</th>
@@ -249,7 +249,11 @@ export default async function EstimatesPage() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {imported.map((e) => (
-                  <tr key={e.id} className="hover:bg-gray-50">
+                  <tr
+                    key={e.id}
+                    data-search={`${e.projectName} ${e.client ?? ''} ${e.jobNumber}`}
+                    className="hover:bg-gray-50"
+                  >
                     <td className="px-4 py-3">
                       <div className="font-medium text-gray-900">{e.projectName}</div>
                     </td>
@@ -311,7 +315,7 @@ export default async function EstimatesPage() {
 
       {estimates.length > 0 && (
         <div className="mt-6">
-          <EstimatesSearchInput targetId="estimates-table" totalCount={estimates.length} />
+          <EstimatesSearchInput targetId="estimates-table,imported-estimates-table" totalCount={estimates.length + imported.length} />
           <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
           <table id="estimates-table" className="w-full text-left text-sm">
             <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
