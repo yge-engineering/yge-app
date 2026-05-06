@@ -8,6 +8,7 @@ import Link from 'next/link';
 
 import { Alert, AppShell } from '../../components';
 import { DraftsSearchInput } from '../../components/drafts-search-input';
+import { EstimatesSortHeaders } from '../../components/estimates-sort-headers';
 import { getTranslator } from '../../lib/locale';
 
 interface DraftSummary {
@@ -112,15 +113,25 @@ export default async function DraftsPage() {
       {drafts.length > 0 && (
         <div className="mt-6">
           <DraftsSearchInput targetId="drafts-table" totalCount={drafts.length} />
+          <EstimatesSortHeaders targetId="drafts-table" />
           <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
           <table id="drafts-table" className="w-full text-left text-sm">
             <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
               <tr>
-                <th className="px-4 py-2">{t('drafts.col.project')}</th>
+                <th data-sort-key="name" className="select-none px-4 py-2 hover:bg-gray-100">
+                  {t('drafts.col.project')}
+                  <span className="sort-arrow" />
+                </th>
                 <th className="px-4 py-2">{t('drafts.col.type')}</th>
-                <th className="px-4 py-2">{t('drafts.col.items')}</th>
+                <th data-sort-key="cents" className="select-none px-4 py-2 hover:bg-gray-100">
+                  {t('drafts.col.items')}
+                  <span className="sort-arrow" />
+                </th>
                 <th className="px-4 py-2">{t('drafts.col.confidence')}</th>
-                <th className="px-4 py-2">{t('drafts.col.saved')}</th>
+                <th data-sort-key="updated" className="select-none px-4 py-2 hover:bg-gray-100">
+                  {t('drafts.col.saved')}
+                  <span className="sort-arrow" />
+                </th>
                 <th className="px-4 py-2"></th>
               </tr>
             </thead>
@@ -129,6 +140,9 @@ export default async function DraftsPage() {
                 <tr
                   key={d.id}
                   data-search={`${d.projectName} ${d.ownerAgency ?? ''} ${d.projectType.replace(/_/g, ' ')}`}
+                  data-sort-name={d.projectName.toLowerCase()}
+                  data-sort-cents={d.bidItemCount}
+                  data-sort-updated={d.createdAt}
                   className="hover:bg-gray-50"
                 >
                   <td className="px-4 py-3">
