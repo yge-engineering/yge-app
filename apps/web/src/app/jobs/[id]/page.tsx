@@ -58,6 +58,7 @@ interface EstimateSummary {
   subBidCount?: number;
   addendumCount?: number;
   unacknowledgedAddendumCount?: number;
+  bidStatus?: 'pursuing' | 'submitted' | 'awarded' | 'lost';
 }
 
 function apiBaseUrl(): string {
@@ -116,6 +117,29 @@ async function fetchImportedEstimates(): Promise<ImportedEstimateSummary[]> {
   if (!res.ok) return [];
   const json = (await res.json()) as { importedEstimates: ImportedEstimateSummary[] };
   return json.importedEstimates;
+}
+
+function JobBidStatusPill({
+  status,
+}: {
+  status: 'pursuing' | 'submitted' | 'awarded' | 'lost' | undefined;
+}) {
+  const v = status ?? 'pursuing';
+  const tone =
+    v === 'awarded'
+      ? 'border-green-300 bg-green-50 text-green-800'
+      : v === 'lost'
+        ? 'border-gray-300 bg-gray-100 text-gray-600'
+        : v === 'submitted'
+          ? 'border-blue-300 bg-blue-50 text-blue-800'
+          : 'border-amber-300 bg-amber-50 text-amber-800';
+  return (
+    <span
+      className={`ml-2 inline-block rounded-full border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${tone}`}
+    >
+      {v}
+    </span>
+  );
 }
 
 function formatWhen(iso: string): string {
@@ -455,6 +479,7 @@ export default async function JobDetailPage({
                   <div>
                     <div className="text-sm font-medium text-gray-900">
                       {e.projectName}
+                      <JobBidStatusPill status={e.bidStatus} />
                     </div>
                     <div className="text-xs text-gray-500">
                       {pre}<Money cents={e.bidTotalCents} />{post}
