@@ -20,6 +20,7 @@ const SHORTCUTS: Shortcut[] = [
   { keys: '?', labelKey: 'kbd.show' },
   { keys: '/', labelKey: 'kbd.search' },
   { keys: 'n', labelKey: 'kbd.newEstimate', href: '/plans-to-estimate' },
+  { keys: 'o', labelKey: 'kbd.openLatestBid' },
   { keys: 'g d', labelKey: 'kbd.dashboard', href: '/dashboard' },
   { keys: 'g p', labelKey: 'kbd.newEstimate', href: '/plans-to-estimate' },
   { keys: 'g j', labelKey: 'kbd.jobs', href: '/jobs' },
@@ -75,6 +76,20 @@ export function KeyboardShortcuts() {
       if (e.key === 'n' && !prefix) {
         e.preventDefault();
         router.push('/plans-to-estimate');
+        return;
+      }
+      if (e.key === 'o' && !prefix) {
+        e.preventDefault();
+        // Find the dashboard Continue tile if rendered, else fall back.
+        const continueLink =
+          document.querySelector<HTMLAnchorElement>(
+            'a.from-yge-blue-50, a.from-amber-50, a.from-red-50',
+          );
+        if (continueLink?.href) {
+          router.push(continueLink.getAttribute('href') ?? '/estimates');
+        } else {
+          router.push('/estimates');
+        }
         return;
       }
       if (e.key === '/') {
