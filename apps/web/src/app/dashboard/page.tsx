@@ -116,7 +116,14 @@ async function fetchEstimatesPipeline(): Promise<{
       estimates: PricedEstimateSummaryLite[];
     };
     const all = json.estimates ?? [];
+    // 'Recent' tile is a worklist — only active bids (pursuing / submitted)
+    // are useful here. Awarded jobs surface under Active jobs already; lost
+    // bids don't need follow-up.
     const recent = [...all]
+      .filter((e) => {
+        const status = e.bidStatus ?? 'pursuing';
+        return status === 'pursuing' || status === 'submitted';
+      })
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
       .slice(0, 5);
     const pipelineCents = all.reduce(
@@ -717,7 +724,7 @@ function RecentEstimatesTile({
     <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
       <header className="flex items-center justify-between border-b border-gray-200 px-4 py-2">
         <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-          Recent estimates
+          Active bids
         </h3>
         <Link
           href="/estimates"
