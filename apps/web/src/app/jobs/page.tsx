@@ -189,6 +189,10 @@ export default async function JobsPage({ searchParams }: PageProps) {
   jobs = sortJobsByUrgency(jobs);
   const filteredJobs = preset ? jobs.filter((j) => preset.matches(j.status)) : jobs;
   const t = getTranslator();
+  const jobStatusCounts: Record<string, number> = {};
+  for (const j of filteredJobs) {
+    jobStatusCounts[j.status] = (jobStatusCounts[j.status] ?? 0) + 1;
+  }
   const estimateStatsByJob: Record<string, { count: number; dueSoon: number }> = {};
   const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
   const nowMs = Date.now();
@@ -220,7 +224,23 @@ export default async function JobsPage({ searchParams }: PageProps) {
       </div>
 
       <h1 className="text-3xl font-bold text-yge-blue-500">{t('jobs.title')}</h1>
-      <p className="mt-2 text-gray-700">{t('jobs.subtitle')}</p>
+      <p className="mt-2 text-gray-700">
+        {filteredJobs.length === 0 ? (
+          t('jobs.subtitle')
+        ) : (
+          <>
+            <span className="font-semibold text-gray-900">{filteredJobs.length}</span>
+            {' '}job{filteredJobs.length === 1 ? '' : 's'}
+            {(['PURSUING', 'BID_SUBMITTED', 'AWARDED', 'LOST'] as const).map((k) =>
+              (jobStatusCounts[k] ?? 0) > 0 ? (
+                <span key={k}>
+                  {' '}· {jobStatusCounts[k]} {k.replace(/_/g, ' ').toLowerCase()}
+                </span>
+              ) : null,
+            )}
+          </>
+        )}
+      </p>
 
       {/* Filter pills */}
       <div className="mt-5 flex flex-wrap gap-2">
