@@ -273,6 +273,11 @@ export default async function JobsPage({ searchParams }: PageProps) {
       <p className="mt-2 text-gray-700">
         {filteredJobs.length === 0 ? (
           t('jobs.subtitle')
+        ) : preset && preset.value !== 'all' ? (
+          <>
+            <span className="font-semibold text-gray-900">{filteredJobs.length}</span>{' '}
+            <span>{t(preset.labelKey)}</span> · <Link href="/jobs?status=all" className="text-yge-blue-500 hover:underline">show all</Link>
+          </>
         ) : (
           <>
             <span className="font-semibold text-gray-900">{filteredJobs.length}</span>
