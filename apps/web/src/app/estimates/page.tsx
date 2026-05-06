@@ -268,7 +268,23 @@ export default async function EstimatesPage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold text-yge-blue-500">{t('estimates.title')}</h1>
-          <p className="mt-2 text-gray-700">{t('estimates.subtitle')}</p>
+          <p className="mt-2 text-gray-700">
+            {estimates.length === 0 ? (
+              t('estimates.subtitle')
+            ) : (
+              <>
+                <span className="font-semibold text-gray-900">{estimates.length}</span>
+                {' '}estimate{estimates.length === 1 ? '' : 's'}
+                {(['pursuing', 'submitted', 'awarded', 'lost'] as const).map((k) =>
+                  statusCounts[k] > 0 ? (
+                    <span key={k}>
+                      {' '}· {statusCounts[k]} {k}
+                    </span>
+                  ) : null,
+                )}
+              </>
+            )}
+          </p>
           {(dueCounts.overdue > 0 || dueCounts.dueSoon > 0) && (
             <div className="mt-2 flex flex-wrap gap-2 text-xs">
               {dueCounts.overdue > 0 && (
