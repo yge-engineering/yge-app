@@ -480,7 +480,17 @@ export default async function JobDetailPage({
 
       {/* Priced estimates for this job */}
       <section className="mt-10">
-        <h2 className="text-xl font-semibold text-gray-900">{t('jobDetail.h.estimates')}</h2>
+        <div className="flex items-end justify-between">
+          <h2 className="text-xl font-semibold text-gray-900">{t('jobDetail.h.estimates')}</h2>
+          {estimates.length > 0 && (
+            <Link
+              href={`/plans-to-estimate?jobId=${encodeURIComponent(job.id)}`}
+              className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50"
+            >
+              + Add another estimate
+            </Link>
+          )}
+        </div>
         {estimates.length === 0 ? (
           <div className="mt-3 rounded-lg border border-dashed border-gray-300 bg-gray-50 p-6 text-center">
             <p className="text-sm text-gray-700">{t('jobDetail.estimates.empty')}</p>
