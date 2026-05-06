@@ -80,6 +80,8 @@ export function JobsPinReorder({ targetId }: { targetId: string }) {
       );
       const pinnedRows = rows.filter((r) => pinned.has(r.dataset['id'] ?? ''));
       const restRows = rows.filter((r) => !pinned.has(r.dataset['id'] ?? ''));
+      pinnedRows.forEach((r) => r.classList.add('bg-yge-blue-50/50'));
+      restRows.forEach((r) => r.classList.remove('bg-yge-blue-50/50'));
       [...pinnedRows, ...restRows].forEach((r) => tbody.appendChild(r));
     }
     reorder();
