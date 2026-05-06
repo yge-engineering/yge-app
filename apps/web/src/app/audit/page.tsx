@@ -108,7 +108,7 @@ export default async function AuditPage({
     <AppShell>
       <main className="mx-auto max-w-6xl p-8">
         <div className="mb-6 flex items-center justify-between">
-          <Link href="/dashboard" className="text-sm text-yge-blue-500 hover:underline">
+          <Link href="/dashboard" className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50">
             &larr; Dashboard
           </Link>
           <div className="flex items-center gap-3 text-xs text-gray-500">
