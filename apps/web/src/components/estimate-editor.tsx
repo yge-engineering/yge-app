@@ -61,6 +61,62 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
   // line without staring at the rows they already accepted.
   const [showUnreviewedOnly, setShowUnreviewedOnly] = useState(false);
 
+  // Bulk-select state. selectedIndices is the set of currently
+  // selected row indices; lastSelectedIdx is used for shift-click
+  // range selects. The bulk-actions toolbar shows up when size > 0.
+  const [selectedIndices, setSelectedIndices] = useState<Set<number>>(
+    () => new Set<number>(),
+  );
+  const [lastSelectedIdx, setLastSelectedIdx] = useState<number | null>(null);
+
+  function toggleRowSelected(idx: number, shift: boolean) {
+    setSelectedIndices((prev) => {
+      const next = new Set(prev);
+      if (shift && lastSelectedIdx != null) {
+        const lo = Math.min(lastSelectedIdx, idx);
+        const hi = Math.max(lastSelectedIdx, idx);
+        for (let i = lo; i <= hi; i += 1) next.add(i);
+      } else if (next.has(idx)) {
+        next.delete(idx);
+      } else {
+        next.add(idx);
+      }
+      return next;
+    });
+    setLastSelectedIdx(idx);
+  }
+
+  function clearSelection() {
+    setSelectedIndices(new Set());
+    setLastSelectedIdx(null);
+  }
+
+  // Apply a partial bid-item patch to every selected row, batched
+  // through the same applyItemPatch helper used by the inline
+  // controls.
+  async function bulkApply(patch: Partial<PricedEstimate['bidItems'][number]>) {
+    const ids = Array.from(selectedIndices).sort((a, b) => a - b);
+    for (const i of ids) {
+      // eslint-disable-next-line no-await-in-loop
+      await applyItemPatch(i, patch);
+    }
+  }
+
+  // Multiply selected rows' quantities by a constant. Useful for a
+  // "scale this whole schedule by 1.1" sweep.
+  async function bulkMultiplyQty(factor: number) {
+    if (!Number.isFinite(factor) || factor <= 0) return;
+    const ids = Array.from(selectedIndices).sort((a, b) => a - b);
+    for (const i of ids) {
+      const item = estimate.bidItems[i];
+      if (!item) continue;
+      // eslint-disable-next-line no-await-in-loop
+      await applyItemPatch(i, {
+        quantity: Math.round(item.quantity * factor * 1000) / 1000,
+      });
+    }
+  }
+
   // Variance map: itemIndex → { median, deviation, count }. Fetched
   // once on mount and again any time the bid items array length
   // changes (paste-splat / template clone). Threshold is 50% in
@@ -456,6 +512,89 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
       <BidChecklistBanner estimate={estimate} totals={totals} />
 
       <section>
+        {selectedIndices.size > 0 && (
+          <div className="mb-2 flex flex-wrap items-center gap-2 rounded-md border border-yge-blue-300 bg-yge-blue-50 px-3 py-2 text-xs">
+            <span className="font-semibold text-yge-blue-900">
+              {selectedIndices.size} row{selectedIndices.size === 1 ? '' : 's'} selected
+            </span>
+            <span className="text-yge-blue-800">
+              · sum{' '}
+              {formatUSD(
+                Array.from(selectedIndices).reduce((acc, i) => {
+                  const it = estimate.bidItems[i];
+                  if (!it || it.unitPriceCents == null) return acc;
+                  return acc + Math.round(it.quantity * it.unitPriceCents);
+                }, 0),
+              )}
+            </span>
+            <span className="ml-2 flex flex-wrap items-center gap-1">
+              <button
+                type="button"
+                onClick={() => {
+                  const raw = window.prompt(
+                    'Set markup % on selected lines (blank to clear override):',
+                    (estimate.oppPercent * 100).toFixed(1),
+                  );
+                  if (raw == null) return;
+                  if (raw.trim() === '') {
+                    void bulkApply({ markupPct: undefined });
+                    return;
+                  }
+                  const n = Number(raw.replace(/[%,\s]/g, ''));
+                  if (!Number.isFinite(n) || n < 0 || n > 200) return;
+                  void bulkApply({ markupPct: n / 100 });
+                }}
+                className="rounded border border-yge-blue-500 bg-white px-2 py-0.5 font-medium text-yge-blue-700 hover:bg-yge-blue-100"
+              >
+                Apply markup %
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const raw = window.prompt(
+                    'Multiply quantities by (e.g. 1.1 for +10%):',
+                    '1.0',
+                  );
+                  if (raw == null) return;
+                  const f = Number(raw);
+                  if (!Number.isFinite(f) || f <= 0) return;
+                  void bulkMultiplyQty(f);
+                }}
+                className="rounded border border-yge-blue-500 bg-white px-2 py-0.5 font-medium text-yge-blue-700 hover:bg-yge-blue-100"
+              >
+                Multiply qty
+              </button>
+              <button
+                type="button"
+                onClick={() => void bulkApply({ reviewState: 'accepted' })}
+                className="rounded border border-green-700 bg-white px-2 py-0.5 font-medium text-green-700 hover:bg-green-50"
+              >
+                Mark accepted
+              </button>
+              <button
+                type="button"
+                onClick={() => void bulkApply({ reviewState: 'flagged' })}
+                className="rounded border border-amber-500 bg-white px-2 py-0.5 font-medium text-amber-700 hover:bg-amber-50"
+              >
+                Flag
+              </button>
+              <button
+                type="button"
+                onClick={() => void bulkApply({ isAlternate: true })}
+                className="rounded border border-gray-300 bg-white px-2 py-0.5 font-medium text-gray-700 hover:bg-gray-100"
+              >
+                Mark alternate
+              </button>
+              <button
+                type="button"
+                onClick={clearSelection}
+                className="ml-2 rounded px-2 py-0.5 text-gray-600 hover:bg-gray-200"
+              >
+                Clear
+              </button>
+            </span>
+          </div>
+        )}
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
             {t('estEditor.bidItemsHeader')}
@@ -509,6 +648,31 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
           <table className="w-full text-left text-sm">
             <thead className="sticky top-0 z-10 bg-gray-50 text-xs uppercase tracking-wide text-gray-500 shadow-[0_1px_0_rgba(0,0,0,0.06)]">
               <tr>
+                <th className="w-8 px-2 py-2">
+                  <input
+                    type="checkbox"
+                    checked={
+                      selectedIndices.size > 0 &&
+                      selectedIndices.size === estimate.bidItems.length
+                    }
+                    ref={(el) => {
+                      if (el)
+                        el.indeterminate =
+                          selectedIndices.size > 0 &&
+                          selectedIndices.size < estimate.bidItems.length;
+                    }}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedIndices(
+                          new Set(estimate.bidItems.map((_, i) => i)),
+                        );
+                      } else {
+                        clearSelection();
+                      }
+                    }}
+                    aria-label="Select all rows"
+                  />
+                </th>
                 <th className="px-3 py-2">{t('estEditor.thNum')}</th>
                 <th className="px-3 py-2">{t('estEditor.thDescription')}</th>
                 <th className="px-3 py-2 text-right">{t('estEditor.thQty')}</th>
@@ -554,6 +718,8 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
                   }
                   defaultMarkupPct={estimate.oppPercent}
                   variance={variance[i]}
+                  selected={selectedIndices.has(i)}
+                  onToggleSelected={(shift) => toggleRowSelected(i, shift)}
                   apiBaseUrl={apiBaseUrl}
                   estimateId={estimate.id}
                   projectType={estimate.projectType}
@@ -572,7 +738,7 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
                       <tr key={`sch-${key}`}>
                         <td
                           className="px-3 py-1 text-xs uppercase tracking-wide text-gray-500"
-                          colSpan={5}
+                          colSpan={6}
                         >
                           {key === '' ? '(unscheduled)' : key}
                         </td>
@@ -585,7 +751,7 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
                 </>
               )}
               <tr>
-                <td className="px-3 py-2 text-xs uppercase tracking-wide text-gray-500" colSpan={5}>
+                <td className="px-3 py-2 text-xs uppercase tracking-wide text-gray-500" colSpan={6}>
                   {t('estEditor.totalsDirect')}
                 </td>
                 <td className="px-3 py-2 text-right font-mono">
@@ -594,7 +760,7 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
                 <td />
               </tr>
               <tr>
-                <td className="px-3 py-2 text-xs uppercase tracking-wide text-gray-500" colSpan={5}>
+                <td className="px-3 py-2 text-xs uppercase tracking-wide text-gray-500" colSpan={6}>
                   {t('estEditor.totalsOpp', {
                     percent: (estimate.oppPercent * 100).toFixed(1),
                   })}
@@ -605,7 +771,7 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
                 <td />
               </tr>
               <tr className="border-t-2 border-gray-300">
-                <td className="px-3 py-2 text-xs uppercase tracking-wide text-yge-blue-700" colSpan={5}>
+                <td className="px-3 py-2 text-xs uppercase tracking-wide text-yge-blue-700" colSpan={6}>
                   {t('estEditor.totalsBid')}
                 </td>
                 <td className="px-3 py-2 text-right font-mono text-base text-yge-blue-700">
@@ -617,7 +783,7 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
                 <tr>
                   <td
                     className="px-3 py-1 text-xs uppercase tracking-wide text-gray-500"
-                    colSpan={5}
+                    colSpan={6}
                   >
                     Alternates (not in base bid)
                   </td>
@@ -759,6 +925,8 @@ function BidItemRow({
   onMarkupChange,
   defaultMarkupPct,
   variance,
+  selected,
+  onToggleSelected,
   apiBaseUrl,
   estimateId,
   projectType,
@@ -799,6 +967,9 @@ function BidItemRow({
         deviation: number | null;
       }
     | undefined;
+  /** Bulk-select state for this row. */
+  selected: boolean;
+  onToggleSelected: (shift: boolean) => void;
   /** Passed through to the History popover so it can fetch and so the
    *  estimator's current estimate doesn't echo back in the matches. */
   apiBaseUrl: string;
@@ -868,7 +1039,15 @@ function BidItemRow({
         : '';
 
   return (
-    <tr className={rowClass}>
+    <tr className={`${rowClass}${selected ? ' bg-yge-blue-50/40' : ''}`}>
+      <td className="w-8 px-2 py-2 align-top">
+        <input
+          type="checkbox"
+          checked={selected}
+          onChange={(e) => onToggleSelected((e.nativeEvent as MouseEvent).shiftKey)}
+          aria-label={`Select bid item ${item.itemNumber}`}
+        />
+      </td>
       <td className="px-3 py-2 align-top text-xs text-gray-500">{item.itemNumber}</td>
       <td className="px-3 py-2 align-top">
         <div className="flex items-start justify-between gap-2">
