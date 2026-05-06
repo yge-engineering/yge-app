@@ -33,6 +33,7 @@ export * from './sub-bid';
 export * from './bid-security';
 export * from './addendum';
 export * from './bid-checklist';
+export * from './bid-risk-score';
 export * from './job';
 export * from './transmittal';
 export * from './bid-envelope-checklist';

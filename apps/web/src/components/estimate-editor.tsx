@@ -13,6 +13,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslator, type Translator } from '../lib/use-translator';
 import {
   buildupUnitPriceCents,
+  computeBidRiskScore,
   computeEstimateTotals,
   formatUSD,
   pricedEstimateToCsv,
@@ -510,6 +511,7 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
       )}
 
       <BidChecklistBanner estimate={estimate} totals={totals} />
+      <BidRiskBanner estimate={estimate} totals={totals} />
 
       <section>
         {selectedIndices.size > 0 && (
@@ -1396,5 +1398,73 @@ function MarkupOverrideField({
       />
       <span>%</span>
     </span>
+  );
+}
+
+// Bid risk score banner — collapses by default, expands on click.
+// Lives near the top of the editor so the estimator can see at a
+// glance whether the bid is in shape to drop in the box.
+function BidRiskBanner({
+  estimate,
+  totals,
+}: {
+  estimate: PricedEstimate;
+  totals: PricedEstimateTotals;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const risk = computeBidRiskScore(estimate, totals);
+  const styles =
+    risk.level === 'red'
+      ? 'border-red-300 bg-red-50 text-red-900'
+      : risk.level === 'yellow'
+        ? 'border-amber-300 bg-amber-50 text-amber-900'
+        : 'border-green-300 bg-green-50 text-green-900';
+  const label =
+    risk.level === 'red'
+      ? 'High risk — likely tossed at bid open'
+      : risk.level === 'yellow'
+        ? 'Some loose ends — review before submission'
+        : 'Looks ready to submit';
+  const showFactors = expanded && risk.factors.length > 0;
+  return (
+    <div className={`rounded-md border px-3 py-2 ${styles}`}>
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="flex w-full items-center justify-between text-left text-xs"
+      >
+        <span className="flex items-center gap-2">
+          <span className="font-mono text-base font-semibold">
+            {risk.score}
+          </span>
+          <span className="text-[10px] uppercase tracking-wide opacity-80">
+            risk score
+          </span>
+          <span className="font-medium">{label}</span>
+        </span>
+        <span>
+          {risk.factors.length === 0
+            ? 'No flagged factors'
+            : expanded
+              ? 'Hide details ▲'
+              : `${risk.factors.length} factor${risk.factors.length === 1 ? '' : 's'} ▼`}
+        </span>
+      </button>
+      {showFactors && (
+        <ul className="mt-2 space-y-1 border-t border-current/10 pt-2 text-xs">
+          {risk.factors.map((f) => (
+            <li key={f.id} className="flex items-start gap-2">
+              <span className="font-mono text-[10px] opacity-70">
+                +{f.contribution}
+              </span>
+              <span>
+                <span className="font-semibold">{f.label}</span>
+                <span className="block text-[11px] opacity-80">{f.detail}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
