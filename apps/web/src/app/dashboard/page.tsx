@@ -95,6 +95,7 @@ interface PricedEstimateSummaryLite {
   updatedAt: string;
   bidStatus?: 'pursuing' | 'submitted' | 'awarded' | 'lost';
   bidSubmittedAt?: string;
+  notesPreview?: string;
 }
 
 /** Pull every priced estimate plus a small slice of the most-recent ones
@@ -862,6 +863,11 @@ function RecentEstimatesTile({
                     </span>
                   ) : null}
                 </div>
+                {e.notesPreview && (
+                  <div className="mt-0.5 truncate text-[11px] italic text-gray-500">
+                    ✏ {e.notesPreview}
+                  </div>
+                )}
               </div>
               <div className="text-right font-mono">
                 {typeof e.bidTotalCents === 'number' ? (
