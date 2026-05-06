@@ -1109,6 +1109,9 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
                   onItemNumberChange={(next) =>
                     void applyItemPatch(i, { itemNumber: next })
                   }
+                  onUnitChange={(next) =>
+                    void applyItemPatch(i, { unit: next })
+                  }
                   defaultMarkupPct={estimate.oppPercent}
                   variance={variance[i]}
                   selected={selectedIndices.has(i)}
@@ -1355,6 +1358,7 @@ function BidItemRow({
   isFirst,
   isLast,
   onItemNumberChange,
+  onUnitChange,
   defaultMarkupPct,
   variance,
   selected,
@@ -1401,6 +1405,8 @@ function BidItemRow({
   isLast: boolean;
   /** Update the bid item number (editable inline). */
   onItemNumberChange: (next: string) => void;
+  /** Update the bid item unit (editable inline; e.g. CY, LF, EA). */
+  onUnitChange: (next: string) => void;
   /** Update the per-line markup override. undefined = inherit default. */
   onMarkupChange: (pct: number | undefined) => void;
   /** Estimate-level default markup, shown as the placeholder when this
@@ -1619,7 +1625,9 @@ function BidItemRow({
           onApply={(qty) => onQuantityChange(qty)}
         />
       </td>
-      <td className="px-3 py-2 align-top text-xs text-gray-600">{item.unit}</td>
+      <td className="px-2 py-2 align-top">
+        <UnitCell value={item.unit} onCommit={(next) => onUnitChange(next)} />
+      </td>
       <td className="relative px-3 py-2 text-right align-top">
         <div className="flex items-center justify-end gap-1">
           <button
@@ -2036,6 +2044,45 @@ function PinnedNotes({
         maxLength={5_000}
       />
     </div>
+  );
+}
+
+// Inline unit editor. Schema requires min(1).max(20). Estimators
+// commonly type CY / LF / EA / TON / SF / SY etc.; an uppercase
+// hint keeps the column visually consistent.
+function UnitCell({
+  value,
+  onCommit,
+}: {
+  value: string;
+  onCommit: (next: string) => void;
+}) {
+  const [text, setText] = useState(value);
+  useEffect(() => setText(value), [value]);
+  return (
+    <input
+      type="text"
+      value={text}
+      onChange={(e) => setText(e.target.value)}
+      onBlur={() => {
+        const trimmed = text.trim();
+        if (!trimmed) {
+          setText(value);
+          return;
+        }
+        if (trimmed === value) return;
+        onCommit(trimmed);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          (e.target as HTMLInputElement).blur();
+        }
+      }}
+      maxLength={20}
+      aria-label="Bid item unit"
+      className="w-16 rounded border border-transparent bg-transparent px-1 py-0.5 text-xs uppercase text-gray-600 hover:border-gray-200 focus:border-yge-blue-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-yge-blue-500"
+    />
   );
 }
 
