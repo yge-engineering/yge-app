@@ -54,12 +54,12 @@ export function EstimatesStatusFilter({ targetId, counts, total }: Props) {
         'all'
       >;
       const visible = active === 'all' || status === active;
-      // Cooperate with the search filter — that one writes 'none' too.
-      // Use a separate dataset flag so neither stomps the other.
+      // Cooperate with the other filters — each writes its own flag.
       row.dataset['statusHidden'] = visible ? '' : '1';
-      // Recompute the effective display: hidden if either filter says so.
       const searchHidden = row.dataset['searchHidden'] === '1';
-      row.style.display = visible && !searchHidden ? '' : 'none';
+      const dueHidden = row.dataset['dueHidden'] === '1';
+      row.style.display =
+        visible && !searchHidden && !dueHidden ? '' : 'none';
     });
   }, [active, targetId]);
 
