@@ -220,6 +220,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </form>
         <div className="ml-auto flex items-center gap-3 sm:ml-0">
+          <Link
+            href="/plans-to-estimate"
+            className="hidden rounded-md bg-yge-blue-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-yge-blue-700 sm:inline-block"
+            title="Start a new estimate"
+          >
+            + Estimate
+          </Link>
           <PwaInstallButton />
           <LocaleSwitcher current={locale} />
           <AccountChip />
