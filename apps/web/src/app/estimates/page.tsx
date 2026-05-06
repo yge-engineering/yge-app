@@ -6,6 +6,8 @@
 import Link from 'next/link';
 
 import { Alert, AppShell, Money } from '../../components';
+import { bidDueCountdown, coerceLocale } from '@yge/shared';
+import { cookies } from 'next/headers';
 import { CopyEstimateLink } from '../../components/copy-estimate-link';
 import { getTranslator } from '../../lib/locale';
 import { requirePermission } from '../../lib/permissions';
@@ -96,6 +98,27 @@ function formatWhen(iso: string): string {
   });
 }
 
+function BidDuePill({ iso, locale }: { iso: string | undefined; locale: 'en' | 'es' }) {
+  const c = bidDueCountdown(iso, undefined, locale);
+  if (c.level === 'none') return null;
+  const tone =
+    c.level === 'red'
+      ? 'border-red-300 bg-red-50 text-red-800'
+      : c.level === 'orange'
+        ? 'border-orange-300 bg-orange-50 text-orange-800'
+        : c.level === 'yellow'
+          ? 'border-yellow-300 bg-yellow-50 text-yellow-800'
+          : 'border-green-300 bg-green-50 text-green-800';
+  return (
+    <span
+      title={c.longLabel}
+      className={`mt-1 inline-block rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${tone}`}
+    >
+      Due · {c.shortLabel}
+    </span>
+  );
+}
+
 export default async function EstimatesPage() {
   requirePermission('estimates:view');
   let estimates: EstimateSummary[] = [];
@@ -107,6 +130,7 @@ export default async function EstimatesPage() {
   }
   const imported = await fetchImported();
   const t = getTranslator();
+  const locale = coerceLocale(cookies().get('yge-locale')?.value);
 
   return (
     <AppShell>
@@ -243,6 +267,7 @@ export default async function EstimatesPage() {
                     {e.ownerAgency && (
                       <div className="text-xs text-gray-500">{e.ownerAgency}</div>
                     )}
+                    <BidDuePill iso={e.bidDueDate} locale={locale} />
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-600">
                     {e.projectType.replace(/_/g, ' ')}
