@@ -255,6 +255,44 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
     applyPriceChange(entry.itemIndex, entry.oldCents, { skipUndo: true });
   }
 
+  // Generic estimate-level PATCH for fields that don't need their own
+  // helper (perUnitPrice, etc.). Mirrors what applyMarkupChange does
+  // for markup but takes any subset of the EstimatePatch shape.
+  async function applyEstimatePatch(
+    patch: Partial<{
+      perUnitPrice: PricedEstimate['perUnitPrice'] | null;
+    }>,
+  ) {
+    const next = {
+      ...estimate,
+      ...(patch.perUnitPrice !== undefined
+        ? { perUnitPrice: patch.perUnitPrice ?? undefined }
+        : {}),
+    } as PricedEstimate;
+    setEstimate(next);
+    recomputeLocal(next);
+    try {
+      const res = await fetch(
+        `${apiBaseUrl}/api/priced-estimates/${estimate.id}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(patch),
+        },
+      );
+      if (!res.ok)
+        throw new Error(t('estEditor.errSaveStatus', { status: res.status }));
+      const json = (await res.json()) as {
+        estimate: PricedEstimate;
+        totals: PricedEstimateTotals;
+      };
+      setEstimate(json.estimate);
+      setTotals(json.totals);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('estEditor.errFallback'));
+    }
+  }
+
   // Patch one component of the markup stack and PATCH the whole
   // estimate. Components round-trip through the same endpoint as O&P.
   async function applyMarkupChange(
@@ -502,6 +540,13 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
           </div>
         </div>
         <TotalsCard totals={totals} oppPercent={estimate.oppPercent} t={t} />
+        <PerUnitPriceCard
+          totals={totals}
+          perUnit={estimate.perUnitPrice}
+          onCommit={(next) =>
+            void applyEstimatePatch({ perUnitPrice: next ?? null })
+          }
+        />
       </header>
 
       {error && (
@@ -1442,6 +1487,98 @@ function MarkupOverrideField({
       />
       <span>%</span>
     </span>
+  );
+}
+
+// Per-unit price pane. Sits next to the totals card and shows
+// "Per <unit>: $X.XX" computed live as bidTotalCents / sizeValue.
+// Used most often on fuel-reduction or grading bids where the
+// agency expects a per-acre price alongside the lump sum, but
+// works for any size unit (mile, SF, LF, ton, custom). Estimator
+// types the size + the unit; everything else is computed.
+function PerUnitPriceCard({
+  totals,
+  perUnit,
+  onCommit,
+}: {
+  totals: PricedEstimateTotals;
+  perUnit: { unit: string; value: number } | undefined;
+  onCommit: (next: { unit: string; value: number } | undefined) => void;
+}) {
+  const [unit, setUnit] = useState(perUnit?.unit ?? 'acre');
+  const [valueText, setValueText] = useState(
+    perUnit?.value && perUnit.value > 0 ? String(perUnit.value) : '',
+  );
+  useEffect(() => {
+    setUnit(perUnit?.unit ?? 'acre');
+    setValueText(
+      perUnit?.value && perUnit.value > 0 ? String(perUnit.value) : '',
+    );
+  }, [perUnit]);
+
+  const sizeValue = Number((valueText ?? '').replace(/[,\s]/g, ''));
+  const valid = Number.isFinite(sizeValue) && sizeValue > 0;
+  const perUnitCents = valid ? Math.round(totals.bidTotalCents / sizeValue) : null;
+
+  function commit() {
+    if (!valid) {
+      // Empty / invalid → clear the field at the estimate level.
+      if (perUnit !== undefined) onCommit(undefined);
+      return;
+    }
+    const trimmedUnit = unit.trim() || 'unit';
+    if (
+      perUnit?.unit === trimmedUnit &&
+      Math.abs((perUnit.value ?? 0) - sizeValue) < 0.0001
+    ) {
+      return;
+    }
+    onCommit({ unit: trimmedUnit, value: sizeValue });
+  }
+
+  return (
+    <div className="rounded-lg border border-yge-blue-500 bg-white p-4 text-right shadow-sm">
+      <div className="text-[10px] uppercase tracking-wide text-gray-500">
+        Per-unit price (e.g. per-acre)
+      </div>
+      <div className="mt-2 flex flex-wrap items-baseline justify-end gap-1 text-xs">
+        <span className="text-gray-700">Size:</span>
+        <input
+          type="text"
+          inputMode="decimal"
+          value={valueText}
+          onChange={(e) => setValueText(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              (e.target as HTMLInputElement).blur();
+            }
+          }}
+          placeholder="0"
+          className="w-20 rounded border border-gray-300 px-2 py-1 text-right font-mono"
+          aria-label="Per-unit size value"
+        />
+        <input
+          type="text"
+          value={unit}
+          onChange={(e) => setUnit(e.target.value)}
+          onBlur={commit}
+          placeholder="acre"
+          className="w-16 rounded border border-gray-300 px-2 py-1 font-mono text-xs"
+          aria-label="Per-unit label"
+          maxLength={40}
+        />
+      </div>
+      <div className="mt-2 font-mono text-lg font-semibold text-yge-blue-700">
+        {perUnitCents == null
+          ? '—'
+          : `${formatUSD(perUnitCents)} / ${unit.trim() || 'unit'}`}
+      </div>
+      <div className="mt-1 text-[10px] text-gray-500">
+        Bid total ÷ size · live
+      </div>
+    </div>
   );
 }
 

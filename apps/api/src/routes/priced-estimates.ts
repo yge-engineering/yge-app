@@ -188,6 +188,15 @@ const UpdateBody = z.object({
   /** Markup-stack percentages (labor burden, equipment burden, sub
    *  markup, bonds, insurance, contingency). Layered on top of O&P. */
   markup: MarkupStackSchemaPatch.optional(),
+  /** Per-unit price reference (acre / mile / SF / etc.). Pass null
+   *  to clear it. */
+  perUnitPrice: z
+    .object({
+      unit: z.string().min(1).max(40),
+      value: z.number().nonnegative(),
+    })
+    .nullable()
+    .optional(),
 });
 
 // PATCH /api/priced-estimates/:id — update O&P / notes / full bid item list.

@@ -229,6 +229,9 @@ export interface EstimatePatch {
   /** Replace the markup-stack percentages (labor burden, equipment
    *  burden, sub markup, bonds, insurance, contingency). */
   markup?: PricedEstimate['markup'];
+  /** Set or clear the per-unit price reference (e.g. per-acre).
+   *  Pass null to clear. */
+  perUnitPrice?: PricedEstimate['perUnitPrice'] | null;
 }
 
 export async function updateEstimate(
@@ -255,6 +258,9 @@ export async function updateEstimate(
     ...(patch.addenda ? { addenda: patch.addenda } : {}),
     ...(patch.subLeveling ? { subLeveling: patch.subLeveling } : {}),
     ...(patch.markup ? { markup: patch.markup } : {}),
+    ...(patch.perUnitPrice !== undefined
+      ? { perUnitPrice: patch.perUnitPrice ?? undefined }
+      : {}),
     updatedAt: new Date().toISOString(),
   };
   PricedEstimateSchema.parse(updated);

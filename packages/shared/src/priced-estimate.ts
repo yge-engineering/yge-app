@@ -181,6 +181,21 @@ export const PricedEstimateSchema = z.object({
    *  so older estimate JSON files on disk still parse. */
   addenda: z.array(AddendumSchema).default([]),
 
+  /** Per-unit price reference (e.g. per-acre, per-mile, per-SF).
+   *  When set, the editor shows "$X / unit" next to the bid total,
+   *  computed live as bidTotalCents / sizeValue. Used most often on
+   *  fuel-reduction or grading work where the agency expects a
+   *  per-acre price alongside the lump-sum bid. Optional — older
+   *  estimate files parse fine. */
+  perUnitPrice: z
+    .object({
+      /** Free-form unit label, e.g. "acre", "mile", "SF", "LF". */
+      unit: z.string().min(1).max(40),
+      /** Numeric size in `unit`s. 0 hides the per-unit display. */
+      value: z.number().nonnegative(),
+    })
+    .optional(),
+
   /** Sub-bid leveling worksheet — per scope, multiple competing
    *  quotes with one Awarded as the winner. Persists the state from
    *  the /estimates/[id]/sub-leveling page so the work survives
