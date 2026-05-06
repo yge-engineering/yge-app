@@ -316,6 +316,10 @@ export default async function EstimateDetailPage({
 
       {(() => {
         const unpriced = data.estimate.bidItems.filter((i) => i.unitPriceCents == null).length;
+        const reviewed = data.estimate.bidItems.filter(
+          (i) => i.reviewState === 'accepted',
+        ).length;
+        const totalLines = data.estimate.bidItems.length;
         const checks = [
           { ok: unpriced === 0, label: unpriced === 0 ? 'All lines priced' : `${unpriced} line${unpriced === 1 ? '' : 's'} unpriced` },
           { ok: !!data.estimate.bidSecurity, label: data.estimate.bidSecurity ? 'Bid security set' : 'Bid security not set' },
@@ -333,6 +337,14 @@ export default async function EstimateDetailPage({
             label: (data.estimate.subBids ?? []).length > 0
               ? `${(data.estimate.subBids ?? []).length} sub bid${(data.estimate.subBids ?? []).length === 1 ? '' : 's'} listed`
               : 'No sub bids listed (§4104)',
+          },
+          {
+            ok: totalLines > 0 && reviewed === totalLines,
+            label: totalLines === 0
+              ? 'No lines yet'
+              : reviewed === totalLines
+                ? `All ${totalLines} lines reviewed`
+                : `${reviewed} of ${totalLines} lines reviewed`,
           },
         ];
         const allOk = checks.every((c) => c.ok);
