@@ -69,7 +69,7 @@ export default async function ImportedEstimatesPage() {
                     <td className="px-3 py-2">
                       <Link
                         href={`/imported-estimates/${e.id}`}
-                        className="text-blue-700 hover:underline"
+                        className="font-medium text-gray-900 hover:text-yge-blue-700 hover:underline"
                       >
                         {e.projectName}
                       </Link>
