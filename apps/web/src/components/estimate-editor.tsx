@@ -31,6 +31,7 @@ import { CostBuildupDrawer } from './cost-buildup-drawer';
 import { MarkupStackEditor } from './markup-stack-editor';
 import { HistoricalPricesPopover } from './historical-prices-popover';
 import { ExplainLinePopover } from './explain-line-popover';
+import { BidDueCountdown } from './bid-due-countdown';
 
 interface Props {
   initialEstimate: PricedEstimate;
@@ -587,6 +588,7 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
         </div>
       )}
 
+      <BidDueCountdown bidDueDate={estimate.bidDueDate} />
       <BidChecklistBanner estimate={estimate} totals={totals} />
       <BidRiskBanner estimate={estimate} totals={totals} />
 
