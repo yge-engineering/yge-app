@@ -11,6 +11,7 @@ import { relativeTime } from '../../lib/relative-time';
 import { DraftsSearchInput } from '../../components/drafts-search-input';
 import { DashboardRefreshButton } from '../../components/dashboard-refresh-button';
 import { DraftsPinButton, DraftsPinReorder } from '../../components/drafts-pin-button';
+import { PinnedCountBadge } from '../../components/pinned-count-badge';
 import { EstimatesSortHeaders } from '../../components/estimates-sort-headers';
 import { getTranslator } from '../../lib/locale';
 
@@ -98,7 +99,7 @@ export default async function DraftsPage() {
         </div>
       </div>
 
-      <h1 className="text-3xl font-bold text-yge-blue-500">{t('drafts.title')}</h1>
+      <div className="flex items-center"><h1 className="text-3xl font-bold text-yge-blue-500">{t('drafts.title')}</h1><PinnedCountBadge storageKey="yge.drafts.pinnedIds" eventName="yge:drafts-pinned-changed" /></div>
       <p className="mt-2 text-gray-700">{t('drafts.subtitle')}</p>
 
       {fetchError && (
