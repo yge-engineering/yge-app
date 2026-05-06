@@ -654,9 +654,9 @@ export default async function DashboardPage() {
                 · {pipelineData.awarded} of {pipelineData.decided}
               </span>
               {pipelineData.awardedThisYearCents > 0 && (
-                <span className="ml-1 inline-flex items-center gap-1 rounded-full border border-green-200 bg-green-50 px-2 py-0.5 text-[10px] font-semibold text-green-800">
+                <Link href="/jobs?status=awarded" className="ml-1 inline-flex items-center gap-1 rounded-full border border-green-200 bg-green-50 px-2 py-0.5 text-[10px] font-semibold text-green-800 hover:bg-green-100">
                   Won YTD <span className="font-mono"><Money cents={pipelineData.awardedThisYearCents} /></span>
-                </span>
+                </Link>
               )}
               {pipelineData.submitted30d > 0 && (
                 <span className="ml-1 inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-800">
