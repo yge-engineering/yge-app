@@ -18,6 +18,7 @@ import { EstimateEditor } from '@/components/estimate-editor';
 import { BidDueBanner } from '@/components/bid-due-banner';
 import { CopyEstimateLink } from '@/components/copy-estimate-link';
 import { CopyBidSummaryButton } from '@/components/copy-bid-summary-button';
+import { BidStatusSwitcher } from '@/components/bid-status-switcher';
 import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
@@ -126,6 +127,11 @@ export default async function EstimateDetailPage({
         >
           {t('estPg.addenda')}
         </Link>
+        <BidStatusSwitcher
+          apiBaseUrl={publicApiBaseUrl()}
+          estimateId={data.estimate.id}
+          current={data.estimate.bidStatus}
+        />
         <CopyBidSummaryButton
           projectName={data.estimate.projectName}
           bidTotalCents={data.totals.bidTotalCents}
