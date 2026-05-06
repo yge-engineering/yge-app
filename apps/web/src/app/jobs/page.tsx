@@ -11,6 +11,7 @@ import { JobsCreatedFilter } from '../../components/jobs-created-filter';
 import { JobsResetFilters } from '../../components/jobs-reset-filters';
 import { DashboardRefreshButton } from '../../components/dashboard-refresh-button';
 import { JobsPinButton, JobsPinReorder } from '../../components/jobs-pin-button';
+import { JobsPinFilterChip } from '../../components/jobs-pin-filter-chip';
 import { PinnedCountBadge } from '../../components/pinned-count-badge';
 import { relativeTime } from '../../lib/relative-time';
 import { CopyMoneyButton } from '../../components/copy-money-button';
@@ -338,6 +339,7 @@ export default async function JobsPage({ searchParams }: PageProps) {
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <JobsSearchInput targetId="jobs-table" totalCount={filteredJobs.length} />
             <JobsCreatedFilter targetId="jobs-table" />
+            <JobsPinFilterChip targetId="jobs-table" />
             <JobsResetFilters />
           </div>
           <EstimatesSortHeaders targetId="jobs-table" />
