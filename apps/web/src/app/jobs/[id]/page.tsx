@@ -502,10 +502,24 @@ export default async function JobDetailPage({
                   (e.unpricedLineCount ?? 0) === 0 &&
                   (e.unacknowledgedAddendumCount ?? 0) === 0,
               ).length;
+              const won = estimates.filter((e) => e.bidStatus === 'awarded').length;
+              const lost = estimates.filter((e) => e.bidStatus === 'lost').length;
               return (
-                <span className="ml-3 inline-block rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs font-normal text-gray-600">
-                  {ready} of {active.length} active ready
-                </span>
+                <>
+                  <span className="ml-3 inline-block rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs font-normal text-gray-600">
+                    {ready} of {active.length} active ready
+                  </span>
+                  {won > 0 && (
+                    <span className="ml-1 inline-block rounded-full border border-green-300 bg-green-50 px-2 py-0.5 text-xs font-semibold text-green-800">
+                      {won} won
+                    </span>
+                  )}
+                  {lost > 0 && (
+                    <span className="ml-1 inline-block rounded-full border border-gray-300 bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-600">
+                      {lost} lost
+                    </span>
+                  )}
+                </>
               );
             })()}
           </h2>
