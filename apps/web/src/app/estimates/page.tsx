@@ -492,9 +492,26 @@ export default async function EstimatesPage() {
                     {e.projectType.replace(/_/g, ' ')}
                   </td>
                   <td className="hidden px-4 py-3 text-gray-700 sm:table-cell">
-                    {e.pricedLineCount} of {e.bidItemCount}
+                    <div className="flex items-center gap-2">
+                      <span>{e.pricedLineCount} of {e.bidItemCount}</span>
+                      {e.bidItemCount > 0 && (() => {
+                        const pct = Math.round((e.pricedLineCount / e.bidItemCount) * 100);
+                        const tone = pct === 100 ? 'bg-green-500' : pct === 0 ? 'bg-red-400' : 'bg-amber-400';
+                        return (
+                          <span
+                            className="relative inline-block h-1.5 w-16 overflow-hidden rounded-full bg-gray-200"
+                            title={`${pct}% priced`}
+                          >
+                            <span
+                              className={`absolute left-0 top-0 h-full ${tone}`}
+                              style={{ width: `${pct}%` }}
+                            />
+                          </span>
+                        );
+                      })()}
+                    </div>
                     {e.unpricedLineCount > 0 && (
-                      <span className="ml-2 inline-block rounded-full bg-yellow-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-yellow-800">
+                      <span className="mt-1 inline-block rounded-full bg-yellow-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-yellow-800">
                         {t('estimates.lines.unpriced', { count: e.unpricedLineCount })}
                       </span>
                     )}
