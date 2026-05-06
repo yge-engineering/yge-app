@@ -1,3 +1,4 @@
+import Constants from 'expo-constants';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SUPPORTED_LOCALES } from '@yge/shared';
@@ -95,6 +96,18 @@ export default function MeScreen({ onSignOut }: Props) {
           Switching env signs you out and you'll need to log in again.
         </Text>
       </View>
+
+      {(() => {
+        const cfg = Constants.expoConfig as { version?: string; ios?: { buildNumber?: string }; android?: { versionCode?: number } } | null;
+        const version = cfg?.version ?? '?';
+        const build = cfg?.ios?.buildNumber ?? cfg?.android?.versionCode ?? '?';
+        return (
+          <View style={styles.card}>
+            <Text style={styles.label}>App version</Text>
+            <Text style={styles.mono}>{version} ({String(build)})</Text>
+          </View>
+        );
+      })()}
 
       <Pressable
         onPress={() => navigation.navigate('BidResults')}
