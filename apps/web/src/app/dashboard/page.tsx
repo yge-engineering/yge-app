@@ -443,6 +443,27 @@ export default async function DashboardPage() {
         </div>
       )}
 
+      {/* CONTINUE EDITING — quick resume of the most-recently-touched bid.
+       *  Pulls the top recent (already filtered to active bids in 1006). */}
+      {recentEstimates[0] && (
+        <Link
+          href={`/estimates/${recentEstimates[0].id}`}
+          className="mb-3 flex items-center gap-3 rounded-lg border border-yge-blue-200 bg-yge-blue-50 p-3 hover:bg-yge-blue-100"
+        >
+          <span className="text-xs font-semibold uppercase tracking-wide text-yge-blue-700">
+            Continue
+          </span>
+          <span className="truncate font-medium text-gray-900">
+            {recentEstimates[0].projectName}
+          </span>
+          {typeof recentEstimates[0].bidTotalCents === 'number' && (
+            <span className="ml-auto font-mono text-sm text-gray-700">
+              <Money cents={recentEstimates[0].bidTotalCents} />
+            </span>
+          )}
+        </Link>
+      )}
+
       {/* BID PIPELINE — sum of bid totals across all priced estimates. */}
       {pipelineData.pipelineCount > 0 && (
         <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
