@@ -35,6 +35,7 @@ const SHORTCUTS: Shortcut[] = [
   { keys: 'g s', labelKey: 'kbd.searchPage', href: '/search', group: 'navigate' },
   { keys: 'g h', labelKey: 'kbd.help', href: '/help', group: 'navigate' },
   { keys: 'g a', labelKey: 'kbd.allModules', href: '/all-modules', group: 'navigate' },
+  { keys: 'g u', labelKey: 'kbd.audit', href: '/audit', group: 'navigate' },
   { keys: 'esc', labelKey: 'kbd.esc', group: 'other' },
 ];
 
