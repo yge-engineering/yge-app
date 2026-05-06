@@ -14,6 +14,7 @@ import { EstimatesSortHeaders } from '../../components/estimates-sort-headers';
 import { EstimatesShortcutsChip } from '../../components/estimates-shortcuts-chip';
 import { EstimatesStatusFilter } from '../../components/estimates-status-filter';
 import { EstimatesDueWeekChip } from '../../components/estimates-due-week-chip';
+import { EstimatesResetFilters } from '../../components/estimates-reset-filters';
 import { getTranslator } from '../../lib/locale';
 import { requirePermission } from '../../lib/permissions';
 
@@ -408,6 +409,7 @@ export default async function EstimatesPage() {
           <div className="flex flex-wrap items-center gap-2">
             <EstimatesStatusFilter targetId="estimates-table" counts={statusCounts} total={estimates.length} />
             <EstimatesDueWeekChip targetId="estimates-table" count={dueCounts.overdue + dueCounts.dueSoon} />
+            <EstimatesResetFilters />
           </div>
           <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
           <table id="estimates-table" className="w-full text-left text-sm">
