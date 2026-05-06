@@ -117,6 +117,16 @@ When you ship an update:
   `@react-navigation/native-stack` inside Jobs and Estimates tabs for
   list → detail navigation.
 
+## iPad support
+
+The app supports iPad — `app.json` sets `"supportsTablet": true`. The
+same single iOS binary covers iPhone + iPad; same single Android AAB
+covers phones + Android tablets. Layout adapts: tablet screens cap
+content at 720px wide and center it for readability.
+
+Future iPad-native enhancements (multi-pane layout, sidebar nav)
+are deferrable.
+
 ## Roadmap
 
 Phase 2 (mobile-specific):
