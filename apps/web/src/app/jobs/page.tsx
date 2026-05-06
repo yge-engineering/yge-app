@@ -192,6 +192,10 @@ export default async function JobsPage({ searchParams }: PageProps) {
   jobs = sortJobsByUrgency(jobs);
   const filteredJobs = preset ? jobs.filter((j) => preset.matches(j.status)) : jobs;
   const t = getTranslator();
+  const totalEngineerCents = filteredJobs.reduce(
+    (sum, j) => sum + (j.engineersEstimateCents ?? 0),
+    0,
+  );
   const overdueCount = filteredJobs.filter((j) => {
     if (!j.bidDueDate) return false;
     const t = new Date(j.bidDueDate).getTime();
