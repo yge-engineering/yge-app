@@ -112,6 +112,7 @@ export const AuditEntityTypeSchema = z.enum([
   'User',
   'Vendor',
   'WeatherLog',
+  'WebauthnCredential',
 ]);
 export type AuditEntityType = z.infer<typeof AuditEntityTypeSchema>;
 

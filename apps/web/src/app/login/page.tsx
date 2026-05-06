@@ -23,6 +23,7 @@ import {
 } from './actions';
 import { FormField, FORM_INPUT_CLASS } from '../../components/form-field';
 import { useTranslator, type Translator } from '../../lib/use-translator';
+import { PasskeyButton } from './passkey-button';
 
 const initialSignInState: SignInState = {};
 
@@ -54,6 +55,7 @@ export default function LoginPage() {
           <p className="mt-1 text-sm text-gray-500">{t('login.subtitle')}</p>
         </div>
 
+        <PasskeyButton />
         <MicrosoftSsoButton />
         <div className="mb-4 flex items-center gap-2 text-[11px] uppercase tracking-wider text-gray-400">
           <span className="h-px flex-1 bg-gray-200" />
