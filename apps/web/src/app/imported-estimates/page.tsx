@@ -1,6 +1,8 @@
 // /imported-estimates — list of estimates imported from YGE Excel.
 
 import Link from 'next/link';
+import { EstimatesSortHeaders } from '../../components/estimates-sort-headers';
+import { EstimatesSearchInput } from '../../components/estimates-search-input';
 import type { ImportedEstimate } from '@yge/shared';
 
 import { AppShell, PageHeader } from '../../components';
@@ -48,23 +50,38 @@ export default async function ImportedEstimatesPage() {
             </p>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-            <table className="w-full text-sm">
+          <div>
+            <EstimatesSearchInput targetId="imported-list-table" totalCount={estimates.length} />
+            <EstimatesSortHeaders targetId="imported-list-table" />
+            <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+            <table id="imported-list-table" className="w-full text-sm">
               <thead className="bg-gray-50 text-left text-[11px] uppercase tracking-wide text-gray-500">
                 <tr>
                   <th className="px-3 py-2">Job #</th>
-                  <th className="px-3 py-2">Project</th>
+                  <th data-sort-key="name" className="select-none px-3 py-2 hover:bg-gray-100">
+                    Project
+                    <span className="sort-arrow" />
+                  </th>
                   <th className="px-3 py-2">Client</th>
                   <th className="px-3 py-2">Rate</th>
                   <th className="px-3 py-2 text-right">Direct</th>
                   <th className="px-3 py-2 text-right">O&amp;P</th>
-                  <th className="px-3 py-2 text-right">Bid</th>
+                  <th data-sort-key="cents" className="select-none px-3 py-2 text-right hover:bg-gray-100">
+                    Bid
+                    <span className="sort-arrow" />
+                  </th>
                   <th className="px-3 py-2 text-right">Lines</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {estimates.map((e) => (
-                  <tr key={e.id} className="hover:bg-gray-50">
+                  <tr
+                    key={e.id}
+                    data-search={`${e.projectName} ${e.client ?? ''} ${e.jobNumber}`}
+                    data-sort-name={e.projectName.toLowerCase()}
+                    data-sort-cents={e.bidPriceCents}
+                    className="hover:bg-gray-50"
+                  >
                     <td className="px-3 py-2 font-mono text-xs">{e.jobNumber}</td>
                     <td className="px-3 py-2">
                       <Link
@@ -86,6 +103,7 @@ export default async function ImportedEstimatesPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         )}
       </main>
