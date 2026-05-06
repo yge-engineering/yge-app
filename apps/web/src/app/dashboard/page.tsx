@@ -448,20 +448,25 @@ export default async function DashboardPage() {
       {recentEstimates[0] && (
         <Link
           href={`/estimates/${recentEstimates[0].id}`}
-          className="mb-3 flex items-center gap-3 rounded-lg border border-yge-blue-200 bg-yge-blue-50 p-3 hover:bg-yge-blue-100"
+          className="mb-4 flex items-center gap-4 rounded-lg border border-yge-blue-300 bg-gradient-to-r from-yge-blue-50 to-white p-4 shadow-sm hover:from-yge-blue-100 hover:shadow"
         >
-          <span className="text-xs font-semibold uppercase tracking-wide text-yge-blue-700">
+          <span className="rounded-full bg-yge-blue-500 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white">
             Continue
           </span>
-          <span className="truncate font-medium text-gray-900">
-            {recentEstimates[0].projectName}
-          </span>
-          <RecentEstimateDuePill iso={recentEstimates[0].bidDueDate} />
-          {typeof recentEstimates[0].bidTotalCents === 'number' && (
-            <span className="ml-auto font-mono text-sm text-gray-700">
-              <Money cents={recentEstimates[0].bidTotalCents} />
-            </span>
-          )}
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-base font-semibold text-gray-900">
+              {recentEstimates[0].projectName}
+            </div>
+            <div className="mt-1 flex items-center gap-2 text-xs">
+              <RecentEstimateDuePill iso={recentEstimates[0].bidDueDate} />
+              {typeof recentEstimates[0].bidTotalCents === 'number' && (
+                <span className="font-mono font-semibold text-gray-700">
+                  <Money cents={recentEstimates[0].bidTotalCents} />
+                </span>
+              )}
+            </div>
+          </div>
+          <span className="text-xl text-yge-blue-500">→</span>
         </Link>
       )}
 
