@@ -305,13 +305,22 @@ export default async function EstimatesPage() {
             <table id="imported-estimates-table" className="w-full text-left text-sm">
               <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
                 <tr>
-                  <th className="px-4 py-2">Project</th>
+                  <th data-sort-key="name" className="select-none px-4 py-2 hover:bg-gray-100">
+                    Project
+                    <span className="sort-arrow" />
+                  </th>
                   <th className="px-4 py-2">Job #</th>
                   <th className="px-4 py-2">Client</th>
                   <th className="px-4 py-2">Rate</th>
                   <th className="px-4 py-2">Lines</th>
-                  <th className="px-4 py-2">Bid total</th>
-                  <th className="px-4 py-2">Updated</th>
+                  <th data-sort-key="cents" className="select-none px-4 py-2 hover:bg-gray-100">
+                    Bid total
+                    <span className="sort-arrow" />
+                  </th>
+                  <th data-sort-key="updated" className="select-none px-4 py-2 hover:bg-gray-100">
+                    Updated
+                    <span className="sort-arrow" />
+                  </th>
                   <th className="px-4 py-2"></th>
                 </tr>
               </thead>
@@ -321,6 +330,9 @@ export default async function EstimatesPage() {
                     key={e.id}
                     data-search={`${e.projectName} ${e.client ?? ''} ${e.jobNumber}`}
                     data-cents={e.bidPriceCents}
+                    data-sort-cents={e.bidPriceCents}
+                    data-sort-updated={e.updatedAt}
+                    data-sort-name={e.projectName.toLowerCase()}
                     className="hover:bg-gray-50"
                   >
                     <td className="px-4 py-3">
@@ -386,6 +398,7 @@ export default async function EstimatesPage() {
         <div className="mt-6">
           <EstimatesSearchInput targetId="estimates-table,imported-estimates-table" totalCount={estimates.length + imported.length} />
           <EstimatesSortHeaders targetId="estimates-table" />
+          <EstimatesSortHeaders targetId="imported-estimates-table" />
           <EstimatesStatusFilter targetId="estimates-table" counts={statusCounts} total={estimates.length} />
           <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
           <table id="estimates-table" className="w-full text-left text-sm">
