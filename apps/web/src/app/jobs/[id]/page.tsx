@@ -10,6 +10,7 @@ import { AuditBinderPanel, Money } from '../../../components';
 import { relativeTime } from '../../../lib/relative-time';
 import { CopyIdChip } from '../../../components/copy-id-chip';
 import { PinnedIndicator } from '../../../components/pinned-indicator';
+import { CopyMoneyButton } from '../../../components/copy-money-button';
 import { getTranslator } from '../../../lib/locale';
 import {
   contractTypeLabel,
@@ -570,7 +571,7 @@ export default async function JobDetailPage({
                       <JobBidStatusPill status={e.bidStatus} />
                     </div>
                     <div className="text-xs text-gray-500">
-                      {pre}<Money cents={e.bidTotalCents} />{postBefore}
+                      {pre}<CopyMoneyButton cents={e.bidTotalCents}><Money cents={e.bidTotalCents} /></CopyMoneyButton>{postBefore}
                       <span title={e.updatedAt}>{whenLabel}</span>
                       {postAfter}
                     </div>
