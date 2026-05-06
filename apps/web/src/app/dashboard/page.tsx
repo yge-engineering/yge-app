@@ -94,6 +94,7 @@ interface PricedEstimateSummaryLite {
   unpricedLineCount?: number;
   updatedAt: string;
   bidStatus?: 'pursuing' | 'submitted' | 'awarded' | 'lost';
+  bidSubmittedAt?: string;
 }
 
 /** Pull every priced estimate plus a small slice of the most-recent ones
@@ -105,13 +106,21 @@ async function fetchEstimatesPipeline(): Promise<{
   pipelineCount: number;
   decided: number;
   awarded: number;
+  submittedAwaiting: PricedEstimateSummaryLite[];
 }> {
   try {
     const res = await fetch(`${apiBaseUrl()}/api/priced-estimates`, {
       cache: 'no-store',
     });
     if (!res.ok)
-      return { recent: [], pipelineCents: 0, pipelineCount: 0, decided: 0, awarded: 0 };
+      return {
+        recent: [],
+        pipelineCents: 0,
+        pipelineCount: 0,
+        decided: 0,
+        awarded: 0,
+        submittedAwaiting: [],
+      };
     const json = (await res.json()) as {
       estimates: PricedEstimateSummaryLite[];
     };
@@ -136,15 +145,31 @@ async function fetchEstimatesPipeline(): Promise<{
       if (e.bidStatus === 'awarded') awarded++;
       else if (e.bidStatus === 'lost') lost++;
     }
+    const submittedAwaiting = all
+      .filter((e) => e.bidStatus === 'submitted')
+      .sort((a, b) => {
+        const ta = a.bidSubmittedAt ?? a.updatedAt;
+        const tb = b.bidSubmittedAt ?? b.updatedAt;
+        return ta.localeCompare(tb); // oldest first
+      })
+      .slice(0, 5);
     return {
       recent,
       pipelineCents,
       pipelineCount: all.length,
       decided: awarded + lost,
       awarded,
+      submittedAwaiting,
     };
   } catch {
-    return { recent: [], pipelineCents: 0, pipelineCount: 0, decided: 0, awarded: 0 };
+    return {
+      recent: [],
+      pipelineCents: 0,
+      pipelineCount: 0,
+      decided: 0,
+      awarded: 0,
+      submittedAwaiting: [],
+    };
   }
 }
 
@@ -428,6 +453,42 @@ export default async function DashboardPage() {
               </span>
             </span>
           )}
+        </div>
+      )}
+
+      {/* AWAITING DECISION — submitted bids with no result yet. */}
+      {pipelineData.submittedAwaiting.length > 0 && (
+        <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-3">
+          <div className="text-xs font-semibold uppercase tracking-wide text-blue-900">
+            Submitted · awaiting decision
+          </div>
+          <ul className="mt-2 divide-y divide-blue-100 text-sm">
+            {pipelineData.submittedAwaiting.map((e) => {
+              const submittedIso = e.bidSubmittedAt ?? e.updatedAt;
+              const days = Math.max(
+                0,
+                Math.round(
+                  (Date.now() - new Date(submittedIso).getTime()) /
+                    (24 * 60 * 60 * 1000),
+                ),
+              );
+              return (
+                <li key={e.id}>
+                  <Link
+                    href={`/estimates/${e.id}`}
+                    className="flex flex-wrap items-center justify-between gap-2 px-1 py-1.5 hover:bg-blue-100"
+                  >
+                    <span className="truncate font-medium text-blue-900">
+                      {e.projectName}
+                    </span>
+                    <span className="text-xs text-blue-800">
+                      Submitted {days === 0 ? 'today' : `${days}d ago`}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
         </div>
       )}
 
