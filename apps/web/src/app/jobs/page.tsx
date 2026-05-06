@@ -11,6 +11,7 @@ import { JobsCreatedFilter } from '../../components/jobs-created-filter';
 import { JobsResetFilters } from '../../components/jobs-reset-filters';
 import { DashboardRefreshButton } from '../../components/dashboard-refresh-button';
 import { JobsPinButton, JobsPinReorder } from '../../components/jobs-pin-button';
+import { PinnedCountBadge } from '../../components/pinned-count-badge';
 import { relativeTime } from '../../lib/relative-time';
 import { CopyMoneyButton } from '../../components/copy-money-button';
 import { EstimatesSortHeaders } from '../../components/estimates-sort-headers';
@@ -238,6 +239,8 @@ export default async function JobsPage({ searchParams }: PageProps) {
       </div>
 
       <h1 className="text-3xl font-bold text-yge-blue-500">{t('jobs.title')}</h1>
+          <PinnedCountBadge storageKey="yge.jobs.pinnedIds" eventName="yge:jobs-pinned-changed" />
+          <PinnedCountBadge storageKey="yge.jobs.pinnedIds" eventName="yge:jobs-pinned-changed" />
       <p className="mt-2 text-gray-700">
         {filteredJobs.length === 0 ? (
           t('jobs.subtitle')

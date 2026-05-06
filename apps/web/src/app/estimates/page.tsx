@@ -15,6 +15,7 @@ import { EstimatesSearchInput } from '../../components/estimates-search-input';
 import { EstimatesSortHeaders } from '../../components/estimates-sort-headers';
 import { EstimatesShortcutsChip } from '../../components/estimates-shortcuts-chip';
 import { EstimatesPinButton, EstimatesPinReorder } from '../../components/estimates-pin-button';
+import { PinnedCountBadge } from '../../components/pinned-count-badge';
 import { DashboardRefreshButton } from '../../components/dashboard-refresh-button';
 import { EstimatesStatusFilter } from '../../components/estimates-status-filter';
 import { EstimatesDueWeekChip } from '../../components/estimates-due-week-chip';
@@ -302,6 +303,8 @@ export default async function EstimatesPage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold text-yge-blue-500">{t('estimates.title')}</h1>
+          <PinnedCountBadge storageKey="yge.estimates.pinnedIds" eventName="yge:pinned-changed" />
+          <PinnedCountBadge storageKey="yge.estimates.pinnedIds" eventName="yge:pinned-changed" />
           <p className="mt-2 text-gray-700">
             {estimates.length === 0 ? (
               t('estimates.subtitle')
