@@ -167,7 +167,7 @@ export default async function MaterialsPage({
                 key: 'name',
                 header: t('materials.col.name'),
                 cell: (m) => (
-                  <Link href={`/materials/${m.id}`} className="font-medium text-blue-700 hover:underline">
+                  <Link href={`/materials/${m.id}`} className="font-medium text-gray-900 hover:text-yge-blue-700 hover:underline">
                     {m.name}
                   </Link>
                 ),
