@@ -455,10 +455,23 @@ export default async function DashboardPage() {
 
       {/* CONTINUE EDITING — quick resume of the most-recently-touched bid.
        *  Pulls the top recent (already filtered to active bids in 1006). */}
-      {recentEstimates[0] && (
+      {recentEstimates[0] && (() => {
+        const iso = recentEstimates[0].bidDueDate;
+        let toneClasses = 'border-yge-blue-300 bg-gradient-to-r from-yge-blue-50 to-white hover:from-yge-blue-100';
+        if (iso) {
+          const diffMs = new Date(iso).getTime() - Date.now();
+          if (!Number.isNaN(diffMs)) {
+            if (diffMs < 0) {
+              toneClasses = 'border-red-300 bg-gradient-to-r from-red-50 to-white hover:from-red-100';
+            } else if (diffMs < 3 * 24 * 60 * 60 * 1000) {
+              toneClasses = 'border-amber-300 bg-gradient-to-r from-amber-50 to-white hover:from-amber-100';
+            }
+          }
+        }
+        return (
         <Link
           href={`/estimates/${recentEstimates[0].id}`}
-          className="mb-4 flex items-center gap-4 rounded-lg border border-yge-blue-300 bg-gradient-to-r from-yge-blue-50 to-white p-4 shadow-sm hover:from-yge-blue-100 hover:shadow"
+          className={`mb-4 flex items-center gap-4 rounded-lg border p-4 shadow-sm hover:shadow ${toneClasses}`}
         >
           <span className="rounded-full bg-yge-blue-500 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white">
             Continue
@@ -478,7 +491,8 @@ export default async function DashboardPage() {
           </div>
           <span className="text-xl text-yge-blue-500">→</span>
         </Link>
-      )}
+        );
+      })()}
 
       {/* BID PIPELINE — sum of bid totals across all priced estimates. */}
       {pipelineData.pipelineCount > 0 && (
