@@ -1,7 +1,17 @@
 # YGE Mobile App
 
-React Native (Expo) app shipping to the **Apple App Store** and **Google
-Play Store**. Bundle ID and Android package both `com.youngge.app`.
+React Native (Expo) app for **Apple App Store** + **Google Play Store**.
+Bundle ID and Android package: `com.youngge.app`.
+
+## What's in here
+
+- **Login** — email + password against `/api/login` (HMAC-signed token, 30-day expiry)
+- **Home** — bid pipeline, win-rate, active bids list (live from API)
+- **Jobs** — active job list sorted by bid-due urgency, status pills, tap to view detail
+- **Estimates** — bid list with search + readiness pills, tap to view detail with line items
+- **Me** — locale switcher (en/es), API environment toggle (dev/prod), sign-out
+
+Detail screens are read-only for now. Edits happen in the web app.
 
 ## Local development
 
@@ -11,76 +21,108 @@ pnpm install
 pnpm --filter @yge/mobile dev
 ```
 
-Then scan the QR code with the Expo Go app on your iPhone/Android, or
-press `i` for iOS Simulator / `a` for Android emulator.
+Then either:
+- Scan the QR code with **Expo Go** on your iPhone/Android (test on a real device)
+- Press `i` for iOS Simulator (Mac only) — needs Xcode installed
+- Press `a` for Android emulator — needs Android Studio installed
 
-The app reads `extra.apiUrl` from `app.json` for the API base URL —
-default `http://localhost:4000`. To point at the production API, edit
-that field or set the `EXPO_PUBLIC_API_URL` env var (when we wire it up).
+The app reads `extra.apiUrl` from `app.json` for the API base URL — default
+`http://localhost:4000`. Inside the app, the **Me** tab lets you toggle
+between `Dev (local)` and `Production` (`https://api.youngge.com`).
+
+### Pointing at your local Mac from your iPhone
+
+If you're testing on a real iPhone with the API running on your Mac, you'll
+need the Mac's LAN IP (e.g. `192.168.1.50`) instead of `localhost`. Update
+`extra.apiUrl` in `app.json` to `http://192.168.1.50:4000`. Both devices
+must be on the same Wi-Fi.
 
 ## Building for the stores
 
 We use **EAS Build** — Expo's hosted iOS/Android build service.
 
-### One-time setup (Ryan does this)
+### One-time account setup (Ryan does this)
 
-1. **Install the EAS CLI**:
-   ```bash
-   pnpm dlx eas-cli login
-   ```
-2. **Apple Developer account** — sign up at developer.apple.com ($99/yr).
-   Create an App Store Connect record for "YGE" with bundle ID
-   `com.youngge.app`. Note the App Store Connect App ID; paste it into
-   `eas.json` → `submit.production.ios.ascAppId`.
-3. **Google Play Developer account** — sign up at play.google.com/console
-   ($25 one-time). Create an app entry; the package name is
-   `com.youngge.app`.
-4. **Generate signing keys**:
-   ```bash
-   eas credentials
-   ```
-   EAS walks you through Apple Push Notification, distribution, and
-   Android keystore generation.
+1. **Apple Developer account** — sign up at [developer.apple.com](https://developer.apple.com) ($99/yr).
+2. **App Store Connect record** — create one for "YGE" with bundle ID `com.youngge.app`. Note the App Store Connect App ID.
+3. **Google Play Developer account** — sign up at [play.google.com/console](https://play.google.com/console) ($25 one-time).
+4. **Play Console app** — create one with package `com.youngge.app`.
 
-### Building
+### One-time CLI setup
 
 ```bash
+# from repo root
+pnpm dlx eas-cli login
+# enter your Expo account credentials (free)
+
+cd apps/mobile
+pnpm dlx eas-cli build:configure
+# walks you through Apple Push Notification + distribution + Android keystore generation
+```
+
+Edit `eas.json` and fill in the placeholders:
+- `submit.production.ios.appleId` = your Apple ID email
+- `submit.production.ios.ascAppId` = your App Store Connect app ID
+
+### Builds
+
+```bash
+# from apps/mobile/
 # preview build for internal testing (TestFlight / Play Internal track)
-pnpm --filter @yge/mobile exec eas build --platform all --profile preview
+pnpm dlx eas-cli build --platform all --profile preview
 
 # production build to submit to the stores
-pnpm --filter @yge/mobile exec eas build --platform all --profile production
+pnpm dlx eas-cli build --platform all --profile production
 ```
 
-### Submitting to the stores
+Each build runs in Expo's cloud and takes 10-30 min. You'll get a download
+link for `.ipa` (iOS) and `.aab` (Android Bundle) files.
+
+### Submitting
 
 ```bash
-# After a production build finishes, submit:
-pnpm --filter @yge/mobile exec eas submit --platform ios
-pnpm --filter @yge/mobile exec eas submit --platform android
+# After a production build finishes:
+pnpm dlx eas-cli submit --platform ios
+pnpm dlx eas-cli submit --platform android
 ```
 
-App Store review typically takes 24-48 hours. Play Store review for
-the internal testing track is usually under an hour; production track
-is also typically a few hours but can be 1-3 days.
+**App Store** review usually takes 24-48 hours.
+**Google Play** internal track is <1h; production track several hours to a few days.
+
+### Setting the API URL on the production app
+
+Before building production, update `app.json` → `extra.apiUrl` to `https://api.youngge.com`
+(or wherever your prod API lives). Also set `MOBILE_TOKEN_SECRET` env var on
+the API server (any random string ≥32 chars) — the API uses it to sign auth
+tokens.
 
 ## Bumping the version
 
 When you ship an update:
-
 1. Bump `expo.version` in `app.json` (e.g. `0.1.0` → `0.1.1`).
-2. iOS `buildNumber` and Android `versionCode` increment automatically
-   via EAS when `appVersionSource: 'remote'` is set in `eas.json`.
+2. iOS `buildNumber` and Android `versionCode` increment automatically when
+   `appVersionSource: 'remote'` is set in `eas.json`.
 
-## What's in here
+## Architecture notes
 
-- `App.tsx` — bottom-tab navigator (Home / Jobs / Estimates / Me)
-- `src/screens/` — one screen per tab
-- `src/lib/api.ts` — fetch wrapper for the YGE API
-- `src/lib/locale-store.ts` — AsyncStorage-backed locale persistence
-- `src/lib/use-translator.ts` — translator hook (en / es)
-- `assets/` — app icon + splash
+- **Shared types**: imports from `@yge/shared` (Locale, dictionary, etc.) so
+  changes to schemas / labels propagate from web to mobile automatically.
+- **Auth**: HMAC-signed JWT-style token stored in AsyncStorage. No DB
+  session — token expires after 30 days, user re-logs in.
+- **API client**: `src/lib/api.ts` — fetch wrapper that injects
+  `Authorization: Bearer <token>` on every request.
+- **Persistence**: `@react-native-async-storage/async-storage` for locale,
+  API base URL, auth token, user info.
+- **Navigation**: `@react-navigation/bottom-tabs` for the 4 main tabs +
+  `@react-navigation/native-stack` inside Jobs and Estimates tabs for
+  list → detail navigation.
 
-The mobile app uses the same `@yge/shared` types and i18n dictionary
-as the web app, so changes to project schemas / labels propagate
-automatically.
+## Roadmap
+
+Phase 2 (mobile-specific):
+- [ ] Push notifications (Apple APNs + FCM)
+- [ ] Offline read-cache for jobs + estimates
+- [ ] Foreman screens: time card, daily report draft, photo capture
+- [ ] Crew screens: clock in/out, PTO request
+- [ ] Bid status switcher inline (currently web-only)
+- [ ] Per-line edit support (currently read-only)
