@@ -824,10 +824,38 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {estimate.bidItems
-                .map((item, i) => ({ item, i }))
-                .filter(({ item }) => visibleRowFilter(item))
-                .map(({ item, i }) => (
+              {(() => {
+                // Walk the visible rows; emit a section header tr
+                // whenever the schedule label changes from the
+                // previous row. Sentinel "__init__" forces the
+                // first header to render. Header is hidden when
+                // every row is on the empty/default schedule.
+                const visible = estimate.bidItems
+                  .map((item, i) => ({ item, i }))
+                  .filter(({ item }) => visibleRowFilter(item));
+                const haveSchedules = visible.some(
+                  ({ item }) => (item.schedule ?? '').trim() !== '',
+                );
+                let previousSched = '__init__';
+                const out: React.ReactNode[] = [];
+                for (const { item, i } of visible) {
+                  const sched = (item.schedule ?? '').trim();
+                  if (haveSchedules && sched !== previousSched) {
+                    previousSched = sched;
+                    out.push(
+                      <tr
+                        key={`hdr-${i}`}
+                        className="bg-gray-100/80 text-[10px] uppercase tracking-wide text-gray-500"
+                      >
+                        <td colSpan={8} className="px-3 py-1">
+                          {sched === ''
+                            ? 'Base bid (no schedule label)'
+                            : `Schedule ${sched}`}
+                        </td>
+                      </tr>,
+                    );
+                  }
+                  out.push(
                 <BidItemRow
                   key={i}
                   index={i}
@@ -870,8 +898,11 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
                   apiBaseUrl={apiBaseUrl}
                   estimateId={estimate.id}
                   projectType={estimate.projectType}
-                />
-              ))}
+                />,
+                  );
+                }
+                return out;
+              })()}
             </tbody>
             <tfoot className="sticky bottom-0 z-10 bg-gray-50 text-sm font-semibold text-gray-900 shadow-[0_-1px_0_rgba(0,0,0,0.06)]">
               {/* Per-schedule subtotals — only render when there's
