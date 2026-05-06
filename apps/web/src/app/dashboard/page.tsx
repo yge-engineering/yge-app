@@ -361,6 +361,7 @@ export default async function DashboardPage() {
   const hour = ygeHour();
   const partOfDay = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
   const t = getTranslator();
+  const renderedAt = new Date();
   const greetingKey =
     partOfDay === 'morning'
       ? 'dashboard.greeting.morning'
@@ -396,6 +397,9 @@ export default async function DashboardPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <span className="text-[10px] text-gray-500" title={renderedAt.toISOString()}>
+            As of {renderedAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+          </span>
           <DashboardRefreshButton />
           <Link href="/all-modules" className="rounded border border-yge-blue-500 px-3 py-1 text-sm font-medium text-yge-blue-500 hover:bg-yge-blue-50">
             {t('dashboard.allModules')} &rarr;
