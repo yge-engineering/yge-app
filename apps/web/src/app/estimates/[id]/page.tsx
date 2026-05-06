@@ -41,6 +41,19 @@ interface FullResponse {
   totals: PricedEstimateTotals;
 }
 
+async function fetchJob(id: string): Promise<{ engineersEstimateCents?: number } | null> {
+  try {
+    const res = await fetch(`${apiBaseUrl()}/api/jobs/${encodeURIComponent(id)}`, {
+      cache: 'no-store',
+    });
+    if (!res.ok) return null;
+    const json = (await res.json()) as { job?: { engineersEstimateCents?: number } };
+    return json.job ?? null;
+  } catch {
+    return null;
+  }
+}
+
 async function fetchEstimate(id: string): Promise<FullResponse | null> {
   const res = await fetch(`${apiBaseUrl()}/api/priced-estimates/${id}`, {
     cache: 'no-store',
@@ -58,6 +71,7 @@ export default async function EstimateDetailPage({
   const t = getTranslator();
   const data = await fetchEstimate(params.id);
   if (!data) notFound();
+  const job = await fetchJob(data.estimate.jobId);
 
   return (
     <AppShell>
@@ -86,6 +100,25 @@ export default async function EstimateDetailPage({
                 title={`${unpriced} unpriced · ${unacked} un-acked`}
               >
                 ✗ {issues} issue{issues === 1 ? '' : 's'}
+              </span>
+            );
+          })()}
+          {job?.engineersEstimateCents && job.engineersEstimateCents > 0 && (() => {
+            const delta = data.totals.bidTotalCents - job.engineersEstimateCents;
+            const pct = (delta / job.engineersEstimateCents) * 100;
+            const sign = delta >= 0 ? '+' : '';
+            const tone =
+              Math.abs(pct) <= 10
+                ? 'border-green-200 bg-green-50 text-green-800'
+                : Math.abs(pct) <= 25
+                  ? 'border-amber-200 bg-amber-50 text-amber-800'
+                  : 'border-red-200 bg-red-50 text-red-800';
+            return (
+              <span
+                className={`rounded border px-2 py-0.5 text-[10px] font-semibold ${tone}`}
+                title={`Engineer's estimate: ${(job.engineersEstimateCents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })}`}
+              >
+                vs Engineer {sign}{pct.toFixed(0)}%
               </span>
             );
           })()}
