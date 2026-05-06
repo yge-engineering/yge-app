@@ -743,6 +743,18 @@ export default async function DashboardPage() {
                 Estimate: '/estimates/',
                 Job: '/jobs/',
                 BidResult: '/bid-results/',
+                Customer: '/customers/',
+                Vendor: '/vendors/',
+                ApInvoice: '/ap-invoices/',
+                ChangeOrder: '/change-orders/',
+                Submittal: '/submittals/',
+                Rfi: '/rfis/',
+                DailyReport: '/daily-reports/',
+                TimeCard: '/time-cards/',
+                Tool: '/tools/',
+                Material: '/materials/',
+                Equipment: '/equipment/',
+                Dispatch: '/dispatch/',
               };
               const ACTION_LABEL: Record<string, string> = {
                 update: 'edited',
