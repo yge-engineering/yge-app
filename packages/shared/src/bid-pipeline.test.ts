@@ -16,6 +16,7 @@ function est(over: Partial<PricedEstimate>): PricedEstimate {
     ],
     oppPercent: 0.2,
     subBids: [],
+    subLeveling: [],
     addenda: [],
     ...over,
   } as PricedEstimate;

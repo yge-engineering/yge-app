@@ -8,10 +8,12 @@
 // winner's name + amount to clipboard so the estimator can paste
 // into the §4104 sub list editor.
 //
-// State lives in localStorage keyed by estimateId so a page reload
-// doesn't lose work. Phase 2 persists onto the estimate row directly.
+// State persists on the estimate row via debounced PATCH /api/priced-
+// estimates/:id. Server-rendered initial state means a page reload
+// (or device switch) doesn't lose work. Save indicator surfaces the
+// last persist timestamp.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface CompetingBid {
   id: string;
@@ -29,9 +31,9 @@ interface ScopeRow {
 
 interface Props {
   estimateId: string;
+  initialScopes: ScopeRow[];
+  apiBaseUrl: string;
 }
-
-const LOCAL_STORAGE_PREFIX = 'yge.subLeveling.';
 
 function newId(): string {
   return `sl-${Math.floor(Math.random() * 0xffffff).toString(16)}`;
@@ -53,28 +55,48 @@ function dollarsToCents(s: string): number {
   return Math.round(n * 100);
 }
 
-export function SubLevelingClient({ estimateId }: Props) {
-  const [scopes, setScopes] = useState<ScopeRow[]>([]);
-  const storageKey = `${LOCAL_STORAGE_PREFIX}${estimateId}`;
+export function SubLevelingClient({
+  estimateId,
+  initialScopes,
+  apiBaseUrl,
+}: Props) {
+  const [scopes, setScopes] = useState<ScopeRow[]>(initialScopes);
+  const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSavedJsonRef = useRef<string>(JSON.stringify(initialScopes));
 
+  // Debounced auto-save to /api/priced-estimates/:id whenever scopes
+  // change. 600 ms feels responsive without slamming the disk.
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(storageKey);
-      if (!raw) return;
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) setScopes(parsed as ScopeRow[]);
-    } catch {
-      // ignore
-    }
-  }, [storageKey]);
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(storageKey, JSON.stringify(scopes));
-    } catch {
-      // quota / private browsing — best-effort
-    }
-  }, [scopes, storageKey]);
+    const json = JSON.stringify(scopes);
+    if (json === lastSavedJsonRef.current) return;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `${apiBaseUrl}/api/priced-estimates/${encodeURIComponent(estimateId)}`,
+          {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ subLeveling: scopes }),
+          },
+        );
+        if (!res.ok) {
+          const text = await res.text().catch(() => '');
+          throw new Error(`Save failed (${res.status}): ${text.slice(0, 200)}`);
+        }
+        lastSavedJsonRef.current = json;
+        setSavedAt(new Date().toISOString());
+        setSaveError(null);
+      } catch (err) {
+        setSaveError(err instanceof Error ? err.message : 'Save failed');
+      }
+    }, 600);
+    return () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+    };
+  }, [scopes, apiBaseUrl, estimateId]);
 
   function addScope() {
     setScopes((prev) => [
@@ -374,9 +396,16 @@ export function SubLevelingClient({ estimateId }: Props) {
       </button>
 
       <p className="text-xs text-gray-500">
-        Worksheet state lives in your browser (localStorage) per estimate.
-        It's not persisted on the estimate row yet — that lands in a future
-        bundle. Use Award + copy to paste the winner into the §4104 sub list.
+        Auto-saves to the estimate row. Use Award + copy to paste the winner
+        into the §4104 sub list.
+        {saveError && (
+          <span className="ml-2 text-red-700">⚠ {saveError}</span>
+        )}
+        {!saveError && savedAt && (
+          <span className="ml-2 text-green-700">
+            ✓ Saved {new Date(savedAt).toLocaleTimeString()}
+          </span>
+        )}
       </p>
     </div>
   );

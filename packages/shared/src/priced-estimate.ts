@@ -65,8 +65,37 @@ export const PricedEstimateSchema = z.object({
    *  the #1 cause of bids getting tossed at bid open. Defaults to []
    *  so older estimate JSON files on disk still parse. */
   addenda: z.array(AddendumSchema).default([]),
+
+  /** Sub-bid leveling worksheet — per scope, multiple competing
+   *  quotes with one Awarded as the winner. Persists the state from
+   *  the /estimates/[id]/sub-leveling page so the work survives
+   *  device switches. Defaults to []; older estimate JSON files
+   *  parse fine. The Awarded entries can be promoted into subBids
+   *  via a "Send to §4104" button (future bundle). */
+  subLeveling: z
+    .array(
+      z.object({
+        id: z.string().min(1).max(60),
+        scope: z.string().max(200).default(''),
+        awardedBidId: z.string().max(60).optional(),
+        bids: z
+          .array(
+            z.object({
+              id: z.string().min(1).max(60),
+              contractorName: z.string().max(200).default(''),
+              cslbLicense: z.string().max(40).default(''),
+              bidAmountCents: z.number().int().nonnegative().default(0),
+              notes: z.string().max(500).default(''),
+            }),
+          )
+          .default([]),
+      }),
+    )
+    .default([]),
 });
 export type PricedEstimate = z.infer<typeof PricedEstimateSchema>;
+export type SubLevelingScope = PricedEstimate['subLeveling'][number];
+export type SubLevelingBid = SubLevelingScope['bids'][number];
 
 // ---- Math ----------------------------------------------------------------
 

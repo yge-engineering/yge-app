@@ -60,7 +60,13 @@ export default async function SubLevelingPage({
           subtitle="Compare quotes from competing subs for the same scope, highlight the low bid, and copy the winner into the §4104 sub list."
         />
 
-        <SubLevelingClient estimateId={estimate.id} />
+        <SubLevelingClient
+          estimateId={estimate.id}
+          initialScopes={estimate.subLeveling}
+          apiBaseUrl={
+            process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
+          }
+        />
       </main>
     </AppShell>
   );

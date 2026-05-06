@@ -81,6 +81,23 @@ pricedEstimatesRouter.get('/:id', async (req, res, next) => {
   }
 });
 
+const SubLevelingScopeSchemaPatch = z.object({
+  id: z.string().min(1).max(60),
+  scope: z.string().max(200).default(''),
+  awardedBidId: z.string().max(60).optional(),
+  bids: z
+    .array(
+      z.object({
+        id: z.string().min(1).max(60),
+        contractorName: z.string().max(200).default(''),
+        cslbLicense: z.string().max(40).default(''),
+        bidAmountCents: z.number().int().nonnegative().default(0),
+        notes: z.string().max(500).default(''),
+      }),
+    )
+    .default([]),
+});
+
 const UpdateBody = z.object({
   oppPercent: z.number().min(0).max(2).optional(),
   notes: z.string().max(5_000).optional(),
@@ -91,6 +108,9 @@ const UpdateBody = z.object({
   /** Replace the full addendum list. The addendum editor PATCHes through
    *  the estimate-level endpoint on every commit. */
   addenda: z.array(AddendumSchema).optional(),
+  /** Replace the full sub-leveling worksheet. The leveling client
+   *  debounce-PATCHes on every keystroke. */
+  subLeveling: z.array(SubLevelingScopeSchemaPatch).optional(),
 });
 
 // PATCH /api/priced-estimates/:id — update O&P / notes / full bid item list.

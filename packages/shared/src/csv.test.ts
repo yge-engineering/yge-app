@@ -133,6 +133,7 @@ describe('pricedEstimateToCsv', () => {
     ],
     oppPercent: 0.2,
     subBids: [],
+    subLeveling: [],
     addenda: [],
   };
 

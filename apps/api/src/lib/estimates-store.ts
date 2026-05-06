@@ -171,6 +171,7 @@ export async function createFromDraft(
     oppPercent: input.oppPercent ?? 0.2,
     subBids: [],
     addenda: [],
+    subLeveling: [],
   };
   // Validate before writing so a buggy caller can't poison the store.
   PricedEstimateSchema.parse(est);
@@ -222,6 +223,8 @@ export interface EstimatePatch {
    *  sub list — addenda are typically small (0-10) and the editor saves
    *  every commit through this single field. */
   addenda?: Addendum[];
+  /** Replace the full sub-leveling worksheet. */
+  subLeveling?: PricedEstimate['subLeveling'];
 }
 
 export async function updateEstimate(
@@ -246,6 +249,7 @@ export async function updateEstimate(
       ? { bidSecurity: patch.bidSecurity ?? undefined }
       : {}),
     ...(patch.addenda ? { addenda: patch.addenda } : {}),
+    ...(patch.subLeveling ? { subLeveling: patch.subLeveling } : {}),
     updatedAt: new Date().toISOString(),
   };
   PricedEstimateSchema.parse(updated);

@@ -32,6 +32,7 @@ function estimate(items: PricedBidItem[], oppPercent = 0.2): PricedEstimate {
     oppPercent,
     subBids: [],
     addenda: [],
+    subLeveling: [],
   };
 }
 

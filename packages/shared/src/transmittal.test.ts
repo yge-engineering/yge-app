@@ -28,6 +28,7 @@ function makeEstimate(overrides: Partial<PricedEstimate> = {}): PricedEstimate {
     oppPercent: 0.2,
     subBids: [],
     addenda: [],
+    subLeveling: [],
     ...overrides,
   };
 }

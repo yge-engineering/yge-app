@@ -28,6 +28,7 @@ function estimate(over: Partial<PricedEstimate>): PricedEstimate {
     bidItems: [],
     oppPercent: 0.2,
     subBids: [],
+    subLeveling: [],
     addenda: [],
     ...over,
   } as PricedEstimate;

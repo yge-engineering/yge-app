@@ -16,6 +16,7 @@ function est(over: Partial<PricedEstimate>): PricedEstimate {
     ],
     oppPercent: 0.2,
     subBids: [],
+    subLeveling: [],
     addenda: [],
     bidSecurity: { type: 'BID_BOND', percent: 0.1 } as never,
     ...over,
