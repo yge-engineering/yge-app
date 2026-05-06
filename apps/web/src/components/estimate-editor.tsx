@@ -39,11 +39,95 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
   const [savingOpp, setSavingOpp] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Refs to every unit-price input in the bid items table. Used to
+  // implement Excel-style keyboard nav (Enter / Tab / arrow keys move
+  // between rows). Length tracks bidItems on every render via the
+  // data-row-idx prop on each input.
+  const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
+
+  // Cell-level undo stack. Each entry captures the row index and the
+  // old unit price in cents so ⌘Z (Cmd/Ctrl-Z) reverts the most recent
+  // edit. Capped at 50 entries — that's plenty for "I overwrote the
+  // wrong cell" recovery without unbounded memory.
+  type UndoEntry = { itemIndex: number; oldCents: number | null };
+  const undoStack = useRef<UndoEntry[]>([]);
+
+  function pushUndo(entry: UndoEntry) {
+    undoStack.current.push(entry);
+    if (undoStack.current.length > 50) undoStack.current.shift();
+  }
+
+  function popUndo(): UndoEntry | null {
+    return undoStack.current.pop() ?? null;
+  }
+
+  // Move keyboard focus to a sibling row's price input. Direction is
+  // the row delta (+1 down, -1 up). Wraps to the first/last row.
+  function focusRow(currentIndex: number, direction: 1 | -1) {
+    const total = inputRefs.current.length;
+    if (total === 0) return;
+    let next = currentIndex + direction;
+    if (next < 0) next = total - 1;
+    if (next >= total) next = 0;
+    const el = inputRefs.current[next];
+    if (el) {
+      el.focus();
+      el.select();
+    }
+  }
+
   // Optimistic-ish: when the user types we recompute totals locally so the
   // running number doesn't lag, then reconcile with whatever the server
   // returns. Cheap and visually responsive.
   function recomputeLocal(next: PricedEstimate) {
     setTotals(computeEstimateTotals(next));
+  }
+
+  // Apply a unit-price change for a row, mirroring what the inline
+  // input would do. Used by paste-from-Excel and undo.
+  function applyPriceChange(itemIndex: number, cents: number | null, opts?: { skipUndo?: boolean }) {
+    const existing = estimate.bidItems[itemIndex];
+    if (!existing) return;
+    if (existing.unitPriceCents === cents) return;
+    if (!opts?.skipUndo) {
+      pushUndo({ itemIndex, oldCents: existing.unitPriceCents });
+    }
+    const next = {
+      ...estimate,
+      bidItems: estimate.bidItems.map((it, idx) =>
+        idx === itemIndex ? { ...it, unitPriceCents: cents } : it,
+      ),
+    };
+    setEstimate(next);
+    recomputeLocal(next);
+    void pushLineUpdate(itemIndex, cents);
+  }
+
+  // Handle a multi-line paste from Excel. Pastes a column of unit
+  // prices starting at the current row, one per subsequent row, until
+  // we run out of pasted lines or run off the end of the sheet.
+  function applyMultiLinePaste(startIndex: number, raw: string): number {
+    // Excel newlines come through as \r\n; some browsers normalize to
+    // \n. Trim each cell, drop trailing blanks.
+    const lines = raw.replace(/\r/g, '').split('\n').map((s) => s.trim());
+    while (lines.length > 0 && lines[lines.length - 1] === '') lines.pop();
+    let applied = 0;
+    for (let i = 0; i < lines.length; i += 1) {
+      const idx = startIndex + i;
+      if (idx >= estimate.bidItems.length) break;
+      const line = lines[i] ?? '';
+      const num = Number(line.replace(/[$,\s]/g, ''));
+      const cents = !line || !Number.isFinite(num) || num < 0 ? null : Math.round(num * 100);
+      applyPriceChange(idx, cents);
+      applied += 1;
+    }
+    return applied;
+  }
+
+  function handleUndo() {
+    const entry = popUndo();
+    if (!entry) return;
+    applyPriceChange(entry.itemIndex, entry.oldCents, { skipUndo: true });
   }
 
   async function pushLineUpdate(itemIndex: number, unitPriceCents: number | null) {
@@ -205,21 +289,17 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
                 <BidItemRow
                   key={i}
                   index={i}
+                  totalRows={estimate.bidItems.length}
                   t={t}
                   item={item}
                   saving={savingLine === i}
-                  onPriceCommit={(cents) => {
-                    // Local update first for responsiveness.
-                    const next = {
-                      ...estimate,
-                      bidItems: estimate.bidItems.map((it, idx) =>
-                        idx === i ? { ...it, unitPriceCents: cents } : it,
-                      ),
-                    };
-                    setEstimate(next);
-                    recomputeLocal(next);
-                    void pushLineUpdate(i, cents);
+                  inputRef={(el) => {
+                    inputRefs.current[i] = el;
                   }}
+                  onPriceCommit={(cents) => applyPriceChange(i, cents)}
+                  onAdvance={(direction) => focusRow(i, direction)}
+                  onUndo={handleUndo}
+                  onMultiLinePaste={(raw) => applyMultiLinePaste(i, raw)}
                 />
               ))}
             </tbody>
@@ -321,17 +401,35 @@ function confidenceClasses(c: PtoEItemConfidence): string {
 
 function BidItemRow({
   index,
+  totalRows,
   item,
   saving,
+  inputRef,
   onPriceCommit,
+  onAdvance,
+  onUndo,
+  onMultiLinePaste,
   t,
 }: {
   index: number;
+  totalRows: number;
   item: PricedEstimate['bidItems'][number];
   saving: boolean;
+  /** Ref callback so the parent can manage focus across all rows. */
+  inputRef: (el: HTMLInputElement | null) => void;
   onPriceCommit: (cents: number | null) => void;
+  /** Move keyboard focus to the prev/next row. +1 down, -1 up. */
+  onAdvance: (direction: 1 | -1) => void;
+  /** Cell-level undo. Reverts the most recent change anywhere in the table. */
+  onUndo: () => void;
+  /** Paste-from-Excel splat. Returns the number of rows that absorbed the paste. */
+  onMultiLinePaste: (raw: string) => number;
   t: Translator;
 }) {
+  // totalRows is only consumed as documentation right now; surfaced
+  // here so the row component knows when it's the last one without
+  // having to look it up from outside.
+  void totalRows;
   const [text, setText] = useState<string>(
     item.unitPriceCents == null ? '' : (item.unitPriceCents / 100).toFixed(2),
   );
@@ -388,16 +486,57 @@ function BidItemRow({
         <div className="flex items-center justify-end gap-1">
           <span className="text-xs text-gray-500">$</span>
           <input
+            ref={inputRef}
             aria-label={t('estEditor.unitPriceAria', { itemNumber: item.itemNumber })}
             type="text"
             inputMode="decimal"
             value={text}
             onChange={(e) => setText(e.target.value)}
             onBlur={commit}
+            onPaste={(e) => {
+              const raw = e.clipboardData.getData('text/plain');
+              // Excel cells separated by newline are the most common
+              // multi-row paste. If we see a newline, intercept the
+              // default and splat across rows.
+              if (raw.includes('\n')) {
+                e.preventDefault();
+                onMultiLinePaste(raw);
+              }
+            }}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') {
+              // ⌘Z / Ctrl+Z — undo the last cell change anywhere in
+              // the table. We let the browser handle in-cell undo
+              // (i.e. while the user is typing) by only reacting when
+              // the input is unchanged from its committed value.
+              if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') {
                 e.preventDefault();
                 (e.target as HTMLInputElement).blur();
+                onUndo();
+                return;
+              }
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                commit();
+                onAdvance(e.shiftKey ? -1 : 1);
+                return;
+              }
+              if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                commit();
+                onAdvance(1);
+                return;
+              }
+              if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                commit();
+                onAdvance(-1);
+                return;
+              }
+              // Tab: let the browser handle horizontal nav (focus next
+              // tab-stop), but commit first so the value isn't lost.
+              if (e.key === 'Tab') {
+                commit();
+                return;
               }
             }}
             placeholder="—"
