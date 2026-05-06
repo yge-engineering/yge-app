@@ -19,6 +19,7 @@ import {
   createFromDraft,
   getEstimate,
   listEstimates,
+  promoteAwardedToSubList,
   setLineUnitPrice,
   updateEstimate,
 } from '../lib/estimates-store';
@@ -189,6 +190,32 @@ pricedEstimatesRouter.put('/:id/sub-bids', async (req, res, next) => {
     next(err);
   }
 });
+
+// POST /api/priced-estimates/:id/sub-leveling/:scopeId/promote — promote
+// the scope's awarded competing quote into the estimate's §4104 sub list.
+// One-way action: appends a new SubBid; if the estimator clicks twice,
+// two rows show up and they can clean up in the §4104 editor.
+pricedEstimatesRouter.post(
+  '/:id/sub-leveling/:scopeId/promote',
+  async (req, res, next) => {
+    try {
+      const result = await promoteAwardedToSubList(
+        req.params.id,
+        req.params.scopeId,
+      );
+      if (!result.ok) {
+        return res.status(result.status).json({ error: result.reason });
+      }
+      return res.json({
+        estimate: result.estimate,
+        totals: computeEstimateTotals(result.estimate),
+        subBidId: result.subBidId,
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
 
 // PATCH /api/priced-estimates/:id/items/:itemIndex — set one line's price.
 // Used by the inline editor so the wire payload stays small.

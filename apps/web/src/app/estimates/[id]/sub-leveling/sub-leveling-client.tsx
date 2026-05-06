@@ -55,6 +55,12 @@ function dollarsToCents(s: string): number {
   return Math.round(n * 100);
 }
 
+type PromoteState =
+  | { kind: 'idle' }
+  | { kind: 'sending' }
+  | { kind: 'sent' }
+  | { kind: 'error'; reason: string };
+
 export function SubLevelingClient({
   estimateId,
   initialScopes,
@@ -63,6 +69,9 @@ export function SubLevelingClient({
   const [scopes, setScopes] = useState<ScopeRow[]>(initialScopes);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [promoteState, setPromoteState] = useState<Record<string, PromoteState>>(
+    {},
+  );
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedJsonRef = useRef<string>(JSON.stringify(initialScopes));
 
@@ -169,7 +178,9 @@ export function SubLevelingClient({
   }
   async function award(scope: ScopeRow, bid: CompetingBid) {
     updateScope(scope.id, { awardedBidId: bid.id });
-    // Copy a §4104 sub-list-friendly line to the clipboard.
+    // Copy a §4104 sub-list-friendly line to the clipboard as a fallback
+    // for offline / API-down cases. The "Send to §4104" button is the
+    // primary path; the clipboard line is just a paste-friendly backup.
     const line =
       `${bid.contractorName}` +
       (bid.cslbLicense ? ` (CSLB ${bid.cslbLicense})` : '') +
@@ -178,6 +189,40 @@ export function SubLevelingClient({
       await navigator.clipboard.writeText(line);
     } catch {
       // best-effort
+    }
+  }
+
+  // Promote the scope's awarded quote into the estimate's §4104 sub list
+  // server-side. The button only appears when there's an awarded bid; we
+  // also gate against empty contractor / scope here so the API doesn't
+  // have to bounce a 400 for a UX problem we can prevent.
+  async function sendTo4104(scope: ScopeRow, awarded: CompetingBid) {
+    setPromoteState((prev) => ({ ...prev, [scope.id]: { kind: 'sending' } }));
+    try {
+      const res = await fetch(
+        `${apiBaseUrl}/api/priced-estimates/${encodeURIComponent(
+          estimateId,
+        )}/sub-leveling/${encodeURIComponent(scope.id)}/promote`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' } },
+      );
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        const reason = body.error ?? `Send failed (${res.status})`;
+        setPromoteState((prev) => ({
+          ...prev,
+          [scope.id]: { kind: 'error', reason },
+        }));
+        return;
+      }
+      setPromoteState((prev) => ({ ...prev, [scope.id]: { kind: 'sent' } }));
+    } catch (err) {
+      setPromoteState((prev) => ({
+        ...prev,
+        [scope.id]: {
+          kind: 'error',
+          reason: err instanceof Error ? err.message : 'Send failed',
+        },
+      }));
     }
   }
 
@@ -368,7 +413,7 @@ export function SubLevelingClient({
               </div>
             )}
 
-            <div className="mt-2 flex items-center justify-between text-xs">
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs">
               <button
                 type="button"
                 onClick={() => addBid(scope.id)}
@@ -376,12 +421,62 @@ export function SubLevelingClient({
               >
                 + Add quote for this scope
               </button>
-              {scope.awardedBidId && (
-                <span className="text-green-700">
-                  Awarded line copied to clipboard. Paste into the §4104 sub
-                  list at /estimates/{estimateId}/sub-list.
-                </span>
-              )}
+              {scope.awardedBidId &&
+                (() => {
+                  const awarded = scope.bids.find(
+                    (b) => b.id === scope.awardedBidId,
+                  );
+                  if (!awarded) return null;
+                  const state: PromoteState =
+                    promoteState[scope.id] ?? { kind: 'idle' };
+                  const sending = state.kind === 'sending';
+                  const sent = state.kind === 'sent';
+                  const disabled =
+                    sending ||
+                    !scope.scope.trim() ||
+                    !awarded.contractorName.trim();
+                  const reason = !scope.scope.trim()
+                    ? 'Add a scope name first'
+                    : !awarded.contractorName.trim()
+                      ? 'Awarded contractor needs a name first'
+                      : '';
+                  return (
+                    <span className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => void sendTo4104(scope, awarded)}
+                        disabled={disabled}
+                        title={reason || 'Add this winner to the §4104 sub list'}
+                        className={`rounded px-2 py-1 font-semibold ${
+                          sent
+                            ? 'bg-green-700 text-white'
+                            : disabled
+                              ? 'cursor-not-allowed border border-gray-300 text-gray-400'
+                              : 'border border-green-700 text-green-700 hover:bg-green-50'
+                        }`}
+                      >
+                        {sending
+                          ? 'Sending…'
+                          : sent
+                            ? '✓ Sent to §4104'
+                            : 'Send to §4104'}
+                      </button>
+                      {state.kind === 'error' && (
+                        <span className="text-red-700">⚠ {state.reason}</span>
+                      )}
+                      {sent && (
+                        <a
+                          href={`/estimates/${encodeURIComponent(
+                            estimateId,
+                          )}/sub-list`}
+                          className="font-medium text-blue-700 hover:underline"
+                        >
+                          Open §4104 list →
+                        </a>
+                      )}
+                    </span>
+                  );
+                })()}
             </div>
           </section>
         );

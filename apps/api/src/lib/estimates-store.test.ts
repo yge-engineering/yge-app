@@ -6,6 +6,7 @@ import {
   createFromDraft,
   getEstimate,
   listEstimates,
+  promoteAwardedToSubList,
   setLineUnitPrice,
   updateEstimate,
 } from './estimates-store';
@@ -371,5 +372,151 @@ describe('addenda', () => {
     });
     expect(after?.addenda).toHaveLength(1);
     expect(after?.addenda[0].number).toBe('3');
+  });
+});
+
+describe('promoteAwardedToSubList', () => {
+  async function setupWithLeveling() {
+    const est = await createFromDraft({
+      fromDraftId: 'd1',
+      jobId: 'cltest000000000000000000',
+      draft: sampleDraft,
+    });
+    return updateEstimate(est.id, {
+      subLeveling: [
+        {
+          id: 'sl-striping',
+          scope: 'Striping & TC',
+          awardedBidId: 'b-acme',
+          bids: [
+            {
+              id: 'b-acme',
+              contractorName: 'Acme Striping Co',
+              cslbLicense: '900111',
+              bidAmountCents: 12_500_00,
+              notes: 'thermoplastic',
+            },
+            {
+              id: 'b-other',
+              contractorName: 'Other Striping',
+              cslbLicense: '900222',
+              bidAmountCents: 14_000_00,
+              notes: '',
+            },
+          ],
+        },
+        {
+          id: 'sl-empty-scope',
+          scope: '',
+          awardedBidId: 'b-noname',
+          bids: [
+            {
+              id: 'b-noname',
+              contractorName: '',
+              cslbLicense: '',
+              bidAmountCents: 0,
+              notes: '',
+            },
+          ],
+        },
+        {
+          id: 'sl-no-award',
+          scope: 'Survey',
+          bids: [
+            {
+              id: 'b-1',
+              contractorName: 'Sur Co',
+              cslbLicense: '900333',
+              bidAmountCents: 5_000_00,
+              notes: '',
+            },
+          ],
+        },
+      ],
+    });
+  }
+
+  it('promotes the awarded competing quote into subBids', async () => {
+    const est = await setupWithLeveling();
+    expect(est).not.toBeNull();
+    const result = await promoteAwardedToSubList(est!.id, 'sl-striping');
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.estimate.subBids).toHaveLength(1);
+    const sub = result.estimate.subBids[0];
+    expect(sub.contractorName).toBe('Acme Striping Co');
+    expect(sub.portionOfWork).toBe('Striping & TC');
+    expect(sub.bidAmountCents).toBe(12_500_00);
+    expect(sub.cslbLicense).toBe('900111');
+    expect(sub.notes).toBe('thermoplastic');
+    // Subsequent click appends a second row (no silent dedupe).
+    const second = await promoteAwardedToSubList(est!.id, 'sl-striping');
+    expect(second.ok).toBe(true);
+    if (!second.ok) return;
+    expect(second.estimate.subBids).toHaveLength(2);
+  });
+
+  it('omits cslbLicense and notes when blank in the leveling bid', async () => {
+    const est = await createFromDraft({
+      fromDraftId: 'd1',
+      jobId: 'cltest000000000000000000',
+      draft: sampleDraft,
+    });
+    await updateEstimate(est.id, {
+      subLeveling: [
+        {
+          id: 'sl-1',
+          scope: 'Trucking',
+          awardedBidId: 'b-1',
+          bids: [
+            {
+              id: 'b-1',
+              contractorName: 'Hauler Inc',
+              cslbLicense: '',
+              bidAmountCents: 8_000_00,
+              notes: '',
+            },
+          ],
+        },
+      ],
+    });
+    const result = await promoteAwardedToSubList(est.id, 'sl-1');
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const sub = result.estimate.subBids[0];
+    expect(sub.cslbLicense).toBeUndefined();
+    expect(sub.notes).toBeUndefined();
+  });
+
+  it('returns 404 for an unknown estimate', async () => {
+    const result = await promoteAwardedToSubList('est-2026-01-01-nope-deadbeef', 'sl-x');
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.status).toBe(404);
+  });
+
+  it('returns 404 for an unknown scope', async () => {
+    const est = await setupWithLeveling();
+    const result = await promoteAwardedToSubList(est!.id, 'sl-missing');
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.status).toBe(404);
+  });
+
+  it('returns 400 if no bid is awarded', async () => {
+    const est = await setupWithLeveling();
+    const result = await promoteAwardedToSubList(est!.id, 'sl-no-award');
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.status).toBe(400);
+    expect(result.reason).toMatch(/awarded/i);
+  });
+
+  it('returns 400 when scope or contractor is empty', async () => {
+    const est = await setupWithLeveling();
+    const result = await promoteAwardedToSubList(est!.id, 'sl-empty-scope');
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.status).toBe(400);
   });
 });

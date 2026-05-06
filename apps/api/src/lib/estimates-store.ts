@@ -14,6 +14,7 @@ import { randomBytes } from 'node:crypto';
 import {
   PricedEstimateSchema,
   blankPricedItemsFromDraft,
+  newSubBidId,
   type Addendum,
   type BidSecurity,
   type PricedEstimate,
@@ -273,6 +274,89 @@ export async function updateEstimate(
     ctx,
   });
   return updated;
+}
+
+/**
+ * Result of promoting a sub-leveling worksheet's awarded bid into the
+ * §4104 sub list. Discriminated so the route can map cleanly to HTTP
+ * status codes (404 for missing estimate/scope, 400 for empty data the
+ * estimator still needs to fill in).
+ */
+export type PromoteAwardedResult =
+  | { ok: true; estimate: PricedEstimate; subBidId: string }
+  | { ok: false; status: 400 | 404; reason: string };
+
+/**
+ * Build a §4104 SubBid from a sub-leveling scope's awarded competing
+ * quote and append it to the estimate's `subBids` array.
+ *
+ * Plain English: the estimator typed competing quotes into the leveling
+ * worksheet, picked a winner, and now wants that winner to show up on
+ * the bid envelope's §4104 list without retyping. This helper does that
+ * promotion atomically and audit-logs it as a normal estimate update.
+ *
+ * Idempotency: this always appends a new SubBid (new id). If the user
+ * clicks the button twice, two rows show up — they can delete one in
+ * the §4104 editor. We chose this over a "skip if duplicate exists"
+ * rule because the matching keys (contractor + portion of work) can
+ * legitimately repeat (e.g. a prime that bids two scopes), so silent
+ * dedupe would be wrong.
+ */
+export async function promoteAwardedToSubList(
+  id: string,
+  scopeId: string,
+  ctx?: AuditContext,
+): Promise<PromoteAwardedResult> {
+  const existing = await getEstimate(id);
+  if (!existing) return { ok: false, status: 404, reason: 'Estimate not found' };
+
+  const scope = existing.subLeveling.find((s) => s.id === scopeId);
+  if (!scope) return { ok: false, status: 404, reason: 'Scope not found' };
+  if (!scope.awardedBidId) {
+    return { ok: false, status: 400, reason: 'No awarded bid in this scope' };
+  }
+  const awarded = scope.bids.find((b) => b.id === scope.awardedBidId);
+  if (!awarded) {
+    return { ok: false, status: 400, reason: 'Awarded bid not found in scope' };
+  }
+  const contractorName = awarded.contractorName.trim();
+  if (!contractorName) {
+    return {
+      ok: false,
+      status: 400,
+      reason: 'Awarded contractor name is empty — fill it in before sending',
+    };
+  }
+  const portionOfWork = scope.scope.trim();
+  if (!portionOfWork) {
+    return {
+      ok: false,
+      status: 400,
+      reason: 'Scope description is empty — fill it in before sending',
+    };
+  }
+
+  const cslb = awarded.cslbLicense.trim();
+  const notes = awarded.notes.trim();
+  const newSub: SubBid = {
+    id: newSubBidId(),
+    contractorName,
+    portionOfWork,
+    bidAmountCents: awarded.bidAmountCents,
+    ...(cslb ? { cslbLicense: cslb } : {}),
+    ...(notes ? { notes } : {}),
+  };
+
+  const updated = await updateEstimate(
+    id,
+    { subBids: [...existing.subBids, newSub] },
+    ctx,
+  );
+  if (!updated) {
+    // Race: estimate disappeared between read and write. Treat as 404.
+    return { ok: false, status: 404, reason: 'Estimate not found' };
+  }
+  return { ok: true, estimate: updated, subBidId: newSub.id };
 }
 
 /**
