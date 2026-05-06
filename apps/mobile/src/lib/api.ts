@@ -42,6 +42,25 @@ export async function getJson<T>(pathname: string): Promise<T> {
   return (await res.json()) as T;
 }
 
+export async function patchJson<T>(pathname: string, body: unknown): Promise<T> {
+  const base = await getApiBaseUrl();
+  const headers = {
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
+    ...(await authHeader()),
+  };
+  const res = await fetch(`${base}${pathname}`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`API ${res.status}: ${text || pathname}`);
+  }
+  return (await res.json()) as T;
+}
+
 export async function postJson<T>(pathname: string, body: unknown): Promise<T> {
   const base = await getApiBaseUrl();
   const headers = {
