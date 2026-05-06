@@ -821,6 +821,11 @@ function RecentEstimatesTile({
               <div className="min-w-0 flex-1">
                 <div className="truncate font-medium text-gray-900">
                   {e.projectName}
+                  {e.bidStatus === 'submitted' && (
+                    <span className="ml-2 inline-block rounded-full border border-blue-300 bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-800">
+                      submitted
+                    </span>
+                  )}
                 </div>
                 <div className="text-[11px] text-gray-500">
                   <RecentEstimateDuePill iso={e.bidDueDate} />
