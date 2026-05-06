@@ -32,6 +32,11 @@ interface ScopeRow {
 interface Props {
   estimateId: string;
   initialScopes: ScopeRow[];
+  /** Scope ids whose awarded bid already lives on the §4104 list at
+   *  page load time (matched server-side by contractor name + portion
+   *  of work). Seeds the "✓ Sent to §4104" indicator so it survives
+   *  a page reload or device switch. */
+  initialPromotedScopeIds: string[];
   apiBaseUrl: string;
 }
 
@@ -64,13 +69,20 @@ type PromoteState =
 export function SubLevelingClient({
   estimateId,
   initialScopes,
+  initialPromotedScopeIds,
   apiBaseUrl,
 }: Props) {
   const [scopes, setScopes] = useState<ScopeRow[]>(initialScopes);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [promoteState, setPromoteState] = useState<Record<string, PromoteState>>(
-    {},
+    () => {
+      // Seed any server-detected matches as already-sent so the button
+      // shows ✓ Sent to §4104 the moment the page renders.
+      const seed: Record<string, PromoteState> = {};
+      for (const id of initialPromotedScopeIds) seed[id] = { kind: 'sent' };
+      return seed;
+    },
   );
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedJsonRef = useRef<string>(JSON.stringify(initialScopes));

@@ -35,6 +35,33 @@ async function fetchEstimate(id: string): Promise<PricedEstimate | null> {
   return j.estimate;
 }
 
+/**
+ * Heuristic match for "this scope's awarded bid already lives on the
+ * §4104 list". The promote button (bundle 937) doesn't write a back-
+ * reference on the SubBid yet, so we identify a match by contractor
+ * name + portion of work, both compared case-insensitively after
+ * trimming. False positives are possible if two scopes share the
+ * same description AND the same awarded contractor — extremely
+ * uncommon, and the worst-case symptom is the button stays disabled
+ * (no data corruption).
+ */
+function computePromotedScopeIds(estimate: PricedEstimate): string[] {
+  const subBidKeys = new Set(
+    estimate.subBids.map((s) =>
+      `${s.contractorName.trim().toLowerCase()}|${s.portionOfWork.trim().toLowerCase()}`,
+    ),
+  );
+  const out: string[] = [];
+  for (const scope of estimate.subLeveling) {
+    if (!scope.awardedBidId) continue;
+    const awarded = scope.bids.find((b) => b.id === scope.awardedBidId);
+    if (!awarded) continue;
+    const key = `${awarded.contractorName.trim().toLowerCase()}|${scope.scope.trim().toLowerCase()}`;
+    if (subBidKeys.has(key)) out.push(scope.id);
+  }
+  return out;
+}
+
 export default async function SubLevelingPage({
   params,
 }: {
@@ -63,6 +90,7 @@ export default async function SubLevelingPage({
         <SubLevelingClient
           estimateId={estimate.id}
           initialScopes={estimate.subLeveling}
+          initialPromotedScopeIds={computePromotedScopeIds(estimate)}
           apiBaseUrl={
             process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
           }
