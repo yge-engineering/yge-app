@@ -174,34 +174,54 @@ export function SubBidEditor({
           {t('subBid.empty')}
         </p>
       ) : (
-        <div className="mt-3 overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="text-[10px] uppercase tracking-wide text-gray-500">
-              <tr>
-                <th className="px-2 py-1">{t('subBid.thStatus')}</th>
-                <th className="px-2 py-1">{t('subBid.thContractor')}</th>
-                <th className="px-2 py-1">{t('subBid.thCslb')}</th>
-                <th className="px-2 py-1">{t('subBid.thDir')}</th>
-                <th className="px-2 py-1">{t('subBid.thPortion')}</th>
-                <th className="px-2 py-1 text-right">{t('subBid.thBidAmount')}</th>
-                <th className="px-2 py-1"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {rows.map((row) => (
-                <SubBidRow
-                  key={row.id}
-                  row={row}
-                  bucket={bucketFor(row, classification)}
-                  onChange={(patch) => handleRowChange(row.id, patch)}
-                  onCommit={() => handleRowCommit(row.id)}
-                  onRemove={() => handleRowRemove(row.id)}
-                  t={t}
-                />
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <>
+          {/* Mobile: stacked cards. The 7-column comparison table is
+              unreadable on a phone, so under md: each row renders as
+              a card with the same inputs vertically arranged. */}
+          <div className="mt-3 space-y-2 md:hidden">
+            {rows.map((row) => (
+              <SubBidCard
+                key={row.id}
+                row={row}
+                bucket={bucketFor(row, classification)}
+                onChange={(patch) => handleRowChange(row.id, patch)}
+                onCommit={() => handleRowCommit(row.id)}
+                onRemove={() => handleRowRemove(row.id)}
+                t={t}
+              />
+            ))}
+          </div>
+
+          {/* Desktop: side-by-side table. */}
+          <div className="mt-3 hidden overflow-x-auto md:block">
+            <table className="w-full text-left text-sm">
+              <thead className="text-[10px] uppercase tracking-wide text-gray-500">
+                <tr>
+                  <th className="px-2 py-1">{t('subBid.thStatus')}</th>
+                  <th className="px-2 py-1">{t('subBid.thContractor')}</th>
+                  <th className="px-2 py-1">{t('subBid.thCslb')}</th>
+                  <th className="px-2 py-1">{t('subBid.thDir')}</th>
+                  <th className="px-2 py-1">{t('subBid.thPortion')}</th>
+                  <th className="px-2 py-1 text-right">{t('subBid.thBidAmount')}</th>
+                  <th className="px-2 py-1"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {rows.map((row) => (
+                  <SubBidRow
+                    key={row.id}
+                    row={row}
+                    bucket={bucketFor(row, classification)}
+                    onChange={(patch) => handleRowChange(row.id, patch)}
+                    onCommit={() => handleRowCommit(row.id)}
+                    onRemove={() => handleRowRemove(row.id)}
+                    t={t}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       <footer className="mt-3 flex items-center justify-between text-xs text-gray-500">
@@ -418,6 +438,147 @@ function SubBidRow({
         </button>
       </td>
     </tr>
+  );
+}
+
+// ---- Mobile card layout --------------------------------------------------
+
+function SubBidCard({
+  row,
+  bucket,
+  onChange,
+  onCommit,
+  onRemove,
+  t,
+}: {
+  row: DraftRow;
+  bucket: Bucket;
+  onChange: (patch: Partial<SubBid>) => void;
+  onCommit: () => void;
+  onRemove: () => void;
+  t: Translator;
+}) {
+  const [amountText, setAmountText] = useState<string>(
+    row.bidAmountCents > 0 ? (row.bidAmountCents / 100).toFixed(2) : '',
+  );
+  useEffect(() => {
+    setAmountText(
+      row.bidAmountCents > 0 ? (row.bidAmountCents / 100).toFixed(2) : '',
+    );
+  }, [row.bidAmountCents]);
+
+  function commitAmount() {
+    const trimmed = amountText.trim();
+    const n = trimmed === '' ? 0 : Number(trimmed);
+    if (!Number.isFinite(n) || n < 0) {
+      setAmountText(
+        row.bidAmountCents > 0 ? (row.bidAmountCents / 100).toFixed(2) : '',
+      );
+      return;
+    }
+    const cents = Math.round(n * 100);
+    if (cents !== row.bidAmountCents) onChange({ bidAmountCents: cents });
+    onCommit();
+  }
+
+  return (
+    <div
+      className={`rounded-lg border px-3 py-3 ${
+        bucket === 'mustList'
+          ? 'border-red-300 bg-red-50/40'
+          : bucket === 'borderline'
+            ? 'border-yellow-300 bg-yellow-50/40'
+            : 'border-gray-200 bg-white'
+      }`}
+    >
+      <div className="mb-2 flex items-center justify-between">
+        <span
+          className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${bucketChipClasses(bucket)}`}
+        >
+          {bucketLabel(bucket, t)}
+        </span>
+        <button
+          type="button"
+          onClick={onRemove}
+          className="text-gray-400 hover:text-red-700"
+          aria-label="Remove this sub"
+        >
+          ✕
+        </button>
+      </div>
+      <input
+        type="text"
+        value={row.contractorName}
+        onChange={(e) => onChange({ contractorName: e.target.value })}
+        onBlur={onCommit}
+        placeholder={t('subBid.phContractor')}
+        className="w-full rounded border border-gray-300 px-2 py-2 text-base font-semibold"
+      />
+      <input
+        type="text"
+        value={row.address ?? ''}
+        onChange={(e) => onChange({ address: e.target.value || undefined })}
+        onBlur={onCommit}
+        placeholder={t('subBid.phAddress')}
+        className="mt-2 w-full rounded border border-gray-300 px-2 py-2 text-sm"
+      />
+      <div className="mt-2 grid grid-cols-2 gap-2">
+        <input
+          type="text"
+          value={row.cslbLicense ?? ''}
+          onChange={(e) =>
+            onChange({ cslbLicense: e.target.value || undefined })
+          }
+          onBlur={onCommit}
+          placeholder={t('subBid.phLicense')}
+          className="w-full rounded border border-gray-300 px-2 py-2 font-mono text-sm"
+        />
+        <input
+          type="text"
+          value={row.dirRegistration ?? ''}
+          onChange={(e) =>
+            onChange({ dirRegistration: e.target.value || undefined })
+          }
+          onBlur={onCommit}
+          placeholder={t('subBid.phDir')}
+          className="w-full rounded border border-gray-300 px-2 py-2 font-mono text-sm"
+        />
+      </div>
+      <input
+        type="text"
+        value={row.portionOfWork}
+        onChange={(e) => onChange({ portionOfWork: e.target.value })}
+        onBlur={onCommit}
+        placeholder={t('subBid.phPortion')}
+        className="mt-2 w-full rounded border border-gray-300 px-2 py-2 text-sm"
+      />
+      <div className="mt-2 flex items-center gap-2">
+        <span className="text-xs font-medium text-gray-600">$</span>
+        <input
+          type="text"
+          inputMode="decimal"
+          value={amountText}
+          onChange={(e) => setAmountText(e.target.value)}
+          onBlur={commitAmount}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              (e.target as HTMLInputElement).blur();
+            }
+          }}
+          placeholder="0.00"
+          className="flex-1 rounded border border-gray-300 px-2 py-2 text-right font-mono text-sm"
+        />
+      </div>
+      {row.fromLevelingScopeId && (
+        <div
+          className="mt-2 inline-block rounded bg-green-50 px-1.5 py-0.5 text-[10px] font-medium text-green-800"
+          title="Promoted from the sub-leveling worksheet"
+        >
+          from leveling
+        </div>
+      )}
+    </div>
   );
 }
 
