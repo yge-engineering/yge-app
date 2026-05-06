@@ -271,9 +271,14 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-500">
           {t('estEditor.bidItemsHeader')}
         </h2>
-        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+        {/* The table sits inside a max-h scroller so the header and the
+            totals footer stay pinned while the line items scroll. The
+            sticky positioning on <thead> + <tfoot> is what an
+            estimator coming from Excel expects: column labels at the
+            top, running totals at the bottom, both always visible. */}
+        <div className="max-h-[70vh] overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-sm">
           <table className="w-full text-left text-sm">
-            <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+            <thead className="sticky top-0 z-10 bg-gray-50 text-xs uppercase tracking-wide text-gray-500 shadow-[0_1px_0_rgba(0,0,0,0.06)]">
               <tr>
                 <th className="px-3 py-2">{t('estEditor.thNum')}</th>
                 <th className="px-3 py-2">{t('estEditor.thDescription')}</th>
@@ -303,6 +308,37 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
                 />
               ))}
             </tbody>
+            <tfoot className="sticky bottom-0 z-10 bg-gray-50 text-sm font-semibold text-gray-900 shadow-[0_-1px_0_rgba(0,0,0,0.06)]">
+              <tr>
+                <td className="px-3 py-2 text-xs uppercase tracking-wide text-gray-500" colSpan={5}>
+                  {t('estEditor.totalsDirect')}
+                </td>
+                <td className="px-3 py-2 text-right font-mono">
+                  {formatUSD(totals.directCents)}
+                </td>
+                <td />
+              </tr>
+              <tr>
+                <td className="px-3 py-2 text-xs uppercase tracking-wide text-gray-500" colSpan={5}>
+                  {t('estEditor.totalsOpp', {
+                    percent: (estimate.oppPercent * 100).toFixed(1),
+                  })}
+                </td>
+                <td className="px-3 py-2 text-right font-mono">
+                  {formatUSD(totals.oppCents)}
+                </td>
+                <td />
+              </tr>
+              <tr className="border-t-2 border-gray-300">
+                <td className="px-3 py-2 text-xs uppercase tracking-wide text-yge-blue-700" colSpan={5}>
+                  {t('estEditor.totalsBid')}
+                </td>
+                <td className="px-3 py-2 text-right font-mono text-base text-yge-blue-700">
+                  {formatUSD(totals.bidTotalCents)}
+                </td>
+                <td />
+              </tr>
+            </tfoot>
           </table>
         </div>
         <p className="mt-2 text-xs text-gray-500">
