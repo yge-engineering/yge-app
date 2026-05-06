@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { Alert, AppShell, Money } from '../../components';
 import { JobsSearchInput } from '../../components/jobs-search-input';
 import { JobsCreatedFilter } from '../../components/jobs-created-filter';
+import { JobsResetFilters } from '../../components/jobs-reset-filters';
 import { EstimatesSortHeaders } from '../../components/estimates-sort-headers';
 import { getLocale, getTranslator } from '../../lib/locale';
 import { getCurrentUser } from '../../lib/auth';
@@ -281,6 +282,7 @@ export default async function JobsPage({ searchParams }: PageProps) {
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <JobsSearchInput targetId="jobs-table" totalCount={filteredJobs.length} />
             <JobsCreatedFilter targetId="jobs-table" />
+            <JobsResetFilters />
           </div>
           <EstimatesSortHeaders targetId="jobs-table" />
           <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
