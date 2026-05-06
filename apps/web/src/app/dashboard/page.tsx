@@ -583,9 +583,11 @@ export default async function DashboardPage() {
             <div className="mt-1 flex items-center gap-2 text-xs">
               <RecentEstimateDuePill iso={recentEstimates[0].bidDueDate} />
               {typeof recentEstimates[0].bidTotalCents === 'number' && (
-                <span className="font-mono font-semibold text-gray-700">
-                  <Money cents={recentEstimates[0].bidTotalCents} />
-                </span>
+                <CopyMoneyButton cents={recentEstimates[0].bidTotalCents}>
+                  <span className="font-mono font-semibold text-gray-700">
+                    <Money cents={recentEstimates[0].bidTotalCents} />
+                  </span>
+                </CopyMoneyButton>
               )}
               <span className="text-gray-500" title={recentEstimates[0].updatedAt}>
                 · edited {relativeTime(recentEstimates[0].updatedAt)}
