@@ -109,6 +109,8 @@ async function fetchEstimatesPipeline(): Promise<{
   awarded: number;
   submittedAwaiting: PricedEstimateSummaryLite[];
   centsByStatus: { pursuing: number; submitted: number; awarded: number };
+  /** Last up-to-10 decided bids in order, oldest → newest. */
+  recentDecided: ('awarded' | 'lost')[];
 }> {
   try {
     const res = await fetch(`${apiBaseUrl()}/api/priced-estimates`, {
@@ -123,6 +125,7 @@ async function fetchEstimatesPipeline(): Promise<{
         awarded: 0,
         submittedAwaiting: [],
         centsByStatus: { pursuing: 0, submitted: 0, awarded: 0 },
+        recentDecided: [],
       };
     const json = (await res.json()) as {
       estimates: PricedEstimateSummaryLite[];
@@ -164,6 +167,11 @@ async function fetchEstimatesPipeline(): Promise<{
         centsByStatus[k] += cents;
       }
     }
+    const recentDecided = [...all]
+      .filter((e) => e.bidStatus === 'awarded' || e.bidStatus === 'lost')
+      .sort((a, b) => a.updatedAt.localeCompare(b.updatedAt)) // oldest first
+      .slice(-10)
+      .map((e) => e.bidStatus as 'awarded' | 'lost');
     return {
       recent,
       pipelineCents,
@@ -172,6 +180,7 @@ async function fetchEstimatesPipeline(): Promise<{
       awarded,
       submittedAwaiting,
       centsByStatus,
+      recentDecided,
     };
   } catch {
     return {
@@ -182,6 +191,7 @@ async function fetchEstimatesPipeline(): Promise<{
       awarded: 0,
       submittedAwaiting: [],
       centsByStatus: { pursuing: 0, submitted: 0, awarded: 0 },
+      recentDecided: [],
     };
   }
 }
@@ -506,6 +516,15 @@ export default async function DashboardPage() {
               <span className="opacity-70">
                 · {pipelineData.awarded} of {pipelineData.decided}
               </span>
+              {pipelineData.recentDecided.length > 0 && (
+                <span className="font-mono text-[10px] tracking-tight" title="Last decided bids (oldest → newest)">
+                  {pipelineData.recentDecided.map((d, i) => (
+                    <span key={i} className={d === 'awarded' ? 'text-green-600' : 'text-gray-400'}>
+                      {d === 'awarded' ? '■' : '□'}
+                    </span>
+                  ))}
+                </span>
+              )}
             </span>
           )}
         </div>
