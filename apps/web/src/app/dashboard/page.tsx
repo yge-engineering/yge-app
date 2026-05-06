@@ -538,6 +538,7 @@ export default async function DashboardPage() {
           </span>
           <div className="min-w-0 flex-1">
             <div className="truncate text-base font-semibold text-gray-900">
+              <PinnedIndicator storageKey="yge.estimates.pinnedIds" eventName="yge:pinned-changed" id={recentEstimates[0]!.id} />
               {(() => {
                 const issues =
                   (recentEstimates[0]!.unpricedLineCount ?? 0) +
