@@ -10,6 +10,7 @@ import { JobsSearchInput } from '../../components/jobs-search-input';
 import { getLocale, getTranslator } from '../../lib/locale';
 import { getCurrentUser } from '../../lib/auth';
 import {
+  bidDueCountdown,
   contractTypeLabel,
   ROLE_PERMISSIONS,
   statusLabel,
@@ -65,6 +66,27 @@ async function fetchMyPortalUser(email: string): Promise<PortalUser | null> {
   } catch {
     return null;
   }
+}
+
+function JobBidDuePill({ iso }: { iso: string | undefined }) {
+  const c = bidDueCountdown(iso, undefined, 'en');
+  if (c.level === 'none') return null;
+  const tone =
+    c.level === 'red'
+      ? 'border-red-300 bg-red-50 text-red-800'
+      : c.level === 'orange'
+        ? 'border-orange-300 bg-orange-50 text-orange-800'
+        : c.level === 'yellow'
+          ? 'border-yellow-300 bg-yellow-50 text-yellow-800'
+          : 'border-green-300 bg-green-50 text-green-800';
+  return (
+    <span
+      title={c.longLabel}
+      className={`inline-block rounded-full border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${tone}`}
+    >
+      {c.shortLabel}
+    </span>
+  );
 }
 
 function formatWhen(iso: string): string {
@@ -296,7 +318,14 @@ export default async function JobsPage({ searchParams }: PageProps) {
                     {contractTypeLabel(j.contractType, locale)}
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-700">
-                    {j.bidDueDate ? formatWhen(j.bidDueDate) : <span className="text-gray-400">—</span>}
+                    {j.bidDueDate ? (
+                      <div className="flex flex-col gap-1">
+                        <span>{formatWhen(j.bidDueDate)}</span>
+                        <JobBidDuePill iso={j.bidDueDate} />
+                      </div>
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-700">
                     {j.engineersEstimateCents !== undefined ? (
