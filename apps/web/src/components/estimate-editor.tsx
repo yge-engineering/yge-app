@@ -64,6 +64,23 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
   // line without staring at the rows they already accepted.
   const [showUnreviewedOnly, setShowUnreviewedOnly] = useState(false);
 
+  // Keyboard-shortcut help overlay. Pressed `?` (without modifiers)
+  // anywhere outside an input field toggles it; lists every Excel-
+  // style shortcut the editor supports so estimators don't have to
+  // poke around to discover them.
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key !== '?' || e.metaKey || e.ctrlKey || e.altKey) return;
+      const tag = (e.target as HTMLElement | null)?.tagName?.toLowerCase();
+      if (tag === 'input' || tag === 'textarea') return;
+      e.preventDefault();
+      setShortcutsOpen((v) => !v);
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
   // Find/replace toolbar state. When openFindReplace is true, the
   // strip above the grid takes input. Matches are case-insensitive
   // substring matches against item.description.
@@ -592,6 +609,19 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
       )}
 
       <BidDueCountdown bidDueDate={estimate.bidDueDate} />
+      <div className="flex items-center justify-end">
+        <button
+          type="button"
+          onClick={() => setShortcutsOpen(true)}
+          title="Keyboard shortcuts (or press ?)"
+          className="rounded border border-gray-300 px-2 py-0.5 text-[10px] text-gray-500 hover:border-yge-blue-500 hover:text-yge-blue-700"
+        >
+          ⌨ Shortcuts
+        </button>
+      </div>
+      {shortcutsOpen && (
+        <ShortcutsOverlay onClose={() => setShortcutsOpen(false)} />
+      )}
       <PinnedNotes
         notes={estimate.notes ?? ''}
         onCommit={(next) => void applyEstimatePatch({ notes: next })}
@@ -1587,6 +1617,76 @@ function OppEditor({
       <p className="ml-4 text-xs text-gray-500">
         {t('estEditor.markupHelp')}
       </p>
+    </div>
+  );
+}
+
+// Keyboard-shortcuts help overlay. Click outside or hit ESC / `?`
+// to close. Lists every Excel-style shortcut the editor supports
+// so estimators coming from a spreadsheet workflow don't have to
+// guess.
+function ShortcutsOverlay({ onClose }: { onClose: () => void }) {
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape' || e.key === '?') {
+        e.preventDefault();
+        onClose();
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [onClose]);
+  const rows: Array<{ key: string; what: string }> = [
+    { key: 'Enter', what: 'Commit cell + jump to next row' },
+    { key: 'Shift+Enter', what: 'Commit + jump to previous row' },
+    { key: '↓ / ↑', what: 'Move between rows in unit-price column' },
+    { key: 'Tab', what: 'Commit + browser default tab nav' },
+    { key: '⌘Z / Ctrl+Z', what: 'Undo last cell change (50 deep)' },
+    { key: 'Paste', what: 'Splat a column of unit prices from Excel' },
+    { key: '?', what: 'Toggle this shortcuts list' },
+    { key: '✓ / ⚠ chips', what: 'Mark a line accepted / flagged' },
+    { key: '🕐', what: 'See past prices for similar lines' },
+    { key: '❓', what: 'AI explain what this line covers' },
+    { key: '📊', what: 'Open / edit the crew buildup' },
+    { key: '📐', what: 'Drop a plan-set PDF for AI takeoff' },
+    { key: '🔍 Find/replace', what: 'Bulk-edit descriptions' },
+    { key: 'Bulk select', what: 'Click checkboxes (shift-click for range)' },
+  ];
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md rounded-lg border border-gray-300 bg-white shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <header className="flex items-center justify-between border-b border-gray-200 px-4 py-2">
+          <h3 className="text-sm font-semibold text-gray-900">
+            Estimating editor shortcuts
+          </h3>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-xs text-gray-500 hover:text-gray-900"
+          >
+            ✕
+          </button>
+        </header>
+        <table className="w-full text-xs">
+          <tbody className="divide-y divide-gray-100">
+            {rows.map((r) => (
+              <tr key={r.key}>
+                <td className="px-3 py-1.5 font-mono text-gray-800">{r.key}</td>
+                <td className="px-3 py-1.5 text-gray-700">{r.what}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <footer className="border-t border-gray-100 px-3 py-1.5 text-[10px] text-gray-400">
+          Press ? or Escape to close.
+        </footer>
+      </div>
     </div>
   );
 }
