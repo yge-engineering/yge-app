@@ -21,26 +21,31 @@ const ORDER: ReadonlyArray<{
   value: BidStatus;
   label: string;
   tone: string;
+  description: string;
 }> = [
   {
     value: 'pursuing',
     label: 'Pursuing',
     tone: 'border-amber-300 bg-amber-50 text-amber-800',
+    description: 'Actively building the estimate; not yet sent to the agency.',
   },
   {
     value: 'submitted',
     label: 'Submitted',
     tone: 'border-blue-300 bg-blue-50 text-blue-800',
+    description: 'Bid is in the agency\'s hands — awaiting their decision.',
   },
   {
     value: 'awarded',
     label: 'Awarded',
     tone: 'border-green-300 bg-green-50 text-green-800',
+    description: 'YGE won the bid — congrats. Job will auto-flip to AWARDED.',
   },
   {
     value: 'lost',
     label: 'Lost',
     tone: 'border-gray-300 bg-gray-100 text-gray-600',
+    description: 'Agency awarded to someone else. You\'ll be asked for a reason.',
   },
 ];
 
@@ -139,7 +144,7 @@ export function BidStatusSwitcher({
                 ? `${opt.tone} ring-1 ring-offset-1`
                 : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50'
             } disabled:opacity-60`}
-            title={`Mark as ${opt.label.toLowerCase()}`}
+            title={opt.description}
           >
             {isBusy ? '…' : opt.label}
           </button>
