@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -8,6 +9,9 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { EstimatesStackParamList } from '../../App';
 import { getJson } from '../lib/api';
 
 interface EstimateLite {
@@ -48,7 +52,9 @@ function bidDueDays(iso: string | undefined): number | null {
   return Math.round((t - Date.now()) / (24 * 60 * 60 * 1000));
 }
 
+type Nav = NativeStackNavigationProp<EstimatesStackParamList, 'EstimatesList'>;
 export default function EstimatesScreen() {
+  const navigation = useNavigation<Nav>();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -133,7 +139,7 @@ export default function EstimatesScreen() {
         const issues = (e.unpricedLineCount ?? 0) + (e.unacknowledgedAddendumCount ?? 0);
         const ready = issues === 0;
         return (
-          <View key={e.id} style={styles.card}>
+          <Pressable key={e.id} onPress={() => navigation.navigate('EstimateDetail', { id: e.id })} style={styles.card}>
             <View style={styles.titleRow}>
               <Text style={styles.cardTitle} numberOfLines={2}>
                 {e.projectName}
@@ -209,7 +215,7 @@ export default function EstimatesScreen() {
                 </View>
               )}
             </View>
-          </View>
+          </Pressable>
         );
       })}
 

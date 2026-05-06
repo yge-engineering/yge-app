@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { JobsStackParamList } from '../../App';
 import { getJson } from '../lib/api';
 
 interface JobLite {
@@ -51,7 +55,9 @@ function bidDueLabel(iso: string | undefined): { label: string; tone: 'red' | 'a
   return { label: `Due in ${days}d`, tone: 'green' };
 }
 
+type Nav = NativeStackNavigationProp<JobsStackParamList, 'JobsList'>;
 export default function JobsScreen() {
+  const navigation = useNavigation<Nav>();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -126,7 +132,7 @@ export default function JobsScreen() {
               ? { bg: '#fffbeb', border: '#fde68a', text: '#92400e' }
               : { bg: '#ecfdf5', border: '#a7f3d0', text: '#065f46' };
         return (
-          <View key={j.id} style={styles.card}>
+          <Pressable key={j.id} onPress={() => navigation.navigate('JobDetail', { id: j.id })} style={styles.card}>
             <Text style={styles.cardTitle}>{j.projectName}</Text>
             {(j.ownerAgency || j.location) && (
               <Text style={styles.cardSub}>
@@ -173,7 +179,7 @@ export default function JobsScreen() {
                 Engineer's estimate: {formatMoney(j.engineersEstimateCents)}
               </Text>
             )}
-          </View>
+          </Pressable>
         );
       })}
 
