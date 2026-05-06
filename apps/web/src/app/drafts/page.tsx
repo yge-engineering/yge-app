@@ -10,6 +10,7 @@ import { Alert, AppShell } from '../../components';
 import { relativeTime } from '../../lib/relative-time';
 import { DraftsSearchInput } from '../../components/drafts-search-input';
 import { DashboardRefreshButton } from '../../components/dashboard-refresh-button';
+import { DraftsPinButton, DraftsPinReorder } from '../../components/drafts-pin-button';
 import { EstimatesSortHeaders } from '../../components/estimates-sort-headers';
 import { getTranslator } from '../../lib/locale';
 
@@ -122,6 +123,7 @@ export default async function DraftsPage() {
         <div className="mt-6">
           <DraftsSearchInput targetId="drafts-table" totalCount={drafts.length} />
           <EstimatesSortHeaders targetId="drafts-table" />
+          <DraftsPinReorder targetId="drafts-table" />
           <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
           <table id="drafts-table" className="w-full text-left text-sm">
             <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
@@ -147,6 +149,7 @@ export default async function DraftsPage() {
               {drafts.map((d) => (
                 <tr
                   key={d.id}
+                  data-id={d.id}
                   data-search={`${d.projectName} ${d.ownerAgency ?? ''} ${d.projectType.replace(/_/g, ' ')}`}
                   data-sort-name={d.projectName.toLowerCase()}
                   data-sort-cents={d.bidItemCount}
@@ -155,6 +158,7 @@ export default async function DraftsPage() {
                 >
                   <td className="px-4 py-3">
                     <div className="font-medium">
+                      <DraftsPinButton draftId={d.id} />
                       <Link
                         href={`/drafts/${d.id}`}
                         className="text-gray-900 hover:text-yge-blue-700 hover:underline"
