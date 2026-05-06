@@ -49,7 +49,9 @@ function totals(direct: number, opp: number, unpriced = 0): PricedEstimateTotals
     directCents: direct,
     oppCents: opp,
     bidTotalCents: direct + opp,
+    alternateCents: 0,
     unpricedLineCount: unpriced,
+    perSchedule: {},
   };
 }
 

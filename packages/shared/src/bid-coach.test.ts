@@ -39,7 +39,9 @@ function totals(over: Partial<PricedEstimateTotals> = {}): PricedEstimateTotals 
     directCents: 130_000_00,
     oppCents: 19_500_00,
     bidTotalCents: 149_500_00,
+    alternateCents: 0,
     unpricedLineCount: 0,
+    perSchedule: {},
     ...over,
   };
 }

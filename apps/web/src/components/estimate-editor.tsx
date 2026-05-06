@@ -137,6 +137,45 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
     applyPriceChange(entry.itemIndex, entry.oldCents, { skipUndo: true });
   }
 
+  // Update arbitrary fields on a single bid item (schedule, isAlternate,
+  // costBuildup) and PATCH the whole bidItems array. The endpoint's
+  // payload is small in practice and this keeps the on-disk shape
+  // atomic.
+  async function applyItemPatch(
+    itemIndex: number,
+    patch: Partial<PricedEstimate['bidItems'][number]>,
+  ) {
+    const existing = estimate.bidItems[itemIndex];
+    if (!existing) return;
+    const next = {
+      ...estimate,
+      bidItems: estimate.bidItems.map((it, idx) =>
+        idx === itemIndex ? { ...it, ...patch } : it,
+      ),
+    };
+    setEstimate(next);
+    recomputeLocal(next);
+    try {
+      const res = await fetch(
+        `${apiBaseUrl}/api/priced-estimates/${estimate.id}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bidItems: next.bidItems }),
+        },
+      );
+      if (!res.ok) throw new Error(t('estEditor.errSaveStatus', { status: res.status }));
+      const json = (await res.json()) as {
+        estimate: PricedEstimate;
+        totals: PricedEstimateTotals;
+      };
+      setEstimate(json.estimate);
+      setTotals(json.totals);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('estEditor.errFallback'));
+    }
+  }
+
   // Save just the costBuildup of one row. Updates locally then fires
   // a PATCH with the whole bidItems array (the existing endpoint's
   // shape) — small enough not to matter, atomic at the file level.
@@ -348,10 +387,41 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
                   onUndo={handleUndo}
                   onMultiLinePaste={(raw) => applyMultiLinePaste(i, raw)}
                   onOpenBuildup={() => setBuildupRowIdx(i)}
+                  onScheduleChange={(schedule) =>
+                    void applyItemPatch(i, {
+                      schedule: schedule.trim() ? schedule : undefined,
+                    })
+                  }
+                  onAlternateChange={(alt) =>
+                    void applyItemPatch(i, { isAlternate: alt })
+                  }
                 />
               ))}
             </tbody>
             <tfoot className="sticky bottom-0 z-10 bg-gray-50 text-sm font-semibold text-gray-900 shadow-[0_-1px_0_rgba(0,0,0,0.06)]">
+              {/* Per-schedule subtotals — only render when there's
+                  actually more than one schedule in the bid (otherwise
+                  the Direct row below covers it). */}
+              {Object.keys(totals.perSchedule).filter((k) => k !== '').length > 0 && (
+                <>
+                  {Object.entries(totals.perSchedule)
+                    .sort(([a], [b]) => a.localeCompare(b))
+                    .map(([key, cents]) => (
+                      <tr key={`sch-${key}`}>
+                        <td
+                          className="px-3 py-1 text-xs uppercase tracking-wide text-gray-500"
+                          colSpan={5}
+                        >
+                          {key === '' ? '(unscheduled)' : key}
+                        </td>
+                        <td className="px-3 py-1 text-right font-mono text-xs text-gray-700">
+                          {formatUSD(cents)}
+                        </td>
+                        <td />
+                      </tr>
+                    ))}
+                </>
+              )}
               <tr>
                 <td className="px-3 py-2 text-xs uppercase tracking-wide text-gray-500" colSpan={5}>
                   {t('estEditor.totalsDirect')}
@@ -381,6 +451,20 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
                 </td>
                 <td />
               </tr>
+              {totals.alternateCents > 0 && (
+                <tr>
+                  <td
+                    className="px-3 py-1 text-xs uppercase tracking-wide text-gray-500"
+                    colSpan={5}
+                  >
+                    Alternates (not in base bid)
+                  </td>
+                  <td className="px-3 py-1 text-right font-mono text-xs text-gray-700">
+                    {formatUSD(totals.alternateCents)}
+                  </td>
+                  <td />
+                </tr>
+              )}
             </tfoot>
           </table>
         </div>
@@ -500,6 +584,8 @@ function BidItemRow({
   onUndo,
   onMultiLinePaste,
   onOpenBuildup,
+  onScheduleChange,
+  onAlternateChange,
   t,
 }: {
   index: number;
@@ -517,6 +603,10 @@ function BidItemRow({
   onMultiLinePaste: (raw: string) => number;
   /** Open the crew-buildup drawer for this row. */
   onOpenBuildup: () => void;
+  /** Update the schedule label for this line. Empty string clears it. */
+  onScheduleChange: (schedule: string) => void;
+  /** Toggle the line's alternate flag. */
+  onAlternateChange: (alt: boolean) => void;
   t: Translator;
 }) {
   // totalRows is only consumed as documentation right now; surfaced
@@ -577,6 +667,23 @@ function BidItemRow({
           >
             {item.costBuildup ? '📊 Buildup' : '+ Buildup'}
           </button>
+        </div>
+        <div className="mt-1 flex flex-wrap items-center gap-2 text-[10px] text-gray-500">
+          <input
+            value={item.schedule ?? ''}
+            onChange={(e) => onScheduleChange(e.target.value)}
+            placeholder="Schedule (optional)"
+            className="w-32 rounded border border-gray-200 px-1 py-0.5 text-[10px]"
+            aria-label="Schedule"
+          />
+          <label className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wide">
+            <input
+              type="checkbox"
+              checked={Boolean(item.isAlternate)}
+              onChange={(e) => onAlternateChange(e.target.checked)}
+            />
+            <span>Alternate</span>
+          </label>
         </div>
         {item.pageReference && (
           <div className="text-xs text-gray-500">{item.pageReference}</div>

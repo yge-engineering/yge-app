@@ -34,7 +34,9 @@ const TOTALS: PricedEstimateTotals = {
   directCents: 5_000_000,
   oppCents: 1_000_000,
   bidTotalCents: 6_000_000,
+  alternateCents: 0,
   unpricedLineCount: 0,
+  perSchedule: {},
 };
 
 describe('buildEnvelopeChecklist', () => {

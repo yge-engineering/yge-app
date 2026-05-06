@@ -86,6 +86,17 @@ export const PricedBidItemSchema = PtoEBidItemSchema.extend({
    *  lets the estimator promote it. Older estimate files parse fine
    *  because the field is optional. */
   costBuildup: CostBuildupSchema.optional(),
+  /** Schedule grouping. CA agency bids commonly have Schedule A
+   *  (base bid), Schedule B (additive), plus Alt 1, Alt 2, etc.
+   *  Free-form string so the estimator can type whatever the bid
+   *  form calls them. Empty / undefined means the line goes into
+   *  the default group (rendered as the base bid). */
+  schedule: z.string().max(80).optional(),
+  /** True = the line is an alternate that doesn't roll into the
+   *  base bid total but is summarized separately so the estimator
+   *  can decide which alternates to submit. Phase 1 simple flag —
+   *  per-alternate accept/reject states layer on later. */
+  isAlternate: z.boolean().optional(),
 });
 export type PricedBidItem = z.infer<typeof PricedBidItemSchema>;
 
@@ -174,29 +185,48 @@ export function lineExtendedCents(item: PricedBidItem): Cents {
 }
 
 export interface PricedEstimateTotals {
-  /** Sum of every line's extended cents (zero for unpriced lines). */
+  /** Sum of every BASE-BID line's extended cents (zero for unpriced
+   *  lines). Alternates are excluded — they sum into alternateCents
+   *  separately so the prime can decide which alternates to submit. */
   directCents: Cents;
-  /** Markup amount = directCents * oppPercent, rounded. */
+  /** Markup amount on the base bid only. */
   oppCents: Cents;
-  /** What the bid totals to: directCents + oppCents. */
+  /** Base bid total: directCents + oppCents. */
   bidTotalCents: Cents;
+  /** Sum of all alternate-line extended cents (no markup applied). */
+  alternateCents: Cents;
   /** How many lines still have null unitPriceCents — the UI nags on > 0. */
   unpricedLineCount: number;
+  /** Per-schedule subtotals. Key is the `schedule` string ('' for
+   *  unschedule lines). Useful for printing Schedule A / B / C
+   *  totals on the bid form without re-walking the array. */
+  perSchedule: Record<string, Cents>;
 }
 
 export function computeEstimateTotals(est: PricedEstimate): PricedEstimateTotals {
   let directCents = 0;
+  let alternateCents = 0;
   let unpricedLineCount = 0;
+  const perSchedule: Record<string, Cents> = {};
   for (const item of est.bidItems) {
-    directCents += lineExtendedCents(item);
+    const lineCents = lineExtendedCents(item);
+    if (item.isAlternate) {
+      alternateCents += lineCents;
+    } else {
+      directCents += lineCents;
+    }
     if (item.unitPriceCents == null) unpricedLineCount += 1;
+    const key = (item.schedule ?? '').trim();
+    perSchedule[key] = (perSchedule[key] ?? 0) + lineCents;
   }
   const oppCents = markupAmount(directCents, est.oppPercent);
   return {
     directCents,
     oppCents,
     bidTotalCents: directCents + oppCents,
+    alternateCents,
     unpricedLineCount,
+    perSchedule,
   };
 }
 
