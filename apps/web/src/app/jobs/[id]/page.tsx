@@ -59,6 +59,7 @@ interface EstimateSummary {
   addendumCount?: number;
   unacknowledgedAddendumCount?: number;
   bidStatus?: 'pursuing' | 'submitted' | 'awarded' | 'lost';
+  notesPreview?: string;
 }
 
 function apiBaseUrl(): string {
@@ -489,6 +490,11 @@ export default async function JobDetailPage({
                     <div className="text-xs text-gray-500">
                       {pre}<Money cents={e.bidTotalCents} />{post}
                     </div>
+                    {e.notesPreview && (
+                      <div className="mt-1 text-[11px] italic text-gray-500">
+                        ✏ {e.notesPreview}
+                      </div>
+                    )}
                   </div>
                   <div className="flex flex-wrap items-center gap-1 text-sm">
                     <Link href={`/estimates/${e.id}`} className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50">
