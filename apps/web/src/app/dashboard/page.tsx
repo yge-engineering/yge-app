@@ -528,6 +528,9 @@ export default async function DashboardPage() {
                   <Money cents={recentEstimates[0].bidTotalCents} />
                 </span>
               )}
+              <span className="text-gray-500" title={recentEstimates[0].updatedAt}>
+                · edited {relativeTime(recentEstimates[0].updatedAt)}
+              </span>
             </div>
           </div>
           <span className="text-xl text-yge-blue-500">→</span>
