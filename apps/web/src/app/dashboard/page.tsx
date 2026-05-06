@@ -833,7 +833,7 @@ function RecentEstimatesTile({
         </h3>
         <Link
           href="/estimates"
-          className="text-xs text-yge-blue-500 hover:underline"
+          className="rounded border border-yge-blue-500 px-2 py-0.5 text-[10px] font-medium text-yge-blue-500 hover:bg-yge-blue-50"
         >
           See all →
         </Link>
