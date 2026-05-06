@@ -225,6 +225,10 @@ export default async function JobsPage({ searchParams }: PageProps) {
         (estimateBidTotalsByJob[e.jobId] ?? 0) + e.bidTotalCents;
     }
   }
+  const totalYgeBidCents = filteredJobs.reduce(
+    (sum, j) => sum + (estimateBidTotalsByJob[j.id] ?? 0),
+    0,
+  );
   const locale = getLocale();
   const presetLabel = preset ? t(preset.labelKey) : '';
 
