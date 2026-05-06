@@ -17,6 +17,7 @@ import { RecentActivity } from '../../components/recent-activity';
 import { getCurrentUser } from '../../lib/auth';
 import { getTranslator } from '../../lib/locale';
 import { bidDueCountdown } from '@yge/shared';
+import { DashboardRefreshButton } from '../../components/dashboard-refresh-button';
 import { ygeHour, ygeToday } from '../../lib/yge-time';
 import {
   computeArPaymentRollup,
@@ -380,9 +381,12 @@ export default async function DashboardPage() {
             )}
           </p>
         </div>
-        <Link href="/all-modules" className="rounded border border-yge-blue-500 px-3 py-1 text-sm font-medium text-yge-blue-500 hover:bg-yge-blue-50">
-          {t('dashboard.allModules')} &rarr;
-        </Link>
+        <div className="flex items-center gap-2">
+          <DashboardRefreshButton />
+          <Link href="/all-modules" className="rounded border border-yge-blue-500 px-3 py-1 text-sm font-medium text-yge-blue-500 hover:bg-yge-blue-50">
+            {t('dashboard.allModules')} &rarr;
+          </Link>
+        </div>
       </header>
 
       {apiUnreachable && (
