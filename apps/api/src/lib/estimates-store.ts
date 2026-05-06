@@ -343,6 +343,7 @@ export async function promoteAwardedToSubList(
     contractorName,
     portionOfWork,
     bidAmountCents: awarded.bidAmountCents,
+    fromLevelingScopeId: scope.id,
     ...(cslb ? { cslbLicense: cslb } : {}),
     ...(notes ? { notes } : {}),
   };

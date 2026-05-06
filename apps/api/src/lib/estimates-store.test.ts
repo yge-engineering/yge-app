@@ -449,6 +449,9 @@ describe('promoteAwardedToSubList', () => {
     expect(sub.bidAmountCents).toBe(12_500_00);
     expect(sub.cslbLicense).toBe('900111');
     expect(sub.notes).toBe('thermoplastic');
+    // Back-reference to the originating leveling scope so the page
+    // can light up the ✓ Sent indicator on reload.
+    expect(sub.fromLevelingScopeId).toBe('sl-striping');
     // Subsequent click appends a second row (no silent dedupe).
     const second = await promoteAwardedToSubList(est!.id, 'sl-striping');
     expect(second.ok).toBe(true);

@@ -36,28 +36,40 @@ async function fetchEstimate(id: string): Promise<PricedEstimate | null> {
 }
 
 /**
- * Heuristic match for "this scope's awarded bid already lives on the
- * §4104 list". The promote button (bundle 937) doesn't write a back-
- * reference on the SubBid yet, so we identify a match by contractor
- * name + portion of work, both compared case-insensitively after
- * trimming. False positives are possible if two scopes share the
- * same description AND the same awarded contractor — extremely
- * uncommon, and the worst-case symptom is the button stays disabled
- * (no data corruption).
+ * Decide which scopes' awarded bid already lives on the §4104 list,
+ * so the page can render "✓ Sent to §4104" on initial load.
+ *
+ * Two strategies, exact first:
+ *   1. SubBid.fromLevelingScopeId === scope.id  (set by bundle 939+)
+ *   2. Contractor + portion of work case-insensitive match  (legacy
+ *      heuristic for SubBids saved before the back-reference field).
+ *
+ * Heuristic false positives are rare (would need two scopes to share
+ * the same description AND awarded contractor) and the worst symptom
+ * is a button stuck on ✓ Sent — no data corruption.
  */
 function computePromotedScopeIds(estimate: PricedEstimate): string[] {
-  const subBidKeys = new Set(
+  const exactScopeIds = new Set(
+    estimate.subBids
+      .map((s) => s.fromLevelingScopeId)
+      .filter((id): id is string => Boolean(id)),
+  );
+  const heuristicKeys = new Set(
     estimate.subBids.map((s) =>
       `${s.contractorName.trim().toLowerCase()}|${s.portionOfWork.trim().toLowerCase()}`,
     ),
   );
   const out: string[] = [];
   for (const scope of estimate.subLeveling) {
+    if (exactScopeIds.has(scope.id)) {
+      out.push(scope.id);
+      continue;
+    }
     if (!scope.awardedBidId) continue;
     const awarded = scope.bids.find((b) => b.id === scope.awardedBidId);
     if (!awarded) continue;
     const key = `${awarded.contractorName.trim().toLowerCase()}|${scope.scope.trim().toLowerCase()}`;
-    if (subBidKeys.has(key)) out.push(scope.id);
+    if (heuristicKeys.has(key)) out.push(scope.id);
   }
   return out;
 }

@@ -52,6 +52,12 @@ export const SubBidSchema = z.object({
   bidAmountCents: z.number().int().nonnegative(),
   /** Internal-only notes — not printed on the bid. */
   notes: z.string().max(1_000).optional(),
+  /** When this row came from the sub-leveling worksheet's "Send to
+   *  §4104" button, the originating scope id. Lets the leveling
+   *  page show an exact "✓ Sent to §4104" indicator instead of the
+   *  contractor+scope heuristic. Optional — pre-feature rows and
+   *  hand-entered rows omit it. */
+  fromLevelingScopeId: z.string().max(60).optional(),
 });
 export type SubBid = z.infer<typeof SubBidSchema>;
 
