@@ -465,7 +465,15 @@ export default async function EstimatesPage() {
                   data-status={e.bidStatus ?? 'pursuing'}
                   data-due={e.bidDueDate ?? ''}
                   data-created={e.createdAt}
-                  className="hover:bg-gray-50"
+                  className={`${(() => {
+                    if (!e.bidDueDate || e.bidStatus === 'awarded' || e.bidStatus === 'lost') return 'hover:bg-gray-50';
+                    const t = new Date(e.bidDueDate).getTime();
+                    if (Number.isNaN(t)) return 'hover:bg-gray-50';
+                    const diffMs = t - Date.now();
+                    if (diffMs < 0) return 'bg-red-50/60 hover:bg-red-100';
+                    if (diffMs < 3 * 24 * 60 * 60 * 1000) return 'bg-amber-50/60 hover:bg-amber-100';
+                    return 'hover:bg-gray-50';
+                  })()}`}
                 >
                   <td className="px-4 py-3">
                     <div className="font-medium">
