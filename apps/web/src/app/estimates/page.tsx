@@ -160,6 +160,37 @@ function formatWhen(iso: string): string {
   });
 }
 
+function ReadinessPill({
+  unpriced,
+  unacked,
+  status,
+}: {
+  unpriced: number;
+  unacked: number;
+  status: 'pursuing' | 'submitted' | 'awarded' | 'lost' | undefined;
+}) {
+  // Don't show on decided bids — readiness no longer matters.
+  if (status === 'awarded' || status === 'lost') return null;
+  const issues = [];
+  if (unpriced > 0) issues.push(`${unpriced} unpriced`);
+  if (unacked > 0) issues.push(`${unacked} un-acked`);
+  if (issues.length === 0) {
+    return (
+      <span className="mt-1 mr-1 inline-block rounded-full border border-green-300 bg-green-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-green-800">
+        ✓ Ready
+      </span>
+    );
+  }
+  return (
+    <span
+      className="mt-1 mr-1 inline-block rounded-full border border-red-300 bg-red-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-800"
+      title={issues.join(' · ')}
+    >
+      ✗ {issues.length} issue{issues.length === 1 ? '' : 's'}
+    </span>
+  );
+}
+
 function SubmittedAgePill({
   iso,
   status,
@@ -488,6 +519,11 @@ export default async function EstimatesPage() {
                       <div className="text-xs text-gray-500">{e.ownerAgency}</div>
                     )}
                     <BidStatusPill status={e.bidStatus} />
+                    <ReadinessPill
+                      unpriced={e.unpricedLineCount}
+                      unacked={e.unacknowledgedAddendumCount ?? 0}
+                      status={e.bidStatus}
+                    />
                     <SubmittedAgePill iso={e.bidSubmittedAt} status={e.bidStatus} />
                     <BidDuePill iso={e.bidDueDate} locale={locale} />
                     {e.notesPreview && (
