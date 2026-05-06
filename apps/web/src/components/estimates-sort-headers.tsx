@@ -24,9 +24,20 @@ const SORT_TYPES: Record<string, 'number' | 'string'> = {
   name: 'string',
 };
 
+const SORT_KEY_LS = 'yge.estimates.sortKey';
+const SORT_DIR_LS = 'yge.estimates.sortDir';
+
 export function EstimatesSortHeaders({ targetId }: Props) {
-  const [sortKey, setSortKey] = useState<string | null>(null);
-  const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [sortKey, setSortKey] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const v = window.localStorage.getItem(SORT_KEY_LS);
+    return v && SORT_TYPES[v] ? v : null;
+  });
+  const [sortDir, setSortDir] = useState<SortDir>(() => {
+    if (typeof window === 'undefined') return 'desc';
+    const v = window.localStorage.getItem(SORT_DIR_LS);
+    return v === 'asc' ? 'asc' : 'desc';
+  });
 
   // Wire click listeners on header cells.
   useEffect(() => {
@@ -59,6 +70,14 @@ export function EstimatesSortHeaders({ targetId }: Props) {
 
   // Apply the active sort by re-ordering tbody rows.
   useEffect(() => {
+    if (typeof window !== 'undefined' && sortKey) {
+      try {
+        window.localStorage.setItem(SORT_KEY_LS, sortKey);
+        window.localStorage.setItem(SORT_DIR_LS, sortDir);
+      } catch {
+        // non-fatal
+      }
+    }
     if (!sortKey) return;
     const table = document.getElementById(targetId);
     if (!table) return;
