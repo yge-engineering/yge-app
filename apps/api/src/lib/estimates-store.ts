@@ -235,6 +235,10 @@ export interface EstimatePatch {
   /** Set or clear the per-unit price reference (e.g. per-acre).
    *  Pass null to clear. */
   perUnitPrice?: PricedEstimate['perUnitPrice'] | null;
+  /** Workflow status. */
+  bidStatus?: 'pursuing' | 'submitted' | 'awarded' | 'lost';
+  /** Override the auto-stamped bidSubmittedAt; null clears it. */
+  bidSubmittedAt?: string | null;
 }
 
 export async function updateEstimate(
