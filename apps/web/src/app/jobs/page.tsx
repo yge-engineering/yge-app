@@ -191,6 +191,11 @@ export default async function JobsPage({ searchParams }: PageProps) {
   jobs = sortJobsByUrgency(jobs);
   const filteredJobs = preset ? jobs.filter((j) => preset.matches(j.status)) : jobs;
   const t = getTranslator();
+  const overdueCount = filteredJobs.filter((j) => {
+    if (!j.bidDueDate) return false;
+    const t = new Date(j.bidDueDate).getTime();
+    return !Number.isNaN(t) && t < Date.now();
+  }).length;
   const jobStatusCounts: Record<string, number> = {};
   for (const j of filteredJobs) {
     jobStatusCounts[j.status] = (jobStatusCounts[j.status] ?? 0) + 1;
@@ -256,6 +261,11 @@ export default async function JobsPage({ searchParams }: PageProps) {
               className={`rounded-full px-3 py-1 text-xs font-medium transition ${active ? 'bg-yge-blue-500 text-white' : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-100'}`}
             >
               {t(preset.labelKey)} <span className="opacity-70">({count})</span>
+              {preset.value === 'active' && active && overdueCount > 0 && (
+                <span className="ml-1 inline-block rounded-full bg-red-600 px-1.5 py-0.5 text-[9px] font-bold text-white">
+                  {overdueCount} overdue
+                </span>
+              )}
             </Link>
           );
         })}
