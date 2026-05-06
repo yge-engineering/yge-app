@@ -9,6 +9,7 @@ import { notFound } from 'next/navigation';
 import { AuditBinderPanel, Money } from '../../../components';
 import { relativeTime } from '../../../lib/relative-time';
 import { CopyIdChip } from '../../../components/copy-id-chip';
+import { PinnedIndicator } from '../../../components/pinned-indicator';
 import { getTranslator } from '../../../lib/locale';
 import {
   contractTypeLabel,
@@ -525,6 +526,7 @@ export default async function JobDetailPage({
                 <li key={e.id} className={`flex items-center justify-between px-4 py-3 ${tintClass}`}>
                   <div>
                     <div className="text-sm font-medium text-gray-900">
+                      <PinnedIndicator storageKey="yge.estimates.pinnedIds" eventName="yge:pinned-changed" id={e.id} />
                       {(() => {
                         if (e.bidStatus === 'awarded' || e.bidStatus === 'lost') return null;
                         const issues =
