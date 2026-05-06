@@ -112,6 +112,33 @@ export function SubBidEditor({
     setRows((prev) => [...prev, fresh]);
   }
 
+  // Result of the AI extract — append a new row pre-filled with
+  // whatever the model could pull from the quote PDF. Persist
+  // immediately so the row survives a refresh; estimator just
+  // verifies + adjusts.
+  function handleImportedQuote(quote: {
+    contractorName?: string;
+    cslbLicense?: string;
+    dirRegistration?: string;
+    portionOfWork?: string;
+    bidAmountCents?: number;
+    notes?: string;
+  }) {
+    const fresh: DraftRow = {
+      id: newSubBidId(),
+      contractorName: quote.contractorName?.trim() || '(from quote)',
+      portionOfWork: quote.portionOfWork?.trim() || '(verify scope)',
+      bidAmountCents: quote.bidAmountCents ?? 0,
+      ...(quote.cslbLicense ? { cslbLicense: quote.cslbLicense } : {}),
+      ...(quote.dirRegistration ? { dirRegistration: quote.dirRegistration } : {}),
+      ...(quote.notes ? { notes: quote.notes } : {}),
+      isNew: true,
+    };
+    const next = [...rows, fresh];
+    setRows(next);
+    void persist(next);
+  }
+
   function handleRowChange(id: string, patch: Partial<SubBid>) {
     setRows((prev) =>
       prev.map((r) => (r.id === id ? { ...r, ...patch } : r)),
@@ -153,12 +180,18 @@ export function SubBidEditor({
             {t('subBid.intro')}
           </p>
         </div>
-        <button
-          onClick={handleAddRow}
-          className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-700 hover:bg-yge-blue-100"
-        >
-          {t('subBid.add')}
-        </button>
+        <div className="flex items-center gap-2">
+          <ImportQuotePdfButton
+            apiBaseUrl={apiBaseUrl}
+            onImport={(quote) => handleImportedQuote(quote)}
+          />
+          <button
+            onClick={handleAddRow}
+            className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-700 hover:bg-yge-blue-100"
+          >
+            {t('subBid.add')}
+          </button>
+        </div>
       </header>
 
       <ThresholdBanner classification={classification} t={t} />
@@ -596,4 +629,79 @@ async function safeReadJson(res: Response): Promise<{ error?: string } | null> {
   } catch {
     return null;
   }
+}
+
+// "Import quote PDF" file picker that POSTs to /api/sub-bids/extract.
+// Returns the parsed fields to the parent which appends a row.
+function ImportQuotePdfButton({
+  apiBaseUrl,
+  onImport,
+}: {
+  apiBaseUrl: string;
+  onImport: (quote: {
+    contractorName?: string;
+    cslbLicense?: string;
+    dirRegistration?: string;
+    portionOfWork?: string;
+    bidAmountCents?: number;
+    notes?: string;
+  }) => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <label
+      className={`inline-flex cursor-pointer items-center gap-1 rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-700 hover:bg-yge-blue-100 ${
+        busy ? 'cursor-wait opacity-60' : ''
+      }`}
+      title="Drop a vendor's PDF quote and we'll prefill a §4104 row"
+    >
+      <span aria-hidden>📄</span>
+      <span>{busy ? 'Reading PDF…' : 'Import quote PDF'}</span>
+      <input
+        type="file"
+        accept="application/pdf,.pdf"
+        className="hidden"
+        disabled={busy}
+        onChange={async (e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          setBusy(true);
+          setError(null);
+          try {
+            const form = new FormData();
+            form.append('file', file);
+            const res = await fetch(`${apiBaseUrl}/api/sub-bids/extract`, {
+              method: 'POST',
+              body: form,
+            });
+            if (!res.ok) {
+              const body = (await res.json().catch(() => ({}))) as {
+                error?: string;
+              };
+              throw new Error(body.error ?? `HTTP ${res.status}`);
+            }
+            const json = (await res.json()) as {
+              quote: {
+                contractorName?: string;
+                cslbLicense?: string;
+                dirRegistration?: string;
+                portionOfWork?: string;
+                bidAmountCents?: number;
+                notes?: string;
+              };
+            };
+            onImport(json.quote);
+          } catch (err) {
+            setError(err instanceof Error ? err.message : 'Import failed');
+          } finally {
+            setBusy(false);
+            // Reset the input so the same file can be re-imported if needed.
+            e.target.value = '';
+          }
+        }}
+      />
+      {error && <span className="ml-2 text-red-700">⚠ {error}</span>}
+    </label>
+  );
 }

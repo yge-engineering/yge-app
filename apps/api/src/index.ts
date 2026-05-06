@@ -67,6 +67,7 @@ import { p2eFeedbackRouter } from './routes/p2e-feedback';
 import { webauthnRouter } from './routes/webauthn';
 import { pdfExtractRouter } from './routes/pdf-extract';
 import { explainLineRouter } from './routes/explain-line';
+import { subBidExtractRouter } from './routes/sub-bid-extract';
 
 const app = express();
 
@@ -164,6 +165,7 @@ app.use('/api/p2e-feedback', p2eFeedbackRouter);
 app.use('/api/webauthn', webauthnRouter);
 app.use('/api/pdf', pdfExtractRouter);
 app.use('/api/priced-estimates', explainLineRouter);
+app.use('/api/sub-bids', subBidExtractRouter);
 
 // 404
 app.use((_req, res) => {
