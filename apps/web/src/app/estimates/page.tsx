@@ -11,6 +11,7 @@ import { cookies } from 'next/headers';
 import { CopyEstimateLink } from '../../components/copy-estimate-link';
 import { EstimatesSearchInput } from '../../components/estimates-search-input';
 import { EstimatesSortHeaders } from '../../components/estimates-sort-headers';
+import { EstimatesShortcutsChip } from '../../components/estimates-shortcuts-chip';
 import { getTranslator } from '../../lib/locale';
 import { requirePermission } from '../../lib/permissions';
 
@@ -215,12 +216,15 @@ export default async function EstimatesPage() {
             </div>
           )}
         </div>
-        <Link
-          href="/plans-to-estimate"
-          className="rounded-md bg-yge-blue-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-yge-blue-700"
-        >
-          + Start new estimate
-        </Link>
+        <div className="flex items-center gap-2">
+          <EstimatesShortcutsChip />
+          <Link
+            href="/plans-to-estimate"
+            className="rounded-md bg-yge-blue-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-yge-blue-700"
+          >
+            + Start new estimate
+          </Link>
+        </div>
       </div>
 
       {/* Imported estimates from the YGE Excel master.
