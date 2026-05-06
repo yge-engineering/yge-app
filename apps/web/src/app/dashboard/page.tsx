@@ -19,6 +19,7 @@ import { getTranslator } from '../../lib/locale';
 import { bidDueCountdown } from '@yge/shared';
 import { DashboardRefreshButton } from '../../components/dashboard-refresh-button';
 import { CopyMoneyButton } from '../../components/copy-money-button';
+import { relativeTime } from '../../lib/relative-time';
 import { ygeHour, ygeToday } from '../../lib/yge-time';
 import {
   computeArPaymentRollup,
@@ -1030,6 +1031,9 @@ function RecentEstimatesTile({
                       · {e.unpricedLineCount} unpriced
                     </span>
                   ) : null}
+                  <span className="ml-2 text-gray-500" title={e.updatedAt}>
+                    · {relativeTime(e.updatedAt)}
+                  </span>
                 </div>
                 {e.notesPreview && (
                   <div className="mt-0.5 truncate text-[11px] italic text-gray-500">
