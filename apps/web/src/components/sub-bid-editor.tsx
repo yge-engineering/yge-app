@@ -337,6 +337,14 @@ function SubBidRow({
           placeholder={t('subBid.phContractor')}
           className="w-44 rounded border border-gray-300 px-2 py-1 text-sm focus:border-yge-blue-500 focus:outline-none focus:ring-1 focus:ring-yge-blue-500"
         />
+        {row.fromLevelingScopeId && (
+          <div
+            className="mt-1 inline-block rounded bg-green-50 px-1.5 py-0.5 text-[10px] font-medium text-green-800"
+            title="Promoted from the sub-leveling worksheet"
+          >
+            from leveling
+          </div>
+        )}
         <input
           type="text"
           value={row.address ?? ''}
