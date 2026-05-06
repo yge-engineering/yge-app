@@ -18,6 +18,7 @@ import { getCurrentUser } from '../../lib/auth';
 import { getTranslator } from '../../lib/locale';
 import { bidDueCountdown } from '@yge/shared';
 import { DashboardRefreshButton } from '../../components/dashboard-refresh-button';
+import { CopyMoneyButton } from '../../components/copy-money-button';
 import { ygeHour, ygeToday } from '../../lib/yge-time';
 import {
   computeArPaymentRollup,
@@ -1024,7 +1025,9 @@ function RecentEstimatesTile({
               </div>
               <div className="text-right font-mono">
                 {typeof e.bidTotalCents === 'number' ? (
-                  <Money cents={e.bidTotalCents} />
+                  <CopyMoneyButton cents={e.bidTotalCents}>
+                    <Money cents={e.bidTotalCents} />
+                  </CopyMoneyButton>
                 ) : (
                   <span className="text-gray-300">—</span>
                 )}
