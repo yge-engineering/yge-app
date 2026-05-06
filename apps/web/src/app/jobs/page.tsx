@@ -290,8 +290,11 @@ export default async function JobsPage({ searchParams }: PageProps) {
 
       {!fetchError && jobs.length > 0 && filteredJobs.length === 0 && (
         <div className="mt-6 rounded border border-gray-200 bg-gray-50 p-6 text-sm text-gray-600">
-          {t('jobs.noneMatch', { preset: presetLabel })}{' '}
-          <Link href="/jobs?status=all" className="text-yge-blue-500 hover:underline">
+          <p>{t('jobs.noneMatch', { preset: presetLabel })}</p>
+          <Link
+            href="/jobs?status=all"
+            className="mt-2 inline-block rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50"
+          >
             {t('jobs.showAll')} &rarr;
           </Link>
         </div>
