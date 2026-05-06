@@ -109,6 +109,22 @@ export default async function EstimateDetailPage({
             <span>Bid security not set — open envelope to add bond / cashier check.</span>
           </Link>
         )}
+        {(() => {
+          const addenda = data.estimate.addenda ?? [];
+          const unacked = addenda.filter((a) => !a.acknowledged).length;
+          if (addenda.length === 0 || unacked === 0) return null;
+          return (
+            <Link
+              href={`/estimates/${data.estimate.id}/addenda`}
+              className="inline-flex items-center gap-2 rounded border border-red-300 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-800 hover:bg-red-100"
+            >
+              <span>⚠</span>
+              <span>
+                {unacked} of {addenda.length} addend{unacked === 1 ? 'um' : 'a'} un-acknowledged — bid will be non-responsive.
+              </span>
+            </Link>
+          );
+        })()}
       </div>
 
       <div className="mb-4 flex flex-wrap gap-2 text-xs">
