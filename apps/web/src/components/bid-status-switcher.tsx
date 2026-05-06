@@ -14,6 +14,7 @@ interface Props {
   apiBaseUrl: string;
   estimateId: string;
   current: BidStatus | undefined;
+  submittedAt?: string | undefined;
 }
 
 const ORDER: ReadonlyArray<{
@@ -43,7 +44,26 @@ const ORDER: ReadonlyArray<{
   },
 ];
 
-export function BidStatusSwitcher({ apiBaseUrl, estimateId, current }: Props) {
+function formatSubmitted(iso: string | undefined): string | null {
+  if (!iso) return null;
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return null;
+  const ageDays = Math.max(0, Math.round((Date.now() - t) / (24 * 60 * 60 * 1000)));
+  const dateStr = new Date(iso).toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+  });
+  if (ageDays === 0) return `Submitted ${dateStr} · today`;
+  if (ageDays === 1) return `Submitted ${dateStr} · 1d ago`;
+  return `Submitted ${dateStr} · ${ageDays}d ago`;
+}
+
+export function BidStatusSwitcher({
+  apiBaseUrl,
+  estimateId,
+  current,
+  submittedAt,
+}: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState<BidStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -99,6 +119,12 @@ export function BidStatusSwitcher({ apiBaseUrl, estimateId, current }: Props) {
           </button>
         );
       })}
+      {(value === 'submitted' || value === 'awarded' || value === 'lost') &&
+        formatSubmitted(submittedAt) && (
+          <span className="text-[10px] text-gray-600">
+            {formatSubmitted(submittedAt)}
+          </span>
+        )}
       {error && <span className="text-red-700">⚠ {error}</span>}
     </span>
   );

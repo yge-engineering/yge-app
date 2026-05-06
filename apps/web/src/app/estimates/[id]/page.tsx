@@ -131,6 +131,7 @@ export default async function EstimateDetailPage({
           apiBaseUrl={publicApiBaseUrl()}
           estimateId={data.estimate.id}
           current={data.estimate.bidStatus}
+          submittedAt={data.estimate.bidSubmittedAt}
         />
         <CopyBidSummaryButton
           projectName={data.estimate.projectName}
