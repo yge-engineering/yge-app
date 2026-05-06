@@ -27,6 +27,7 @@ import { BidSecurityEditor } from './bid-security-editor';
 import { AddendumEditor } from './addendum-editor';
 import { BidChecklistBanner } from './bid-checklist-banner';
 import { CostBuildupDrawer } from './cost-buildup-drawer';
+import { MarkupStackEditor } from './markup-stack-editor';
 
 interface Props {
   initialEstimate: PricedEstimate;
@@ -135,6 +136,52 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
     const entry = popUndo();
     if (!entry) return;
     applyPriceChange(entry.itemIndex, entry.oldCents, { skipUndo: true });
+  }
+
+  // Patch one component of the markup stack and PATCH the whole
+  // estimate. Components round-trip through the same endpoint as O&P.
+  async function applyMarkupChange(
+    key:
+      | 'laborBurdenPct'
+      | 'equipmentBurdenPct'
+      | 'subMarkupPct'
+      | 'bondPct'
+      | 'insurancePct'
+      | 'contingencyPct',
+    decimal: number,
+  ) {
+    const current = estimate.markup ?? {
+      laborBurdenPct: 0,
+      equipmentBurdenPct: 0,
+      subMarkupPct: 0,
+      bondPct: 0,
+      insurancePct: 0,
+      contingencyPct: 0,
+    };
+    const nextMarkup = { ...current, [key]: decimal };
+    const next = { ...estimate, markup: nextMarkup };
+    setEstimate(next);
+    recomputeLocal(next);
+    try {
+      const res = await fetch(
+        `${apiBaseUrl}/api/priced-estimates/${estimate.id}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ markup: nextMarkup }),
+        },
+      );
+      if (!res.ok)
+        throw new Error(t('estEditor.errSaveStatus', { status: res.status }));
+      const json = (await res.json()) as {
+        estimate: PricedEstimate;
+        totals: PricedEstimateTotals;
+      };
+      setEstimate(json.estimate);
+      setTotals(json.totals);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('estEditor.errFallback'));
+    }
   }
 
   // Update arbitrary fields on a single bid item (schedule, isAlternate,
@@ -511,6 +558,13 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
           setEstimate(nextEstimate);
           setTotals(nextTotals);
         }}
+      />
+
+      <MarkupStackEditor
+        markup={estimate.markup}
+        breakdown={totals.markupBreakdown}
+        saving={savingOpp}
+        onCommit={(key, decimal) => void applyMarkupChange(key, decimal)}
       />
 
       <SubBidEditor

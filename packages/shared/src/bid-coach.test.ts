@@ -42,6 +42,15 @@ function totals(over: Partial<PricedEstimateTotals> = {}): PricedEstimateTotals 
     alternateCents: 0,
     unpricedLineCount: 0,
     perSchedule: {},
+    markupBreakdown: {
+      laborBurdenCents: 0,
+      equipmentBurdenCents: 0,
+      subMarkupCents: 0,
+      bondCents: 0,
+      insuranceCents: 0,
+      contingencyCents: 0,
+      oppCents: 19_500_00,
+    },
     ...over,
   };
 }

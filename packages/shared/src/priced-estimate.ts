@@ -117,10 +117,38 @@ export const PricedEstimateSchema = z.object({
 
   bidItems: z.array(PricedBidItemSchema).min(1),
 
-  /** Decimal fraction. 0.20 = 20% on top of direct cost. */
+  /** Decimal fraction. 0.20 = 20% on top of direct cost. The lump
+   *  overhead-and-profit number; the markup-stack components below
+   *  are separate so the estimator can break out burden, bonds,
+   *  insurance, and contingency. */
   oppPercent: z.number().min(0).max(2),
   /** Free-form estimator notes — not the same as draft assumptions. */
   notes: z.string().max(5_000).optional(),
+
+  /** Markup stack — flat percentages applied on top of direct cost
+   *  before O&P. Heavy-civil bids typically split these out so the
+   *  estimator and the bond/insurance broker can see each line. All
+   *  decimal fractions (0.30 = 30%); the field is optional so older
+   *  estimate files keep their previous bid total. */
+  markup: z
+    .object({
+      /** Workers comp + payroll taxes + general liability on labor.
+       *  Typically 30-50% of direct on prevailing-wage work. */
+      laborBurdenPct: z.number().min(0).max(2).default(0),
+      /** Fuel, maintenance, ownership cost on equipment. Typically
+       *  10-25% of direct on equipment-heavy lines. */
+      equipmentBurdenPct: z.number().min(0).max(2).default(0),
+      /** Mark-up on subcontractor totals — usually 5-10% to cover
+       *  bond + supervision. */
+      subMarkupPct: z.number().min(0).max(2).default(0),
+      /** Bid bond + payment/performance bond. Typically 1.5-3%. */
+      bondPct: z.number().min(0).max(0.2).default(0),
+      /** Builder's risk + general policy. Typically 0.5-1.5%. */
+      insurancePct: z.number().min(0).max(0.2).default(0),
+      /** Estimator's contingency — usually 0-5% on a tight bid. */
+      contingencyPct: z.number().min(0).max(0.5).default(0),
+    })
+    .optional(),
 
   /** Subcontractors per CA PCC §4104. Optional + defaults to [] so older
    *  estimate JSON files on disk still parse. The classification helper in
@@ -184,13 +212,31 @@ export function lineExtendedCents(item: PricedBidItem): Cents {
   return Math.round(item.quantity * item.unitPriceCents);
 }
 
+/** One row of the markup-stack breakdown — keeps the editor + math
+ *  in sync. Each entry is the cents that this layer adds on top of
+ *  direct cost. */
+export interface MarkupStackBreakdown {
+  laborBurdenCents: Cents;
+  equipmentBurdenCents: Cents;
+  subMarkupCents: Cents;
+  bondCents: Cents;
+  insuranceCents: Cents;
+  contingencyCents: Cents;
+  /** Total of all the rows above + the existing O&P. */
+  oppCents: Cents;
+}
+
 export interface PricedEstimateTotals {
   /** Sum of every BASE-BID line's extended cents (zero for unpriced
    *  lines). Alternates are excluded — they sum into alternateCents
    *  separately so the prime can decide which alternates to submit. */
   directCents: Cents;
-  /** Markup amount on the base bid only. */
+  /** Markup amount on the base bid only. Includes the legacy oppCents
+   *  PLUS every entry in markupBreakdown. */
   oppCents: Cents;
+  /** Per-component markup breakdown. The editor renders this so the
+   *  estimator and the bond/insurance broker can read each line. */
+  markupBreakdown: MarkupStackBreakdown;
   /** Base bid total: directCents + oppCents. */
   bidTotalCents: Cents;
   /** Sum of all alternate-line extended cents (no markup applied). */
@@ -219,10 +265,37 @@ export function computeEstimateTotals(est: PricedEstimate): PricedEstimateTotals
     const key = (item.schedule ?? '').trim();
     perSchedule[key] = (perSchedule[key] ?? 0) + lineCents;
   }
-  const oppCents = markupAmount(directCents, est.oppPercent);
+  // Markup stack — every component is flat on directCents. The legacy
+  // oppPercent stays as the catch-all "O&P" row so existing estimate
+  // files keep their previous bid total when markup.* are all zero.
+  const m = est.markup;
+  const burdenLabor = m?.laborBurdenPct ?? 0;
+  const burdenEquip = m?.equipmentBurdenPct ?? 0;
+  const subMarkup = m?.subMarkupPct ?? 0;
+  const bond = m?.bondPct ?? 0;
+  const insurance = m?.insurancePct ?? 0;
+  const contingency = m?.contingencyPct ?? 0;
+  const breakdown: MarkupStackBreakdown = {
+    laborBurdenCents: markupAmount(directCents, burdenLabor),
+    equipmentBurdenCents: markupAmount(directCents, burdenEquip),
+    subMarkupCents: markupAmount(directCents, subMarkup),
+    bondCents: markupAmount(directCents, bond),
+    insuranceCents: markupAmount(directCents, insurance),
+    contingencyCents: markupAmount(directCents, contingency),
+    oppCents: markupAmount(directCents, est.oppPercent),
+  };
+  const oppCents =
+    breakdown.laborBurdenCents +
+    breakdown.equipmentBurdenCents +
+    breakdown.subMarkupCents +
+    breakdown.bondCents +
+    breakdown.insuranceCents +
+    breakdown.contingencyCents +
+    breakdown.oppCents;
   return {
     directCents,
     oppCents,
+    markupBreakdown: breakdown,
     bidTotalCents: directCents + oppCents,
     alternateCents,
     unpricedLineCount,

@@ -52,6 +52,15 @@ function totals(direct: number, opp: number, unpriced = 0): PricedEstimateTotals
     alternateCents: 0,
     unpricedLineCount: unpriced,
     perSchedule: {},
+    markupBreakdown: {
+      laborBurdenCents: 0,
+      equipmentBurdenCents: 0,
+      subMarkupCents: 0,
+      bondCents: 0,
+      insuranceCents: 0,
+      contingencyCents: 0,
+      oppCents: opp,
+    },
   };
 }
 

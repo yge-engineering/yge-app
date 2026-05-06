@@ -40,6 +40,15 @@ const TOTALS: PricedEstimateTotals = {
   alternateCents: 0,
   unpricedLineCount: 0,
   perSchedule: {},
+  markupBreakdown: {
+    laborBurdenCents: 0,
+    equipmentBurdenCents: 0,
+    subMarkupCents: 0,
+    bondCents: 0,
+    insuranceCents: 0,
+    contingencyCents: 0,
+    oppCents: 1_000_000,
+  },
 };
 
 describe('buildTransmittal', () => {

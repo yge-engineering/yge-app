@@ -226,6 +226,9 @@ export interface EstimatePatch {
   addenda?: Addendum[];
   /** Replace the full sub-leveling worksheet. */
   subLeveling?: PricedEstimate['subLeveling'];
+  /** Replace the markup-stack percentages (labor burden, equipment
+   *  burden, sub markup, bonds, insurance, contingency). */
+  markup?: PricedEstimate['markup'];
 }
 
 export async function updateEstimate(
@@ -251,6 +254,7 @@ export async function updateEstimate(
       : {}),
     ...(patch.addenda ? { addenda: patch.addenda } : {}),
     ...(patch.subLeveling ? { subLeveling: patch.subLeveling } : {}),
+    ...(patch.markup ? { markup: patch.markup } : {}),
     updatedAt: new Date().toISOString(),
   };
   PricedEstimateSchema.parse(updated);

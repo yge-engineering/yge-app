@@ -99,6 +99,15 @@ const SubLevelingScopeSchemaPatch = z.object({
     .default([]),
 });
 
+const MarkupStackSchemaPatch = z.object({
+  laborBurdenPct: z.number().min(0).max(2).default(0),
+  equipmentBurdenPct: z.number().min(0).max(2).default(0),
+  subMarkupPct: z.number().min(0).max(2).default(0),
+  bondPct: z.number().min(0).max(0.2).default(0),
+  insurancePct: z.number().min(0).max(0.2).default(0),
+  contingencyPct: z.number().min(0).max(0.5).default(0),
+});
+
 const UpdateBody = z.object({
   oppPercent: z.number().min(0).max(2).optional(),
   notes: z.string().max(5_000).optional(),
@@ -112,6 +121,9 @@ const UpdateBody = z.object({
   /** Replace the full sub-leveling worksheet. The leveling client
    *  debounce-PATCHes on every keystroke. */
   subLeveling: z.array(SubLevelingScopeSchemaPatch).optional(),
+  /** Markup-stack percentages (labor burden, equipment burden, sub
+   *  markup, bonds, insurance, contingency). Layered on top of O&P. */
+  markup: MarkupStackSchemaPatch.optional(),
 });
 
 // PATCH /api/priced-estimates/:id — update O&P / notes / full bid item list.
