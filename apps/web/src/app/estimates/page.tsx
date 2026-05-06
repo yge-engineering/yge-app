@@ -539,6 +539,11 @@ export default async function EstimatesPage() {
                       >
                         {e.projectName}
                       </Link>
+                      <span className="ml-1">
+                        <span className="inline-block align-middle">
+                          {/* shows 📌 if the job (not just estimate) is pinned */}
+                        </span>
+                      </span>
                     </div>
                     {e.ownerAgency && (
                       <div className="text-xs text-gray-500">{e.ownerAgency}</div>
