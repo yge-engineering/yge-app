@@ -65,6 +65,7 @@ interface EstimateSummary {
   unacknowledgedAddendumCount?: number;
   bidStatus?: 'pursuing' | 'submitted' | 'awarded' | 'lost';
   notesPreview?: string;
+  reviewedLineCount?: number;
 }
 
 function apiBaseUrl(): string {
@@ -584,6 +585,11 @@ export default async function JobDetailPage({
                     {e.notesPreview && (
                       <div className="mt-1 text-[11px] italic text-gray-500">
                         ✏ {e.notesPreview}
+                      </div>
+                    )}
+                    {typeof e.reviewedLineCount === 'number' && e.bidItemCount > 0 && e.reviewedLineCount < e.bidItemCount && (
+                      <div className="mt-1 text-[10px] text-gray-500">
+                        {e.reviewedLineCount}/{e.bidItemCount} lines reviewed
                       </div>
                     )}
                   </div>
