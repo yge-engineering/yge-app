@@ -95,6 +95,36 @@ interface PricedEstimateSummaryLite {
   updatedAt: string;
 }
 
+/** Pull every priced estimate plus a small slice of the most-recent ones
+ *  for the dashboard. Sharing the fetch avoids a second request just for
+ *  the pipeline-value tile. */
+async function fetchEstimatesPipeline(): Promise<{
+  recent: PricedEstimateSummaryLite[];
+  pipelineCents: number;
+  pipelineCount: number;
+}> {
+  try {
+    const res = await fetch(`${apiBaseUrl()}/api/priced-estimates`, {
+      cache: 'no-store',
+    });
+    if (!res.ok) return { recent: [], pipelineCents: 0, pipelineCount: 0 };
+    const json = (await res.json()) as {
+      estimates: PricedEstimateSummaryLite[];
+    };
+    const all = json.estimates ?? [];
+    const recent = [...all]
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+      .slice(0, 5);
+    const pipelineCents = all.reduce(
+      (sum, e) => sum + (typeof e.bidTotalCents === 'number' ? e.bidTotalCents : 0),
+      0,
+    );
+    return { recent, pipelineCents, pipelineCount: all.length };
+  } catch {
+    return { recent: [], pipelineCents: 0, pipelineCount: 0 };
+  }
+}
+
 /** Pull the 5 most-recent priced estimates for the dashboard tile. */
 async function fetchRecentEstimates(): Promise<PricedEstimateSummaryLite[]> {
   try {
@@ -182,7 +212,8 @@ export default async function DashboardPage() {
     fetchMasterProfile(),
   ]);
   const apInboxStatus = await fetchApInboxStatus();
-  const recentEstimates = await fetchRecentEstimates();
+  const pipelineData = await fetchEstimatesPipeline();
+  const recentEstimates = pipelineData.recent;
 
   const arRollup = computeArRollup(arInvoices);
   const arPaymentRollup = computeArPaymentRollup(arPayments);
@@ -348,6 +379,19 @@ export default async function DashboardPage() {
       {(apInboxStatus.lastFinishedAt || apInboxStatus.reason) && (
         <div className="mb-6">
           <ApInboxFreshnessTile status={apInboxStatus} />
+        </div>
+      )}
+
+      {/* BID PIPELINE — sum of bid totals across all priced estimates. */}
+      {pipelineData.pipelineCount > 0 && (
+        <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-yge-blue-200 bg-yge-blue-50 px-3 py-1 text-xs font-medium text-yge-blue-700">
+          <span className="uppercase tracking-wide opacity-70">Bid pipeline</span>
+          <span className="font-mono font-semibold">
+            <Money cents={pipelineData.pipelineCents} />
+          </span>
+          <span className="opacity-70">
+            · {pipelineData.pipelineCount} estimate{pipelineData.pipelineCount === 1 ? '' : 's'}
+          </span>
         </div>
       )}
 
