@@ -10,6 +10,7 @@ import { bidDueCountdown, coerceLocale } from '@yge/shared';
 import { cookies } from 'next/headers';
 import { CopyEstimateLink } from '../../components/copy-estimate-link';
 import { EstimatesSearchInput } from '../../components/estimates-search-input';
+import { EstimatesSortHeaders } from '../../components/estimates-sort-headers';
 import { getTranslator } from '../../lib/locale';
 import { requirePermission } from '../../lib/permissions';
 
@@ -317,6 +318,7 @@ export default async function EstimatesPage() {
       {estimates.length > 0 && (
         <div className="mt-6">
           <EstimatesSearchInput targetId="estimates-table,imported-estimates-table" totalCount={estimates.length + imported.length} />
+          <EstimatesSortHeaders targetId="estimates-table" />
           <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
           <table id="estimates-table" className="w-full text-left text-sm">
             <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
@@ -326,8 +328,14 @@ export default async function EstimatesPage() {
                 <th className="px-4 py-2">{t('estimates.col.lines')}</th>
                 <th className="px-4 py-2">{t('estimates.col.subs')}</th>
                 <th className="px-4 py-2">{t('estimates.col.addenda')}</th>
-                <th className="px-4 py-2">{t('estimates.col.bidTotal')}</th>
-                <th className="px-4 py-2">{t('estimates.col.updated')}</th>
+                <th data-sort-key="cents" className="select-none px-4 py-2 hover:bg-gray-100">
+                  {t('estimates.col.bidTotal')}
+                  <span className="sort-arrow" />
+                </th>
+                <th data-sort-key="updated" className="select-none px-4 py-2 hover:bg-gray-100">
+                  {t('estimates.col.updated')}
+                  <span className="sort-arrow" />
+                </th>
                 <th className="px-4 py-2"></th>
               </tr>
             </thead>
@@ -337,6 +345,8 @@ export default async function EstimatesPage() {
                   key={e.id}
                   data-search={`${e.projectName} ${e.ownerAgency ?? ''} ${e.projectType.replace(/_/g, ' ')}`}
                   data-cents={e.bidTotalCents}
+                  data-sort-cents={e.bidTotalCents}
+                  data-sort-updated={e.updatedAt}
                   className="hover:bg-gray-50"
                 >
                   <td className="px-4 py-3">
