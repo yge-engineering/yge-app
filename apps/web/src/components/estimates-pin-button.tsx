@@ -92,7 +92,29 @@ export function EstimatesPinReorder({ targetId }: { targetId: string }) {
     }
     reorder();
     window.addEventListener(EVENT, reorder);
-    return () => window.removeEventListener(EVENT, reorder);
+    // Also re-run when the tbody children change (e.g. after a sort
+    // header click reorders the rows). MutationObserver catches that
+    // without polling. Only watch direct children, not subtree.
+    const tableEl = document.getElementById(targetId);
+    const tbodyEl = tableEl?.querySelector('tbody');
+    let mo: MutationObserver | null = null;
+    if (tbodyEl) {
+      mo = new MutationObserver(() => {
+        // Avoid infinite loops — only re-run if pinned rows aren't already at top.
+        const tbody = tableEl?.querySelector('tbody');
+        if (!tbody) return;
+        const pinned = readPinned();
+        if (pinned.size === 0) return;
+        const firstRow = tbody.querySelector<HTMLTableRowElement>('tr[data-id]');
+        if (firstRow && pinned.has(firstRow.dataset['id'] ?? '')) return;
+        reorder();
+      });
+      mo.observe(tbodyEl, { childList: true });
+    }
+    return () => {
+      window.removeEventListener(EVENT, reorder);
+      mo?.disconnect();
+    };
   }, [targetId]);
 
   return null;
