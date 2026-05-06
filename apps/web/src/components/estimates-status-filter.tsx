@@ -69,6 +69,16 @@ export function EstimatesStatusFilter({ targetId, counts, total }: Props) {
       } catch {
         // Quota exceeded etc. — non-fatal.
       }
+      // Reflect in URL so reload + share preserves filter.
+      try {
+        const url = new URL(window.location.href);
+        if (active === 'all') {
+          url.searchParams.delete('status');
+        } else {
+          url.searchParams.set('status', active);
+        }
+        window.history.replaceState({}, '', url.toString());
+      } catch {}
     }
     const table = document.getElementById(targetId);
     if (!table) return;
