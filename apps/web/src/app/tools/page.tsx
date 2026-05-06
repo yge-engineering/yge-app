@@ -157,7 +157,7 @@ export default async function ToolsPage() {
                     <td className="px-4 py-3 text-right text-sm">
                       <Link
                         href={`/tools/${tool.id}`}
-                        className="text-yge-blue-500 hover:underline"
+                        className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50"
                       >
                         {t('tools.edit')}
                       </Link>
