@@ -105,6 +105,7 @@ export function BankRecMatchPanel({ recId }: { recId: string }) {
   const [parsed, setParsed] = useState<ParsedTx[] | null>(null);
   const [results, setResults] = useState<MatchResult[] | null>(null);
   const [candidateCount, setCandidateCount] = useState<number | null>(null);
+  const [applied, setApplied] = useState<Set<string>>(new Set());
 
   async function onMatch() {
     setError(null);
@@ -232,13 +233,125 @@ export function BankRecMatchPanel({ recId }: { recId: string }) {
               })}
             </tbody>
           </table>
-          <p className="mt-3 text-xs text-gray-500">
-            Apply-button + per-row accept/reject ships next. For now, this
-            is the read-only review pane — the bookkeeper still posts the
-            match through the rec editor below.
-          </p>
+          <ApplyControls
+            recId={recId}
+            matches={results}
+            onApplied={(ids) => setApplied((prev) => new Set([...prev, ...ids]))}
+            applied={applied}
+          />
         </div>
       ) : null}
     </section>
+  );
+}
+
+function ApplyControls({
+  recId,
+  matches,
+  applied,
+  onApplied,
+}: {
+  recId: string;
+  matches: MatchResult[];
+  applied: Set<string>;
+  onApplied: (candidateIds: string[]) => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [summary, setSummary] = useState<string | null>(null);
+
+  const eligibleHighAp = matches.filter(
+    (m) =>
+      m.candidateKind === 'ap_payment' &&
+      m.confidence === 'HIGH' &&
+      m.candidateId &&
+      !applied.has(m.candidateId),
+  );
+
+  async function postApply(rows: MatchResult[]) {
+    if (rows.length === 0) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const body = {
+        matches: rows
+          .filter((m) => m.candidateId && m.candidateKind)
+          .map((m) => ({
+            candidateId: m.candidateId as string,
+            candidateKind: m.candidateKind as
+              | 'ar_payment'
+              | 'ap_payment'
+              | 'expense'
+              | 'journal_entry',
+          })),
+      };
+      const res = await fetch(
+        `${apiBaseUrl()}/api/bank-recs/${recId}/apply-matches`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        },
+      );
+      if (!res.ok) {
+        const errBody = (await res.json().catch(() => ({}))) as {
+          error?: string;
+        };
+        setError(errBody.error ?? `Apply failed (${res.status})`);
+        return;
+      }
+      const out = (await res.json()) as {
+        appliedAp: number;
+        noopOther: number;
+        clearedOn: string;
+      };
+      setSummary(
+        `Marked ${out.appliedAp} AP payment${out.appliedAp === 1 ? '' : 's'} cleared (${out.clearedOn}).` +
+          (out.noopOther > 0
+            ? ` ${out.noopOther} non-AP match${out.noopOther === 1 ? '' : 'es'} skipped (no cleared flag yet).`
+            : ''),
+      );
+      onApplied(
+        rows
+          .map((r) => r.candidateId)
+          .filter((id): id is string => !!id),
+      );
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mt-3">
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={() => postApply(eligibleHighAp)}
+          disabled={busy || eligibleHighAp.length === 0}
+          className="rounded-md bg-yge-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50"
+        >
+          {busy
+            ? 'Applying…'
+            : `Apply HIGH AP matches (${eligibleHighAp.length})`}
+        </button>
+        <span className="text-xs text-gray-500">
+          Marks each AP payment cleared=true with clearedOn=statement
+          date. AR / expense matches are no-ops in v1 — those models
+          don't carry a cleared flag yet.
+        </span>
+      </div>
+      {summary ? (
+        <p className="mt-2 rounded-md border border-green-300 bg-green-50 p-2 text-xs text-green-800">
+          {summary}
+        </p>
+      ) : null}
+      {error ? (
+        <p className="mt-2 rounded-md border border-red-300 bg-red-50 p-2 text-xs text-red-800">
+          {error}
+        </p>
+      ) : null}
+    </div>
   );
 }

@@ -3,6 +3,7 @@
 import { Router } from 'express';
 import { BankRecCreateSchema, BankRecPatchSchema } from '@yge/shared';
 import { bankRecsMatchRouter } from "./bank-recs-match";
+import { bankRecsApplyMatchesRouter } from "./bank-recs-apply-matches";
 import {
   createBankRec,
   getBankRec,
@@ -14,6 +15,7 @@ export const bankRecsRouter = Router();
 
 // Sub-router: AI match endpoint (POST /:id/match).
 bankRecsRouter.use("/", bankRecsMatchRouter);
+bankRecsRouter.use("/", bankRecsApplyMatchesRouter);
 
 bankRecsRouter.get('/', async (req, res, next) => {
   try {
