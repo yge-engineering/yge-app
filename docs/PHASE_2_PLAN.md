@@ -13,10 +13,10 @@ Each theme has web pages already scaffolded — they mostly need
 better data, AI assistance, or Postgres migration to be production-grade.
 
 ### 1. Storage + foundations *(autopilot-friendly, prerequisite for everything else)*
-- Migrate the remaining ~50 file-stores to Postgres (template trodden in bundles 1347–1357)
-- Supabase Storage wired through the API for photos + document uploads
-- Multi-tenant scoping: `companyId` from auth context, not the hardcoded `yge-root`
-- Sentry + structured logging in production
+- ✓ All 58 file-stores migrated to Postgres (bundles 1347–1412; see `docs/PHASE_2_STATUS.md`)
+- ✓ Supabase Storage helper wired through the API for photos + document uploads (bundle 1383)
+- Multi-tenant scoping: `companyId` from auth context, not the hardcoded `yge-root` *(still pending)*
+- Sentry + structured logging in production *(still pending)*
 
 ### 2. AI bookkeeping *(highest user-value)*
 The Anthropic key is already wired (Phase 1 P2E + the title-block / scope-gap / spec-extras / bid-schedule prompts prove the pipeline works). Phase 2 extends to bookkeeping:
