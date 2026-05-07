@@ -1,19 +1,14 @@
-// File-based store for the master business profile.
+// Postgres-backed store for the master business profile.
 //
-// Single-row store: there's exactly one master profile per company.
-// The id 'master' is reserved as the primary key — it's NOT a UUID.
-// On first read with no row on disk, the store seeds a default
-// profile from packages/shared/src/company.ts (YGE_COMPANY_INFO)
-// so the form filler always has SOMETHING to read against.
+// Single-row store: exactly one master profile per company. The
+// underlying Prisma model uses companyId as the unique key and
+// stores the full MasterProfile shape in a JSON `data` column.
+// On first read with no row, we seed from YGE_COMPANY_INFO so the
+// form filler always has values to read against.
 //
-// Every mutation here records an audit event via recordAudit() —
-// CLAUDE.md mandates 'every mutation is audit-logged'. Master
-// profile changes are particularly important to log: every form
-// printed downstream rebases against the new values the moment
-// the profile is updated.
+// Every mutation records an audit event — CLAUDE.md mandates that.
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { prisma } from '@yge/db';
 import {
   MasterProfileSchema,
   YGE_COMPANY_INFO,
@@ -21,21 +16,9 @@ import {
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
 
-function dataDir(): string {
-  return (
-    process.env.MASTER_PROFILE_DATA_DIR ??
-    path.resolve(process.cwd(), 'data', 'master-profile')
-  );
-}
-function rowPath(): string { return path.join(dataDir(), 'master.json'); }
+const DEFAULT_COMPANY_ID =
+  process.env.DEFAULT_COMPANY_ID ?? 'co-yge';
 
-async function ensureDir() { await fs.mkdir(dataDir(), { recursive: true }); }
-
-/**
- * Default profile seeded from the static company-info constant.
- * Used when the store is read for the first time — saves the user
- * from having to fill in basics that are already in the codebase.
- */
 function seed(): MasterProfile {
   const c = YGE_COMPANY_INFO;
   const now = new Date().toISOString();
@@ -86,19 +69,20 @@ function seed(): MasterProfile {
 }
 
 export async function getMasterProfile(): Promise<MasterProfile> {
-  try {
-    const raw = await fs.readFile(rowPath(), 'utf8');
-    return MasterProfileSchema.parse(JSON.parse(raw));
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
-      // Seed on first read so callers don't have to handle null.
-      const seeded = seed();
-      await ensureDir();
-      await fs.writeFile(rowPath(), JSON.stringify(seeded, null, 2), 'utf8');
-      return seeded;
-    }
-    throw err;
+  const row = await prisma.masterProfile.findUnique({
+    where: { companyId: DEFAULT_COMPANY_ID },
+  });
+  if (!row) {
+    const seeded = seed();
+    await prisma.masterProfile.create({
+      data: {
+        companyId: DEFAULT_COMPANY_ID,
+        data: seeded as unknown as object,
+      },
+    });
+    return seeded;
   }
+  return MasterProfileSchema.parse(row.data);
 }
 
 export async function updateMasterProfile(
@@ -116,8 +100,14 @@ export async function updateMasterProfile(
     createdAt: existing.createdAt,
     updatedAt: now,
   });
-  await ensureDir();
-  await fs.writeFile(rowPath(), JSON.stringify(updated, null, 2), 'utf8');
+  await prisma.masterProfile.upsert({
+    where: { companyId: DEFAULT_COMPANY_ID },
+    create: {
+      companyId: DEFAULT_COMPANY_ID,
+      data: updated as unknown as object,
+    },
+    update: { data: updated as unknown as object },
+  });
   await recordAudit({
     action: 'update',
     entityType: 'Company',
