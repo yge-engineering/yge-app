@@ -1,10 +1,6 @@
-// Every mutation here records an audit event via recordAudit() —
-// CLAUDE.md mandates 'every mutation is audit-logged'.
-//
-// File-based store for journal entries.
+// Postgres-backed store for journal entries.
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { prisma } from '@yge/db';
 import {
   JournalEntrySchema,
   newJournalEntryId,
@@ -14,46 +10,16 @@ import {
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
 
-function dataDir(): string {
-  return process.env.JOURNAL_ENTRIES_DATA_DIR ?? path.resolve(process.cwd(), 'data', 'journal-entries');
-}
-function indexPath(): string {
-  return path.join(dataDir(), 'index.json');
-}
-function rowPath(id: string): string {
-  return path.join(dataDir(), `${id}.json`);
-}
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
 
-async function ensureDir() {
-  await fs.mkdir(dataDir(), { recursive: true });
-}
-
-async function readIndex(): Promise<JournalEntry[]> {
-  try {
-    const raw = await fs.readFile(indexPath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((entry: unknown) => {
-        const result = JournalEntrySchema.safeParse(entry);
-        return result.success ? result.data : null;
-      })
-      .filter((j): j is JournalEntry => j !== null);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
-  }
-}
-
-async function writeIndex(entries: JournalEntry[]) {
-  await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
+function row2je(row: { data: unknown }): JournalEntry {
+  return JournalEntrySchema.parse(row.data);
 }
 
 export async function createJournalEntry(
   input: JournalEntryCreate,
   ctx?: AuditContext,
 ): Promise<JournalEntry> {
-  await ensureDir();
   const now = new Date().toISOString();
   const id = newJournalEntryId();
   const je: JournalEntry = {
@@ -64,12 +30,14 @@ export async function createJournalEntry(
     status: input.status ?? 'DRAFT',
     ...input,
   };
-  // Re-parse with the full schema (including the balance refine).
   JournalEntrySchema.parse(je);
-  await fs.writeFile(rowPath(id), JSON.stringify(je, null, 2), 'utf8');
-  const index = await readIndex();
-  index.unshift(je);
-  await writeIndex(index);
+  await prisma.journalEntry.create({
+    data: {
+      id,
+      companyId: DEFAULT_COMPANY_ID,
+      data: je as unknown as object,
+    },
+  });
   await recordAudit({
     action: 'create',
     entityType: 'JournalEntry',
@@ -84,22 +52,22 @@ export async function listJournalEntries(filter?: {
   status?: string;
   source?: string;
 }): Promise<JournalEntry[]> {
-  let all = await readIndex();
+  const rows = await prisma.journalEntry.findMany({
+    where: { companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    orderBy: { createdAt: 'desc' },
+  });
+  let all = rows.map(row2je);
   if (filter?.status) all = all.filter((j) => j.status === filter.status);
   if (filter?.source) all = all.filter((j) => j.source === filter.source);
-  all.sort((a, b) => b.entryDate.localeCompare(a.entryDate));
   return all;
 }
 
 export async function getJournalEntry(id: string): Promise<JournalEntry | null> {
   if (!/^je-[a-z0-9]{8}$/.test(id)) return null;
-  try {
-    const raw = await fs.readFile(rowPath(id), 'utf8');
-    return JournalEntrySchema.parse(JSON.parse(raw));
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    throw err;
-  }
+  const row = await prisma.journalEntry.findFirst({
+    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+  });
+  return row ? row2je(row) : null;
 }
 
 export async function updateJournalEntry(
@@ -118,15 +86,10 @@ export async function updateJournalEntry(
     updatedAt: new Date().toISOString(),
   };
   JournalEntrySchema.parse(updated);
-  await fs.writeFile(rowPath(id), JSON.stringify(updated, null, 2), 'utf8');
-  const index = await readIndex();
-  const idx = index.findIndex((j) => j.id === id);
-  if (idx >= 0) {
-    index[idx] = updated;
-  } else {
-    index.unshift(updated);
-  }
-  await writeIndex(index);
+  await prisma.journalEntry.update({
+    where: { id },
+    data: { data: updated as unknown as object },
+  });
   await recordAudit({
     action: auditAction,
     entityType: 'JournalEntry',

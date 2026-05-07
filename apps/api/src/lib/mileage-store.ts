@@ -1,10 +1,6 @@
-// Every mutation here records an audit event via recordAudit() —
-// CLAUDE.md mandates 'every mutation is audit-logged'.
-//
-// File-based store for mileage entries.
+// Postgres-backed store for mileage entries.
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { prisma } from '@yge/db';
 import {
   MileageEntrySchema,
   newMileageEntryId,
@@ -14,46 +10,16 @@ import {
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
 
-function dataDir(): string {
-  return process.env.MILEAGE_DATA_DIR ?? path.resolve(process.cwd(), 'data', 'mileage');
-}
-function indexPath(): string {
-  return path.join(dataDir(), 'index.json');
-}
-function rowPath(id: string): string {
-  return path.join(dataDir(), `${id}.json`);
-}
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
 
-async function ensureDir() {
-  await fs.mkdir(dataDir(), { recursive: true });
-}
-
-async function readIndex(): Promise<MileageEntry[]> {
-  try {
-    const raw = await fs.readFile(indexPath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((entry: unknown) => {
-        const result = MileageEntrySchema.safeParse(entry);
-        return result.success ? result.data : null;
-      })
-      .filter((e): e is MileageEntry => e !== null);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
-  }
-}
-
-async function writeIndex(entries: MileageEntry[]) {
-  await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
+function row2mi(row: { data: unknown }): MileageEntry {
+  return MileageEntrySchema.parse(row.data);
 }
 
 export async function createMileageEntry(
   input: MileageEntryCreate,
   ctx?: AuditContext,
 ): Promise<MileageEntry> {
-  await ensureDir();
   const now = new Date().toISOString();
   const id = newMileageEntryId();
   const e: MileageEntry = {
@@ -66,10 +32,15 @@ export async function createMileageEntry(
     ...input,
   };
   MileageEntrySchema.parse(e);
-  await fs.writeFile(rowPath(id), JSON.stringify(e, null, 2), 'utf8');
-  const index = await readIndex();
-  index.unshift(e);
-  await writeIndex(index);
+  await prisma.mileage.create({
+    data: {
+      id,
+      companyId: DEFAULT_COMPANY_ID,
+      employeeId: e.employeeId,
+      tripDate: e.tripDate,
+      data: e as unknown as object,
+    },
+  });
   await recordAudit({
     action: 'create',
     entityType: 'Mileage',
@@ -85,23 +56,27 @@ export async function listMileageEntries(filter?: {
   jobId?: string;
   reimbursed?: boolean;
 }): Promise<MileageEntry[]> {
-  let all = await readIndex();
-  if (filter?.employeeId) all = all.filter((e) => e.employeeId === filter.employeeId);
+  const rows = await prisma.mileage.findMany({
+    where: {
+      companyId: DEFAULT_COMPANY_ID,
+      deletedAt: null,
+      ...(filter?.employeeId ? { employeeId: filter.employeeId } : {}),
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  let all = rows.map(row2mi);
   if (filter?.jobId) all = all.filter((e) => e.jobId === filter.jobId);
-  if (filter?.reimbursed != null) all = all.filter((e) => e.reimbursed === filter.reimbursed);
-  all.sort((a, b) => b.tripDate.localeCompare(a.tripDate));
+  if (filter?.reimbursed !== undefined)
+    all = all.filter((e) => e.reimbursed === filter.reimbursed);
   return all;
 }
 
 export async function getMileageEntry(id: string): Promise<MileageEntry | null> {
   if (!/^mi-[a-z0-9]{8}$/.test(id)) return null;
-  try {
-    const raw = await fs.readFile(rowPath(id), 'utf8');
-    return MileageEntrySchema.parse(JSON.parse(raw));
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    throw err;
-  }
+  const row = await prisma.mileage.findFirst({
+    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+  });
+  return row ? row2mi(row) : null;
 }
 
 export async function updateMileageEntry(
@@ -120,15 +95,14 @@ export async function updateMileageEntry(
     updatedAt: new Date().toISOString(),
   };
   MileageEntrySchema.parse(updated);
-  await fs.writeFile(rowPath(id), JSON.stringify(updated, null, 2), 'utf8');
-  const index = await readIndex();
-  const idx = index.findIndex((e) => e.id === id);
-  if (idx >= 0) {
-    index[idx] = updated;
-  } else {
-    index.unshift(updated);
-  }
-  await writeIndex(index);
+  await prisma.mileage.update({
+    where: { id },
+    data: {
+      employeeId: updated.employeeId,
+      tripDate: updated.tripDate,
+      data: updated as unknown as object,
+    },
+  });
   await recordAudit({
     action: auditAction,
     entityType: 'Mileage',
