@@ -256,6 +256,7 @@ model Estimate {
   aiGenerated    Boolean        @default(false) // true if Plans-to-Estimate drafted
   aiPromptVer    String?
   notes          String?        @db.Text
+  data           Json?
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
   deletedAt      DateTime?

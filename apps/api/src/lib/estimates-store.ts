@@ -1,15 +1,11 @@
-// Every mutation here records an audit event via recordAudit() —
-// CLAUDE.md mandates 'every mutation is audit-logged'.
+// Postgres-backed store for priced estimates.
 //
-// File-based store for priced estimates.
-//
-// An estimate is what a Plans-to-Estimate draft becomes once a human starts
-// filling in unit prices. Phase 1 stand-in for the future Estimate /
-// BidItem Postgres tables. Surface area maps 1:1 to a Prisma repository so
-// the route + UI don't change when Postgres lands.
+// The full PricedEstimate Zod shape lives in `data: Json?`. The
+// Prisma BidItem + CostLine relations stay empty for now — they're
+// the normalized representation the future does-it-right Phase 3
+// will populate.
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { prisma } from '@yge/db';
 import { randomBytes } from 'node:crypto';
 import {
   PricedEstimateSchema,
@@ -24,17 +20,7 @@ import {
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
 
-// Resolve the data dir lazily on every call so tests can override it via
-// ESTIMATES_DATA_DIR after the module has loaded.
-function dataDir(): string {
-  return (
-    process.env.ESTIMATES_DATA_DIR ??
-    path.resolve(process.cwd(), 'data', 'estimates')
-  );
-}
-function indexPath(): string {
-  return path.join(dataDir(), 'index.json');
-}
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
 
 export interface EstimateSummary {
   id: string;
@@ -50,19 +36,10 @@ export interface EstimateSummary {
   pricedLineCount: number;
   unpricedLineCount: number;
   oppPercent: number;
-  /** Pre-computed once on save so the index page doesn't have to load every
-   *  full estimate. Refreshed on every `updateEstimate` call. */
   bidTotalCents: number;
-  /** Number of subcontractors captured for this estimate. The list view
-   *  uses this to show "0 subs" / "5 subs" without loading the full file. */
   subBidCount: number;
-  /** Number of addenda logged. */
   addendumCount: number;
-  /** How many addenda are logged but un-acknowledged. The list view shows
-   *  this in red so an estimate that's about to fail at bid open is
-   *  visible without opening it. */
   unacknowledgedAddendumCount: number;
-  /** Workflow status: pursuing / submitted / awarded / lost. */
   bidStatus?: 'pursuing' | 'submitted' | 'awarded' | 'lost';
   bidSubmittedAt?: string;
   notesPreview?: string;
@@ -73,12 +50,7 @@ export interface CreateFromDraftInput {
   fromDraftId: string;
   jobId: string;
   draft: PtoEOutput;
-  /** Default O&P. Caller can override; the editor lets the user adjust it. */
   oppPercent?: number;
-}
-
-async function ensureDir() {
-  await fs.mkdir(dataDir(), { recursive: true });
 }
 
 function slugify(s: string): string {
@@ -92,7 +64,7 @@ function slugify(s: string): string {
 function makeId(projectName: string, when: Date): string {
   const date = when.toISOString().slice(0, 10);
   const slug = slugify(projectName) || 'estimate';
-  const rand = randomBytes(4).toString('hex'); // 8 hex chars
+  const rand = randomBytes(4).toString('hex');
   return `est-${date}-${slug}-${rand}`;
 }
 
@@ -141,34 +113,36 @@ function summarize(est: PricedEstimate): EstimateSummary {
   };
 }
 
-async function readIndex(): Promise<EstimateSummary[]> {
-  try {
-    const raw = await fs.readFile(indexPath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as EstimateSummary[]) : [];
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
-  }
+function row2est(row: { data: unknown }): PricedEstimate | null {
+  if (!row.data) return null;
+  const r = PricedEstimateSchema.safeParse(row.data);
+  return r.success ? r.data : null;
 }
 
-async function writeIndex(entries: EstimateSummary[]) {
-  await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
+async function persist(est: PricedEstimate): Promise<void> {
+  await prisma.estimate.upsert({
+    where: { id: est.id },
+    create: {
+      id: est.id,
+      companyId: DEFAULT_COMPANY_ID,
+      jobId: est.jobId,
+      revision: 1,
+      status: 'DRAFT',
+      notes: est.notes ?? null,
+      data: est as unknown as object,
+    },
+    update: {
+      jobId: est.jobId,
+      notes: est.notes ?? null,
+      data: est as unknown as object,
+    },
+  });
 }
 
-function estimatePath(id: string): string {
-  return path.join(dataDir(), `${id}.json`);
-}
-
-/**
- * Build a fresh PricedEstimate from a saved draft and persist it. Returns the
- * full saved record so the caller can render or redirect.
- */
 export async function createFromDraft(
   input: CreateFromDraftInput,
   ctx?: AuditContext,
 ): Promise<PricedEstimate> {
-  await ensureDir();
   const now = new Date();
   const id = makeId(input.draft.projectName, now);
   const iso = now.toISOString();
@@ -189,12 +163,8 @@ export async function createFromDraft(
     addenda: [],
     subLeveling: [],
   };
-  // Validate before writing so a buggy caller can't poison the store.
   PricedEstimateSchema.parse(est);
-  await fs.writeFile(estimatePath(id), JSON.stringify(est, null, 2), 'utf8');
-  const index = await readIndex();
-  index.unshift(summarize(est));
-  await writeIndex(index);
+  await persist(est);
   await recordAudit({
     action: 'create',
     entityType: 'Estimate',
@@ -208,8 +178,6 @@ export async function createFromDraft(
 export interface CreateBlankInput {
   jobId: string;
   projectName: string;
-  /** Optional — defaults to 'OTHER'. Pulled from the Job when posted from
-   *  /jobs/[id], left to OTHER when started from anywhere else. */
   projectType?: PricedEstimate['projectType'];
   ownerAgency?: string;
   location?: string;
@@ -217,18 +185,10 @@ export interface CreateBlankInput {
   oppPercent?: number;
 }
 
-/**
- * Build a fresh, empty PricedEstimate not tied to any AI draft. Used
- * when the estimator wants to compose a bid manually instead of
- * starting from Plans-to-Estimate. Seeds one empty bid item so the
- * editor has something to render — the schema requires `bidItems` to
- * have at least one entry.
- */
 export async function createBlankEstimate(
   input: CreateBlankInput,
   ctx?: AuditContext,
 ): Promise<PricedEstimate> {
-  await ensureDir();
   const now = new Date();
   const id = makeId(input.projectName, now);
   const iso = now.toISOString();
@@ -242,8 +202,6 @@ export async function createBlankEstimate(
   };
   const est: PricedEstimate = {
     id,
-    // No source draft for a blank estimate. Use a sentinel so callers
-    // can detect manual estimates without breaking required-string.
     fromDraftId: 'manual',
     jobId: input.jobId,
     createdAt: iso,
@@ -260,10 +218,7 @@ export async function createBlankEstimate(
     subLeveling: [],
   };
   PricedEstimateSchema.parse(est);
-  await fs.writeFile(estimatePath(id), JSON.stringify(est, null, 2), 'utf8');
-  const index = await readIndex();
-  index.unshift(summarize(est));
-  await writeIndex(index);
+  await persist(est);
   await recordAudit({
     action: 'create',
     entityType: 'Estimate',
@@ -275,50 +230,36 @@ export async function createBlankEstimate(
 }
 
 export async function listEstimates(): Promise<EstimateSummary[]> {
-  return readIndex();
+  const rows = await prisma.estimate.findMany({
+    where: { companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    orderBy: { createdAt: 'desc' },
+  });
+  return rows
+    .map(row2est)
+    .filter((e): e is PricedEstimate => e !== null)
+    .map(summarize);
 }
 
 export async function getEstimate(id: string): Promise<PricedEstimate | null> {
-  // Defensive: only allow ids that match our format. Stops path traversal cold.
   if (!/^est-[a-z0-9-]{10,80}$/.test(id)) return null;
-  try {
-    const raw = await fs.readFile(estimatePath(id), 'utf8');
-    // Run through the schema so newly added optional fields with defaults
-    // (e.g. subBids: []) backfill cleanly when reading older files.
-    return PricedEstimateSchema.parse(JSON.parse(raw));
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    throw err;
-  }
+  const row = await prisma.estimate.findFirst({
+    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+  });
+  if (!row) return null;
+  return row2est(row);
 }
 
-/** Patch fields you can change at the estimate level. Bumps `updatedAt`. */
 export interface EstimatePatch {
   oppPercent?: number;
   notes?: string;
   bidItems?: PricedBidItem[];
-  /** Replace the full subcontractor list. The editor PATCHes the whole
-   *  array because individual sub edits are rare and bundling avoids the
-   *  edit-in-the-middle race that per-id PATCHes would invite. */
   subBids?: SubBid[];
-  /** Replace the bid security record. Pass `null` to clear it (not every
-   *  bid needs security; some private/task-order work skips it). */
   bidSecurity?: BidSecurity | null;
-  /** Replace the full addendum list. Same atomic-replace logic as the
-   *  sub list — addenda are typically small (0-10) and the editor saves
-   *  every commit through this single field. */
   addenda?: Addendum[];
-  /** Replace the full sub-leveling worksheet. */
   subLeveling?: PricedEstimate['subLeveling'];
-  /** Replace the markup-stack percentages (labor burden, equipment
-   *  burden, sub markup, bonds, insurance, contingency). */
   markup?: PricedEstimate['markup'];
-  /** Set or clear the per-unit price reference (e.g. per-acre).
-   *  Pass null to clear. */
   perUnitPrice?: PricedEstimate['perUnitPrice'] | null;
-  /** Workflow status. */
   bidStatus?: 'pursuing' | 'submitted' | 'awarded' | 'lost';
-  /** Override the auto-stamped bidSubmittedAt; null clears it. */
   bidSubmittedAt?: string | null;
 }
 
@@ -326,16 +267,11 @@ export async function updateEstimate(
   id: string,
   patch: EstimatePatch,
   ctx?: AuditContext,
-  /** Override when the patch is a domain action ('sign' the bid
-   *  acceptance, 'submit' the bid, 'archive' a stale draft) rather
-   *  than a generic field edit. */
   auditAction: 'update' | 'submit' | 'sign' | 'archive' = 'update',
 ): Promise<PricedEstimate | null> {
   const existing = await getEstimate(id);
   if (!existing) return null;
 
-  // Auto-stamp bidSubmittedAt the first time the bid flips to 'submitted'.
-  // Estimator can still override or clear via the bidSubmittedAt patch field.
   const flippingToSubmitted =
     patch.bidStatus === 'submitted' && existing.bidStatus !== 'submitted';
   const autoSubmittedAt = flippingToSubmitted && !existing.bidSubmittedAt
@@ -366,17 +302,7 @@ export async function updateEstimate(
     updatedAt: new Date().toISOString(),
   };
   PricedEstimateSchema.parse(updated);
-  await fs.writeFile(estimatePath(id), JSON.stringify(updated, null, 2), 'utf8');
-
-  // Rebuild the summary entry in the index — totals may have moved.
-  const index = await readIndex();
-  const idx = index.findIndex((e) => e.id === id);
-  if (idx >= 0) {
-    index[idx] = summarize(updated);
-  } else {
-    index.unshift(summarize(updated));
-  }
-  await writeIndex(index);
+  await persist(updated);
   await recordAudit({
     action: auditAction,
     entityType: 'Estimate',
@@ -388,32 +314,10 @@ export async function updateEstimate(
   return updated;
 }
 
-/**
- * Result of promoting a sub-leveling worksheet's awarded bid into the
- * §4104 sub list. Discriminated so the route can map cleanly to HTTP
- * status codes (404 for missing estimate/scope, 400 for empty data the
- * estimator still needs to fill in).
- */
 export type PromoteAwardedResult =
   | { ok: true; estimate: PricedEstimate; subBidId: string }
   | { ok: false; status: 400 | 404; reason: string };
 
-/**
- * Build a §4104 SubBid from a sub-leveling scope's awarded competing
- * quote and append it to the estimate's `subBids` array.
- *
- * Plain English: the estimator typed competing quotes into the leveling
- * worksheet, picked a winner, and now wants that winner to show up on
- * the bid envelope's §4104 list without retyping. This helper does that
- * promotion atomically and audit-logs it as a normal estimate update.
- *
- * Idempotency: this always appends a new SubBid (new id). If the user
- * clicks the button twice, two rows show up — they can delete one in
- * the §4104 editor. We chose this over a "skip if duplicate exists"
- * rule because the matching keys (contractor + portion of work) can
- * legitimately repeat (e.g. a prime that bids two scopes), so silent
- * dedupe would be wrong.
- */
 export async function promoteAwardedToSubList(
   id: string,
   scopeId: string,
@@ -466,22 +370,11 @@ export async function promoteAwardedToSubList(
     ctx,
   );
   if (!updated) {
-    // Race: estimate disappeared between read and write. Treat as 404.
     return { ok: false, status: 404, reason: 'Estimate not found' };
   }
   return { ok: true, estimate: updated, subBidId: newSub.id };
 }
 
-/**
- * Clone an existing estimate as the starting point for a new bid.
- * Carries over bid items (with their unit prices, schedule labels,
- * costBuildup, markupPct overrides, isAlternate flag) but resets
- * the per-line reviewState so the estimator runs through them
- * fresh, and clears the §4104 sub list, addenda, and bid-leveling
- * which are bid-specific and shouldn't reuse.
- *
- * Returns the saved new estimate.
- */
 export async function createFromTemplate(input: {
   sourceEstimateId: string;
   jobId: string;
@@ -491,7 +384,6 @@ export async function createFromTemplate(input: {
   const source = await getEstimate(input.sourceEstimateId);
   if (!source) return null;
 
-  await ensureDir();
   const now = new Date();
   const projectName = input.projectName?.trim() || source.projectName;
   const id = makeId(projectName, now);
@@ -509,7 +401,6 @@ export async function createFromTemplate(input: {
     bidDueDate: undefined,
     bidItems: source.bidItems.map((it) => ({
       ...it,
-      // Reset per-line review state so the estimator looks again.
       reviewState: undefined,
     })),
     oppPercent: input.oppPercent ?? source.oppPercent,
@@ -520,10 +411,7 @@ export async function createFromTemplate(input: {
     ...(source.markup ? { markup: source.markup } : {}),
   };
   PricedEstimateSchema.parse(newEst);
-  await fs.writeFile(estimatePath(id), JSON.stringify(newEst, null, 2), 'utf8');
-  const index = await readIndex();
-  index.unshift(summarize(newEst));
-  await writeIndex(index);
+  await persist(newEst);
   await recordAudit({
     action: 'create',
     entityType: 'Estimate',
@@ -534,11 +422,6 @@ export async function createFromTemplate(input: {
   return newEst;
 }
 
-/**
- * Historical-prices match. The editor surfaces these to the
- * estimator so they can see what they bid for the same kind of
- * line on past jobs.
- */
 export interface HistoricalPriceMatch {
   estimateId: string;
   projectName: string;
@@ -550,28 +433,18 @@ export interface HistoricalPriceMatch {
   quantity: number;
   unitPriceCents: number;
   confidence: 'HIGH' | 'MEDIUM' | 'LOW';
-  /** ISO timestamp the estimate was created. Sort key. */
   createdAt: string;
 }
 
-/** Normalize a string for fuzzy matching: lowercase, strip non-alphanumeric. */
 function normalizeForMatch(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 }
 
-/**
- * Search every priced estimate on disk for bid item lines whose
- * description normalizes to the same words as the query. Returns the
- * matches newest-first so the editor can show last-bid first.
+/** Search every saved estimate for bid items whose description
+ *  fuzzy-matches the query. Newest first.
  *
- * Filters out the current estimate so the search doesn't echo back
- * the line the user is staring at. Filters out unpriced lines so a
- * stale draft doesn't pollute the results.
- *
- * Phase 1 brute-force: walks each estimate file. With a few hundred
- * estimates this is fine (sub-second). When Postgres lands a real
- * GIN/trigram index replaces this loop.
- */
+ *  Brute-force scan over all estimates — fine for a few hundred rows.
+ *  When volume grows we'll move to a Postgres trigram + GIN index. */
 export async function findHistoricalPrices(opts: {
   description: string;
   unit?: string;
@@ -584,22 +457,21 @@ export async function findHistoricalPrices(opts: {
   const targetWords = new Set(target.split(' ').filter((w) => w.length >= 3));
   if (targetWords.size === 0) return [];
 
-  const summaries = await listEstimates();
-  const matches: HistoricalPriceMatch[] = [];
+  const rows = await prisma.estimate.findMany({
+    where: { companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    orderBy: { createdAt: 'desc' },
+  });
+  const all = rows.map(row2est).filter((e): e is PricedEstimate => e !== null);
 
-  for (const summary of summaries) {
-    if (summary.id === opts.excludeEstimateId) continue;
-    const est = await getEstimate(summary.id);
-    if (!est) continue;
+  const matches: HistoricalPriceMatch[] = [];
+  for (const est of all) {
+    if (est.id === opts.excludeEstimateId) continue;
     if (opts.projectType && est.projectType !== opts.projectType) continue;
     for (const item of est.bidItems) {
       if (item.unitPriceCents == null) continue;
       if (opts.unit && item.unit !== opts.unit) continue;
       const desc = normalizeForMatch(item.description);
       if (!desc) continue;
-      // Score = number of target words present in the candidate
-      // description. Require at least 60% overlap so noise lines
-      // ("Item 3", etc.) don't crowd the list.
       const descWords = new Set(desc.split(' '));
       let hit = 0;
       for (const w of targetWords) if (descWords.has(w)) hit += 1;
@@ -620,24 +492,14 @@ export async function findHistoricalPrices(opts: {
       });
     }
   }
-
   matches.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   return matches.slice(0, opts.limit ?? 10);
 }
 
-/**
- * One row of the variance check: how the line's current unit price
- * compares to past bids on similar lines.
- */
 export interface VarianceRow {
-  /** Index into the estimate's bidItems array. */
   itemIndex: number;
-  /** Median of historical unit prices in cents. Null if no matches. */
   historicalMedianCents: number | null;
-  /** How many historical bids backed the median. */
   historicalCount: number;
-  /** Current vs. historical, decimal: 0 = matches, +0.5 = 50% above,
-   *  -0.3 = 30% below. Null if no historical data. */
   deviation: number | null;
 }
 
@@ -650,13 +512,6 @@ function median(nums: number[]): number {
     : sorted[mid]!;
 }
 
-/**
- * Variance scan for every line in a saved estimate. For each priced
- * line we look up similar lines in past estimates and compute the
- * median historical unit price. The editor highlights any cell whose
- * current price is meaningfully off (>50% in either direction) so
- * the estimator catches typos and misreads at a glance.
- */
 export async function computeVariance(id: string): Promise<VarianceRow[]> {
   const est = await getEstimate(id);
   if (!est) return [];
@@ -699,10 +554,6 @@ export async function computeVariance(id: string): Promise<VarianceRow[]> {
   return out;
 }
 
-/**
- * Update a single line's unit price. Convenience for the editor's per-row
- * save pattern (faster than re-sending the whole bidItems array).
- */
 export async function setLineUnitPrice(
   id: string,
   itemIndex: number,
@@ -712,9 +563,6 @@ export async function setLineUnitPrice(
   if (!existing) return null;
   if (itemIndex < 0 || itemIndex >= existing.bidItems.length) return null;
   const items = existing.bidItems.slice();
-  // We've already bounds-checked itemIndex above, so items[itemIndex]
-  // is provably defined — but TS can't prove it through .slice(), so
-  // narrow with a non-null assertion.
   items[itemIndex] = { ...items[itemIndex]!, unitPriceCents };
   return updateEstimate(id, { bidItems: items });
 }
