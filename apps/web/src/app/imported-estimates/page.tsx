@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { EstimatesSortHeaders } from '../../components/estimates-sort-headers';
 import { JobsShortcutsChip } from '../../components/jobs-shortcuts-chip';
 import { EstimatesSearchInput } from '../../components/estimates-search-input';
+import { EstimatesKeyboardNav } from '../../components/estimates-keyboard-nav';
 import { CopyMoneyButton } from '../../components/copy-money-button';
 import type { ImportedEstimate } from '@yge/shared';
 
@@ -54,9 +55,13 @@ export default async function ImportedEstimatesPage() {
         ) : (
           <div>
             <div id="imported-list-print-controls" className="print:hidden">
+              <div className="mb-2 flex items-center justify-end">
+                <JobsShortcutsChip />
+              </div>
               <EstimatesSearchInput targetId="imported-list-table" totalCount={estimates.length} />
               <EstimatesSortHeaders targetId="imported-list-table" />
             </div>
+            <EstimatesKeyboardNav targetId="imported-list-table" />
             <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
             <table id="imported-list-table" className="w-full text-sm">
               <thead className="bg-gray-50 text-left text-[11px] uppercase tracking-wide text-gray-500">
