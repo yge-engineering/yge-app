@@ -1,12 +1,6 @@
-// File-based store for AP invoices.
-//
-// Every mutation here records an audit event via recordAudit() —
-// CLAUDE.md mandates 'every mutation is audit-logged'. The audit
-// write is fail-soft (a disk error in the audit store does not
-// roll back the underlying mutation; see audit-store.ts).
+// Postgres-backed store for AP invoices.
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { prisma } from '@yge/db';
 import {
   ApInvoiceSchema,
   newApInvoiceId,
@@ -17,49 +11,16 @@ import {
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
 
-function dataDir(): string {
-  return (
-    process.env.AP_INVOICES_DATA_DIR ??
-    path.resolve(process.cwd(), 'data', 'ap-invoices')
-  );
-}
-function indexPath(): string {
-  return path.join(dataDir(), 'index.json');
-}
-function rowPath(id: string): string {
-  return path.join(dataDir(), `${id}.json`);
-}
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
 
-async function ensureDir() {
-  await fs.mkdir(dataDir(), { recursive: true });
-}
-
-async function readIndex(): Promise<ApInvoice[]> {
-  try {
-    const raw = await fs.readFile(indexPath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((entry: unknown) => {
-        const result = ApInvoiceSchema.safeParse(entry);
-        return result.success ? result.data : null;
-      })
-      .filter((i): i is ApInvoice => i !== null);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
-  }
-}
-
-async function writeIndex(entries: ApInvoice[]) {
-  await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
+function row2inv(row: { data: unknown }): ApInvoice {
+  return ApInvoiceSchema.parse(row.data);
 }
 
 export async function createApInvoice(
   input: ApInvoiceCreate,
   ctx?: AuditContext,
 ): Promise<ApInvoice> {
-  await ensureDir();
   const now = new Date().toISOString();
   const id = newApInvoiceId();
   const i: ApInvoice = {
@@ -73,10 +34,18 @@ export async function createApInvoice(
     ...input,
   };
   ApInvoiceSchema.parse(i);
-  await fs.writeFile(rowPath(id), JSON.stringify(i, null, 2), 'utf8');
-  const index = await readIndex();
-  index.unshift(i);
-  await writeIndex(index);
+  await prisma.apInvoice.create({
+    data: {
+      id,
+      companyId: DEFAULT_COMPANY_ID,
+      // ApInvoice schema uses vendorName (string) not a vendorId; the
+      // Prisma row's vendorId column is null until a Vendor-master FK
+      // is wired up.
+      vendorId: null,
+      status: i.status,
+      data: i as unknown as object,
+    },
+  });
   await recordAudit({
     action: 'create',
     entityType: 'ApInvoice',
@@ -91,32 +60,32 @@ export async function listApInvoices(filter?: {
   status?: string;
   jobId?: string;
 }): Promise<ApInvoice[]> {
-  let all = await readIndex();
-  if (filter?.status) all = all.filter((i) => i.status === filter.status);
+  const rows = await prisma.apInvoice.findMany({
+    where: {
+      companyId: DEFAULT_COMPANY_ID,
+      deletedAt: null,
+      ...(filter?.status ? { status: filter.status } : {}),
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  let all = rows.map(row2inv);
   if (filter?.jobId) all = all.filter((i) => i.jobId === filter.jobId);
-  // Newest invoice date first.
   all.sort((a, b) => b.invoiceDate.localeCompare(a.invoiceDate));
   return all;
 }
 
 export async function getApInvoice(id: string): Promise<ApInvoice | null> {
   if (!/^ap-[a-z0-9]{8}$/.test(id)) return null;
-  try {
-    const raw = await fs.readFile(rowPath(id), 'utf8');
-    return ApInvoiceSchema.parse(JSON.parse(raw));
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    throw err;
-  }
+  const row = await prisma.apInvoice.findFirst({
+    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+  });
+  return row ? row2inv(row) : null;
 }
 
 export async function updateApInvoice(
   id: string,
   patch: ApInvoicePatch,
   ctx?: AuditContext,
-  /** Optional override of the audit action when the caller knows
-   *  this is a domain-meaningful state change (approve / pay /
-   *  reject) rather than a generic field edit. */
   auditAction: 'update' | 'approve' | 'pay' | 'reject' = 'update',
 ): Promise<ApInvoice | null> {
   const existing = await getApInvoice(id);
@@ -129,15 +98,13 @@ export async function updateApInvoice(
     updatedAt: new Date().toISOString(),
   };
   ApInvoiceSchema.parse(updated);
-  await fs.writeFile(rowPath(id), JSON.stringify(updated, null, 2), 'utf8');
-  const index = await readIndex();
-  const idx = index.findIndex((i) => i.id === id);
-  if (idx >= 0) {
-    index[idx] = updated;
-  } else {
-    index.unshift(updated);
-  }
-  await writeIndex(index);
+  await prisma.apInvoice.update({
+    where: { id },
+    data: {
+      status: updated.status,
+      data: updated as unknown as object,
+    },
+  });
   await recordAudit({
     action: auditAction,
     entityType: 'ApInvoice',
@@ -149,7 +116,6 @@ export async function updateApInvoice(
   return updated;
 }
 
-/** Move from DRAFT/PENDING to APPROVED. */
 export async function approveApInvoice(
   id: string,
   approvedByEmployeeId?: string,
@@ -167,8 +133,6 @@ export async function approveApInvoice(
   );
 }
 
-/** Apply a payment. Server-side state machine: paidCents adds the
- *  amount; status flips to PAID when paidCents >= totalCents. */
 export async function payApInvoice(
   id: string,
   paidAt: string,
@@ -195,7 +159,6 @@ export async function payApInvoice(
   );
 }
 
-/** Reject an invoice with a reason. Terminal state. */
 export async function rejectApInvoice(
   id: string,
   reason: string,

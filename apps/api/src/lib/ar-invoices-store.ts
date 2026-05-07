@@ -1,10 +1,6 @@
-// File-based store for AR invoices.
-//
-// Every mutation here records an audit event via recordAudit() —
-// CLAUDE.md mandates 'every mutation is audit-logged'.
+// Postgres-backed store for AR invoices.
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { prisma } from '@yge/db';
 import {
   ArInvoiceSchema,
   newArInvoiceId,
@@ -14,49 +10,16 @@ import {
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
 
-function dataDir(): string {
-  return (
-    process.env.AR_INVOICES_DATA_DIR ??
-    path.resolve(process.cwd(), 'data', 'ar-invoices')
-  );
-}
-function indexPath(): string {
-  return path.join(dataDir(), 'index.json');
-}
-function rowPath(id: string): string {
-  return path.join(dataDir(), `${id}.json`);
-}
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
 
-async function ensureDir() {
-  await fs.mkdir(dataDir(), { recursive: true });
-}
-
-async function readIndex(): Promise<ArInvoice[]> {
-  try {
-    const raw = await fs.readFile(indexPath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((entry: unknown) => {
-        const result = ArInvoiceSchema.safeParse(entry);
-        return result.success ? result.data : null;
-      })
-      .filter((i): i is ArInvoice => i !== null);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
-  }
-}
-
-async function writeIndex(entries: ArInvoice[]) {
-  await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
+function row2inv(row: { data: unknown }): ArInvoice {
+  return ArInvoiceSchema.parse(row.data);
 }
 
 export async function createArInvoice(
   input: ArInvoiceCreate,
   ctx?: AuditContext,
 ): Promise<ArInvoice> {
-  await ensureDir();
   const now = new Date().toISOString();
   const id = newArInvoiceId();
   const i: ArInvoice = {
@@ -72,10 +35,15 @@ export async function createArInvoice(
     ...input,
   };
   ArInvoiceSchema.parse(i);
-  await fs.writeFile(rowPath(id), JSON.stringify(i, null, 2), 'utf8');
-  const index = await readIndex();
-  index.unshift(i);
-  await writeIndex(index);
+  await prisma.arInvoice.create({
+    data: {
+      id,
+      companyId: DEFAULT_COMPANY_ID,
+      jobId: i.jobId ?? null,
+      status: i.status,
+      data: i as unknown as object,
+    },
+  });
   await recordAudit({
     action: 'create',
     entityType: 'ArInvoice',
@@ -90,30 +58,32 @@ export async function listArInvoices(filter?: {
   status?: string;
   jobId?: string;
 }): Promise<ArInvoice[]> {
-  let all = await readIndex();
-  if (filter?.status) all = all.filter((i) => i.status === filter.status);
-  if (filter?.jobId) all = all.filter((i) => i.jobId === filter.jobId);
+  const rows = await prisma.arInvoice.findMany({
+    where: {
+      companyId: DEFAULT_COMPANY_ID,
+      deletedAt: null,
+      ...(filter?.status ? { status: filter.status } : {}),
+      ...(filter?.jobId ? { jobId: filter.jobId } : {}),
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  const all = rows.map(row2inv);
   all.sort((a, b) => b.invoiceDate.localeCompare(a.invoiceDate));
   return all;
 }
 
 export async function getArInvoice(id: string): Promise<ArInvoice | null> {
   if (!/^ar-[a-z0-9]{8}$/.test(id)) return null;
-  try {
-    const raw = await fs.readFile(rowPath(id), 'utf8');
-    return ArInvoiceSchema.parse(JSON.parse(raw));
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    throw err;
-  }
+  const row = await prisma.arInvoice.findFirst({
+    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+  });
+  return row ? row2inv(row) : null;
 }
 
 export async function updateArInvoice(
   id: string,
   patch: ArInvoicePatch,
   ctx?: AuditContext,
-  /** Override when the patch represents a domain action (approve /
-   *  void / pay) rather than a generic field edit. */
   auditAction: 'update' | 'approve' | 'void' | 'pay' = 'update',
 ): Promise<ArInvoice | null> {
   const existing = await getArInvoice(id);
@@ -126,15 +96,14 @@ export async function updateArInvoice(
     updatedAt: new Date().toISOString(),
   };
   ArInvoiceSchema.parse(updated);
-  await fs.writeFile(rowPath(id), JSON.stringify(updated, null, 2), 'utf8');
-  const index = await readIndex();
-  const idx = index.findIndex((i) => i.id === id);
-  if (idx >= 0) {
-    index[idx] = updated;
-  } else {
-    index.unshift(updated);
-  }
-  await writeIndex(index);
+  await prisma.arInvoice.update({
+    where: { id },
+    data: {
+      jobId: updated.jobId ?? null,
+      status: updated.status,
+      data: updated as unknown as object,
+    },
+  });
   await recordAudit({
     action: auditAction,
     entityType: 'ArInvoice',
