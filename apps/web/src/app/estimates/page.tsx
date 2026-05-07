@@ -327,7 +327,10 @@ export default async function EstimatesPage() {
                 {(['pursuing', 'submitted', 'awarded', 'lost'] as const).map((k) =>
                   statusCounts[k] > 0 ? (
                     <span key={k}>
-                      {' '}· {statusCounts[k]} {k}
+                      {' '}·{' '}
+                      <Link href={`/estimates?status=${k}`} className="text-yge-blue-500 hover:underline">
+                        {statusCounts[k]} {k}
+                      </Link>
                     </span>
                   ) : null,
                 )}
