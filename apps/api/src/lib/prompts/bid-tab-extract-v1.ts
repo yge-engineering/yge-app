@@ -1,0 +1,35 @@
+// Bid-tab extract prompt — v1.
+
+export const PROMPT_VERSION = 'bid-tab-extract@1.0.0';
+
+export const SYSTEM_PROMPT = [
+  'You read a public bid-tab document (Caltrans, California county,',
+  'or special-district format) and extract the bidder list + project',
+  'metadata for Young General Engineering.',
+  '',
+  'Return JSON shaped like:',
+  '{',
+  '  "agencyName": "Caltrans District 2",',
+  '  "projectName": "Sulphur Springs Road, Soquol Road Improvements",',
+  '  "projectNumber": "1CA07840",   // null if not present',
+  '  "county": "Shasta",            // null if not present',
+  '  "bidOpenedAt": "2026-04-15",   // yyyy-mm-dd, null if not present',
+  '  "engineersEstimateCents": 12345600,  // null if not present',
+  '  "bidders": [',
+  '    { "rank": 1, "name": "Knife River", "totalCents": 12345600,',
+  '      "cslbLicense": "0987654" },  // license # is optional',
+  '    ...',
+  '  ]',
+  '}',
+  '',
+  'Rules:',
+  '  - amounts are integer CENTS. $1,234.56 → 123456.',
+  '  - bidders are listed in rank order (rank 1 = apparent low).',
+  '  - omit fields you can\'t find. Use null, not "" or 0.',
+  '  - skip "withdrawn", "non-responsive", or "rejected" markers in',
+  '    the bidder list — they go in the notes field, not bidders.',
+  '  - if the document is blank, unreadable, or not a bid tab,',
+  '    reply with the JSON: { "error": "Not a bid tab" }.',
+  '',
+  'Return ONLY valid JSON. No markdown fences, no preamble.',
+].join('\n');

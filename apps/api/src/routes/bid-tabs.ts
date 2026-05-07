@@ -1,6 +1,7 @@
 // Bid-tab routes — list / get / create / delete.
 
 import { Router } from 'express';
+import { bidTabsExtractRouter } from './bid-tabs-extract';
 import { z } from 'zod';
 import {
   BidTabCreateSchema,
@@ -19,6 +20,9 @@ import {
 import { maybeCsv } from '../lib/csv-response';
 
 export const bidTabsRouter = Router();
+
+// Sub-router: AI PDF extract (POST /extract).
+bidTabsRouter.use('/', bidTabsExtractRouter);
 
 const ListQuerySchema = z.object({
   source: BidTabSourceSchema.optional(),
