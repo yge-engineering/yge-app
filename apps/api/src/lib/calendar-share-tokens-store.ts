@@ -1,94 +1,78 @@
-// Calendar share tokens — per-user opaque tokens that authorize a
-// read-only iCal feed.
-//
-// Plain English: when Ryan or Brook clicks "Connect to Outlook", we
-// hand them a long-random URL like
-//   https://yge-api.onrender.com/api/calendar-share/feed/<token>.ics
-// They paste that URL into their calendar app's "Add subscription"
-// box and the app polls it on its own schedule. No login needed —
-// the token IS the auth. Tokens are bound to the user's email so the
-// feed knows whose events to include.
-//
-// Stored at data/calendar-share-tokens.json. Tokens never expire
-// today; revoke + reissue is a future feature.
+// Postgres-backed store for calendar share tokens.
+// One token per email; rotating issues a new token + invalidates the old.
 
-import { promises as fs } from 'fs';
-import { randomBytes } from 'crypto';
-import path from 'path';
+import { randomBytes } from 'node:crypto';
+import { prisma } from '@yge/db';
+
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
 
 interface StoredToken {
-  /** Lowercase email — owner of the feed. */
   email: string;
-  /** 48-char hex token (24 random bytes). Opaque. */
   token: string;
-  /** ISO datetime when issued. */
   issuedAt: string;
 }
 
-interface FileShape {
-  tokens: StoredToken[];
+function rowId(token: string): string {
+  return `cst-${token.slice(0, 12)}`;
 }
 
-function dataDir(): string {
-  return process.env.CALENDAR_SHARE_DATA_DIR ?? path.resolve(process.cwd(), 'data');
-}
-function filePath(): string {
-  return path.join(dataDir(), 'calendar-share-tokens.json');
-}
-
-async function readAll(): Promise<FileShape> {
-  try {
-    const raw = await fs.readFile(filePath(), 'utf-8');
-    return JSON.parse(raw) as FileShape;
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return { tokens: [] };
-    throw err;
-  }
-}
-async function writeAll(data: FileShape): Promise<void> {
-  await fs.mkdir(dataDir(), { recursive: true });
-  await fs.writeFile(filePath(), JSON.stringify(data, null, 2));
-}
-
-/** Returns the existing token for this email, creating one if there
- *  isn't one yet. The token is stable until the user explicitly
- *  rotates it via revoke (future). */
 export async function getOrCreateShareToken(email: string): Promise<string> {
   const norm = email.toLowerCase();
-  const file = await readAll();
-  const existing = file.tokens.find((t) => t.email === norm);
-  if (existing) return existing.token;
-  const token = randomBytes(24).toString('hex');
-  file.tokens.push({
-    email: norm,
-    token,
-    issuedAt: new Date().toISOString(),
+  // Look for an existing un-expired token by scanning the JSON data
+  // column. List is small (one per portal user) so a full scan is fine.
+  const rows = await prisma.calendarShareToken.findMany({
+    where: { companyId: DEFAULT_COMPANY_ID, expiresAt: { gt: new Date() } },
   });
-  await writeAll(file);
-  return token;
-}
-
-/** Reverse lookup: given a token, return the email it belongs to. */
-export async function emailForShareToken(token: string): Promise<string | null> {
-  const file = await readAll();
-  const found = file.tokens.find((t) => t.token === token);
-  return found ? found.email : null;
-}
-
-/** Rotate the token for an email — invalidates any subscriptions that
- *  used the old URL. Returns the new token. */
-export async function rotateShareToken(email: string): Promise<string> {
-  const norm = email.toLowerCase();
-  const file = await readAll();
-  const idx = file.tokens.findIndex((t) => t.email === norm);
+  for (const r of rows) {
+    const data = r.data as unknown as StoredToken;
+    if (data.email === norm) return data.token;
+  }
   const token = randomBytes(24).toString('hex');
-  const row: StoredToken = {
+  const stored: StoredToken = {
     email: norm,
     token,
     issuedAt: new Date().toISOString(),
   };
-  if (idx >= 0) file.tokens[idx] = row;
-  else file.tokens.push(row);
-  await writeAll(file);
+  // Tokens never really expire in Phase 1; we set expiresAt 100 years
+  // out so the DB scan above filters out genuinely-rotated rows.
+  const farFuture = new Date(Date.now() + 100 * 365 * 24 * 60 * 60 * 1000);
+  await prisma.calendarShareToken.create({
+    data: {
+      id: rowId(token),
+      companyId: DEFAULT_COMPANY_ID,
+      expiresAt: farFuture,
+      data: stored as unknown as object,
+    },
+  });
   return token;
+}
+
+export async function emailForShareToken(token: string): Promise<string | null> {
+  const rows = await prisma.calendarShareToken.findMany({
+    where: { companyId: DEFAULT_COMPANY_ID, expiresAt: { gt: new Date() } },
+  });
+  for (const r of rows) {
+    const data = r.data as unknown as StoredToken;
+    if (data.token === token) return data.email;
+  }
+  return null;
+}
+
+export async function rotateShareToken(email: string): Promise<string> {
+  const norm = email.toLowerCase();
+  // Expire any active tokens for this email.
+  const rows = await prisma.calendarShareToken.findMany({
+    where: { companyId: DEFAULT_COMPANY_ID, expiresAt: { gt: new Date() } },
+  });
+  for (const r of rows) {
+    const data = r.data as unknown as StoredToken;
+    if (data.email === norm) {
+      await prisma.calendarShareToken.update({
+        where: { id: r.id },
+        data: { expiresAt: new Date() },
+      });
+    }
+  }
+  // Issue a fresh one.
+  return getOrCreateShareToken(email);
 }

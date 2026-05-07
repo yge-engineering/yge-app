@@ -1,69 +1,31 @@
-// Microsoft OAuth token store — per-user access + refresh tokens.
-//
-// Plain English: when Ryan or Brook clicks "Connect Microsoft 365"
-// on /files, the OAuth flow completes at /api/microsoft/callback and
-// we drop their access + refresh tokens here. The API uses these to
-// hit Microsoft Graph (SharePoint, OneDrive, Mail) on their behalf.
-// Refresh token survives the access-token expiry so they don't have
-// to re-auth every hour.
-//
-// Storage: data/microsoft-tokens.json on the API's data dir.
+// Postgres-backed store for Microsoft OAuth tokens.
 
-import { promises as fs } from 'fs';
-import path from 'path';
+import { prisma } from '@yge/db';
 
 interface StoredToken {
-  /** Lowercase email — owner of the token. */
   email: string;
-  /** Microsoft Graph access token. Bearer in Authorization header. */
   accessToken: string;
-  /** Microsoft Graph refresh token. Used to get a new access_token
-   *  when the current one expires (typically every 60-90 minutes). */
   refreshToken: string;
-  /** ISO datetime when the access_token expires. */
   expiresAt: string;
-  /** Scope string the user consented to (space-separated). */
   scope: string;
-  /** ISO datetime first issued. */
   issuedAt: string;
 }
 
-interface FileShape {
-  tokens: StoredToken[];
-}
-
-function dataDir(): string {
-  return process.env.MICROSOFT_TOKENS_DATA_DIR ?? path.resolve(process.cwd(), 'data');
-}
-function filePath(): string {
-  return path.join(dataDir(), 'microsoft-tokens.json');
-}
-
-async function readAll(): Promise<FileShape> {
-  try {
-    const raw = await fs.readFile(filePath(), 'utf-8');
-    return JSON.parse(raw) as FileShape;
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return { tokens: [] };
-    throw err;
-  }
-}
-async function writeAll(data: FileShape): Promise<void> {
-  await fs.mkdir(dataDir(), { recursive: true });
-  await fs.writeFile(filePath(), JSON.stringify(data, null, 2));
+function row2tok(row: { data: unknown }): StoredToken {
+  return row.data as unknown as StoredToken;
 }
 
 export async function getMicrosoftToken(email: string): Promise<StoredToken | null> {
   const norm = email.toLowerCase();
-  const file = await readAll();
-  return file.tokens.find((t) => t.email === norm) ?? null;
+  const row = await prisma.microsoftToken.findUnique({ where: { email: norm } });
+  return row ? row2tok(row) : null;
 }
 
-/** All stored Microsoft tokens. Used by the AP-inbox scheduler to
- *  iterate over every connected user. */
 export async function listMicrosoftTokens(): Promise<StoredToken[]> {
-  const file = await readAll();
-  return [...file.tokens];
+  const rows = await prisma.microsoftToken.findMany({
+    orderBy: { createdAt: 'desc' },
+  });
+  return rows.map(row2tok);
 }
 
 export async function saveMicrosoftToken(
@@ -71,32 +33,33 @@ export async function saveMicrosoftToken(
   data: Omit<StoredToken, 'email' | 'issuedAt'> & { issuedAt?: string },
 ): Promise<StoredToken> {
   const norm = email.toLowerCase();
-  const file = await readAll();
-  const existing = file.tokens.find((t) => t.email === norm);
+  const existing = await prisma.microsoftToken.findUnique({ where: { email: norm } });
+  const issuedAt = data.issuedAt ?? (existing ? row2tok(existing).issuedAt : new Date().toISOString());
   const next: StoredToken = {
     email: norm,
     accessToken: data.accessToken,
     refreshToken: data.refreshToken,
     expiresAt: data.expiresAt,
     scope: data.scope,
-    issuedAt: data.issuedAt ?? existing?.issuedAt ?? new Date().toISOString(),
+    issuedAt,
   };
-  if (existing) {
-    Object.assign(existing, next);
-  } else {
-    file.tokens.push(next);
-  }
-  await writeAll(file);
+  await prisma.microsoftToken.upsert({
+    where: { email: norm },
+    create: {
+      id: `mst-${norm.replace(/[^a-z0-9]/g, '').slice(0, 24)}`,
+      email: norm,
+      data: next as unknown as object,
+    },
+    update: { data: next as unknown as object },
+  });
   return next;
 }
 
 export async function deleteMicrosoftToken(email: string): Promise<boolean> {
   const norm = email.toLowerCase();
-  const file = await readAll();
-  const before = file.tokens.length;
-  file.tokens = file.tokens.filter((t) => t.email !== norm);
-  if (file.tokens.length === before) return false;
-  await writeAll(file);
+  const row = await prisma.microsoftToken.findUnique({ where: { email: norm } });
+  if (!row) return false;
+  await prisma.microsoftToken.delete({ where: { email: norm } });
   return true;
 }
 
