@@ -157,6 +157,15 @@ export function DailyReportEditor({ initial, employees, jobs, apiBaseUrl }: Prop
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs">
+          <a
+            href={`/photos/new?dailyReportId=${encodeURIComponent(report.id)}&jobId=${encodeURIComponent(report.jobId)}&category=PROGRESS`}
+            target="_blank"
+            rel="noreferrer"
+            className="rounded border border-yge-blue-300 bg-white px-2 py-1 font-semibold text-yge-blue-700 hover:bg-yge-blue-50"
+            title="Open the photo editor with this daily report linked"
+          >
+            📷 Add photo
+          </a>
           {report.submitted ? (
             <span className="rounded bg-green-100 px-2 py-1 font-semibold uppercase tracking-wide text-green-800">
               {t('dre.submitted')}

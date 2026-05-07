@@ -3,11 +3,50 @@
 import Link from 'next/link';
 
 import { AppShell } from '../../../components/app-shell';
-import { PhotoEditor } from '../../../components/photo-editor';
+import {
+  PhotoEditor,
+  type PhotoEditorPrefill,
+} from '../../../components/photo-editor';
 import { getTranslator } from '../../../lib/locale';
 
-export default function NewPhotoPage() {
+const PREFILL_KEYS = [
+  'jobId',
+  'dailyReportId',
+  'rfiId',
+  'changeOrderId',
+  'swpppInspectionId',
+  'incidentId',
+  'punchItemId',
+] as const;
+
+function buildPrefill(
+  searchParams: Record<string, string | string[] | undefined>,
+): PhotoEditorPrefill | undefined {
+  const out: PhotoEditorPrefill = {};
+  let any = false;
+  for (const k of PREFILL_KEYS) {
+    const v = searchParams[k];
+    if (typeof v === 'string' && v.length > 0) {
+      out[k] = v;
+      any = true;
+    }
+  }
+  const cat = searchParams.category;
+  if (typeof cat === 'string' && cat.length > 0) {
+    // Cast — invalid values fall through harmlessly to the form.
+    out.category = cat as PhotoEditorPrefill['category'];
+    any = true;
+  }
+  return any ? out : undefined;
+}
+
+export default function NewPhotoPage({
+  searchParams,
+}: {
+  searchParams: Record<string, string | string[] | undefined>;
+}) {
   const t = getTranslator();
+  const prefill = buildPrefill(searchParams);
   return (
     <AppShell>
     <main className="mx-auto max-w-3xl p-8">
@@ -21,7 +60,7 @@ export default function NewPhotoPage() {
         {t('newPhotoPg.subtitle')}
       </p>
       <div className="mt-6">
-        <PhotoEditor mode="create" />
+        <PhotoEditor mode="create" prefill={prefill} />
       </div>
     </main>
     </AppShell>

@@ -73,16 +73,43 @@ function apiBaseUrl(): string {
   return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 }
 
+export interface PhotoEditorPrefill {
+  jobId?: string;
+  dailyReportId?: string;
+  rfiId?: string;
+  changeOrderId?: string;
+  swpppInspectionId?: string;
+  incidentId?: string;
+  punchItemId?: string;
+  category?: import('@yge/shared').PhotoCategory;
+}
+
 export function PhotoEditor({
   mode,
   photo,
+  prefill,
 }: {
   mode: 'create' | 'edit';
   photo?: Photo;
+  prefill?: PhotoEditorPrefill;
 }) {
   const router = useRouter();
   const t = useTranslator();
-  const [form, setForm] = useState<FormState>(defaults(photo));
+  const [form, setForm] = useState<FormState>(() => {
+    const base = defaults(photo);
+    if (!prefill) return base;
+    return {
+      ...base,
+      ...(prefill.jobId ? { jobId: prefill.jobId } : {}),
+      ...(prefill.dailyReportId ? { dailyReportId: prefill.dailyReportId } : {}),
+      ...(prefill.rfiId ? { rfiId: prefill.rfiId } : {}),
+      ...(prefill.changeOrderId ? { changeOrderId: prefill.changeOrderId } : {}),
+      ...(prefill.swpppInspectionId ? { swpppInspectionId: prefill.swpppInspectionId } : {}),
+      ...(prefill.incidentId ? { incidentId: prefill.incidentId } : {}),
+      ...(prefill.punchItemId ? { punchItemId: prefill.punchItemId } : {}),
+      ...(prefill.category ? { category: prefill.category } : {}),
+    };
+  });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
