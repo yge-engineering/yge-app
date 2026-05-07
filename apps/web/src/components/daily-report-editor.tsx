@@ -24,6 +24,7 @@ import {
 } from '@yge/shared';
 
 import { NarrativeExpandButton } from './narrative-expand-button';
+import { DailyReportPhotoPanel } from './daily-report-photo-panel';
 interface Props {
   initial: DailyReport;
   employees: Employee[];
@@ -183,6 +184,13 @@ export function DailyReportEditor({ initial, employees, jobs, apiBaseUrl }: Prop
           {saving && <span className="text-gray-500">{t('dre.saving')}</span>}
         </div>
       </header>
+
+      <DailyReportPhotoPanel
+        reportId={report.id}
+        jobId={report.jobId}
+        reportDate={report.date}
+        photographerName={foreman ? fullName(foreman) : ''}
+      />
 
       {error && (
         <div className="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-800">
