@@ -8,19 +8,6 @@
       "main": true
     }
   },
-  "env": {
-    "NEXT_PUBLIC_API_URL": "@public_api_url",
-    "NEXT_PUBLIC_SUPABASE_URL": "@public_supabase_url",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@public_supabase_anon_key",
-    "API_URL": "@api_url",
-    "DATABASE_URL": "@database_url",
-    "NEXTAUTH_SECRET": "@nextauth_secret",
-    "ANTHROPIC_API_KEY": "@anthropic_api_key",
-    "MICROSOFT_CLIENT_ID": "@microsoft_client_id",
-    "MICROSOFT_CLIENT_SECRET": "@microsoft_client_secret",
-    "MICROSOFT_TENANT_ID": "@microsoft_tenant_id",
-    "MICROSOFT_REDIRECT_URI": "@microsoft_redirect_uri"
-  },
   "headers": [
     {
       "source": "/(.*)",
