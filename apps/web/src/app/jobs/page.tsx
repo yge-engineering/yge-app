@@ -286,13 +286,22 @@ export default async function JobsPage({ searchParams }: PageProps) {
           <>
             <span className="font-semibold text-gray-900">{filteredJobs.length}</span>
             {' '}job{filteredJobs.length === 1 ? '' : 's'}
-            {(['PURSUING', 'BID_SUBMITTED', 'AWARDED', 'LOST'] as const).map((k) =>
-              (jobStatusCounts[k] ?? 0) > 0 ? (
+            {(['PURSUING', 'BID_SUBMITTED', 'AWARDED', 'LOST'] as const).map((k) => {
+              const presetMap: Record<string, string> = {
+                PURSUING: 'pursuing',
+                BID_SUBMITTED: 'submitted',
+                AWARDED: 'awarded',
+                LOST: 'lost',
+              };
+              return (jobStatusCounts[k] ?? 0) > 0 ? (
                 <span key={k}>
-                  {' '}· {jobStatusCounts[k]} {k.replace(/_/g, ' ').toLowerCase()}
+                  {' '}·{' '}
+                  <Link href={`/jobs?status=${presetMap[k]}`} className="text-yge-blue-500 hover:underline">
+                    {jobStatusCounts[k]} {k.replace(/_/g, ' ').toLowerCase()}
+                  </Link>
                 </span>
-              ) : null,
-            )}
+              ) : null;
+            })}
           </>
         )}
       </p>
