@@ -77,7 +77,7 @@ export default async function EstimateDetailPage({
   return (
     <AppShell>
     <main className="mx-auto max-w-6xl p-8">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-2 print:hidden">
         <Link href="/estimates" className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50">
           {t('estPg.back')}
         </Link>
@@ -194,7 +194,7 @@ export default async function EstimateDetailPage({
         })()}
       </div>
 
-      <div className="mb-4 flex flex-wrap gap-2 text-xs">
+      <div className="mb-4 flex flex-wrap gap-2 text-xs print:hidden">
         <Link
           href={`/estimates/${data.estimate.id}/coach`}
           className="rounded border border-amber-500 bg-amber-50 px-3 py-1 font-medium text-amber-800 hover:bg-amber-100"
