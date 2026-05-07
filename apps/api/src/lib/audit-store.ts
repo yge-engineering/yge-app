@@ -1,23 +1,13 @@
-// File-based audit-event store + recordAudit helper.
+// Postgres-backed audit-event store + recordAudit helper.
 //
 // Plain English: every meaningful mutation across the API drops a
-// row here. CLAUDE.md mandates 'every mutation is audit-logged';
-// this file is the persistence + the helper stores call.
+// row here. CLAUDE.md mandates 'every mutation is audit-logged'.
 //
-// Phase 1 implementation matches the rest of the API's storage
-// pattern — JSON files on disk under data/audit-events/ — so
-// dev-mode runs without Postgres and the audit trail still
-// survives. When Prisma persistence lands, the recordAudit helper
-// gets a parallel write path; the on-disk rows can be replayed in.
-//
-// Storage layout:
-//   data/audit-events/index.json    array of all events, newest first
-//   data/audit-events/<id>.json     one row per event
-//
-// Each event record satisfies AuditEventSchema from @yge/shared.
+// recordAudit() is fail-soft on purpose — a Postgres write error
+// logs to stderr and returns null rather than letting the audit
+// failure propagate and break the caller's mutation.
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { prisma, Prisma } from '@yge/db';
 import {
   AuditEventSchema,
   applyAuditFilter,
@@ -28,57 +18,8 @@ import {
   type AuditFilter,
 } from '@yge/shared';
 
-function dataDir(): string {
-  return (
-    process.env.AUDIT_EVENTS_DATA_DIR ??
-    path.resolve(process.cwd(), 'data', 'audit-events')
-  );
-}
-function indexPath(): string {
-  return path.join(dataDir(), 'index.json');
-}
-function rowPath(id: string): string {
-  return path.join(dataDir(), `${id}.json`);
-}
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
 
-async function ensureDir() {
-  await fs.mkdir(dataDir(), { recursive: true });
-}
-
-async function readIndex(): Promise<AuditEvent[]> {
-  try {
-    const raw = await fs.readFile(indexPath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((entry: unknown) => {
-        const result = AuditEventSchema.safeParse(entry);
-        return result.success ? result.data : null;
-      })
-      .filter((e): e is AuditEvent => e !== null);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
-  }
-}
-
-async function writeIndex(entries: AuditEvent[]) {
-  await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
-}
-
-/**
- * Default tenant scope while the multi-tenant column is still
- * single-valued in dev. Override per call when the API edge has a
- * real session.
- */
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'co-yge';
-
-/**
- * Context attached to a recorded event from the API edge — IP, UA,
- * actor — populated by middleware that has the request handle. The
- * `actorUserId` is null when the action is a system process
- * (scheduled DIR scrape, automated rate verification).
- */
 export interface AuditContext {
   companyId?: string;
   actorUserId?: string | null;
@@ -87,14 +28,38 @@ export interface AuditContext {
   reason?: string | null;
 }
 
-/**
- * Record one audit event. The store is fail-soft — a write error
- * here MUST NOT bubble up and break the underlying mutation. We
- * log to stderr instead and let the caller continue. The trade-off:
- * a single audit row can go missing if the disk is full; the
- * alternative (every mutation rolling back when audit-write fails)
- * is the worse failure mode.
- */
+function row2event(row: {
+  id: string;
+  companyId: string;
+  actorUserId: string | null;
+  action: string;
+  entityType: string;
+  entityId: string;
+  before: unknown;
+  after: unknown;
+  ipAddress: string | null;
+  userAgent: string | null;
+  reason: string | null;
+  createdAt: Date;
+}): AuditEvent | null {
+  const candidate = {
+    id: row.id,
+    createdAt: row.createdAt.toISOString(),
+    companyId: row.companyId,
+    actorUserId: row.actorUserId,
+    action: row.action,
+    entityType: row.entityType,
+    entityId: row.entityId,
+    before: row.before ?? null,
+    after: row.after ?? null,
+    ipAddress: row.ipAddress,
+    userAgent: row.userAgent,
+    reason: row.reason,
+  };
+  const r = AuditEventSchema.safeParse(candidate);
+  return r.success ? r.data : null;
+}
+
 export async function recordAudit(args: {
   action: AuditAction;
   entityType: AuditEntityType;
@@ -121,18 +86,26 @@ export async function recordAudit(args: {
   try {
     AuditEventSchema.parse(e);
   } catch (err) {
-    // The schema rejected the event itself — log and bail rather
-    // than emit a malformed row.
     // eslint-disable-next-line no-console
     console.error('[audit] dropping malformed event:', err);
     return null;
   }
   try {
-    await ensureDir();
-    await fs.writeFile(rowPath(id), JSON.stringify(e, null, 2), 'utf8');
-    const index = await readIndex();
-    index.unshift(e);
-    await writeIndex(index);
+    await prisma.auditEvent.create({
+      data: {
+        id: e.id,
+        companyId: e.companyId,
+        actorUserId: e.actorUserId ?? null,
+        action: e.action,
+        entityType: e.entityType,
+        entityId: e.entityId,
+        before: (e.before ?? Prisma.JsonNull) as Prisma.InputJsonValue,
+        after: (e.after ?? Prisma.JsonNull) as Prisma.InputJsonValue,
+        ipAddress: e.ipAddress ?? null,
+        userAgent: e.userAgent ?? null,
+        reason: e.reason ?? null,
+      },
+    });
     return e;
   } catch (err) {
     // eslint-disable-next-line no-console
@@ -142,17 +115,22 @@ export async function recordAudit(args: {
 }
 
 export async function listAuditEvents(filter: AuditFilter = {}): Promise<AuditEvent[]> {
-  const all = await readIndex();
+  const rows = await prisma.auditEvent.findMany({
+    where: { companyId: DEFAULT_COMPANY_ID },
+    orderBy: { createdAt: 'desc' },
+    take: 500,
+  });
+  const all = rows
+    .map(row2event)
+    .filter((e): e is AuditEvent => e !== null);
   return applyAuditFilter(all, filter);
 }
 
 export async function getAuditEvent(id: string): Promise<AuditEvent | null> {
   if (!/^audit-[a-z0-9]+$/.test(id)) return null;
-  try {
-    const raw = await fs.readFile(rowPath(id), 'utf8');
-    return AuditEventSchema.parse(JSON.parse(raw));
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    throw err;
-  }
+  const row = await prisma.auditEvent.findFirst({
+    where: { id, companyId: DEFAULT_COMPANY_ID },
+  });
+  if (!row) return null;
+  return row2event(row);
 }

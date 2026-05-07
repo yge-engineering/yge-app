@@ -562,6 +562,7 @@ model AuditEvent {
   after       Json?
   ipAddress   String?
   userAgent   String?
+  reason      String?
   createdAt   DateTime @default(now())
 
   company Company @relation(fields: [companyId], references: [id])
