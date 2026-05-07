@@ -42,7 +42,7 @@ export function Alert({
   return (
     <div
       role="status"
-      className={`rounded-md border ${t.border} ${t.bg} ${t.text} ${compact ? 'px-3 py-2 text-xs' : 'p-3 text-sm'} ${className ?? ''}`}
+      className={`rounded-md border print:break-inside-avoid ${t.border} ${t.bg} ${t.text} ${compact ? 'px-3 py-2 text-xs' : 'p-3 text-sm'} ${className ?? ''}`}
     >
       {title ? <div className="font-semibold">{title}</div> : null}
       <div className={title ? 'mt-1' : ''}>{children}</div>
