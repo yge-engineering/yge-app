@@ -6,6 +6,7 @@
 // hit submit when the day's complete.
 
 import { Router } from 'express';
+import { dailyReportsNarrativeRouter } from './daily-reports-narrative';
 import {
   DailyReportCreateSchema,
   DailyReportPatchSchema,
@@ -20,6 +21,9 @@ import {
 } from '../lib/daily-reports-store';
 
 export const dailyReportsRouter = Router();
+
+// Sub-router: AI narrative expansion (POST /narrative).
+dailyReportsRouter.use("/", dailyReportsNarrativeRouter);
 
 // GET /api/daily-reports — newest-first list, filterable by job + foreman.
 dailyReportsRouter.get('/', async (req, res, next) => {
