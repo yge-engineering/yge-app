@@ -1,14 +1,11 @@
-// File-based store for portal users (people who can sign in to YGE).
+// Postgres-backed store for portal users.
 //
-// Plain English: a JSON file on the persistent disk. Same pattern as
-// employees / ap-invoices. Seeded with Brook + Ryan on first read so
-// the app boots usefully even before anyone visits the admin page.
-//
-// Every mutation records an audit event — CLAUDE.md mandates "every
-// mutation is audit-logged".
+// JSON `data` column on the PortalUser model holds the full Zod
+// shape; companyId + email are unique together. Seeded with Brook +
+// Ryan on first read so the app boots usefully even before anyone
+// visits /admin/portal-users.
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { prisma } from '@yge/db';
 import {
   PortalUserSchema,
   newPortalUserId,
@@ -18,23 +15,19 @@ import {
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
 
-function dataDir(): string {
-  return (
-    process.env.PORTAL_USERS_DATA_DIR ??
-    path.resolve(process.cwd(), 'data', 'portal-users')
-  );
-}
-function indexPath(): string {
-  return path.join(dataDir(), 'index.json');
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'co-yge';
+
+function row2user(row: { data: unknown }): PortalUser {
+  return PortalUserSchema.parse(row.data);
 }
 
-async function ensureDir() {
-  await fs.mkdir(dataDir(), { recursive: true });
-}
-
-function seed(): PortalUser[] {
+async function ensureSeed(): Promise<void> {
+  const count = await prisma.portalUser.count({
+    where: { companyId: DEFAULT_COMPANY_ID },
+  });
+  if (count > 0) return;
   const now = new Date().toISOString();
-  return [
+  const seeds: PortalUser[] = [
     {
       id: 'pu-brook',
       createdAt: now,
@@ -58,60 +51,56 @@ function seed(): PortalUser[] {
       disabled: false,
     },
   ];
-}
-
-async function readAll(): Promise<PortalUser[]> {
-  try {
-    const raw = await fs.readFile(indexPath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((entry: unknown) => {
-        const result = PortalUserSchema.safeParse(entry);
-        return result.success ? result.data : null;
-      })
-      .filter((u): u is PortalUser => u !== null);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
-      // Seed on first read.
-      const seeded = seed();
-      await ensureDir();
-      await fs.writeFile(indexPath(), JSON.stringify(seeded, null, 2), 'utf8');
-      return seeded;
-    }
-    throw err;
+  for (const u of seeds) {
+    await prisma.portalUser.create({
+      data: {
+        id: u.id,
+        companyId: DEFAULT_COMPANY_ID,
+        email: u.email.toLowerCase(),
+        data: u as unknown as object,
+      },
+    });
   }
 }
 
-async function writeAll(entries: PortalUser[]) {
-  await ensureDir();
-  await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
-}
-
 export async function listPortalUsers(): Promise<PortalUser[]> {
-  return readAll();
+  await ensureSeed();
+  const rows = await prisma.portalUser.findMany({
+    where: { companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    orderBy: { createdAt: 'desc' },
+  });
+  return rows.map(row2user);
 }
 
 export async function getPortalUserByEmail(
   email: string,
 ): Promise<PortalUser | null> {
+  await ensureSeed();
   const norm = email.trim().toLowerCase();
-  const all = await readAll();
-  return all.find((u) => u.email.toLowerCase() === norm) ?? null;
+  const row = await prisma.portalUser.findFirst({
+    where: {
+      companyId: DEFAULT_COMPANY_ID,
+      email: norm,
+      deletedAt: null,
+    },
+  });
+  return row ? row2user(row) : null;
 }
 
 export async function getPortalUser(id: string): Promise<PortalUser | null> {
-  const all = await readAll();
-  return all.find((u) => u.id === id) ?? null;
+  const row = await prisma.portalUser.findFirst({
+    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+  });
+  return row ? row2user(row) : null;
 }
 
 export async function createPortalUser(
   input: PortalUserCreate,
   ctx?: AuditContext,
 ): Promise<PortalUser> {
-  const all = await readAll();
   const norm = input.email.trim().toLowerCase();
-  if (all.some((u) => u.email.toLowerCase() === norm)) {
+  const existing = await getPortalUserByEmail(norm);
+  if (existing) {
     throw new Error(`A portal user with email ${norm} already exists.`);
   }
   const now = new Date().toISOString();
@@ -128,8 +117,14 @@ export async function createPortalUser(
     disabled: input.disabled ?? false,
     notes: input.notes,
   });
-  all.unshift(next);
-  await writeAll(all);
+  await prisma.portalUser.create({
+    data: {
+      id: next.id,
+      companyId: DEFAULT_COMPANY_ID,
+      email: norm,
+      data: next as unknown as object,
+    },
+  });
   await recordAudit({
     action: 'create',
     entityType: 'PortalUser',
@@ -145,17 +140,14 @@ export async function updatePortalUser(
   patch: PortalUserPatch,
   ctx?: AuditContext,
 ): Promise<PortalUser | null> {
-  const all = await readAll();
-  const idx = all.findIndex((u) => u.id === id);
-  if (idx < 0) return null;
-  const before = all[idx]!;
+  const before = await getPortalUser(id);
+  if (!before) return null;
   const merged: PortalUser = {
     ...before,
     ...patch,
     id: before.id,
     createdAt: before.createdAt,
     updatedAt: new Date().toISOString(),
-    // Defensive: never let a PATCH null these out.
     assignedJobIds: patch.assignedJobIds ?? before.assignedJobIds,
     role: patch.role ?? before.role,
     name: patch.name ?? before.name,
@@ -164,8 +156,13 @@ export async function updatePortalUser(
     disabled: patch.disabled ?? before.disabled,
   };
   const validated = PortalUserSchema.parse(merged);
-  all[idx] = validated;
-  await writeAll(all);
+  await prisma.portalUser.update({
+    where: { id },
+    data: {
+      email: validated.email.toLowerCase(),
+      data: validated as unknown as object,
+    },
+  });
   await recordAudit({
     action: 'update',
     entityType: 'PortalUser',
@@ -181,13 +178,11 @@ export async function deletePortalUser(
   id: string,
   ctx?: AuditContext,
 ): Promise<boolean> {
-  const all = await readAll();
-  const idx = all.findIndex((u) => u.id === id);
-  if (idx < 0) return false;
-  const before = all[idx]!;
+  const before = await getPortalUser(id);
+  if (!before) return false;
   // Refuse to delete the last admin (PRESIDENT or VP) — would lock
-  // out portal management. The caller can still demote then delete
-  // but they have to do it explicitly.
+  // out portal management.
+  const all = await listPortalUsers();
   const owners = all.filter(
     (u) => u.role === 'PRESIDENT' || u.role === 'VP',
   );
@@ -197,8 +192,10 @@ export async function deletePortalUser(
   ) {
     throw new Error('Refusing to delete the last PRESIDENT/VP portal user.');
   }
-  all.splice(idx, 1);
-  await writeAll(all);
+  await prisma.portalUser.update({
+    where: { id },
+    data: { deletedAt: new Date() },
+  });
   await recordAudit({
     action: 'delete',
     entityType: 'PortalUser',
@@ -209,19 +206,20 @@ export async function deletePortalUser(
   return true;
 }
 
-/** Internal helper for the credentials endpoint to flip hasPassword
- *  + lastLoginAt when the user signs in. Not exposed via the public
- *  routes since users update their own state implicitly. */
+/** Flip hasPassword + lastLoginAt on sign-in. Not exposed via the
+ *  public routes since users update their own state implicitly. */
 export async function recordPortalUserLogin(email: string): Promise<void> {
-  const all = await readAll();
-  const idx = all.findIndex((u) => u.email.toLowerCase() === email.toLowerCase());
-  if (idx < 0) return;
+  const norm = email.trim().toLowerCase();
+  const before = await getPortalUserByEmail(norm);
+  if (!before) return;
   const next = {
-    ...all[idx]!,
+    ...before,
     hasPassword: true,
     lastLoginAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
-  all[idx] = next;
-  await writeAll(all);
+  await prisma.portalUser.update({
+    where: { id: before.id },
+    data: { data: next as unknown as object },
+  });
 }
