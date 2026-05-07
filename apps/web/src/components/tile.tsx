@@ -52,7 +52,7 @@ export function Tile({ label, value, sublabel, href, tone, warn, warnText }: Pro
   const effectiveTone: TileTone = tone ?? (warn ? 'danger' : 'neutral');
   const Inner = (
     <div
-      className={`rounded-md border p-4 transition ${TONE_BORDER[effectiveTone]} ${TONE_BG[effectiveTone]} ${href ? 'hover:border-blue-500 hover:shadow-sm' : ''}`}
+      className={`rounded-md border p-4 transition print:break-inside-avoid ${TONE_BORDER[effectiveTone]} ${TONE_BG[effectiveTone]} ${href ? 'hover:border-blue-500 hover:shadow-sm' : ''}`}
     >
       <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">{label}</div>
       <div className={`mt-1 text-2xl font-bold ${TONE_VALUE[effectiveTone]}`}>{value}</div>
