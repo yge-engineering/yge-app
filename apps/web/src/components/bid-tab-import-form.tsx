@@ -13,6 +13,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { BidTabExtractButton } from './bid-tab-extract-button';
 import { useTranslator } from '../lib/use-translator';
 import {
   BidTabSourceSchema,
@@ -161,6 +162,25 @@ export function BidTabImportForm({ apiBaseUrl }: Props) {
       onSubmit={submit}
       className="rounded-md border border-gray-200 bg-white p-6 shadow-sm"
     >
+      <BidTabExtractButton
+        apiBaseUrl={apiBaseUrl}
+        onResult={(r) => {
+          if (r.agencyName) setAgencyName(r.agencyName);
+          if (r.projectName) setProjectName(r.projectName);
+          if (r.projectNumber) setProjectNumber(r.projectNumber);
+          if (r.county) setCounty(r.county);
+          if (r.bidOpenedAt) setBidOpenedAt(r.bidOpenedAt);
+          if (r.engineersEstimateCents != null) setEngineersEstimate(
+            (r.engineersEstimateCents / 100).toFixed(2),
+          );
+          if (r.bidders.length > 0) {
+            const lines = r.bidders.map((b) =>
+              b.name + ' | $' + (b.totalCents / 100).toFixed(2),
+            );
+            setBiddersRaw(lines.join('\n'));
+          }
+        }}
+      />
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block">
           <span className="text-xs font-medium uppercase tracking-wide text-gray-600">{t('bidTabImport.lblSource')}</span>
