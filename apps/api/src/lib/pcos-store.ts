@@ -1,10 +1,6 @@
-// Every mutation here records an audit event via recordAudit() —
-// CLAUDE.md mandates 'every mutation is audit-logged'.
-//
-// File-based store for PCOs.
+// Postgres-backed store for PCOs.
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { prisma } from '@yge/db';
 import {
   PcoSchema,
   newPcoId,
@@ -14,46 +10,16 @@ import {
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
 
-function dataDir(): string {
-  return process.env.PCOS_DATA_DIR ?? path.resolve(process.cwd(), 'data', 'pcos');
-}
-function indexPath(): string {
-  return path.join(dataDir(), 'index.json');
-}
-function rowPath(id: string): string {
-  return path.join(dataDir(), `${id}.json`);
-}
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
 
-async function ensureDir() {
-  await fs.mkdir(dataDir(), { recursive: true });
-}
-
-async function readIndex(): Promise<Pco[]> {
-  try {
-    const raw = await fs.readFile(indexPath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((entry: unknown) => {
-        const result = PcoSchema.safeParse(entry);
-        return result.success ? result.data : null;
-      })
-      .filter((p): p is Pco => p !== null);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
-  }
-}
-
-async function writeIndex(entries: Pco[]) {
-  await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
+function row2pco(row: { data: unknown }): Pco {
+  return PcoSchema.parse(row.data);
 }
 
 export async function createPco(
   input: PcoCreate,
   ctx?: AuditContext,
 ): Promise<Pco> {
-  await ensureDir();
   const now = new Date().toISOString();
   const id = newPcoId();
   const p: Pco = {
@@ -67,10 +33,14 @@ export async function createPco(
     ...input,
   };
   PcoSchema.parse(p);
-  await fs.writeFile(rowPath(id), JSON.stringify(p, null, 2), 'utf8');
-  const index = await readIndex();
-  index.unshift(p);
-  await writeIndex(index);
+  await prisma.pco.create({
+    data: {
+      id,
+      companyId: DEFAULT_COMPANY_ID,
+      jobId: p.jobId,
+      data: p as unknown as object,
+    },
+  });
   await recordAudit({
     action: 'create',
     entityType: 'Pco',
@@ -85,22 +55,25 @@ export async function listPcos(filter?: {
   jobId?: string;
   status?: string;
 }): Promise<Pco[]> {
-  let all = await readIndex();
-  if (filter?.jobId) all = all.filter((p) => p.jobId === filter.jobId);
+  const rows = await prisma.pco.findMany({
+    where: {
+      companyId: DEFAULT_COMPANY_ID,
+      deletedAt: null,
+      ...(filter?.jobId ? { jobId: filter.jobId } : {}),
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  let all = rows.map(row2pco);
   if (filter?.status) all = all.filter((p) => p.status === filter.status);
-  all.sort((a, b) => b.noticedOn.localeCompare(a.noticedOn));
   return all;
 }
 
 export async function getPco(id: string): Promise<Pco | null> {
   if (!/^pco-[a-z0-9]{8}$/.test(id)) return null;
-  try {
-    const raw = await fs.readFile(rowPath(id), 'utf8');
-    return PcoSchema.parse(JSON.parse(raw));
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    throw err;
-  }
+  const row = await prisma.pco.findFirst({
+    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+  });
+  return row ? row2pco(row) : null;
 }
 
 export async function updatePco(
@@ -119,15 +92,10 @@ export async function updatePco(
     updatedAt: new Date().toISOString(),
   };
   PcoSchema.parse(updated);
-  await fs.writeFile(rowPath(id), JSON.stringify(updated, null, 2), 'utf8');
-  const index = await readIndex();
-  const idx = index.findIndex((p) => p.id === id);
-  if (idx >= 0) {
-    index[idx] = updated;
-  } else {
-    index.unshift(updated);
-  }
-  await writeIndex(index);
+  await prisma.pco.update({
+    where: { id },
+    data: { jobId: updated.jobId, data: updated as unknown as object },
+  });
   await recordAudit({
     action: auditAction,
     entityType: 'Pco',
