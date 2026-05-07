@@ -701,7 +701,7 @@ export default async function DashboardPage() {
 
       {/* AWAITING DECISION — submitted bids with no result yet. */}
       {pipelineData.submittedAwaiting.length > 0 && (
-        <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-3">
+        <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-3 transition hover:shadow-sm">
           <div className="text-xs font-semibold uppercase tracking-wide text-blue-900">
             Submitted · awaiting decision
           </div>
@@ -844,7 +844,7 @@ export default async function DashboardPage() {
 
       {/* STALE PURSUING — bids in pursuit but untouched for 14+ days. */}
       {pipelineData.stalePursuing.length > 0 && (
-        <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-3">
+        <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-3 transition hover:shadow-sm">
           <div className="text-xs font-semibold uppercase tracking-wide text-amber-900">
             Pursuing · stale (14d+)
           </div>
