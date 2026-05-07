@@ -63,6 +63,7 @@ export function JobsSearchInput({ targetId, totalCount }: Props) {
           if (e.key === 'Escape') {
             e.preventDefault();
             setQ('');
+            e.currentTarget.blur();
           }
         }}
         placeholder="Filter by project / agency / location… (press /)"
