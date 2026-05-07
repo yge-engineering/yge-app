@@ -1050,6 +1050,22 @@ model DirRateSyncRun {
   @@map("dir_rate_sync_runs")
 }
 
+model DirRateProposal {
+  id             String   @id
+  companyId      String
+  syncRunId      String
+  status         String
+  classification String
+  county         String
+  data           Json
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([companyId, syncRunId])
+  @@index([companyId, status])
+  @@map("dir_rate_proposals")
+}
+
 model Credential {
   id        String   @id
   companyId String

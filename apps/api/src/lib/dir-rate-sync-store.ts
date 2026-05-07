@@ -1,87 +1,65 @@
-// File-based store for DIR rate sync runs + proposals.
+// Postgres-backed store for DIR rate sync runs + proposals.
 //
-// Every mutation here records an audit event via recordAudit() —
-// CLAUDE.md mandates 'every mutation is audit-logged'. Sync runs +
-// proposals are particularly important to log: they're the gate
-// between DIR's website and the live rates that drive payroll, so
-// the audit trail is the answer to 'who accepted that proposal that
-// changed the OE Group 4 rate by $2.10?'
+// Sync runs go in DirRateSyncRun; proposals in DirRateProposal. Both
+// keep the full Zod object in `data: Json` plus pull out the columns
+// the UI filters on (status / syncRunId / classification / county).
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { prisma } from '@yge/db';
 import {
   DirRateProposalSchema,
   DirRateSyncRunSchema,
   type DirRateProposal,
   type DirRateProposalStatus,
   type DirRateSyncRun,
-  type DirRateSyncStatus,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
 
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+
 // ---- Sync run persistence ------------------------------------------------
 
-function runDir(): string {
-  return (
-    process.env.DIR_RATE_SYNC_RUNS_DATA_DIR ??
-    path.resolve(process.cwd(), 'data', 'dir-rate-sync-runs')
-  );
-}
-function runIndexPath(): string { return path.join(runDir(), 'index.json'); }
-function runRowPath(id: string): string { return path.join(runDir(), `${id}.json`); }
-
-async function ensureRunDir() { await fs.mkdir(runDir(), { recursive: true }); }
-
-async function readRunIndex(): Promise<DirRateSyncRun[]> {
-  try {
-    const raw = await fs.readFile(runIndexPath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((entry: unknown) => {
-        const r = DirRateSyncRunSchema.safeParse(entry);
-        return r.success ? r.data : null;
-      })
-      .filter((r): r is DirRateSyncRun => r !== null);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
-  }
-}
-
-async function writeRunIndex(rows: DirRateSyncRun[]) {
-  await fs.writeFile(runIndexPath(), JSON.stringify(rows, null, 2), 'utf8');
+function row2run(row: { data: unknown }): DirRateSyncRun | null {
+  const r = DirRateSyncRunSchema.safeParse(row.data);
+  return r.success ? r.data : null;
 }
 
 export async function listSyncRuns(): Promise<DirRateSyncRun[]> {
-  return readRunIndex();
+  const rows = await prisma.dirRateSyncRun.findMany({
+    where: { companyId: DEFAULT_COMPANY_ID },
+    orderBy: { startedAt: 'desc' },
+  });
+  return rows.map(row2run).filter((r): r is DirRateSyncRun => r !== null);
 }
 
 export async function getSyncRun(id: string): Promise<DirRateSyncRun | null> {
   if (!/^dir-sync-[a-z0-9]{8}$/.test(id)) return null;
-  try {
-    const raw = await fs.readFile(runRowPath(id), 'utf8');
-    return DirRateSyncRunSchema.parse(JSON.parse(raw));
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    throw err;
-  }
+  const row = await prisma.dirRateSyncRun.findFirst({
+    where: { id, companyId: DEFAULT_COMPANY_ID },
+  });
+  if (!row) return null;
+  return row2run(row);
 }
 
-async function persistRun(r: DirRateSyncRun) {
-  await ensureRunDir();
-  await fs.writeFile(runRowPath(r.id), JSON.stringify(r, null, 2), 'utf8');
-  const idx = await readRunIndex();
-  const at = idx.findIndex((row) => row.id === r.id);
-  if (at >= 0) idx[at] = r;
-  else idx.unshift(r);
-  await writeRunIndex(idx);
+async function persistRun(r: DirRateSyncRun): Promise<void> {
+  await prisma.dirRateSyncRun.upsert({
+    where: { id: r.id },
+    create: {
+      id: r.id,
+      companyId: DEFAULT_COMPANY_ID,
+      startedAt: r.startedAt ? new Date(r.startedAt) : new Date(r.createdAt),
+      finishedAt: r.finishedAt ? new Date(r.finishedAt) : null,
+      status: r.status,
+      data: r as unknown as object,
+    },
+    update: {
+      startedAt: r.startedAt ? new Date(r.startedAt) : new Date(r.createdAt),
+      finishedAt: r.finishedAt ? new Date(r.finishedAt) : null,
+      status: r.status,
+      data: r as unknown as object,
+    },
+  });
 }
 
-/**
- * Inputs the route layer typically supplies. Counts + status default
- * via the Zod schema so a freshly-queued run is a one-line call.
- */
 export type CreateSyncRunInput = Pick<DirRateSyncRun, 'source'> & Partial<DirRateSyncRun>;
 
 export async function createSyncRun(
@@ -143,36 +121,9 @@ export async function updateSyncRunStatus(
 
 // ---- Proposal persistence -----------------------------------------------
 
-function propDir(): string {
-  return (
-    process.env.DIR_RATE_PROPOSALS_DATA_DIR ??
-    path.resolve(process.cwd(), 'data', 'dir-rate-proposals')
-  );
-}
-function propIndexPath(): string { return path.join(propDir(), 'index.json'); }
-function propRowPath(id: string): string { return path.join(propDir(), `${id}.json`); }
-
-async function ensurePropDir() { await fs.mkdir(propDir(), { recursive: true }); }
-
-async function readPropIndex(): Promise<DirRateProposal[]> {
-  try {
-    const raw = await fs.readFile(propIndexPath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((entry: unknown) => {
-        const r = DirRateProposalSchema.safeParse(entry);
-        return r.success ? r.data : null;
-      })
-      .filter((r): r is DirRateProposal => r !== null);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
-  }
-}
-
-async function writePropIndex(rows: DirRateProposal[]) {
-  await fs.writeFile(propIndexPath(), JSON.stringify(rows, null, 2), 'utf8');
+function row2prop(row: { data: unknown }): DirRateProposal | null {
+  const r = DirRateProposalSchema.safeParse(row.data);
+  return r.success ? r.data : null;
 }
 
 export interface ListProposalsFilter {
@@ -183,33 +134,47 @@ export interface ListProposalsFilter {
 }
 
 export async function listProposals(filter: ListProposalsFilter = {}): Promise<DirRateProposal[]> {
-  let rows = await readPropIndex();
-  if (filter.status) rows = rows.filter((r) => r.status === filter.status);
-  if (filter.syncRunId) rows = rows.filter((r) => r.syncRunId === filter.syncRunId);
-  if (filter.classification) rows = rows.filter((r) => r.classification === filter.classification);
-  if (filter.county) rows = rows.filter((r) => r.county === filter.county);
-  return rows;
+  const rows = await prisma.dirRateProposal.findMany({
+    where: {
+      companyId: DEFAULT_COMPANY_ID,
+      ...(filter.status ? { status: filter.status } : {}),
+      ...(filter.syncRunId ? { syncRunId: filter.syncRunId } : {}),
+      ...(filter.classification ? { classification: filter.classification } : {}),
+      ...(filter.county ? { county: filter.county } : {}),
+    },
+  });
+  return rows.map(row2prop).filter((p): p is DirRateProposal => p !== null);
 }
 
 export async function getProposal(id: string): Promise<DirRateProposal | null> {
   if (!/^dir-prop-[a-z0-9]{8}$/.test(id)) return null;
-  try {
-    const raw = await fs.readFile(propRowPath(id), 'utf8');
-    return DirRateProposalSchema.parse(JSON.parse(raw));
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    throw err;
-  }
+  const row = await prisma.dirRateProposal.findFirst({
+    where: { id, companyId: DEFAULT_COMPANY_ID },
+  });
+  if (!row) return null;
+  return row2prop(row);
 }
 
-async function persistProposal(p: DirRateProposal) {
-  await ensurePropDir();
-  await fs.writeFile(propRowPath(p.id), JSON.stringify(p, null, 2), 'utf8');
-  const idx = await readPropIndex();
-  const at = idx.findIndex((row) => row.id === p.id);
-  if (at >= 0) idx[at] = p;
-  else idx.unshift(p);
-  await writePropIndex(idx);
+async function persistProposal(p: DirRateProposal): Promise<void> {
+  await prisma.dirRateProposal.upsert({
+    where: { id: p.id },
+    create: {
+      id: p.id,
+      companyId: DEFAULT_COMPANY_ID,
+      syncRunId: p.syncRunId,
+      status: p.status,
+      classification: p.classification,
+      county: p.county,
+      data: p as unknown as object,
+    },
+    update: {
+      syncRunId: p.syncRunId,
+      status: p.status,
+      classification: p.classification,
+      county: p.county,
+      data: p as unknown as object,
+    },
+  });
 }
 
 export type CreateProposalInput = Pick<
@@ -241,12 +206,6 @@ export async function createProposal(
   return p;
 }
 
-/**
- * Mark a proposal accepted. Caller is responsible for applying the
- * accepted application to the live rate store (see
- * buildAcceptedApplication in shared/dir-rate-sync). This function
- * just flips the proposal's status.
- */
 export async function acceptProposal(
   id: string,
   reviewedByUserId: string | null,
@@ -255,7 +214,7 @@ export async function acceptProposal(
 ): Promise<DirRateProposal | null> {
   const existing = await getProposal(id);
   if (!existing) return null;
-  if (existing.status !== 'PENDING') return existing; // idempotent — return as-is on already-decided proposals
+  if (existing.status !== 'PENDING') return existing;
   const updated: DirRateProposal = {
     ...existing,
     status: 'ACCEPTED',
