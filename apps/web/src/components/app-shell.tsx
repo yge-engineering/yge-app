@@ -14,6 +14,7 @@
 // cookie used by AccountChip is read server-side via `/api/me`.
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
   ROLE_PERMISSIONS,
@@ -147,6 +148,7 @@ const NAV_SPEC: NavGroupSpec[] = [
 export function AppShell({ children }: { children: React.ReactNode }) {
   const t = useTranslator();
   const locale = useLocale();
+  const pathname = usePathname() ?? '';
   // Fetch the signed-in user once on mount so we can filter the
   // sidebar by their role's permissions. Until the fetch resolves
   // we render every link (assume admin) so first paint isn't empty;
@@ -241,16 +243,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   {group.label}
                 </div>
                 <ul className="space-y-0.5">
-                  {group.links.map((l) => (
-                    <li key={l.href}>
-                      <Link
-                        href={l.href}
-                        className="block rounded-md px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-                      >
-                        {l.label}
-                      </Link>
-                    </li>
-                  ))}
+                  {group.links.map((l) => {
+                    const active = pathname === l.href || pathname.startsWith(l.href + '/');
+                    return (
+                      <li key={l.href}>
+                        <Link
+                          href={l.href}
+                          aria-current={active ? 'page' : undefined}
+                          className={`block rounded-md px-2 py-1.5 text-sm hover:bg-gray-100 ${active ? 'bg-yge-blue-50 font-semibold text-yge-blue-700' : 'text-gray-700 hover:text-gray-900'}`}
+                        >
+                          {l.label}
+                        </Link>
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             ))}
