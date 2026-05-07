@@ -92,6 +92,10 @@ const NAV_SPEC: NavGroupSpec[] = [
       { key: 'nav.cashForecast', href: '/cash-forecast', requires: 'financials:view' },
       { key: 'nav.bankRecs', href: '/bank-recs', requires: 'financials:view' },
       { key: 'nav.balanceSheet', href: '/balance-sheet', requires: 'financials:view' },
+      { key: 'nav.trialBalance', href: '/trial-balance', requires: 'financials:view' },
+      { key: 'nav.incomeStatement', href: '/income-statement', requires: 'financials:view' },
+      { key: 'nav.cashFlow', href: '/cash-flow', requires: 'financials:view' },
+      { key: 'nav.closePackage', href: '/close-package', requires: 'financials:view' },
     ],
   },
   {
