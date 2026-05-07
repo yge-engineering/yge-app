@@ -1,35 +1,42 @@
-// Every mutation here records an audit event via recordAudit() —
-// CLAUDE.md mandates 'every mutation is audit-logged'.
-//
-// File-based store for jobs.
-//
-// Phase 1 stand-in for the future Postgres `Job` table. Surface area
-// (createJob / listJobs / getJob / updateJob) maps 1:1 to a Prisma
-// repository so the route + UI don't change when Postgres lands.
+// Postgres-backed store for jobs.
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { prisma } from '@yge/db';
 import { randomBytes } from 'node:crypto';
 import {
   JobSchema,
   type Job,
   type JobCreate,
   type JobPatch,
+  type JobStatus,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
 
-function dataDir(): string {
-  return process.env.JOBS_DATA_DIR ?? path.resolve(process.cwd(), 'data', 'jobs');
-}
-function indexPath(): string {
-  return path.join(dataDir(), 'index.json');
-}
-function jobPath(id: string): string {
-  return path.join(dataDir(), `${id}.json`);
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+
+type DbJobStatus = 'BIDDING' | 'AWARDED' | 'ACTIVE' | 'ON_HOLD' | 'CLOSED' | 'LOST';
+
+function statusToDb(s: JobStatus): DbJobStatus {
+  switch (s) {
+    case 'PROSPECT':
+    case 'PURSUING':
+    case 'BID_SUBMITTED':
+      return 'BIDDING';
+    case 'AWARDED':
+      return 'AWARDED';
+    case 'LOST':
+    case 'NO_BID':
+      return 'LOST';
+    case 'ARCHIVED':
+      return 'CLOSED';
+    default:
+      return 'BIDDING';
+  }
 }
 
-async function ensureDir() {
-  await fs.mkdir(dataDir(), { recursive: true });
+function row2job(row: { data: unknown }): Job | null {
+  if (!row.data) return null;
+  const r = JobSchema.safeParse(row.data);
+  return r.success ? r.data : null;
 }
 
 function slugify(s: string): string {
@@ -43,42 +50,23 @@ function slugify(s: string): string {
 function makeId(projectName: string, when: Date): string {
   const date = when.toISOString().slice(0, 10);
   const slug = slugify(projectName) || 'job';
-  const rand = randomBytes(4).toString('hex'); // 8 hex chars
+  const rand = randomBytes(4).toString('hex');
   return `job-${date}-${slug}-${rand}`;
 }
 
-async function readIndex(): Promise<Job[]> {
-  try {
-    const raw = await fs.readFile(indexPath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    // Schema-parse on read so newly added optional fields (e.g. status
-    // defaults) backfill cleanly when reading older index files.
-    return parsed
-      .map((entry: unknown) => {
-        const result = JobSchema.safeParse(entry);
-        return result.success ? result.data : null;
-      })
-      .filter((j): j is Job => j !== null);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
-  }
+/** Deterministic jobNumber from the file-store id (uniqueness lives
+ *  on the [companyId, jobNumber] index in Prisma). The trailing 8
+ *  hex chars from `makeId` work as a stable, human-friendly job
+ *  number for now; the operator can rename via the UI. */
+function jobNumberOf(id: string): string {
+  const m = id.match(/-([a-f0-9]{8})$/);
+  return m ? m[1]! : id.slice(-8);
 }
 
-async function writeIndex(entries: Job[]) {
-  await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
-}
-
-/** Persist a new job and return the saved record. The index doubles as
- *  the per-job storage because the Job model is small (just metadata —
- *  no bid items or sub lists). When Postgres lands we split this into
- *  a real index + per-row table. */
 export async function createJob(
   input: JobCreate,
   ctx?: AuditContext,
 ): Promise<Job> {
-  await ensureDir();
   const now = new Date();
   const iso = now.toISOString();
   const id = makeId(input.projectName, now);
@@ -89,12 +77,18 @@ export async function createJob(
     status: input.status ?? 'PURSUING',
     ...input,
   };
-  // Validate before writing.
   JobSchema.parse(job);
-  await fs.writeFile(jobPath(id), JSON.stringify(job, null, 2), 'utf8');
-  const index = await readIndex();
-  index.unshift(job);
-  await writeIndex(index);
+  await prisma.job.create({
+    data: {
+      id,
+      companyId: DEFAULT_COMPANY_ID,
+      customerId: null,
+      jobNumber: jobNumberOf(id),
+      name: job.projectName,
+      status: statusToDb(job.status),
+      data: job as unknown as object,
+    },
+  });
   await recordAudit({
     action: 'create',
     entityType: 'Job',
@@ -106,19 +100,20 @@ export async function createJob(
 }
 
 export async function listJobs(): Promise<Job[]> {
-  return readIndex();
+  const rows = await prisma.job.findMany({
+    where: { companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    orderBy: { createdAt: 'desc' },
+  });
+  return rows.map(row2job).filter((j): j is Job => j !== null);
 }
 
 export async function getJob(id: string): Promise<Job | null> {
-  // Defensive id format check — stops path-traversal attacks cold.
   if (!/^job-[a-z0-9-]{10,80}$/.test(id)) return null;
-  try {
-    const raw = await fs.readFile(jobPath(id), 'utf8');
-    return JobSchema.parse(JSON.parse(raw));
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    throw err;
-  }
+  const row = await prisma.job.findFirst({
+    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+  });
+  if (!row) return null;
+  return row2job(row);
 }
 
 export async function updateJob(
@@ -137,16 +132,14 @@ export async function updateJob(
     updatedAt: new Date().toISOString(),
   };
   JobSchema.parse(updated);
-  await fs.writeFile(jobPath(id), JSON.stringify(updated, null, 2), 'utf8');
-  // Rebuild the index entry.
-  const index = await readIndex();
-  const idx = index.findIndex((j) => j.id === id);
-  if (idx >= 0) {
-    index[idx] = updated;
-  } else {
-    index.unshift(updated);
-  }
-  await writeIndex(index);
+  await prisma.job.update({
+    where: { id },
+    data: {
+      name: updated.projectName,
+      status: statusToDb(updated.status),
+      data: updated as unknown as object,
+    },
+  });
   await recordAudit({
     action: auditAction,
     entityType: 'Job',

@@ -202,7 +202,7 @@ enum RateType {
 model Job {
   id           String    @id @default(cuid())
   companyId    String
-  customerId   String
+  customerId   String?
   jobNumber    String // "26-001"
   name         String // "Sulphur Springs Road Improvement"
   contractNum  String? // "1CA07840"
@@ -221,7 +221,7 @@ model Job {
   deletedAt    DateTime?
 
   company   Company    @relation(fields: [companyId], references: [id])
-  customer  Customer   @relation(fields: [customerId], references: [id])
+  customer  Customer?  @relation(fields: [customerId], references: [id])
   estimates Estimate[]
 
   @@unique([companyId, jobNumber])
