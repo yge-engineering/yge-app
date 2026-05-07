@@ -1249,3 +1249,21 @@ model Certificate {
   @@index([companyId, employeeId])
   @@map("certificates")
 }
+
+model ApiError {
+  id         String   @id
+  companyId  String?
+  requestId  String?
+  method     String
+  route      String
+  statusCode Int
+  message    String   @db.Text
+  stack      String?  @db.Text
+  ipAddress  String?
+  userAgent  String?
+  occurredAt DateTime @default(now())
+
+  @@index([companyId, occurredAt])
+  @@index([statusCode, occurredAt])
+  @@map("api_errors")
+}
