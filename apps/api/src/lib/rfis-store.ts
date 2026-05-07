@@ -1,10 +1,6 @@
-// Every mutation here records an audit event via recordAudit() —
-// CLAUDE.md mandates 'every mutation is audit-logged'.
-//
-// File-based store for RFIs.
+// Postgres-backed store for RFIs.
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { prisma } from '@yge/db';
 import {
   RfiSchema,
   newRfiId,
@@ -14,46 +10,16 @@ import {
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
 
-function dataDir(): string {
-  return process.env.RFIS_DATA_DIR ?? path.resolve(process.cwd(), 'data', 'rfis');
-}
-function indexPath(): string {
-  return path.join(dataDir(), 'index.json');
-}
-function rowPath(id: string): string {
-  return path.join(dataDir(), `${id}.json`);
-}
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
 
-async function ensureDir() {
-  await fs.mkdir(dataDir(), { recursive: true });
-}
-
-async function readIndex(): Promise<Rfi[]> {
-  try {
-    const raw = await fs.readFile(indexPath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((entry: unknown) => {
-        const result = RfiSchema.safeParse(entry);
-        return result.success ? result.data : null;
-      })
-      .filter((r): r is Rfi => r !== null);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
-  }
-}
-
-async function writeIndex(entries: Rfi[]) {
-  await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
+function row2rfi(row: { data: unknown }): Rfi {
+  return RfiSchema.parse(row.data);
 }
 
 export async function createRfi(
   input: RfiCreate,
   ctx?: AuditContext,
 ): Promise<Rfi> {
-  await ensureDir();
   const now = new Date().toISOString();
   const id = newRfiId();
   const r: Rfi = {
@@ -68,10 +34,14 @@ export async function createRfi(
     ...input,
   };
   RfiSchema.parse(r);
-  await fs.writeFile(rowPath(id), JSON.stringify(r, null, 2), 'utf8');
-  const index = await readIndex();
-  index.unshift(r);
-  await writeIndex(index);
+  await prisma.rfi.create({
+    data: {
+      id,
+      companyId: DEFAULT_COMPANY_ID,
+      jobId: r.jobId,
+      data: r as unknown as object,
+    },
+  });
   await recordAudit({
     action: 'create',
     entityType: 'Rfi',
@@ -83,27 +53,25 @@ export async function createRfi(
 }
 
 export async function listRfis(filter?: { jobId?: string; status?: string }): Promise<Rfi[]> {
-  let all = await readIndex();
-  if (filter?.jobId) all = all.filter((r) => r.jobId === filter.jobId);
-  if (filter?.status) all = all.filter((r) => r.status === filter.status);
-  // Newest sentAt first, then by rfiNumber.
-  all.sort((a, b) => {
-    const av = a.sentAt ?? a.createdAt.slice(0, 10);
-    const bv = b.sentAt ?? b.createdAt.slice(0, 10);
-    return bv.localeCompare(av);
+  const rows = await prisma.rfi.findMany({
+    where: {
+      companyId: DEFAULT_COMPANY_ID,
+      deletedAt: null,
+      ...(filter?.jobId ? { jobId: filter.jobId } : {}),
+    },
+    orderBy: { createdAt: 'desc' },
   });
+  let all = rows.map(row2rfi);
+  if (filter?.status) all = all.filter((r) => r.status === filter.status);
   return all;
 }
 
 export async function getRfi(id: string): Promise<Rfi | null> {
   if (!/^rfi-[a-z0-9]{8}$/.test(id)) return null;
-  try {
-    const raw = await fs.readFile(rowPath(id), 'utf8');
-    return RfiSchema.parse(JSON.parse(raw));
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    throw err;
-  }
+  const row = await prisma.rfi.findFirst({
+    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+  });
+  return row ? row2rfi(row) : null;
 }
 
 export async function updateRfi(
@@ -122,15 +90,10 @@ export async function updateRfi(
     updatedAt: new Date().toISOString(),
   };
   RfiSchema.parse(updated);
-  await fs.writeFile(rowPath(id), JSON.stringify(updated, null, 2), 'utf8');
-  const index = await readIndex();
-  const idx = index.findIndex((r) => r.id === id);
-  if (idx >= 0) {
-    index[idx] = updated;
-  } else {
-    index.unshift(updated);
-  }
-  await writeIndex(index);
+  await prisma.rfi.update({
+    where: { id },
+    data: { jobId: updated.jobId, data: updated as unknown as object },
+  });
   await recordAudit({
     action: auditAction,
     entityType: 'Rfi',

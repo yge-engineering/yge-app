@@ -1,10 +1,6 @@
-// Every mutation here records an audit event via recordAudit() —
-// CLAUDE.md mandates 'every mutation is audit-logged'.
-//
-// File-based store for lien waivers.
+// Postgres-backed store for lien waivers.
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { prisma } from '@yge/db';
 import {
   LienWaiverSchema,
   newLienWaiverId,
@@ -14,46 +10,16 @@ import {
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
 
-function dataDir(): string {
-  return process.env.LIEN_WAIVERS_DATA_DIR ?? path.resolve(process.cwd(), 'data', 'lien-waivers');
-}
-function indexPath(): string {
-  return path.join(dataDir(), 'index.json');
-}
-function rowPath(id: string): string {
-  return path.join(dataDir(), `${id}.json`);
-}
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
 
-async function ensureDir() {
-  await fs.mkdir(dataDir(), { recursive: true });
-}
-
-async function readIndex(): Promise<LienWaiver[]> {
-  try {
-    const raw = await fs.readFile(indexPath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((entry: unknown) => {
-        const result = LienWaiverSchema.safeParse(entry);
-        return result.success ? result.data : null;
-      })
-      .filter((w): w is LienWaiver => w !== null);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
-  }
-}
-
-async function writeIndex(entries: LienWaiver[]) {
-  await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
+function row2lw(row: { data: unknown }): LienWaiver {
+  return LienWaiverSchema.parse(row.data);
 }
 
 export async function createLienWaiver(
   input: LienWaiverCreate,
   ctx?: AuditContext,
 ): Promise<LienWaiver> {
-  await ensureDir();
   const now = new Date().toISOString();
   const id = newLienWaiverId();
   const w: LienWaiver = {
@@ -64,10 +30,14 @@ export async function createLienWaiver(
     ...input,
   };
   LienWaiverSchema.parse(w);
-  await fs.writeFile(rowPath(id), JSON.stringify(w, null, 2), 'utf8');
-  const index = await readIndex();
-  index.unshift(w);
-  await writeIndex(index);
+  await prisma.lienWaiver.create({
+    data: {
+      id,
+      companyId: DEFAULT_COMPANY_ID,
+      jobId: w.jobId,
+      data: w as unknown as object,
+    },
+  });
   await recordAudit({
     action: 'create',
     entityType: 'LienWaiver',
@@ -82,22 +52,25 @@ export async function listLienWaivers(filter?: {
   jobId?: string;
   status?: string;
 }): Promise<LienWaiver[]> {
-  let all = await readIndex();
-  if (filter?.jobId) all = all.filter((w) => w.jobId === filter.jobId);
+  const rows = await prisma.lienWaiver.findMany({
+    where: {
+      companyId: DEFAULT_COMPANY_ID,
+      deletedAt: null,
+      ...(filter?.jobId ? { jobId: filter.jobId } : {}),
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  let all = rows.map(row2lw);
   if (filter?.status) all = all.filter((w) => w.status === filter.status);
-  all.sort((a, b) => b.throughDate.localeCompare(a.throughDate));
   return all;
 }
 
 export async function getLienWaiver(id: string): Promise<LienWaiver | null> {
   if (!/^lw-[a-z0-9]{8}$/.test(id)) return null;
-  try {
-    const raw = await fs.readFile(rowPath(id), 'utf8');
-    return LienWaiverSchema.parse(JSON.parse(raw));
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    throw err;
-  }
+  const row = await prisma.lienWaiver.findFirst({
+    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+  });
+  return row ? row2lw(row) : null;
 }
 
 export async function updateLienWaiver(
@@ -116,15 +89,10 @@ export async function updateLienWaiver(
     updatedAt: new Date().toISOString(),
   };
   LienWaiverSchema.parse(updated);
-  await fs.writeFile(rowPath(id), JSON.stringify(updated, null, 2), 'utf8');
-  const index = await readIndex();
-  const idx = index.findIndex((w) => w.id === id);
-  if (idx >= 0) {
-    index[idx] = updated;
-  } else {
-    index.unshift(updated);
-  }
-  await writeIndex(index);
+  await prisma.lienWaiver.update({
+    where: { id },
+    data: { jobId: updated.jobId, data: updated as unknown as object },
+  });
   await recordAudit({
     action: auditAction,
     entityType: 'LienWaiver',

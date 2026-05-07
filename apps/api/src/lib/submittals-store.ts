@@ -1,10 +1,6 @@
-// Every mutation here records an audit event via recordAudit() —
-// CLAUDE.md mandates 'every mutation is audit-logged'.
-//
-// File-based store for submittals.
+// Postgres-backed store for submittals.
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { prisma } from '@yge/db';
 import {
   SubmittalSchema,
   newSubmittalId,
@@ -14,49 +10,16 @@ import {
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
 
-function dataDir(): string {
-  return (
-    process.env.SUBMITTALS_DATA_DIR ??
-    path.resolve(process.cwd(), 'data', 'submittals')
-  );
-}
-function indexPath(): string {
-  return path.join(dataDir(), 'index.json');
-}
-function rowPath(id: string): string {
-  return path.join(dataDir(), `${id}.json`);
-}
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
 
-async function ensureDir() {
-  await fs.mkdir(dataDir(), { recursive: true });
-}
-
-async function readIndex(): Promise<Submittal[]> {
-  try {
-    const raw = await fs.readFile(indexPath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((entry: unknown) => {
-        const result = SubmittalSchema.safeParse(entry);
-        return result.success ? result.data : null;
-      })
-      .filter((s): s is Submittal => s !== null);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
-  }
-}
-
-async function writeIndex(entries: Submittal[]) {
-  await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
+function row2sub(row: { data: unknown }): Submittal {
+  return SubmittalSchema.parse(row.data);
 }
 
 export async function createSubmittal(
   input: SubmittalCreate,
   ctx?: AuditContext,
 ): Promise<Submittal> {
-  await ensureDir();
   const now = new Date().toISOString();
   const id = newSubmittalId();
   const s: Submittal = {
@@ -68,10 +31,14 @@ export async function createSubmittal(
     ...input,
   };
   SubmittalSchema.parse(s);
-  await fs.writeFile(rowPath(id), JSON.stringify(s, null, 2), 'utf8');
-  const index = await readIndex();
-  index.unshift(s);
-  await writeIndex(index);
+  await prisma.submittal.create({
+    data: {
+      id,
+      companyId: DEFAULT_COMPANY_ID,
+      jobId: s.jobId,
+      data: s as unknown as object,
+    },
+  });
   await recordAudit({
     action: 'create',
     entityType: 'Submittal',
@@ -86,26 +53,25 @@ export async function listSubmittals(filter?: {
   jobId?: string;
   status?: string;
 }): Promise<Submittal[]> {
-  let all = await readIndex();
-  if (filter?.jobId) all = all.filter((s) => s.jobId === filter.jobId);
-  if (filter?.status) all = all.filter((s) => s.status === filter.status);
-  all.sort((a, b) => {
-    const av = a.submittedAt ?? a.createdAt.slice(0, 10);
-    const bv = b.submittedAt ?? b.createdAt.slice(0, 10);
-    return bv.localeCompare(av);
+  const rows = await prisma.submittal.findMany({
+    where: {
+      companyId: DEFAULT_COMPANY_ID,
+      deletedAt: null,
+      ...(filter?.jobId ? { jobId: filter.jobId } : {}),
+    },
+    orderBy: { createdAt: 'desc' },
   });
+  let all = rows.map(row2sub);
+  if (filter?.status) all = all.filter((s) => s.status === filter.status);
   return all;
 }
 
 export async function getSubmittal(id: string): Promise<Submittal | null> {
   if (!/^subm-[a-z0-9]{8}$/.test(id)) return null;
-  try {
-    const raw = await fs.readFile(rowPath(id), 'utf8');
-    return SubmittalSchema.parse(JSON.parse(raw));
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    throw err;
-  }
+  const row = await prisma.submittal.findFirst({
+    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+  });
+  return row ? row2sub(row) : null;
 }
 
 export async function updateSubmittal(
@@ -124,15 +90,10 @@ export async function updateSubmittal(
     updatedAt: new Date().toISOString(),
   };
   SubmittalSchema.parse(updated);
-  await fs.writeFile(rowPath(id), JSON.stringify(updated, null, 2), 'utf8');
-  const index = await readIndex();
-  const idx = index.findIndex((s) => s.id === id);
-  if (idx >= 0) {
-    index[idx] = updated;
-  } else {
-    index.unshift(updated);
-  }
-  await writeIndex(index);
+  await prisma.submittal.update({
+    where: { id },
+    data: { jobId: updated.jobId, data: updated as unknown as object },
+  });
   await recordAudit({
     action: auditAction,
     entityType: 'Submittal',
