@@ -62,7 +62,7 @@ export default async function ImportedEstimatesPage() {
               <EstimatesSortHeaders targetId="imported-list-table" />
             </div>
             <EstimatesKeyboardNav targetId="imported-list-table" />
-            <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+            <div className="rounded-lg border border-gray-200 bg-white">
             <table id="imported-list-table" className="w-full text-sm">
               <thead className="sticky top-0 z-10 bg-gray-50 text-left text-[11px] uppercase tracking-wide text-gray-500">
                 <tr>
