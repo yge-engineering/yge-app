@@ -1,36 +1,18 @@
-// WebAuthn (passkey / Face ID / Touch ID) credential + challenge store.
+// Postgres-backed credential store + in-memory challenge map.
 //
-// Plain English: when a user "registers a passkey" we save the public
-// key here, indexed by their email. Later, when they tap "Sign in with
-// Face ID", we look up that public key, generate a challenge, and ask
-// the browser to sign it. If the signature checks out we let them in.
-//
-// Two files on disk:
-//   credentials.json — the stored passkeys (public keys + counters)
-//   challenges.json  — short-lived (5 min) challenges in flight
-//
-// Phase 1 file-backed; same shape will fit a Postgres `WebauthnCredential`
-// table when we land Prisma.
-//
-// Every credential mutation goes through recordAudit() — logging in or
-// registering a key is a real auth event the office can review.
+// Credentials persist in the WebauthnCredential table. Challenges are
+// short-lived (5 minutes) — keeping them in-memory is fine for single-
+// instance hosting and avoids a tiny extra table.
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { prisma } from '@yge/db';
 import { recordAudit, type AuditContext } from './audit-store';
 
 export interface StoredCredential {
-  /** Email address that owns this credential. Lowercased. */
   email: string;
-  /** base64url-encoded credential ID (the rawId from navigator.credentials). */
   credentialId: string;
-  /** base64url-encoded raw public key bytes (COSE format). */
   publicKey: string;
-  /** Signature counter — must strictly increase per use to detect cloning. */
   counter: number;
-  /** transports list reported by the authenticator at registration time. */
   transports?: string[];
-  /** Optional human-readable nickname (e.g. "Ryan's iPhone"). */
   nickname?: string;
   createdAt: string;
   lastUsedAt?: string;
@@ -38,74 +20,61 @@ export interface StoredCredential {
 
 export interface StoredChallenge {
   email: string;
-  /** base64url challenge bytes. */
   challenge: string;
-  /** 'register' or 'auth' — separates the two ceremonies. */
   purpose: 'register' | 'auth';
   createdAt: number;
 }
 
-const CHALLENGE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const CHALLENGE_TTL_MS = 5 * 60 * 1000;
 
-function dataDir(): string {
-  return (
-    process.env.WEBAUTHN_DATA_DIR ??
-    path.resolve(process.cwd(), 'data', 'webauthn')
-  );
-}
-function credPath(): string {
-  return path.join(dataDir(), 'credentials.json');
-}
-function chalPath(): string {
-  return path.join(dataDir(), 'challenges.json');
-}
+// In-memory challenge store keyed by `${email}:${purpose}`.
+const challenges = new Map<string, StoredChallenge>();
 
-async function readJson<T>(file: string): Promise<T[]> {
-  try {
-    const raw = await fs.readFile(file, 'utf8');
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as T[]) : [];
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
-  }
-}
-async function writeJson(file: string, data: unknown): Promise<void> {
-  await fs.mkdir(path.dirname(file), { recursive: true });
-  await fs.writeFile(file, JSON.stringify(data, null, 2), 'utf8');
+function row2cred(row: { data: unknown }): StoredCredential | null {
+  const d = row.data as StoredCredential | undefined;
+  if (!d || typeof d !== 'object' || !d.credentialId) return null;
+  return d;
 }
 
 // ---- Credentials --------------------------------------------------------
 
 export async function listCredentials(email: string): Promise<StoredCredential[]> {
-  const all = await readJson<StoredCredential>(credPath());
-  return all.filter((c) => c.email === email.toLowerCase());
+  const lower = email.toLowerCase();
+  const rows = await prisma.webauthnCredential.findMany({ where: { email: lower } });
+  return rows.map(row2cred).filter((c): c is StoredCredential => c !== null);
 }
 
 export async function findCredentialById(
   credentialId: string,
 ): Promise<StoredCredential | null> {
-  const all = await readJson<StoredCredential>(credPath());
-  return all.find((c) => c.credentialId === credentialId) ?? null;
+  const row = await prisma.webauthnCredential.findUnique({ where: { id: credentialId } });
+  if (!row) return null;
+  return row2cred(row);
 }
 
 export async function saveCredential(
   cred: StoredCredential,
   ctx?: AuditContext,
 ): Promise<void> {
-  const all = await readJson<StoredCredential>(credPath());
-  const idx = all.findIndex((c) => c.credentialId === cred.credentialId);
-  if (idx >= 0) {
-    all[idx] = cred;
-  } else {
-    all.push(cred);
-  }
-  await writeJson(credPath(), all);
+  const lower = cred.email.toLowerCase();
+  const stored: StoredCredential = { ...cred, email: lower };
+  await prisma.webauthnCredential.upsert({
+    where: { id: cred.credentialId },
+    create: {
+      id: cred.credentialId,
+      email: lower,
+      data: stored as unknown as object,
+    },
+    update: {
+      email: lower,
+      data: stored as unknown as object,
+    },
+  });
   await recordAudit({
     action: 'create',
     entityType: 'WebauthnCredential',
     entityId: cred.credentialId,
-    after: { email: cred.email, nickname: cred.nickname },
+    after: { email: lower, nickname: cred.nickname },
     ctx,
   });
 }
@@ -114,51 +83,45 @@ export async function bumpCredentialCounter(
   credentialId: string,
   newCounter: number,
 ): Promise<void> {
-  const all = await readJson<StoredCredential>(credPath());
-  const idx = all.findIndex((c) => c.credentialId === credentialId);
-  if (idx < 0) return;
-  const existing = all[idx];
+  const existing = await findCredentialById(credentialId);
   if (!existing) return;
-  all[idx] = {
+  const updated: StoredCredential = {
     ...existing,
     counter: newCounter,
     lastUsedAt: new Date().toISOString(),
   };
-  await writeJson(credPath(), all);
+  await prisma.webauthnCredential.update({
+    where: { id: credentialId },
+    data: { data: updated as unknown as object },
+  });
 }
 
-// ---- Challenges ---------------------------------------------------------
+// ---- Challenges (in-memory) ---------------------------------------------
+
+function key(email: string, purpose: 'register' | 'auth'): string {
+  return `${email.toLowerCase()}:${purpose}`;
+}
 
 export async function saveChallenge(c: StoredChallenge): Promise<void> {
-  const all = await readJson<StoredChallenge>(chalPath());
-  const now = Date.now();
   // Drop expired entries while we're here.
-  const fresh = all.filter((x) => now - x.createdAt < CHALLENGE_TTL_MS);
-  // Replace any prior in-flight challenge for the same (email, purpose) —
-  // a user starting a fresh ceremony should overwrite their old one.
-  const replaced = fresh.filter(
-    (x) => !(x.email === c.email && x.purpose === c.purpose),
-  );
-  replaced.push(c);
-  await writeJson(chalPath(), replaced);
+  const now = Date.now();
+  for (const [k, v] of challenges) {
+    if (now - v.createdAt >= CHALLENGE_TTL_MS) challenges.delete(k);
+  }
+  challenges.set(key(c.email, c.purpose), { ...c, email: c.email.toLowerCase() });
 }
 
 export async function consumeChallenge(
   email: string,
   purpose: 'register' | 'auth',
 ): Promise<string | null> {
-  const all = await readJson<StoredChallenge>(chalPath());
-  const now = Date.now();
-  const idx = all.findIndex(
-    (c) =>
-      c.email === email.toLowerCase() &&
-      c.purpose === purpose &&
-      now - c.createdAt < CHALLENGE_TTL_MS,
-  );
-  if (idx < 0) return null;
-  const challenge = all[idx]!.challenge;
-  // Single-use: drop after consuming.
-  all.splice(idx, 1);
-  await writeJson(chalPath(), all);
-  return challenge;
+  const k = key(email, purpose);
+  const entry = challenges.get(k);
+  if (!entry) return null;
+  if (Date.now() - entry.createdAt >= CHALLENGE_TTL_MS) {
+    challenges.delete(k);
+    return null;
+  }
+  challenges.delete(k);
+  return entry.challenge;
 }

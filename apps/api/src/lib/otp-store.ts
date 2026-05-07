@@ -1,13 +1,9 @@
-// File-based store for OTP challenges.
+// Postgres-backed store for OTP challenges.
 //
-// Every mutation here records an audit event via recordAudit() —
-// CLAUDE.md mandates 'every mutation is audit-logged'. Failed
-// verify attempts are particularly important to log because they
-// signal a potential brute-force; the audit panel for a Signature
-// row should show every wrong code typed against its OTP.
+// Plaintext code lives in the Json `data` blob; we never return it
+// from the verify endpoint (only OK / WRONG_CODE / EXPIRED outcomes).
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { prisma } from '@yge/db';
 import {
   OtpChallengeSchema,
   defaultOtpExpiresAt,
@@ -20,46 +16,26 @@ import {
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
 
-function dataDir(): string {
-  return (
-    process.env.OTP_DATA_DIR ??
-    path.resolve(process.cwd(), 'data', 'otp-challenges')
-  );
-}
-function indexPath(): string { return path.join(dataDir(), 'index.json'); }
-function rowPath(id: string): string { return path.join(dataDir(), `${id}.json`); }
-
-async function ensureDir() { await fs.mkdir(dataDir(), { recursive: true }); }
-
-async function readIndex(): Promise<OtpChallenge[]> {
-  try {
-    const raw = await fs.readFile(indexPath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((entry: unknown) => {
-        const r = OtpChallengeSchema.safeParse(entry);
-        return r.success ? r.data : null;
-      })
-      .filter((c): c is OtpChallenge => c !== null);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
-  }
+function row2otp(row: { data: unknown }): OtpChallenge | null {
+  const r = OtpChallengeSchema.safeParse(row.data);
+  return r.success ? r.data : null;
 }
 
-async function writeIndex(rows: OtpChallenge[]) {
-  await fs.writeFile(indexPath(), JSON.stringify(rows, null, 2), 'utf8');
-}
-
-async function persist(c: OtpChallenge) {
-  await ensureDir();
-  await fs.writeFile(rowPath(c.id), JSON.stringify(c, null, 2), 'utf8');
-  const index = await readIndex();
-  const at = index.findIndex((row) => row.id === c.id);
-  if (at >= 0) index[at] = c;
-  else index.unshift(c);
-  await writeIndex(index);
+async function persist(c: OtpChallenge): Promise<void> {
+  await prisma.otpRequest.upsert({
+    where: { id: c.id },
+    create: {
+      id: c.id,
+      email: c.channelTarget,
+      expiresAt: new Date(c.expiresAt),
+      data: c as unknown as object,
+    },
+    update: {
+      email: c.channelTarget,
+      expiresAt: new Date(c.expiresAt),
+      data: c as unknown as object,
+    },
+  });
 }
 
 export interface IssueOtpInput {
@@ -70,13 +46,6 @@ export interface IssueOtpInput {
   userAgent?: string;
 }
 
-/**
- * Issue a fresh OTP challenge. The plaintext code is included in
- * the return so the route layer can hand it to the email / SMS
- * sender. After this call, the code is on disk inside the row but
- * NEVER returned to the verifying client (the verify endpoint just
- * reports OK / WRONG_CODE / etc., never the code).
- */
 export async function issueOtp(input: IssueOtpInput, ctx?: AuditContext): Promise<OtpChallenge> {
   const now = new Date();
   const id = newOtpChallengeId();
@@ -99,10 +68,8 @@ export async function issueOtp(input: IssueOtpInput, ctx?: AuditContext): Promis
   await persist(c);
   await recordAudit({
     action: 'create',
-    entityType: 'Signature', // OTPs gate signing today; future portal-login
-                              // OTPs would tag against User instead
+    entityType: 'Signature',
     entityId: c.id,
-    // Don't record the plaintext code in the audit row.
     after: { ...c, code: '<redacted>' },
     ctx,
   });
@@ -111,25 +78,19 @@ export async function issueOtp(input: IssueOtpInput, ctx?: AuditContext): Promis
 
 export async function getOtp(id: string): Promise<OtpChallenge | null> {
   if (!/^otp-[a-z0-9]{8}$/.test(id)) return null;
-  try {
-    const raw = await fs.readFile(rowPath(id), 'utf8');
-    return OtpChallengeSchema.parse(JSON.parse(raw));
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    throw err;
-  }
+  const row = await prisma.otpRequest.findFirst({ where: { id } });
+  if (!row) return null;
+  return row2otp(row);
 }
 
 export async function listOtpsForPurpose(purpose: string): Promise<OtpChallenge[]> {
-  const all = await readIndex();
-  return all.filter((c) => c.purpose === purpose);
+  const rows = await prisma.otpRequest.findMany({});
+  return rows
+    .map(row2otp)
+    .filter((c): c is OtpChallenge => c !== null)
+    .filter((c) => c.purpose === purpose);
 }
 
-/**
- * Verify a submitted code against a challenge. Mutates the
- * challenge row's status / attemptCount / verifiedAt as needed
- * and returns the outcome.
- */
 export async function verifyOtp(
   id: string,
   submitted: string,
@@ -185,7 +146,6 @@ export async function verifyOtp(
       action,
       entityType: 'Signature',
       entityId: id,
-      // Redact code in before/after snapshots.
       before: { ...existing, code: '<redacted>' },
       after: { ...updated, code: '<redacted>' },
       ctx: {
