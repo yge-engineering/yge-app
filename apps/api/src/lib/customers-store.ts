@@ -1,59 +1,49 @@
-// Every mutation here records an audit event via recordAudit() —
-// CLAUDE.md mandates 'every mutation is audit-logged'.
-//
-// File-based store for customers.
+// Postgres-backed store for customers.
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { prisma } from '@yge/db';
 import {
   CustomerSchema,
   newCustomerId,
   type Customer,
   type CustomerCreate,
+  type CustomerKind,
   type CustomerPatch,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
 
-function dataDir(): string {
-  return process.env.CUSTOMERS_DATA_DIR ?? path.resolve(process.cwd(), 'data', 'customers');
-}
-function indexPath(): string {
-  return path.join(dataDir(), 'index.json');
-}
-function rowPath(id: string): string {
-  return path.join(dataDir(), `${id}.json`);
-}
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
 
-async function ensureDir() {
-  await fs.mkdir(dataDir(), { recursive: true });
-}
+type DbCustomerType = 'PUBLIC_AGENCY' | 'PRIVATE' | 'UTILITY' | 'OTHER';
 
-async function readIndex(): Promise<Customer[]> {
-  try {
-    const raw = await fs.readFile(indexPath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((entry: unknown) => {
-        const result = CustomerSchema.safeParse(entry);
-        return result.success ? result.data : null;
-      })
-      .filter((c): c is Customer => c !== null);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
+function kindToType(kind: CustomerKind): DbCustomerType {
+  switch (kind) {
+    case 'STATE_AGENCY':
+    case 'FEDERAL_AGENCY':
+    case 'COUNTY':
+    case 'CITY':
+    case 'SPECIAL_DISTRICT':
+      return 'PUBLIC_AGENCY';
+    case 'PRIVATE_OWNER':
+    case 'PRIME_CONTRACTOR':
+      return 'PRIVATE';
+    default:
+      return 'OTHER';
   }
 }
 
-async function writeIndex(entries: Customer[]) {
-  await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
+function row2cus(row: { data: unknown }): Customer | null {
+  if (!row.data) return null;
+  try {
+    return CustomerSchema.parse(row.data);
+  } catch {
+    return null;
+  }
 }
 
 export async function createCustomer(
   input: CustomerCreate,
   ctx?: AuditContext,
 ): Promise<Customer> {
-  await ensureDir();
   const now = new Date().toISOString();
   const id = newCustomerId();
   const c: Customer = {
@@ -65,10 +55,22 @@ export async function createCustomer(
     ...input,
   };
   CustomerSchema.parse(c);
-  await fs.writeFile(rowPath(id), JSON.stringify(c, null, 2), 'utf8');
-  const index = await readIndex();
-  index.unshift(c);
-  await writeIndex(index);
+  await prisma.customer.create({
+    data: {
+      id,
+      companyId: DEFAULT_COMPANY_ID,
+      name: c.legalName,
+      type: kindToType(c.kind),
+      contactName: c.contactName ?? null,
+      contactEmail: c.email ?? null,
+      contactPhone: c.phone ?? null,
+      addressLine: c.billingAddressLine ?? null,
+      city: c.city ?? null,
+      state: c.state ?? null,
+      zip: c.zip ?? null,
+      data: c as unknown as object,
+    },
+  });
   await recordAudit({
     action: 'create',
     entityType: 'Customer',
@@ -79,10 +81,13 @@ export async function createCustomer(
   return c;
 }
 
-export async function listCustomers(filter?: {
-  kind?: string;
-}): Promise<Customer[]> {
-  let all = await readIndex();
+export async function listCustomers(filter?: { kind?: string }): Promise<Customer[]> {
+  const rows = await prisma.customer.findMany({
+    where: { companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+  });
+  let all = rows
+    .map((r) => row2cus(r))
+    .filter((c): c is Customer => c !== null);
   if (filter?.kind) all = all.filter((c) => c.kind === filter.kind);
   all.sort((a, b) => a.legalName.localeCompare(b.legalName));
   return all;
@@ -90,13 +95,11 @@ export async function listCustomers(filter?: {
 
 export async function getCustomer(id: string): Promise<Customer | null> {
   if (!/^cus-[a-z0-9]{8}$/.test(id)) return null;
-  try {
-    const raw = await fs.readFile(rowPath(id), 'utf8');
-    return CustomerSchema.parse(JSON.parse(raw));
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    throw err;
-  }
+  const row = await prisma.customer.findFirst({
+    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+  });
+  if (!row) return null;
+  return row2cus(row);
 }
 
 export async function updateCustomer(
@@ -115,15 +118,21 @@ export async function updateCustomer(
     updatedAt: new Date().toISOString(),
   };
   CustomerSchema.parse(updated);
-  await fs.writeFile(rowPath(id), JSON.stringify(updated, null, 2), 'utf8');
-  const index = await readIndex();
-  const idx = index.findIndex((c) => c.id === id);
-  if (idx >= 0) {
-    index[idx] = updated;
-  } else {
-    index.unshift(updated);
-  }
-  await writeIndex(index);
+  await prisma.customer.update({
+    where: { id },
+    data: {
+      name: updated.legalName,
+      type: kindToType(updated.kind),
+      contactName: updated.contactName ?? null,
+      contactEmail: updated.email ?? null,
+      contactPhone: updated.phone ?? null,
+      addressLine: updated.billingAddressLine ?? null,
+      city: updated.city ?? null,
+      state: updated.state ?? null,
+      zip: updated.zip ?? null,
+      data: updated as unknown as object,
+    },
+  });
   await recordAudit({
     action: auditAction,
     entityType: 'Customer',

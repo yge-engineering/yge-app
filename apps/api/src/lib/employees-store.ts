@@ -1,66 +1,38 @@
-// Every mutation here records an audit event via recordAudit() —
-// CLAUDE.md mandates 'every mutation is audit-logged'.
-//
-// File-based store for employees.
-//
-// Phase 1 stand-in for the future Postgres `Employee` table. Surface area
-// maps 1:1 to a Prisma repository so the routes + UI don't change when
-// Postgres lands.
+// Postgres-backed store for employees.
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { prisma } from '@yge/db';
 import {
   EmployeeSchema,
   newEmployeeId,
   type Employee,
   type EmployeeCreate,
   type EmployeePatch,
+  type EmploymentStatus,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
 
-function dataDir(): string {
-  return (
-    process.env.EMPLOYEES_DATA_DIR ??
-    path.resolve(process.cwd(), 'data', 'employees')
-  );
-}
-function indexPath(): string {
-  return path.join(dataDir(), 'index.json');
-}
-function employeePath(id: string): string {
-  return path.join(dataDir(), `${id}.json`);
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+
+type DbStatus = 'ACTIVE' | 'ON_LEAVE' | 'TERMINATED';
+
+function statusToDb(s: EmploymentStatus): DbStatus {
+  if (s === 'LAID_OFF') return 'TERMINATED';
+  return s as DbStatus;
 }
 
-async function ensureDir() {
-  await fs.mkdir(dataDir(), { recursive: true });
-}
-
-async function readIndex(): Promise<Employee[]> {
+function row2emp(row: { data: unknown }): Employee | null {
+  if (!row.data) return null;
   try {
-    const raw = await fs.readFile(indexPath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((entry: unknown) => {
-        const result = EmployeeSchema.safeParse(entry);
-        return result.success ? result.data : null;
-      })
-      .filter((e): e is Employee => e !== null);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
+    return EmployeeSchema.parse(row.data);
+  } catch {
+    return null;
   }
-}
-
-async function writeIndex(entries: Employee[]) {
-  await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
 }
 
 export async function createEmployee(
   input: EmployeeCreate,
   ctx?: AuditContext,
 ): Promise<Employee> {
-  await ensureDir();
   const now = new Date().toISOString();
   const id = newEmployeeId();
   const e: Employee = {
@@ -73,10 +45,21 @@ export async function createEmployee(
     ...input,
   };
   EmployeeSchema.parse(e);
-  await fs.writeFile(employeePath(id), JSON.stringify(e, null, 2), 'utf8');
-  const index = await readIndex();
-  index.unshift(e);
-  await writeIndex(index);
+  // hireDate is required by Prisma; fall back to created-now when the
+  // file-store row had no hiredOn value.
+  const hireDate = e.hiredOn ? new Date(e.hiredOn) : new Date(now);
+  await prisma.employee.create({
+    data: {
+      id,
+      companyId: DEFAULT_COMPANY_ID,
+      firstName: e.firstName,
+      lastName: e.lastName,
+      hireDate,
+      status: statusToDb(e.status),
+      classification: e.classification,
+      data: e as unknown as object,
+    },
+  });
   await recordAudit({
     action: 'create',
     entityType: 'Employee',
@@ -88,45 +71,21 @@ export async function createEmployee(
 }
 
 export async function listEmployees(): Promise<Employee[]> {
-  return readIndex();
+  const rows = await prisma.employee.findMany({
+    where: { companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+  });
+  return rows
+    .map((r) => row2emp(r))
+    .filter((e): e is Employee => e !== null);
 }
 
 export async function getEmployee(id: string): Promise<Employee | null> {
   if (!/^emp-[a-z0-9]{8}$/.test(id)) return null;
-  try {
-    const raw = await fs.readFile(employeePath(id), 'utf8');
-    return EmployeeSchema.parse(JSON.parse(raw));
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    throw err;
-  }
-}
-
-/** Permanently remove an employee. Returns true if the row existed and
- *  was deleted, false if not found. The audit event keeps the record
- *  history visible after the row itself is gone. */
-export async function deleteEmployee(
-  id: string,
-  ctx?: AuditContext,
-): Promise<boolean> {
-  const existing = await getEmployee(id);
-  if (!existing) return false;
-  try {
-    await fs.unlink(employeePath(id));
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err;
-  }
-  const index = await readIndex();
-  const next = index.filter((e) => e.id !== id);
-  await writeIndex(next);
-  await recordAudit({
-    action: 'delete',
-    entityType: 'Employee',
-    entityId: id,
-    before: existing,
-    ctx,
+  const row = await prisma.employee.findFirst({
+    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
   });
-  return true;
+  if (!row) return null;
+  return row2emp(row);
 }
 
 export async function updateEmployee(
@@ -145,15 +104,18 @@ export async function updateEmployee(
     updatedAt: new Date().toISOString(),
   };
   EmployeeSchema.parse(updated);
-  await fs.writeFile(employeePath(id), JSON.stringify(updated, null, 2), 'utf8');
-  const index = await readIndex();
-  const idx = index.findIndex((e) => e.id === id);
-  if (idx >= 0) {
-    index[idx] = updated;
-  } else {
-    index.unshift(updated);
-  }
-  await writeIndex(index);
+  const hireDate = updated.hiredOn ? new Date(updated.hiredOn) : new Date(existing.createdAt);
+  await prisma.employee.update({
+    where: { id },
+    data: {
+      firstName: updated.firstName,
+      lastName: updated.lastName,
+      hireDate,
+      status: statusToDb(updated.status),
+      classification: updated.classification,
+      data: updated as unknown as object,
+    },
+  });
   await recordAudit({
     action: auditAction,
     entityType: 'Employee',
@@ -163,4 +125,18 @@ export async function updateEmployee(
     ctx,
   });
   return updated;
+}
+
+export async function deleteEmployee(id: string, ctx?: AuditContext): Promise<boolean> {
+  const existing = await getEmployee(id);
+  if (!existing) return false;
+  await prisma.employee.delete({ where: { id } });
+  await recordAudit({
+    action: 'delete',
+    entityType: 'Employee',
+    entityId: id,
+    before: existing,
+    ctx,
+  });
+  return true;
 }

@@ -171,6 +171,7 @@ model Customer {
   city         String?
   state        String?
   zip          String?
+  data         Json?
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
   deletedAt    DateTime?
@@ -392,6 +393,7 @@ model EquipmentRate {
   hourlyCents Int // internal cost rate per hour
   ownerModel  String? // "Cat 324"
   serialNum   String?
+  data        Json?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
@@ -435,6 +437,7 @@ model Material {
   unitCostCents Int
   vendor        String?
   lastQuotedAt  DateTime?
+  data          Json?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   deletedAt     DateTime?
