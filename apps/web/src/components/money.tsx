@@ -41,17 +41,23 @@ export function Money({
 }: Props) {
   const isNeg = cents < 0;
   const formatted = formatCents(Math.abs(cents), { decimals, compact });
+  // When compact, expose the full precision in the title so a hover
+  // shows e.g. "$1,234,567" for a "$1.2M" display.
+  const fullDollars = compact
+    ? formatCents(Math.abs(cents), { decimals: false, compact: false })
+    : undefined;
+  const titleAttr = fullDollars ? (isNeg ? `-${fullDollars}` : fullDollars) : undefined;
   if (!highlightNegative) {
-    return <span className={`whitespace-nowrap font-mono ${className ?? ''}`}>{isNeg ? `-${formatted}` : formatted}</span>;
+    return <span title={titleAttr} className={`whitespace-nowrap font-mono ${className ?? ''}`}>{isNeg ? `-${formatted}` : formatted}</span>;
   }
   if (isNeg) {
     return (
-      <span className={`whitespace-nowrap font-mono text-red-700 ${className ?? ''}`}>
+      <span title={titleAttr} className={`whitespace-nowrap font-mono text-red-700 ${className ?? ''}`}>
         ({formatted})
       </span>
     );
   }
   return (
-    <span className={`whitespace-nowrap font-mono text-gray-900 ${className ?? ''}`}>{formatted}</span>
+    <span title={titleAttr} className={`whitespace-nowrap font-mono text-gray-900 ${className ?? ''}`}>{formatted}</span>
   );
 }
