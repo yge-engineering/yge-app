@@ -78,6 +78,9 @@ export function InboxTriageTile({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [messages, setMessages] = useState<TriagedMessage[] | null>(null);
+  const [filed, setFiled] = useState<Set<string>>(new Set());
+  const [filing, setFiling] = useState<Set<string>>(new Set());
+  const [fileError, setFileError] = useState<string | null>(null);
 
   async function run() {
     setBusy(true);
@@ -139,6 +142,57 @@ export function InboxTriageTile({
         .slice(0, 5)
     : [];
 
+  async function fileToJob(
+    items: Array<{ messageId: string; jobId: string }>,
+  ) {
+    if (items.length === 0) return;
+    setFileError(null);
+    setFiling((prev) => {
+      const next = new Set(prev);
+      for (const i of items) next.add(i.messageId);
+      return next;
+    });
+    try {
+      const res = await fetch(
+        `${apiBaseUrl()}/api/microsoft/inbox-triage/file-to-job`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, items }),
+        },
+      );
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as {
+          error?: string;
+        };
+        setFileError(body.error ?? `File failed (${res.status})`);
+        return;
+      }
+      const out = (await res.json()) as {
+        moved: Array<{ messageId: string }>;
+        skipped: Array<{ messageId: string }>;
+      };
+      setFiled((prev) => {
+        const next = new Set(prev);
+        for (const m of out.moved) next.add(m.messageId);
+        for (const m of out.skipped) next.add(m.messageId);
+        return next;
+      });
+    } catch (err) {
+      setFileError((err as Error).message);
+    } finally {
+      setFiling((prev) => {
+        const next = new Set(prev);
+        for (const i of items) next.delete(i.messageId);
+        return next;
+      });
+    }
+  }
+
+  const fileableHigh = (messages ?? []).filter(
+    (m) => m.suggestedJob && m.suggestedJob.confidence === 'high' && !filed.has(m.id),
+  );
+
   return (
     <section className="mb-6 rounded-md border border-yge-blue-200 bg-yge-blue-50 p-4">
       <header className="flex flex-wrap items-center justify-between gap-3">
@@ -151,19 +205,42 @@ export function InboxTriageTile({
             no auto-file, no auto-reply.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={run}
-          disabled={busy}
-          className="rounded-md bg-yge-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50"
-        >
-          {busy ? 'Reading inbox…' : messages ? 'Refresh' : 'Run inbox triage'}
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          {messages && fileableHigh.length > 0 ? (
+            <button
+              type="button"
+              onClick={() =>
+                fileToJob(
+                  fileableHigh.map((m) => ({
+                    messageId: m.id,
+                    jobId: m.suggestedJob!.jobId,
+                  })),
+                )
+              }
+              className="rounded-md border border-yge-blue-600 bg-white px-3 py-1.5 text-xs font-semibold text-yge-blue-700 hover:bg-yge-blue-100"
+            >
+              File all HIGH ({fileableHigh.length})
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={run}
+            disabled={busy}
+            className="rounded-md bg-yge-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50"
+          >
+            {busy ? 'Reading inbox…' : messages ? 'Refresh' : 'Run inbox triage'}
+          </button>
+        </div>
       </header>
 
       {error ? (
         <p className="mt-3 rounded-md border border-red-300 bg-red-50 p-2 text-xs text-red-800">
           {error}
+        </p>
+      ) : null}
+      {fileError ? (
+        <p className="mt-3 rounded-md border border-red-300 bg-red-50 p-2 text-xs text-red-800">
+          File error: {fileError}
         </p>
       ) : null}
 
@@ -202,16 +279,39 @@ export function InboxTriageTile({
                         {m.nextAction}
                       </div>
                       {m.suggestedJob ? (
-                        <a
-                          href={`/jobs/${m.suggestedJob.jobId}`}
-                          className="mt-1 inline-block text-[11px] text-yge-blue-700 underline"
-                          title={m.suggestedJob.reasons.join('; ')}
-                        >
-                          → {m.suggestedJob.projectName}
-                          <span className="ml-1 text-gray-500">
-                            ({m.suggestedJob.confidence})
-                          </span>
-                        </a>
+                        <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px]">
+                          <a
+                            href={`/jobs/${m.suggestedJob.jobId}`}
+                            className="text-yge-blue-700 underline"
+                            title={m.suggestedJob.reasons.join('; ')}
+                          >
+                            → {m.suggestedJob.projectName}
+                            <span className="ml-1 text-gray-500">
+                              ({m.suggestedJob.confidence})
+                            </span>
+                          </a>
+                          {filed.has(m.id) ? (
+                            <span className="rounded border border-green-300 bg-green-50 px-1.5 py-0.5 text-green-800">
+                              Filed ✓
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              disabled={filing.has(m.id)}
+                              onClick={() =>
+                                fileToJob([
+                                  {
+                                    messageId: m.id,
+                                    jobId: m.suggestedJob!.jobId,
+                                  },
+                                ])
+                              }
+                              className="rounded border border-yge-blue-300 bg-white px-1.5 py-0.5 font-semibold text-yge-blue-700 hover:bg-yge-blue-50 disabled:opacity-50"
+                            >
+                              {filing.has(m.id) ? 'Filing…' : 'File'}
+                            </button>
+                          )}
+                        </div>
                       ) : null}
                     </div>
                     <span
