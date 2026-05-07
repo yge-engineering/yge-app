@@ -16,6 +16,16 @@ import { PinnedCountBadge } from '../../components/pinned-count-badge';
 import { EstimatesSortHeaders } from '../../components/estimates-sort-headers';
 import { getTranslator } from '../../lib/locale';
 
+const PROJECT_TYPE_ICON: Record<string, string> = {
+  DRAINAGE: '💧',
+  FUEL_BREAK: '🔥',
+  GRADING: '🚜',
+  PAVING: '🛣️',
+  STRUCTURE: '🏗️',
+  UTILITIES: '🔌',
+  OTHER: '🚧',
+};
+
 interface DraftSummary {
   id: string;
   createdAt: string;
@@ -179,6 +189,7 @@ export default async function DraftsPage() {
                     )}
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-600">
+                    <span className="mr-1">{PROJECT_TYPE_ICON[d.projectType] ?? '🚧'}</span>
                     {d.projectType.replace(/_/g, ' ')}
                   </td>
                   <td className="px-4 py-3 text-gray-700">{d.bidItemCount}</td>
