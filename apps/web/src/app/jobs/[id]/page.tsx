@@ -29,6 +29,7 @@ import { JobInfoEditor } from '@/components/job-info-editor';
 import { BidDueBanner } from '@/components/bid-due-banner';
 import { JobAgencyCompetitors } from '@/components/job-agency-competitors';
 import { JobLinkedBidTabs } from '@/components/job-linked-bid-tabs';
+import { JobProfitabilityTile } from '@/components/job-profitability-tile';
 import { ForecastStrip } from '@/components/forecast-strip';
 import { fetchNwsForecast } from '@/lib/nws';
 
@@ -449,6 +450,8 @@ export default async function JobDetailPage({
       {job.ownerAgency && (
         <JobAgencyCompetitors apiBaseUrl={apiBaseUrl()} ownerAgency={job.ownerAgency} />
       )}
+
+      <JobProfitabilityTile jobId={job.id} />
 
       <JobLinkedBidTabs apiBaseUrl={apiBaseUrl()} jobId={job.id} />
 
