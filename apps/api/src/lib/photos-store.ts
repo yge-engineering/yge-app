@@ -1,10 +1,6 @@
-// Every mutation here records an audit event via recordAudit() —
-// CLAUDE.md mandates 'every mutation is audit-logged'.
-//
-// File-based store for field photo metadata.
+// Postgres-backed store for photo metadata.
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { prisma } from '@yge/db';
 import {
   PhotoSchema,
   newPhotoId,
@@ -14,46 +10,16 @@ import {
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
 
-function dataDir(): string {
-  return process.env.PHOTOS_DATA_DIR ?? path.resolve(process.cwd(), 'data', 'photos');
-}
-function indexPath(): string {
-  return path.join(dataDir(), 'index.json');
-}
-function rowPath(id: string): string {
-  return path.join(dataDir(), `${id}.json`);
-}
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
 
-async function ensureDir() {
-  await fs.mkdir(dataDir(), { recursive: true });
-}
-
-async function readIndex(): Promise<Photo[]> {
-  try {
-    const raw = await fs.readFile(indexPath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((entry: unknown) => {
-        const result = PhotoSchema.safeParse(entry);
-        return result.success ? result.data : null;
-      })
-      .filter((p): p is Photo => p !== null);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
-  }
-}
-
-async function writeIndex(entries: Photo[]) {
-  await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
+function row2photo(row: { data: unknown }): Photo {
+  return PhotoSchema.parse(row.data);
 }
 
 export async function createPhoto(
   input: PhotoCreate,
   ctx?: AuditContext,
 ): Promise<Photo> {
-  await ensureDir();
   const now = new Date().toISOString();
   const id = newPhotoId();
   const p: Photo = {
@@ -64,10 +30,14 @@ export async function createPhoto(
     ...input,
   };
   PhotoSchema.parse(p);
-  await fs.writeFile(rowPath(id), JSON.stringify(p, null, 2), 'utf8');
-  const index = await readIndex();
-  index.unshift(p);
-  await writeIndex(index);
+  await prisma.photo.create({
+    data: {
+      id,
+      companyId: DEFAULT_COMPANY_ID,
+      jobId: p.jobId,
+      data: p as unknown as object,
+    },
+  });
   await recordAudit({
     action: 'create',
     entityType: 'Photo',
@@ -82,8 +52,15 @@ export async function listPhotos(filter?: {
   jobId?: string;
   category?: string;
 }): Promise<Photo[]> {
-  let all = await readIndex();
-  if (filter?.jobId) all = all.filter((p) => p.jobId === filter.jobId);
+  const rows = await prisma.photo.findMany({
+    where: {
+      companyId: DEFAULT_COMPANY_ID,
+      deletedAt: null,
+      ...(filter?.jobId ? { jobId: filter.jobId } : {}),
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  let all = rows.map(row2photo);
   if (filter?.category) all = all.filter((p) => p.category === filter.category);
   all.sort((a, b) => b.takenOn.localeCompare(a.takenOn));
   return all;
@@ -91,13 +68,10 @@ export async function listPhotos(filter?: {
 
 export async function getPhoto(id: string): Promise<Photo | null> {
   if (!/^ph-[a-z0-9]{8}$/.test(id)) return null;
-  try {
-    const raw = await fs.readFile(rowPath(id), 'utf8');
-    return PhotoSchema.parse(JSON.parse(raw));
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    throw err;
-  }
+  const row = await prisma.photo.findFirst({
+    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+  });
+  return row ? row2photo(row) : null;
 }
 
 export async function updatePhoto(
@@ -116,15 +90,10 @@ export async function updatePhoto(
     updatedAt: new Date().toISOString(),
   };
   PhotoSchema.parse(updated);
-  await fs.writeFile(rowPath(id), JSON.stringify(updated, null, 2), 'utf8');
-  const index = await readIndex();
-  const idx = index.findIndex((p) => p.id === id);
-  if (idx >= 0) {
-    index[idx] = updated;
-  } else {
-    index.unshift(updated);
-  }
-  await writeIndex(index);
+  await prisma.photo.update({
+    where: { id },
+    data: { jobId: updated.jobId, data: updated as unknown as object },
+  });
   await recordAudit({
     action: auditAction,
     entityType: 'Photo',
