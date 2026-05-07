@@ -1,85 +1,56 @@
-// SSO handoff store — one-time tokens that bridge the OAuth callback
-// (API origin) to the YGE session cookie (web origin).
-//
-// Plain English: when the user clicks "Sign in with Microsoft", we
-// run OAuth on the API, look up the portal user, and need to hand
-// the result to the web app so it can drop a YGE session cookie on
-// app.youngge.com. Cross-origin cookies are messy, so instead we
-// store a short-lived random token here, redirect to the web with
-// that token in the URL, and the web exchanges it for the email
-// via a server-to-server call. The token is one-time and expires
-// in 60 seconds.
+// Postgres-backed store for SSO handoff tokens.
+// Single-use, 60s TTL. Bridges OAuth callback (API) → web session.
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
 import { randomBytes } from 'node:crypto';
+import { prisma } from '@yge/db';
+
+const TTL_MS = 60_000;
 
 interface Handoff {
   token: string;
   email: string;
-  createdAt: number; // epoch ms
+  createdAt: number;
   consumedAt?: number;
-}
-
-const TTL_MS = 60_000;
-
-function dataDir(): string {
-  return (
-    process.env.SSO_HANDOFF_DATA_DIR ??
-    path.resolve(process.cwd(), 'data', 'sso-handoffs')
-  );
-}
-function filePath(): string {
-  return path.join(dataDir(), 'handoffs.json');
-}
-
-async function readAll(): Promise<Handoff[]> {
-  try {
-    const raw = await fs.readFile(filePath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as Handoff[]) : [];
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
-  }
-}
-async function writeAll(entries: Handoff[]): Promise<void> {
-  await fs.mkdir(dataDir(), { recursive: true });
-  await fs.writeFile(filePath(), JSON.stringify(entries, null, 2), 'utf8');
 }
 
 function newToken(): string {
   return randomBytes(32).toString('base64url');
 }
 
-/** Create a fresh handoff token bound to this email. */
 export async function createHandoff(email: string): Promise<string> {
-  const all = await readAll();
-  const now = Date.now();
-  // Drop expired or consumed-and-old entries.
-  const fresh = all.filter(
-    (h) =>
-      now - h.createdAt < TTL_MS * 5 && // keep some history for debugging
-      !(h.consumedAt && now - h.consumedAt > TTL_MS),
-  );
   const token = newToken();
-  fresh.push({ token, email: email.trim().toLowerCase(), createdAt: now });
-  await writeAll(fresh);
+  const stored: Handoff = {
+    token,
+    email: email.trim().toLowerCase(),
+    createdAt: Date.now(),
+  };
+  await prisma.ssoHandoff.create({
+    data: {
+      id: `sso-${token.slice(0, 16)}`,
+      expiresAt: new Date(Date.now() + TTL_MS),
+      data: stored as unknown as object,
+    },
+  });
   return token;
 }
 
-/** Consume the token, return the email if valid + unexpired + unconsumed.
- *  Marks the token consumed so it can't be reused. */
 export async function consumeHandoff(token: string): Promise<string | null> {
   if (!token || token.length < 16) return null;
-  const all = await readAll();
-  const now = Date.now();
-  const idx = all.findIndex((h) => h.token === token);
-  if (idx < 0) return null;
-  const h = all[idx]!;
-  if (h.consumedAt) return null;
-  if (now - h.createdAt > TTL_MS) return null;
-  all[idx] = { ...h, consumedAt: now };
-  await writeAll(all);
-  return h.email;
+  const rows = await prisma.ssoHandoff.findMany({
+    where: { expiresAt: { gt: new Date() } },
+  });
+  for (const r of rows) {
+    const data = r.data as unknown as Handoff;
+    if (data.token === token && !data.consumedAt) {
+      const now = Date.now();
+      if (now - data.createdAt > TTL_MS) return null;
+      const consumed: Handoff = { ...data, consumedAt: now };
+      await prisma.ssoHandoff.update({
+        where: { id: r.id },
+        data: { data: consumed as unknown as object },
+      });
+      return data.email;
+    }
+  }
+  return null;
 }

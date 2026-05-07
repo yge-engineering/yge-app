@@ -1,21 +1,14 @@
-// User credentials store — scrypt-hashed passwords for seeded users.
-//
-// Plain English: the password gate for app.youngge.com. The web app
-// keeps the seeded-user allowlist (Ryan + Brook). The first time
-// someone signs in, they pick a password; subsequent sign-ins compare
-// the typed password against the stored scrypt hash.
-//
-// Storage: data/credentials.json on the API's data dir. Same pattern
-// as the other JSON-backed stores (dir-rates, jobs, etc).
+// Postgres-backed store for scrypt-hashed passwords.
+// Same external API as the file-store version: hasPassword,
+// setPassword, clearPassword, verifyPassword.
 
-import { promises as fs } from 'fs';
 import {
   scrypt as scryptCb,
   randomBytes,
   timingSafeEqual,
-} from 'crypto';
-import { promisify } from 'util';
-import path from 'path';
+} from 'node:crypto';
+import { promisify } from 'node:util';
+import { prisma } from '@yge/db';
 
 const scrypt = promisify(scryptCb) as (
   password: string | Buffer,
@@ -24,98 +17,66 @@ const scrypt = promisify(scryptCb) as (
 ) => Promise<Buffer>;
 
 const KEY_LEN = 64;
-
-function dataDir(): string {
-  return process.env.CREDENTIALS_DATA_DIR ?? path.resolve(process.cwd(), 'data');
-}
-
-function filePath(): string {
-  return path.join(dataDir(), 'credentials.json');
-}
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
 
 interface StoredCredential {
-  /** Lowercase email (key). */
   email: string;
-  /** Hex-encoded salt. */
   salt: string;
-  /** Hex-encoded scrypt hash. */
   hash: string;
-  /** ISO date when the password was set. */
   setAt: string;
 }
 
-interface FileShape {
-  credentials: StoredCredential[];
-}
-
-async function readAll(): Promise<FileShape> {
-  try {
-    const raw = await fs.readFile(filePath(), 'utf-8');
-    return JSON.parse(raw) as FileShape;
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
-      return { credentials: [] };
-    }
-    throw err;
-  }
-}
-
-async function writeAll(data: FileShape): Promise<void> {
-  await fs.mkdir(dataDir(), { recursive: true });
-  await fs.writeFile(filePath(), JSON.stringify(data, null, 2));
+function row2cred(row: { data: unknown }): StoredCredential {
+  return row.data as unknown as StoredCredential;
 }
 
 async function findCredential(email: string): Promise<StoredCredential | null> {
-  const file = await readAll();
   const norm = email.toLowerCase();
-  return file.credentials.find((c) => c.email === norm) ?? null;
+  const row = await prisma.credential.findUnique({
+    where: { companyId_email: { companyId: DEFAULT_COMPANY_ID, email: norm } },
+  });
+  return row ? row2cred(row) : null;
 }
 
-/** True iff a password has been set for this email. */
 export async function hasPassword(email: string): Promise<boolean> {
-  const cred = await findCredential(email);
-  return cred !== null;
+  return (await findCredential(email)) !== null;
 }
 
-/** Set or replace the password for this email. Throws on too-short input. */
-export async function setPassword(
-  email: string,
-  password: string,
-): Promise<void> {
+export async function setPassword(email: string, password: string): Promise<void> {
   if (password.length < 8) {
     throw new Error('Password must be at least 8 characters');
   }
-  const file = await readAll();
   const norm = email.toLowerCase();
   const salt = randomBytes(16).toString('hex');
   const hashBuf = await scrypt(password, salt, KEY_LEN);
-  const newCred: StoredCredential = {
+  const cred: StoredCredential = {
     email: norm,
     salt,
     hash: hashBuf.toString('hex'),
     setAt: new Date().toISOString(),
   };
-  const idx = file.credentials.findIndex((c) => c.email === norm);
-  if (idx >= 0) file.credentials[idx] = newCred;
-  else file.credentials.push(newCred);
-  await writeAll(file);
+  await prisma.credential.upsert({
+    where: { companyId_email: { companyId: DEFAULT_COMPANY_ID, email: norm } },
+    create: {
+      id: `cred-${norm.replace(/[^a-z0-9]/g, '').slice(0, 24)}`,
+      companyId: DEFAULT_COMPANY_ID,
+      email: norm,
+      data: cred as unknown as object,
+    },
+    update: { data: cred as unknown as object },
+  });
 }
 
-/** Remove the credential row for this email so the next sign-in forces
- *  a fresh password setup. Used by the admin Reset Password button on
- *  /admin/portal-users for users who forgot their password. Returns
- *  true if a row was removed, false if there was nothing to remove. */
 export async function clearPassword(email: string): Promise<boolean> {
-  const file = await readAll();
   const norm = email.toLowerCase();
-  const before = file.credentials.length;
-  file.credentials = file.credentials.filter((c) => c.email !== norm);
-  if (file.credentials.length === before) return false;
-  await writeAll(file);
+  const existing = await findCredential(norm);
+  if (!existing) return false;
+  await prisma.credential.delete({
+    where: { companyId_email: { companyId: DEFAULT_COMPANY_ID, email: norm } },
+  });
   return true;
 }
 
-/** Verify that the password matches the stored hash for this email. */
 export async function verifyPassword(
   email: string,
   password: string,
