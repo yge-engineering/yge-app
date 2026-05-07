@@ -388,7 +388,9 @@ export default async function EstimateDetailPage({
         </div>
       )}
 
-      <AuditBinderPanel entityType="Estimate" entityId={data.estimate.id} />
+      <div className="print:hidden">
+        <AuditBinderPanel entityType="Estimate" entityId={data.estimate.id} />
+      </div>
     </main>
     </AppShell>
   );
