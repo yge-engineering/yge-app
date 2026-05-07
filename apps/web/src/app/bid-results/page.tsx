@@ -156,7 +156,10 @@ export default async function BidResultsPage() {
                             <span className="text-gray-400">{r.jobId}</span>
                           )}
                         </td>
-                        <td className="px-4 py-3"><StatusPill label={bidOutcomeLabel(r.outcome)} tone={outcomeTone(r.outcome)} /></td>
+                        <td className="px-4 py-3">
+                          {r.outcome === 'WON_BY_YGE' ? <span className="mr-1" title="YGE won">🏆</span> : null}
+                          <StatusPill label={bidOutcomeLabel(r.outcome)} tone={outcomeTone(r.outcome)} />
+                        </td>
                         <td className="px-4 py-3 text-right">
                           {yge ? <Money cents={yge.amountCents} /> : <span className="font-mono text-gray-400">—</span>}
                         </td>
