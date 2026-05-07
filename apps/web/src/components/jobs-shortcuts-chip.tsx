@@ -5,7 +5,7 @@ import { useState } from 'react';
 export function JobsShortcutsChip() {
   const [open, setOpen] = useState(false);
   return (
-    <span className="relative inline-block">
+    <span className="relative inline-block print:hidden">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -44,6 +44,18 @@ export function JobsShortcutsChip() {
             <li className="flex items-center justify-between">
               <span>Sort by column</span>
               <span className="text-[10px] text-gray-500">click header</span>
+            </li>
+            <li className="flex items-center justify-between">
+              <span>Move row down / up</span>
+              <span className="text-[10px] text-gray-500">
+                <kbd className="rounded border border-gray-300 bg-gray-50 px-1 py-0.5 font-mono">j</kbd>
+                {' '}/{' '}
+                <kbd className="rounded border border-gray-300 bg-gray-50 px-1 py-0.5 font-mono">k</kbd>
+              </span>
+            </li>
+            <li className="flex items-center justify-between">
+              <span>Open focused row</span>
+              <kbd className="rounded border border-gray-300 bg-gray-50 px-1.5 py-0.5 font-mono text-[10px]">Enter</kbd>
             </li>
             <li className="flex items-center justify-between">
               <span>Open shortcuts dialog</span>
