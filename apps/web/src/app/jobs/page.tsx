@@ -14,6 +14,7 @@ import { DashboardRefreshButton } from '../../components/dashboard-refresh-butto
 import { JobsShortcutsChip } from '../../components/jobs-shortcuts-chip';
 import { JobsPinButton, JobsPinReorder } from '../../components/jobs-pin-button';
 import { JobsPinFilterChip } from '../../components/jobs-pin-filter-chip';
+import { EstimatesKeyboardNav } from '../../components/estimates-keyboard-nav';
 import { PinnedCountBadge } from '../../components/pinned-count-badge';
 import { relativeTime } from '../../lib/relative-time';
 import { CopyMoneyButton } from '../../components/copy-money-button';
@@ -370,6 +371,7 @@ export default async function JobsPage({ searchParams }: PageProps) {
           </div>
           <EstimatesSortHeaders targetId="jobs-table" />
           <JobsPinReorder targetId="jobs-table" />
+          <EstimatesKeyboardNav targetId="jobs-table" />
           <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
           <table id="jobs-table" className="w-full text-left text-sm">
             <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
