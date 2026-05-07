@@ -1,9 +1,13 @@
-// CSV import for priced estimates. Pairs with bundle 1446's
-// `+ Add line` UX; this is the bulk-load companion.
+// CSV / .xlsx import for priced estimates. Accepts both formats
+// from a single endpoint; for .xlsx the caller picks which sheet
+// to use via the `sheetName` field on the multipart body. When
+// .xlsx is uploaded WITHOUT a sheetName, we return 422 with the
+// list of sheet names so the UI can render a picker.
 
 import { Router } from 'express';
 import multer from 'multer';
 import { z } from 'zod';
+import * as XLSX from 'xlsx';
 import { createEstimateFromImport } from '../lib/estimates-store';
 import type { PricedBidItem } from '@yge/shared';
 
@@ -11,7 +15,7 @@ export const pricedEstimatesImportRouter = Router({ mergeParams: true });
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: 10 * 1024 * 1024 },
 });
 
 interface ParseSummary {
@@ -32,8 +36,6 @@ function parseCurrencyToCents(s: string): number | null {
 }
 
 function splitCsvLine(line: string): string[] {
-  // Tiny CSV reader — handles quoted fields with embedded commas
-  // ("Knife River, Inc.") but no escaped quotes (rare in bid lines).
   const out: string[] = [];
   let cur = '';
   let inQuotes = false;
@@ -57,29 +59,26 @@ function splitCsvLine(line: string): string[] {
   return out.map((c) => c.trim());
 }
 
-function parseCsv(text: string): { items: PricedBidItem[]; summary: ParseSummary } {
-  const lines = text
-    .split(/\r?\n/)
-    .map((l) => l.trim())
-    .filter((l) => l.length > 0);
-  if (lines.length === 0)
+function rowsToItems(rows: string[][]): { items: PricedBidItem[]; summary: ParseSummary } {
+  if (rows.length === 0)
     return {
       items: [],
       summary: { itemsParsed: 0, itemsSkipped: 0, skippedReasons: [] },
     };
 
-  // Detect a header row: first row mentions "item" or "description".
-  const firstLower = lines[0]!.toLowerCase();
-  const hasHeader =
-    /\b(item|line|description|unit|quantity|qty|price)\b/.test(firstLower);
-  const dataRows = hasHeader ? lines.slice(1) : lines;
+  const firstRow = rows[0]!.map((c) => (c ?? '').toString().toLowerCase());
+  const hasHeader = firstRow.some((c) =>
+    /\b(item|line|description|unit|quantity|qty|price)\b/.test(c),
+  );
+  const dataRows = hasHeader ? rows.slice(1) : rows;
 
   const items: PricedBidItem[] = [];
   const reasons: string[] = [];
   let skipped = 0;
 
   for (let i = 0; i < dataRows.length; i++) {
-    const cols = splitCsvLine(dataRows[i]!);
+    const cols = dataRows[i]!.map((c) => (c ?? '').toString().trim());
+    if (cols.every((c) => !c)) continue; // skip wholly-empty rows
     if (cols.length < 4) {
       skipped += 1;
       reasons.push(`row ${i + 1}: needs at least 4 columns (item, description, unit, qty)`);
@@ -91,7 +90,7 @@ function parseCsv(text: string): { items: PricedBidItem[]; summary: ParseSummary
       reasons.push(`row ${i + 1}: empty itemNumber / description / unit`);
       continue;
     }
-    const qty = Number(qtyRaw?.replace(/,/g, '') ?? '');
+    const qty = Number((qtyRaw ?? '').replace(/,/g, ''));
     if (!Number.isFinite(qty) || qty < 0) {
       skipped += 1;
       reasons.push(`row ${i + 1}: invalid quantity "${qtyRaw}"`);
@@ -119,10 +118,44 @@ function parseCsv(text: string): { items: PricedBidItem[]; summary: ParseSummary
   };
 }
 
+function parseCsv(text: string): { items: PricedBidItem[]; summary: ParseSummary } {
+  const lines = text
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0);
+  return rowsToItems(lines.map(splitCsvLine));
+}
+
+function parseXlsxSheet(
+  buffer: Buffer,
+  sheetName: string,
+): { items: PricedBidItem[]; summary: ParseSummary } | null {
+  const wb = XLSX.read(buffer, { type: 'buffer' });
+  const sheet = wb.Sheets[sheetName];
+  if (!sheet) return null;
+  // Cast each cell to a string through SheetJS's `header: 1` mode so
+  // we get an array-of-arrays back.
+  const rowsRaw = XLSX.utils.sheet_to_json<unknown[]>(sheet, {
+    header: 1,
+    defval: '',
+    raw: false,
+  });
+  const rows: string[][] = rowsRaw.map((row) =>
+    row.map((c) => (c == null ? '' : String(c))),
+  );
+  return rowsToItems(rows);
+}
+
+function listXlsxSheets(buffer: Buffer): string[] {
+  const wb = XLSX.read(buffer, { type: 'buffer' });
+  return wb.SheetNames;
+}
+
 const ImportFieldsSchema = z.object({
   jobId: z.string().min(1).max(120),
   projectName: z.string().min(1).max(200),
   oppPercent: z.string().optional(),
+  sheetName: z.string().max(120).optional(),
 });
 
 pricedEstimatesImportRouter.post('/import-csv', upload.single('file'), async (req, res, next) => {
@@ -137,8 +170,46 @@ pricedEstimatesImportRouter.post('/import-csv', upload.single('file'), async (re
         issues: parsedFields.error.issues,
       });
     }
-    const text = req.file.buffer.toString('utf8');
-    const { items, summary } = parseCsv(text);
+
+    const filename = req.file.originalname.toLowerCase();
+    const isXlsx =
+      filename.endsWith('.xlsx') ||
+      filename.endsWith('.xlsm') ||
+      filename.endsWith('.xls') ||
+      req.file.mimetype.includes('spreadsheet');
+
+    let items: PricedBidItem[] = [];
+    let summary: ParseSummary = {
+      itemsParsed: 0,
+      itemsSkipped: 0,
+      skippedReasons: [],
+    };
+
+    if (isXlsx) {
+      const sheets = listXlsxSheets(req.file.buffer);
+      const wantedSheet = parsedFields.data.sheetName ?? '';
+      if (!wantedSheet || !sheets.includes(wantedSheet)) {
+        return res.status(422).json({
+          error: 'Multi-sheet workbook — pick which sheet holds the bid items.',
+          availableSheets: sheets,
+        });
+      }
+      const out = parseXlsxSheet(req.file.buffer, wantedSheet);
+      if (!out) {
+        return res.status(422).json({
+          error: `Sheet "${wantedSheet}" not found in workbook.`,
+          availableSheets: sheets,
+        });
+      }
+      items = out.items;
+      summary = out.summary;
+    } else {
+      const text = req.file.buffer.toString('utf8');
+      const out = parseCsv(text);
+      items = out.items;
+      summary = out.summary;
+    }
+
     if (items.length === 0) {
       return res.status(422).json({
         error:
