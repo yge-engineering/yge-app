@@ -68,8 +68,9 @@ export const ExpenseSchema = z.object({
 
   notes: z.string().max(10_000).optional(),
   /** Did the bank confirm the expense / reimbursement cleared?
-   *  Used by the bank-rec Apply flow. */
-  cleared: z.boolean().default(false),
+   *  Used by the bank-rec Apply flow. Optional (vs. defaulted) so
+   *  existing object literals don't have to set it. */
+  cleared: z.boolean().optional(),
   clearedOn: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'Use yyyy-mm-dd')

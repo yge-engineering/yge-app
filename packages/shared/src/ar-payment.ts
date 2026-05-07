@@ -64,8 +64,9 @@ export const ArPaymentSchema = z.object({
   payerName: z.string().max(200).optional(),
 
   /** Did the bank confirm the deposit cleared? Used by the
-   *  bank-rec Apply flow to flip rows en masse. */
-  cleared: z.boolean().default(false),
+   *  bank-rec Apply flow to flip rows en masse. Optional (vs.
+   *  defaulted) so existing object literals don't have to set it. */
+  cleared: z.boolean().optional(),
   clearedOn: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'Use yyyy-mm-dd')

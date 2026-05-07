@@ -28,6 +28,12 @@ interface TriagedMessage {
     | 'OTHER';
   confidence: 'HIGH' | 'MEDIUM' | 'LOW';
   nextAction: string;
+  suggestedJob: {
+    jobId: string;
+    projectName: string;
+    confidence: 'high' | 'medium' | 'low';
+    reasons: string[];
+  } | null;
 }
 
 const CATEGORY_LABELS: Record<TriagedMessage['category'], string> = {
@@ -195,6 +201,18 @@ export function InboxTriageTile({
                       <div className="mt-0.5 text-gray-700">
                         {m.nextAction}
                       </div>
+                      {m.suggestedJob ? (
+                        <a
+                          href={`/jobs/${m.suggestedJob.jobId}`}
+                          className="mt-1 inline-block text-[11px] text-yge-blue-700 underline"
+                          title={m.suggestedJob.reasons.join('; ')}
+                        >
+                          → {m.suggestedJob.projectName}
+                          <span className="ml-1 text-gray-500">
+                            ({m.suggestedJob.confidence})
+                          </span>
+                        </a>
+                      ) : null}
                     </div>
                     <span
                       className={`shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-semibold ${

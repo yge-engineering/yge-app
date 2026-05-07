@@ -29,6 +29,9 @@ import {
   triageEmails,
   type EmailTriageMessage,
 } from '../lib/email-triage';
+import { listJobs } from '../lib/jobs-store';
+import { listCustomers } from '../lib/customers-store';
+import { matchEmailToJob, type EmailJobCandidateJob } from '@yge/shared';
 import {
   deleteMicrosoftToken,
   getMicrosoftToken,
@@ -359,11 +362,43 @@ microsoftRouter.post('/inbox-triage', async (req, res, next) => {
         .json({ error: 'AI returned an unparseable response' });
     }
 
+    // Build the candidate-job list for the email→job matcher.
+    const [jobs, customers] = await Promise.all([
+      listJobs(),
+      listCustomers(),
+    ]);
+    const customerById = new Map(customers.map((c) => [c.id, c]));
+    const candidates: EmailJobCandidateJob[] = jobs.map((j) => {
+      // file-store Job has no customerId yet; the next iteration
+      // wires that. For now we use ownerAgency as a fallback.
+      const linked = (j as unknown as { customerId?: string }).customerId;
+      const cust = linked ? customerById.get(linked) : undefined;
+      return {
+        id: j.id,
+        projectName: j.projectName,
+        customerLegalName: cust?.legalName ?? j.ownerAgency,
+        customerDbaName: cust?.dbaName,
+        customerEmail: cust?.email,
+      };
+    });
+
     // Map AI items back onto the source messages so the UI gets
-    // subject + from in one shot.
+    // subject + from + suggested-job in one shot.
     const itemById = new Map(out.items.map((i) => [i.messageId, i]));
     const enriched = messages.map((m) => {
       const tri = itemById.get(m.id);
+      const match = matchEmailToJob(
+        {
+          subject: m.subject,
+          fromAddress: m.fromAddress,
+          bodyPreview: m.bodyPreview,
+        },
+        candidates,
+      );
+      const matchedJob =
+        match.jobId
+          ? jobs.find((j) => j.id === match.jobId)
+          : undefined;
       return {
         id: m.id,
         subject: m.subject,
@@ -373,6 +408,15 @@ microsoftRouter.post('/inbox-triage', async (req, res, next) => {
         category: tri?.category ?? 'OTHER',
         confidence: tri?.confidence ?? 'LOW',
         nextAction: tri?.nextAction ?? '(unclassified)',
+        suggestedJob:
+          match.jobId && matchedJob && match.confidence !== 'none'
+            ? {
+                jobId: match.jobId,
+                projectName: matchedJob.projectName,
+                confidence: match.confidence,
+                reasons: match.reasons,
+              }
+            : null,
       };
     });
 
