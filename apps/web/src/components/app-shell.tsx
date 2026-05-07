@@ -185,6 +185,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   })).filter((g) => g.links.length > 0);
   return (
     <div className="min-h-screen flex flex-col">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded focus:bg-yge-blue-500 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white"
+      >
+        Skip to main content
+      </a>
       <KeyboardShortcuts />
       <Toaster />
       <ScrollToTop />
@@ -264,7 +270,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             ))}
           </nav>
         </aside>
-        <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">{children}</main>
+        <main id="main" className="flex-1 px-4 py-6 sm:px-6 lg:px-8">{children}</main>
       </div>
       {/* Mobile FAB — only on small screens since header has the same CTA */}
       <Link
