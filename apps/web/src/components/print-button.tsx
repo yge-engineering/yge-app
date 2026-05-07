@@ -18,7 +18,7 @@ export function PrintButton({ className, label }: Props) {
       onClick={() => window.print()}
       className={
         className ??
-        'rounded bg-yge-blue-500 px-3 py-1 text-xs font-medium text-white hover:bg-yge-blue-700'
+        'rounded bg-yge-blue-500 px-3 py-1 text-xs font-medium text-white hover:bg-yge-blue-700 print:hidden'
       }
     >
       {label ?? t('printButton.default')}
