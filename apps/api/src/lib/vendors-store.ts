@@ -13,8 +13,13 @@ import {
   type VendorPatch,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
+import { getRequestCompanyId } from './request-context';
 
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+const FALLBACK_COMPANY_ID =
+  process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+function companyId(): string {
+  return getRequestCompanyId() ?? FALLBACK_COMPANY_ID;
+}
 
 function row2vendor(row: { data: unknown }): Vendor {
   return VendorSchema.parse(row.data);
@@ -41,7 +46,7 @@ export async function createVendor(
   await prisma.vendor.create({
     data: {
       id,
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       data: v as unknown as object,
     },
   });
@@ -57,7 +62,7 @@ export async function createVendor(
 
 export async function listVendors(filter?: { kind?: string }): Promise<Vendor[]> {
   const rows = await prisma.vendor.findMany({
-    where: { companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { companyId: companyId(), deletedAt: null },
   });
   let all = rows.map(row2vendor);
   if (filter?.kind) all = all.filter((v) => v.kind === filter.kind);
@@ -68,7 +73,7 @@ export async function listVendors(filter?: { kind?: string }): Promise<Vendor[]>
 export async function getVendor(id: string): Promise<Vendor | null> {
   if (!/^vnd-[a-z0-9]{8}$/.test(id)) return null;
   const row = await prisma.vendor.findFirst({
-    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { id, companyId: companyId(), deletedAt: null },
   });
   if (!row) return null;
   return row2vendor(row);

@@ -9,8 +9,13 @@ import {
   type LienWaiverPatch,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
+import { getRequestCompanyId } from './request-context';
 
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+const FALLBACK_COMPANY_ID =
+  process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+function companyId(): string {
+  return getRequestCompanyId() ?? FALLBACK_COMPANY_ID;
+}
 
 function row2lw(row: { data: unknown }): LienWaiver {
   return LienWaiverSchema.parse(row.data);
@@ -33,7 +38,7 @@ export async function createLienWaiver(
   await prisma.lienWaiver.create({
     data: {
       id,
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       jobId: w.jobId,
       data: w as unknown as object,
     },
@@ -54,7 +59,7 @@ export async function listLienWaivers(filter?: {
 }): Promise<LienWaiver[]> {
   const rows = await prisma.lienWaiver.findMany({
     where: {
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       deletedAt: null,
       ...(filter?.jobId ? { jobId: filter.jobId } : {}),
     },
@@ -68,7 +73,7 @@ export async function listLienWaivers(filter?: {
 export async function getLienWaiver(id: string): Promise<LienWaiver | null> {
   if (!/^lw-[a-z0-9]{8}$/.test(id)) return null;
   const row = await prisma.lienWaiver.findFirst({
-    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { id, companyId: companyId(), deletedAt: null },
   });
   return row ? row2lw(row) : null;
 }

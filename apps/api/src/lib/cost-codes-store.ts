@@ -9,8 +9,13 @@ import {
   type CostCodePatch,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
+import { getRequestCompanyId } from './request-context';
 
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+const FALLBACK_COMPANY_ID =
+  process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+function companyId(): string {
+  return getRequestCompanyId() ?? FALLBACK_COMPANY_ID;
+}
 
 function row2cc(row: { data: unknown }): CostCode | null {
   if (!row.data) return null;
@@ -20,7 +25,7 @@ function row2cc(row: { data: unknown }): CostCode | null {
 
 export async function listCostCodes(): Promise<CostCode[]> {
   const rows = await prisma.costCode.findMany({
-    where: { companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { companyId: companyId(), deletedAt: null },
   });
   return rows
     .map(row2cc)
@@ -31,7 +36,7 @@ export async function listCostCodes(): Promise<CostCode[]> {
 export async function getCostCode(id: string): Promise<CostCode | null> {
   if (!/^cc-[a-z0-9]{8}$/.test(id)) return null;
   const row = await prisma.costCode.findFirst({
-    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { id, companyId: companyId(), deletedAt: null },
   });
   if (!row) return null;
   return row2cc(row);
@@ -52,7 +57,7 @@ export async function createCostCode(
   await prisma.costCode.create({
     data: {
       id,
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       code: row.code,
       name: row.description ?? row.code,
       category: row.category ?? null,

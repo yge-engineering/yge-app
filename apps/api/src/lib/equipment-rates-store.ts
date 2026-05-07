@@ -9,8 +9,13 @@ import {
   type EquipmentRatePatch,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
+import { getRequestCompanyId } from './request-context';
 
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+const FALLBACK_COMPANY_ID =
+  process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+function companyId(): string {
+  return getRequestCompanyId() ?? FALLBACK_COMPANY_ID;
+}
 
 function row2er(row: { data: unknown }): EquipmentRate | null {
   if (!row.data) return null;
@@ -26,7 +31,7 @@ export async function listEquipmentRates(
   filter: { kind?: 'OWNED' | 'RENTAL' } = {},
 ): Promise<EquipmentRate[]> {
   const rows = await prisma.equipmentRate.findMany({
-    where: { companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { companyId: companyId(), deletedAt: null },
   });
   return rows
     .map(row2er)
@@ -38,7 +43,7 @@ export async function listEquipmentRates(
 export async function getEquipmentRate(id: string): Promise<EquipmentRate | null> {
   if (!/^er-[a-z0-9]{8}$/.test(id)) return null;
   const row = await prisma.equipmentRate.findFirst({
-    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { id, companyId: companyId(), deletedAt: null },
   });
   if (!row) return null;
   return row2er(row);
@@ -59,7 +64,7 @@ export async function createEquipmentRate(
   await prisma.equipmentRate.create({
     data: {
       id,
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       code: row.costCode,
       name: row.name,
       hourlyCents: hourlyCentsOf(row),

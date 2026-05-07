@@ -9,8 +9,13 @@ import {
   type DispatchPatch,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
+import { getRequestCompanyId } from './request-context';
 
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+const FALLBACK_COMPANY_ID =
+  process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+function companyId(): string {
+  return getRequestCompanyId() ?? FALLBACK_COMPANY_ID;
+}
 
 function row2disp(row: { data: unknown }): Dispatch {
   return DispatchSchema.parse(row.data);
@@ -35,7 +40,7 @@ export async function createDispatch(
   await prisma.dispatch.create({
     data: {
       id,
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       jobId: d.jobId,
       scheduledFor: d.scheduledFor,
       data: d as unknown as object,
@@ -58,7 +63,7 @@ export async function listDispatches(filter?: {
 }): Promise<Dispatch[]> {
   const rows = await prisma.dispatch.findMany({
     where: {
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       deletedAt: null,
       ...(filter?.jobId ? { jobId: filter.jobId } : {}),
       ...(filter?.scheduledFor ? { scheduledFor: filter.scheduledFor } : {}),
@@ -73,7 +78,7 @@ export async function listDispatches(filter?: {
 export async function getDispatch(id: string): Promise<Dispatch | null> {
   if (!/^disp-[a-z0-9]{8}$/.test(id)) return null;
   const row = await prisma.dispatch.findFirst({
-    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { id, companyId: companyId(), deletedAt: null },
   });
   return row ? row2disp(row) : null;
 }

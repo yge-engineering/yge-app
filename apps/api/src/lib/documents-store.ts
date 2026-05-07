@@ -10,8 +10,13 @@ import {
   type DocumentPatch,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
+import { getRequestCompanyId } from './request-context';
 
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+const FALLBACK_COMPANY_ID =
+  process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+function companyId(): string {
+  return getRequestCompanyId() ?? FALLBACK_COMPANY_ID;
+}
 
 function sanitizeTags(tags?: string[]): string[] {
   if (!tags) return [];
@@ -48,7 +53,7 @@ export async function createDocument(
   await prisma.document.create({
     data: {
       id,
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       folderId: d.folderId ?? null,
       data: d as unknown as object,
     },
@@ -69,7 +74,7 @@ export async function listDocuments(filter?: {
   tag?: string;
 }): Promise<Document[]> {
   const rows = await prisma.document.findMany({
-    where: { companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { companyId: companyId(), deletedAt: null },
     orderBy: { createdAt: 'desc' },
   });
   let all = rows.map(row2doc);
@@ -90,7 +95,7 @@ export async function listDocuments(filter?: {
 export async function getDocument(id: string): Promise<Document | null> {
   if (!/^doc-[a-z0-9]{8}$/.test(id)) return null;
   const row = await prisma.document.findFirst({
-    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { id, companyId: companyId(), deletedAt: null },
   });
   return row ? row2doc(row) : null;
 }

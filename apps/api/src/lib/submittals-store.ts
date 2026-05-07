@@ -9,8 +9,13 @@ import {
   type SubmittalPatch,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
+import { getRequestCompanyId } from './request-context';
 
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+const FALLBACK_COMPANY_ID =
+  process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+function companyId(): string {
+  return getRequestCompanyId() ?? FALLBACK_COMPANY_ID;
+}
 
 function row2sub(row: { data: unknown }): Submittal {
   return SubmittalSchema.parse(row.data);
@@ -34,7 +39,7 @@ export async function createSubmittal(
   await prisma.submittal.create({
     data: {
       id,
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       jobId: s.jobId,
       data: s as unknown as object,
     },
@@ -55,7 +60,7 @@ export async function listSubmittals(filter?: {
 }): Promise<Submittal[]> {
   const rows = await prisma.submittal.findMany({
     where: {
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       deletedAt: null,
       ...(filter?.jobId ? { jobId: filter.jobId } : {}),
     },
@@ -69,7 +74,7 @@ export async function listSubmittals(filter?: {
 export async function getSubmittal(id: string): Promise<Submittal | null> {
   if (!/^subm-[a-z0-9]{8}$/.test(id)) return null;
   const row = await prisma.submittal.findFirst({
-    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { id, companyId: companyId(), deletedAt: null },
   });
   return row ? row2sub(row) : null;
 }

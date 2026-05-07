@@ -9,6 +9,7 @@ import {
 } from 'node:crypto';
 import { promisify } from 'node:util';
 import { prisma } from '@yge/db';
+import { getRequestCompanyId } from './request-context';
 
 const scrypt = promisify(scryptCb) as (
   password: string | Buffer,
@@ -17,7 +18,11 @@ const scrypt = promisify(scryptCb) as (
 ) => Promise<Buffer>;
 
 const KEY_LEN = 64;
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+const FALLBACK_COMPANY_ID =
+  process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+function companyId(): string {
+  return getRequestCompanyId() ?? FALLBACK_COMPANY_ID;
+}
 
 interface StoredCredential {
   email: string;
@@ -33,7 +38,7 @@ function row2cred(row: { data: unknown }): StoredCredential {
 async function findCredential(email: string): Promise<StoredCredential | null> {
   const norm = email.toLowerCase();
   const row = await prisma.credential.findUnique({
-    where: { companyId_email: { companyId: DEFAULT_COMPANY_ID, email: norm } },
+    where: { companyId_email: { companyId: companyId(), email: norm } },
   });
   return row ? row2cred(row) : null;
 }
@@ -56,10 +61,10 @@ export async function setPassword(email: string, password: string): Promise<void
     setAt: new Date().toISOString(),
   };
   await prisma.credential.upsert({
-    where: { companyId_email: { companyId: DEFAULT_COMPANY_ID, email: norm } },
+    where: { companyId_email: { companyId: companyId(), email: norm } },
     create: {
       id: `cred-${norm.replace(/[^a-z0-9]/g, '').slice(0, 24)}`,
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       email: norm,
       data: cred as unknown as object,
     },
@@ -72,7 +77,7 @@ export async function clearPassword(email: string): Promise<boolean> {
   const existing = await findCredential(norm);
   if (!existing) return false;
   await prisma.credential.delete({
-    where: { companyId_email: { companyId: DEFAULT_COMPANY_ID, email: norm } },
+    where: { companyId_email: { companyId: companyId(), email: norm } },
   });
   return true;
 }

@@ -9,8 +9,13 @@ import {
   type SwpppInspectionPatch,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
+import { getRequestCompanyId } from './request-context';
 
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+const FALLBACK_COMPANY_ID =
+  process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+function companyId(): string {
+  return getRequestCompanyId() ?? FALLBACK_COMPANY_ID;
+}
 
 function row2swp(row: { data: unknown }): SwpppInspection {
   return SwpppInspectionSchema.parse(row.data);
@@ -37,7 +42,7 @@ export async function createSwpppInspection(
   await prisma.swpppInspection.create({
     data: {
       id,
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       jobId: s.jobId,
       inspectedAt: s.inspectedOn,
       data: s as unknown as object,
@@ -56,7 +61,7 @@ export async function createSwpppInspection(
 export async function listSwpppInspections(filter?: { jobId?: string }): Promise<SwpppInspection[]> {
   const rows = await prisma.swpppInspection.findMany({
     where: {
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       deletedAt: null,
       ...(filter?.jobId ? { jobId: filter.jobId } : {}),
     },
@@ -68,7 +73,7 @@ export async function listSwpppInspections(filter?: { jobId?: string }): Promise
 export async function getSwpppInspection(id: string): Promise<SwpppInspection | null> {
   if (!/^swp-[a-z0-9]{8}$/.test(id)) return null;
   const row = await prisma.swpppInspection.findFirst({
-    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { id, companyId: companyId(), deletedAt: null },
   });
   return row ? row2swp(row) : null;
 }

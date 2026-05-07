@@ -9,8 +9,13 @@ import {
   type RfiPatch,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
+import { getRequestCompanyId } from './request-context';
 
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+const FALLBACK_COMPANY_ID =
+  process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+function companyId(): string {
+  return getRequestCompanyId() ?? FALLBACK_COMPANY_ID;
+}
 
 function row2rfi(row: { data: unknown }): Rfi {
   return RfiSchema.parse(row.data);
@@ -37,7 +42,7 @@ export async function createRfi(
   await prisma.rfi.create({
     data: {
       id,
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       jobId: r.jobId,
       data: r as unknown as object,
     },
@@ -55,7 +60,7 @@ export async function createRfi(
 export async function listRfis(filter?: { jobId?: string; status?: string }): Promise<Rfi[]> {
   const rows = await prisma.rfi.findMany({
     where: {
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       deletedAt: null,
       ...(filter?.jobId ? { jobId: filter.jobId } : {}),
     },
@@ -69,7 +74,7 @@ export async function listRfis(filter?: { jobId?: string; status?: string }): Pr
 export async function getRfi(id: string): Promise<Rfi | null> {
   if (!/^rfi-[a-z0-9]{8}$/.test(id)) return null;
   const row = await prisma.rfi.findFirst({
-    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { id, companyId: companyId(), deletedAt: null },
   });
   return row ? row2rfi(row) : null;
 }

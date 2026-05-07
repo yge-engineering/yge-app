@@ -9,8 +9,13 @@ import {
   type MileageEntryPatch,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
+import { getRequestCompanyId } from './request-context';
 
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+const FALLBACK_COMPANY_ID =
+  process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+function companyId(): string {
+  return getRequestCompanyId() ?? FALLBACK_COMPANY_ID;
+}
 
 function row2mi(row: { data: unknown }): MileageEntry {
   return MileageEntrySchema.parse(row.data);
@@ -35,7 +40,7 @@ export async function createMileageEntry(
   await prisma.mileage.create({
     data: {
       id,
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       employeeId: e.employeeId,
       tripDate: e.tripDate,
       data: e as unknown as object,
@@ -58,7 +63,7 @@ export async function listMileageEntries(filter?: {
 }): Promise<MileageEntry[]> {
   const rows = await prisma.mileage.findMany({
     where: {
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       deletedAt: null,
       ...(filter?.employeeId ? { employeeId: filter.employeeId } : {}),
     },
@@ -74,7 +79,7 @@ export async function listMileageEntries(filter?: {
 export async function getMileageEntry(id: string): Promise<MileageEntry | null> {
   if (!/^mi-[a-z0-9]{8}$/.test(id)) return null;
   const row = await prisma.mileage.findFirst({
-    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { id, companyId: companyId(), deletedAt: null },
   });
   return row ? row2mi(row) : null;
 }

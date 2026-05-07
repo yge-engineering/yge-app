@@ -2,9 +2,14 @@
 // One token per email; rotating issues a new token + invalidates the old.
 
 import { randomBytes } from 'node:crypto';
+import { getRequestCompanyId } from './request-context';
 import { prisma } from '@yge/db';
 
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+const FALLBACK_COMPANY_ID =
+  process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+function companyId(): string {
+  return getRequestCompanyId() ?? FALLBACK_COMPANY_ID;
+}
 
 interface StoredToken {
   email: string;
@@ -21,7 +26,7 @@ export async function getOrCreateShareToken(email: string): Promise<string> {
   // Look for an existing un-expired token by scanning the JSON data
   // column. List is small (one per portal user) so a full scan is fine.
   const rows = await prisma.calendarShareToken.findMany({
-    where: { companyId: DEFAULT_COMPANY_ID, expiresAt: { gt: new Date() } },
+    where: { companyId: companyId(), expiresAt: { gt: new Date() } },
   });
   for (const r of rows) {
     const data = r.data as unknown as StoredToken;
@@ -39,7 +44,7 @@ export async function getOrCreateShareToken(email: string): Promise<string> {
   await prisma.calendarShareToken.create({
     data: {
       id: rowId(token),
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       expiresAt: farFuture,
       data: stored as unknown as object,
     },
@@ -49,7 +54,7 @@ export async function getOrCreateShareToken(email: string): Promise<string> {
 
 export async function emailForShareToken(token: string): Promise<string | null> {
   const rows = await prisma.calendarShareToken.findMany({
-    where: { companyId: DEFAULT_COMPANY_ID, expiresAt: { gt: new Date() } },
+    where: { companyId: companyId(), expiresAt: { gt: new Date() } },
   });
   for (const r of rows) {
     const data = r.data as unknown as StoredToken;
@@ -62,7 +67,7 @@ export async function rotateShareToken(email: string): Promise<string> {
   const norm = email.toLowerCase();
   // Expire any active tokens for this email.
   const rows = await prisma.calendarShareToken.findMany({
-    where: { companyId: DEFAULT_COMPANY_ID, expiresAt: { gt: new Date() } },
+    where: { companyId: companyId(), expiresAt: { gt: new Date() } },
   });
   for (const r of rows) {
     const data = r.data as unknown as StoredToken;

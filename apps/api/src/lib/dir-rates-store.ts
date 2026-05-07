@@ -9,8 +9,13 @@ import {
   type DirRatePatch,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
+import { getRequestCompanyId } from './request-context';
 
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+const FALLBACK_COMPANY_ID =
+  process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+function companyId(): string {
+  return getRequestCompanyId() ?? FALLBACK_COMPANY_ID;
+}
 
 function row2rate(row: { data: unknown }): DirRate {
   return DirRateSchema.parse(row.data);
@@ -37,7 +42,7 @@ export async function createDirRate(
   await prisma.dirRate.create({
     data: {
       id,
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       craft: r.classification,
       effectiveOn: r.effectiveDate,
       data: r as unknown as object,
@@ -59,7 +64,7 @@ export async function listDirRates(filter?: {
 }): Promise<DirRate[]> {
   const rows = await prisma.dirRate.findMany({
     where: {
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       deletedAt: null,
       ...(filter?.classification ? { craft: filter.classification } : {}),
     },
@@ -73,7 +78,7 @@ export async function listDirRates(filter?: {
 export async function getDirRate(id: string): Promise<DirRate | null> {
   if (!/^dir-[a-z0-9]{8}$/.test(id)) return null;
   const row = await prisma.dirRate.findFirst({
-    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { id, companyId: companyId(), deletedAt: null },
   });
   return row ? row2rate(row) : null;
 }

@@ -9,8 +9,13 @@ import {
   type BankRecPatch,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
+import { getRequestCompanyId } from './request-context';
 
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+const FALLBACK_COMPANY_ID =
+  process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+function companyId(): string {
+  return getRequestCompanyId() ?? FALLBACK_COMPANY_ID;
+}
 
 function row2rec(row: { data: unknown }): BankRec {
   return BankRecSchema.parse(row.data);
@@ -36,7 +41,7 @@ export async function createBankRec(
   await prisma.bankRec.create({
     data: {
       id,
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       accountId: r.bankAccountLabel,
       periodEnd: r.statementDate,
       data: r as unknown as object,
@@ -58,7 +63,7 @@ export async function listBankRecs(filter?: {
 }): Promise<BankRec[]> {
   const rows = await prisma.bankRec.findMany({
     where: {
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       deletedAt: null,
       ...(filter?.bankAccountLabel ? { accountId: filter.bankAccountLabel } : {}),
     },
@@ -72,7 +77,7 @@ export async function listBankRecs(filter?: {
 export async function getBankRec(id: string): Promise<BankRec | null> {
   if (!/^bnk-[a-z0-9]{8}$/.test(id)) return null;
   const row = await prisma.bankRec.findFirst({
-    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { id, companyId: companyId(), deletedAt: null },
   });
   return row ? row2rec(row) : null;
 }

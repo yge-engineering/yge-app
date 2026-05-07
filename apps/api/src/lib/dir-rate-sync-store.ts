@@ -13,8 +13,13 @@ import {
   type DirRateSyncRun,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
+import { getRequestCompanyId } from './request-context';
 
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+const FALLBACK_COMPANY_ID =
+  process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+function companyId(): string {
+  return getRequestCompanyId() ?? FALLBACK_COMPANY_ID;
+}
 
 // ---- Sync run persistence ------------------------------------------------
 
@@ -25,7 +30,7 @@ function row2run(row: { data: unknown }): DirRateSyncRun | null {
 
 export async function listSyncRuns(): Promise<DirRateSyncRun[]> {
   const rows = await prisma.dirRateSyncRun.findMany({
-    where: { companyId: DEFAULT_COMPANY_ID },
+    where: { companyId: companyId() },
     orderBy: { startedAt: 'desc' },
   });
   return rows.map(row2run).filter((r): r is DirRateSyncRun => r !== null);
@@ -34,7 +39,7 @@ export async function listSyncRuns(): Promise<DirRateSyncRun[]> {
 export async function getSyncRun(id: string): Promise<DirRateSyncRun | null> {
   if (!/^dir-sync-[a-z0-9]{8}$/.test(id)) return null;
   const row = await prisma.dirRateSyncRun.findFirst({
-    where: { id, companyId: DEFAULT_COMPANY_ID },
+    where: { id, companyId: companyId() },
   });
   if (!row) return null;
   return row2run(row);
@@ -45,7 +50,7 @@ async function persistRun(r: DirRateSyncRun): Promise<void> {
     where: { id: r.id },
     create: {
       id: r.id,
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       startedAt: r.startedAt ? new Date(r.startedAt) : new Date(r.createdAt),
       finishedAt: r.finishedAt ? new Date(r.finishedAt) : null,
       status: r.status,
@@ -136,7 +141,7 @@ export interface ListProposalsFilter {
 export async function listProposals(filter: ListProposalsFilter = {}): Promise<DirRateProposal[]> {
   const rows = await prisma.dirRateProposal.findMany({
     where: {
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       ...(filter.status ? { status: filter.status } : {}),
       ...(filter.syncRunId ? { syncRunId: filter.syncRunId } : {}),
       ...(filter.classification ? { classification: filter.classification } : {}),
@@ -149,7 +154,7 @@ export async function listProposals(filter: ListProposalsFilter = {}): Promise<D
 export async function getProposal(id: string): Promise<DirRateProposal | null> {
   if (!/^dir-prop-[a-z0-9]{8}$/.test(id)) return null;
   const row = await prisma.dirRateProposal.findFirst({
-    where: { id, companyId: DEFAULT_COMPANY_ID },
+    where: { id, companyId: companyId() },
   });
   if (!row) return null;
   return row2prop(row);
@@ -160,7 +165,7 @@ async function persistProposal(p: DirRateProposal): Promise<void> {
     where: { id: p.id },
     create: {
       id: p.id,
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       syncRunId: p.syncRunId,
       status: p.status,
       classification: p.classification,

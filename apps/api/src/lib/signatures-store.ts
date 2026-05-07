@@ -13,8 +13,13 @@ import {
   type SignatureStatus,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
+import { getRequestCompanyId } from './request-context';
 
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+const FALLBACK_COMPANY_ID =
+  process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+function companyId(): string {
+  return getRequestCompanyId() ?? FALLBACK_COMPANY_ID;
+}
 
 function row2sig(row: { data: unknown }): Signature | null {
   const r = SignatureSchema.safeParse(row.data);
@@ -30,7 +35,7 @@ export interface SignatureListFilter {
 
 export async function listSignatures(filter: SignatureListFilter = {}): Promise<Signature[]> {
   const rows = await prisma.signatureRecord.findMany({
-    where: { companyId: DEFAULT_COMPANY_ID },
+    where: { companyId: companyId() },
     orderBy: { createdAt: 'desc' },
   });
   let all = rows.map(row2sig).filter((s): s is Signature => s !== null);
@@ -47,7 +52,7 @@ export async function listSignatures(filter: SignatureListFilter = {}): Promise<
 export async function getSignature(id: string): Promise<Signature | null> {
   if (!/^sig-[a-z0-9]{8}$/.test(id)) return null;
   const row = await prisma.signatureRecord.findFirst({
-    where: { id, companyId: DEFAULT_COMPANY_ID },
+    where: { id, companyId: companyId() },
   });
   if (!row) return null;
   return row2sig(row);
@@ -58,7 +63,7 @@ async function persist(s: Signature): Promise<void> {
     where: { id: s.id },
     create: {
       id: s.id,
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       data: s as unknown as object,
     },
     update: { data: s as unknown as object },

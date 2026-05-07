@@ -17,8 +17,13 @@ import {
   type StockMovementCreate,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
+import { getRequestCompanyId } from './request-context';
 
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+const FALLBACK_COMPANY_ID =
+  process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+function companyId(): string {
+  return getRequestCompanyId() ?? FALLBACK_COMPANY_ID;
+}
 
 function row2mat(row: { data: unknown }): Material | null {
   if (!row.data) return null;
@@ -53,7 +58,7 @@ export async function createMaterial(
   await prisma.material.create({
     data: {
       id,
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       ...structuredCols(m),
       data: m as unknown as object,
     },
@@ -73,7 +78,7 @@ export async function listMaterials(filter?: {
   belowReorder?: boolean;
 }): Promise<Material[]> {
   const rows = await prisma.material.findMany({
-    where: { companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { companyId: companyId(), deletedAt: null },
   });
   let all = rows
     .map(row2mat)
@@ -91,7 +96,7 @@ export async function listMaterials(filter?: {
 export async function getMaterial(id: string): Promise<Material | null> {
   if (!/^mat-[a-z0-9]{8}$/.test(id)) return null;
   const row = await prisma.material.findFirst({
-    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { id, companyId: companyId(), deletedAt: null },
   });
   if (!row) return null;
   return row2mat(row);

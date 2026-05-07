@@ -15,8 +15,13 @@ import {
   type MaintenanceLogEntry,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
+import { getRequestCompanyId } from './request-context';
 
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+const FALLBACK_COMPANY_ID =
+  process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+function companyId(): string {
+  return getRequestCompanyId() ?? FALLBACK_COMPANY_ID;
+}
 
 function row2eq(row: { data: unknown }): Equipment | null {
   const r = EquipmentSchema.safeParse(row.data);
@@ -51,7 +56,7 @@ export async function createEquipment(
   await prisma.equipment.create({
     data: {
       id,
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       ...structuredCols(e),
       data: e as unknown as object,
     },
@@ -68,7 +73,7 @@ export async function createEquipment(
 
 export async function listEquipment(): Promise<Equipment[]> {
   const rows = await prisma.equipment.findMany({
-    where: { companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { companyId: companyId(), deletedAt: null },
   });
   return rows.map(row2eq).filter((e): e is Equipment => e !== null);
 }
@@ -76,7 +81,7 @@ export async function listEquipment(): Promise<Equipment[]> {
 export async function getEquipment(id: string): Promise<Equipment | null> {
   if (!/^eq-[a-z0-9]{8}$/.test(id)) return null;
   const row = await prisma.equipment.findFirst({
-    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { id, companyId: companyId(), deletedAt: null },
   });
   if (!row) return null;
   return row2eq(row);

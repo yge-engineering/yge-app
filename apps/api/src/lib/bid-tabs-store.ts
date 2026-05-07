@@ -13,10 +13,15 @@ import {
   type BidTabSource,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
+import { getRequestCompanyId } from './request-context';
 import { listBidResults } from './bid-results-store';
 import { listJobs } from './jobs-store';
 
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+const FALLBACK_COMPANY_ID =
+  process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+function companyId(): string {
+  return getRequestCompanyId() ?? FALLBACK_COMPANY_ID;
+}
 
 function row2tab(row: { data: unknown }): BidTab | null {
   const r = BidTabSchema.safeParse(row.data);
@@ -28,7 +33,7 @@ async function persist(t: BidTab): Promise<void> {
     where: { id: t.id },
     create: {
       id: t.id,
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       jobId: t.ygeJobId ?? null,
       data: t as unknown as object,
     },
@@ -46,7 +51,7 @@ export async function listBidTabs(filter?: {
   search?: string;
 }): Promise<BidTab[]> {
   const rows = await prisma.bidTab.findMany({
-    where: { companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { companyId: companyId(), deletedAt: null },
   });
   let all = rows.map(row2tab).filter((t): t is BidTab => t !== null);
   if (filter?.source) all = all.filter((t) => t.source === filter.source);
@@ -78,7 +83,7 @@ export async function listBidTabs(filter?: {
 export async function getBidTab(id: string): Promise<BidTab | null> {
   if (!/^bidtab-[a-z0-9]{8}$/.test(id)) return null;
   const row = await prisma.bidTab.findFirst({
-    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { id, companyId: companyId(), deletedAt: null },
   });
   if (!row) return null;
   return row2tab(row);

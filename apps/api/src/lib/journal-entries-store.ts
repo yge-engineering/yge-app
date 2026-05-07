@@ -9,8 +9,13 @@ import {
   type JournalEntryPatch,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
+import { getRequestCompanyId } from './request-context';
 
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+const FALLBACK_COMPANY_ID =
+  process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+function companyId(): string {
+  return getRequestCompanyId() ?? FALLBACK_COMPANY_ID;
+}
 
 function row2je(row: { data: unknown }): JournalEntry {
   return JournalEntrySchema.parse(row.data);
@@ -34,7 +39,7 @@ export async function createJournalEntry(
   await prisma.journalEntry.create({
     data: {
       id,
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       data: je as unknown as object,
     },
   });
@@ -53,7 +58,7 @@ export async function listJournalEntries(filter?: {
   source?: string;
 }): Promise<JournalEntry[]> {
   const rows = await prisma.journalEntry.findMany({
-    where: { companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { companyId: companyId(), deletedAt: null },
     orderBy: { createdAt: 'desc' },
   });
   let all = rows.map(row2je);
@@ -65,7 +70,7 @@ export async function listJournalEntries(filter?: {
 export async function getJournalEntry(id: string): Promise<JournalEntry | null> {
   if (!/^je-[a-z0-9]{8}$/.test(id)) return null;
   const row = await prisma.journalEntry.findFirst({
-    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { id, companyId: companyId(), deletedAt: null },
   });
   return row ? row2je(row) : null;
 }

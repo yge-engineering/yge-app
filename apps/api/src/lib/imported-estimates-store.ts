@@ -9,8 +9,13 @@ import {
   type ImportedEstimatePatch,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
+import { getRequestCompanyId } from './request-context';
 
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+const FALLBACK_COMPANY_ID =
+  process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+function companyId(): string {
+  return getRequestCompanyId() ?? FALLBACK_COMPANY_ID;
+}
 
 function row2est(row: { data: unknown }): ImportedEstimate {
   return ImportedEstimateSchema.parse(row.data);
@@ -18,7 +23,7 @@ function row2est(row: { data: unknown }): ImportedEstimate {
 
 export async function listImportedEstimates(): Promise<ImportedEstimate[]> {
   const rows = await prisma.importedEstimate.findMany({
-    where: { companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { companyId: companyId(), deletedAt: null },
     orderBy: { jobNumber: 'asc' },
   });
   return rows.map(row2est);
@@ -26,7 +31,7 @@ export async function listImportedEstimates(): Promise<ImportedEstimate[]> {
 
 export async function getImportedEstimate(id: string): Promise<ImportedEstimate | null> {
   const row = await prisma.importedEstimate.findFirst({
-    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { id, companyId: companyId(), deletedAt: null },
   });
   return row ? row2est(row) : null;
 }
@@ -45,7 +50,7 @@ export async function createImportedEstimate(
   await prisma.importedEstimate.create({
     data: {
       id: row.id,
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       jobNumber: row.jobNumber,
       data: row as unknown as object,
     },

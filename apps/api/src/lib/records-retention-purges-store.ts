@@ -23,10 +23,15 @@ import {
   type RetentionPurgeConfirmResult,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
+import { getRequestCompanyId } from './request-context';
 import { listLegalHolds } from './legal-holds-store';
 import { collectRetentionCandidates, computePurgeDate } from './records-retention-job';
 
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+const FALLBACK_COMPANY_ID =
+  process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+function companyId(): string {
+  return getRequestCompanyId() ?? FALLBACK_COMPANY_ID;
+}
 
 function row2batch(row: { data: unknown }): RetentionPurgeBatch | null {
   const r = RetentionPurgeBatchSchema.safeParse(row.data);
@@ -35,7 +40,7 @@ function row2batch(row: { data: unknown }): RetentionPurgeBatch | null {
 
 export async function listRetentionPurgeBatches(): Promise<RetentionPurgeBatch[]> {
   const rows = await prisma.recordsRetentionPurge.findMany({
-    where: { companyId: DEFAULT_COMPANY_ID },
+    where: { companyId: companyId() },
     orderBy: { createdAt: 'desc' },
   });
   return rows.map(row2batch).filter((b): b is RetentionPurgeBatch => b !== null);
@@ -126,7 +131,7 @@ export async function confirmRetentionPurge(
   const batch: RetentionPurgeBatch = {
     id: newRetentionPurgeBatchId(),
     createdAt: asOfIso,
-    companyId: ctx?.companyId ?? DEFAULT_COMPANY_ID,
+    companyId: ctx?.companyId ?? companyId(),
     entityType: input.entityType,
     ruleLabel: rule.label,
     ruleAuthority: rule.authority,

@@ -10,8 +10,13 @@ import {
   type ChangeOrderPatch,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
+import { getRequestCompanyId } from './request-context';
 
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+const FALLBACK_COMPANY_ID =
+  process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+function companyId(): string {
+  return getRequestCompanyId() ?? FALLBACK_COMPANY_ID;
+}
 
 function row2co(row: { data: unknown }): ChangeOrder {
   return ChangeOrderSchema.parse(row.data);
@@ -41,7 +46,7 @@ export async function createChangeOrder(
   await prisma.changeOrder.create({
     data: {
       id,
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       jobId: c.jobId,
       data: c as unknown as object,
     },
@@ -62,7 +67,7 @@ export async function listChangeOrders(filter?: {
 }): Promise<ChangeOrder[]> {
   const rows = await prisma.changeOrder.findMany({
     where: {
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       deletedAt: null,
       ...(filter?.jobId ? { jobId: filter.jobId } : {}),
     },
@@ -76,7 +81,7 @@ export async function listChangeOrders(filter?: {
 export async function getChangeOrder(id: string): Promise<ChangeOrder | null> {
   if (!/^co-[a-z0-9]{8}$/.test(id)) return null;
   const row = await prisma.changeOrder.findFirst({
-    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { id, companyId: companyId(), deletedAt: null },
   });
   return row ? row2co(row) : null;
 }

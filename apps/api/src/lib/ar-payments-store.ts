@@ -10,8 +10,13 @@ import {
   type ArPaymentPatch,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
+import { getRequestCompanyId } from './request-context';
 
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+const FALLBACK_COMPANY_ID =
+  process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+function companyId(): string {
+  return getRequestCompanyId() ?? FALLBACK_COMPANY_ID;
+}
 
 function row2pay(row: { data: unknown }): ArPayment {
   return ArPaymentSchema.parse(row.data);
@@ -19,7 +24,7 @@ function row2pay(row: { data: unknown }): ArPayment {
 
 async function readAll(): Promise<ArPayment[]> {
   const rows = await prisma.arPayment.findMany({
-    where: { companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { companyId: companyId(), deletedAt: null },
     orderBy: { createdAt: 'desc' },
   });
   return rows.map(row2pay);
@@ -43,7 +48,7 @@ export async function createArPayment(
   await prisma.arPayment.create({
     data: {
       id,
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       data: p as unknown as object,
     },
   });
@@ -70,7 +75,7 @@ export async function listArPayments(filter?: {
 export async function getArPayment(id: string): Promise<ArPayment | null> {
   if (!/^arp-[a-z0-9]{8}$/.test(id)) return null;
   const row = await prisma.arPayment.findFirst({
-    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { id, companyId: companyId(), deletedAt: null },
   });
   return row ? row2pay(row) : null;
 }

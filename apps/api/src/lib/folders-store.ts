@@ -9,8 +9,13 @@ import {
   type FolderPatch,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
+import { getRequestCompanyId } from './request-context';
 
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+const FALLBACK_COMPANY_ID =
+  process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+function companyId(): string {
+  return getRequestCompanyId() ?? FALLBACK_COMPANY_ID;
+}
 
 function row2folder(row: { data: unknown }): Folder {
   return FolderSchema.parse(row.data);
@@ -18,7 +23,7 @@ function row2folder(row: { data: unknown }): Folder {
 
 export async function listFolders(): Promise<Folder[]> {
   const rows = await prisma.folder.findMany({
-    where: { companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { companyId: companyId(), deletedAt: null },
     orderBy: { name: 'asc' },
   });
   return rows.map(row2folder);
@@ -27,7 +32,7 @@ export async function listFolders(): Promise<Folder[]> {
 export async function getFolder(id: string): Promise<Folder | null> {
   if (!/^fld-[a-z0-9]{8}$/.test(id)) return null;
   const row = await prisma.folder.findFirst({
-    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { id, companyId: companyId(), deletedAt: null },
   });
   return row ? row2folder(row) : null;
 }
@@ -46,7 +51,7 @@ export async function createFolder(
   await prisma.folder.create({
     data: {
       id: folder.id,
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       parentId: folder.parentFolderId ?? null,
       name: folder.name,
       data: folder as unknown as object,
@@ -118,7 +123,7 @@ export async function deleteFolder(
   if (!existing) return false;
   // Reparent direct children to the deleted folder's parent.
   const children = await prisma.folder.findMany({
-    where: { companyId: DEFAULT_COMPANY_ID, parentId: id, deletedAt: null },
+    where: { companyId: companyId(), parentId: id, deletedAt: null },
   });
   for (const child of children) {
     const childFolder = row2folder(child);

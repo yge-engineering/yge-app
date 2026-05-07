@@ -9,8 +9,13 @@ import {
   type DailyReportPatch,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
+import { getRequestCompanyId } from './request-context';
 
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+const FALLBACK_COMPANY_ID =
+  process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+function companyId(): string {
+  return getRequestCompanyId() ?? FALLBACK_COMPANY_ID;
+}
 
 function row2dr(row: { data: unknown }): DailyReport {
   return DailyReportSchema.parse(row.data);
@@ -35,7 +40,7 @@ export async function createDailyReport(
   await prisma.dailyReport.create({
     data: {
       id,
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       jobId: r.jobId,
       reportDate: r.date,
       data: r as unknown as object,
@@ -57,7 +62,7 @@ export async function listDailyReports(filter?: {
 }): Promise<DailyReport[]> {
   const rows = await prisma.dailyReport.findMany({
     where: {
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       deletedAt: null,
       ...(filter?.jobId ? { jobId: filter.jobId } : {}),
     },
@@ -71,7 +76,7 @@ export async function listDailyReports(filter?: {
 export async function getDailyReport(id: string): Promise<DailyReport | null> {
   if (!/^dr-\d{4}-\d{2}-\d{2}-[a-z0-9]{8}$/.test(id)) return null;
   const row = await prisma.dailyReport.findFirst({
-    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { id, companyId: companyId(), deletedAt: null },
   });
   return row ? row2dr(row) : null;
 }

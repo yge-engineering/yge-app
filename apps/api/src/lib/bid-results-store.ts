@@ -9,8 +9,13 @@ import {
   type BidResultPatch,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
+import { getRequestCompanyId } from './request-context';
 
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+const FALLBACK_COMPANY_ID =
+  process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+function companyId(): string {
+  return getRequestCompanyId() ?? FALLBACK_COMPANY_ID;
+}
 
 function row2result(row: { data: unknown }): BidResult {
   return BidResultSchema.parse(row.data);
@@ -34,7 +39,7 @@ export async function createBidResult(
   await prisma.bidResult.create({
     data: {
       id,
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       jobId: r.jobId ?? null,
       bidOpenedAt: r.bidOpenedAt,
       data: r as unknown as object,
@@ -53,7 +58,7 @@ export async function createBidResult(
 export async function listBidResults(filter?: { jobId?: string }): Promise<BidResult[]> {
   const rows = await prisma.bidResult.findMany({
     where: {
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       deletedAt: null,
       ...(filter?.jobId ? { jobId: filter.jobId } : {}),
     },
@@ -65,7 +70,7 @@ export async function listBidResults(filter?: { jobId?: string }): Promise<BidRe
 export async function getBidResult(id: string): Promise<BidResult | null> {
   if (!/^bid-result-[a-z0-9]{8}$/.test(id)) return null;
   const row = await prisma.bidResult.findFirst({
-    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { id, companyId: companyId(), deletedAt: null },
   });
   return row ? row2result(row) : null;
 }

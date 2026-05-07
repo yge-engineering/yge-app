@@ -14,8 +14,13 @@ import {
   type PortalUserPatch,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
+import { getRequestCompanyId } from './request-context';
 
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+const FALLBACK_COMPANY_ID =
+  process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+function companyId(): string {
+  return getRequestCompanyId() ?? FALLBACK_COMPANY_ID;
+}
 
 function row2user(row: { data: unknown }): PortalUser {
   return PortalUserSchema.parse(row.data);
@@ -23,7 +28,7 @@ function row2user(row: { data: unknown }): PortalUser {
 
 async function ensureSeed(): Promise<void> {
   const count = await prisma.portalUser.count({
-    where: { companyId: DEFAULT_COMPANY_ID },
+    where: { companyId: companyId() },
   });
   if (count > 0) return;
   const now = new Date().toISOString();
@@ -55,7 +60,7 @@ async function ensureSeed(): Promise<void> {
     await prisma.portalUser.create({
       data: {
         id: u.id,
-        companyId: DEFAULT_COMPANY_ID,
+        companyId: companyId(),
         email: u.email.toLowerCase(),
         data: u as unknown as object,
       },
@@ -66,7 +71,7 @@ async function ensureSeed(): Promise<void> {
 export async function listPortalUsers(): Promise<PortalUser[]> {
   await ensureSeed();
   const rows = await prisma.portalUser.findMany({
-    where: { companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { companyId: companyId(), deletedAt: null },
     orderBy: { createdAt: 'desc' },
   });
   return rows.map(row2user);
@@ -79,7 +84,7 @@ export async function getPortalUserByEmail(
   const norm = email.trim().toLowerCase();
   const row = await prisma.portalUser.findFirst({
     where: {
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       email: norm,
       deletedAt: null,
     },
@@ -89,7 +94,7 @@ export async function getPortalUserByEmail(
 
 export async function getPortalUser(id: string): Promise<PortalUser | null> {
   const row = await prisma.portalUser.findFirst({
-    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { id, companyId: companyId(), deletedAt: null },
   });
   return row ? row2user(row) : null;
 }
@@ -120,7 +125,7 @@ export async function createPortalUser(
   await prisma.portalUser.create({
     data: {
       id: next.id,
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       email: norm,
       data: next as unknown as object,
     },

@@ -10,8 +10,13 @@ import {
   type ApPaymentMethod,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
+import { getRequestCompanyId } from './request-context';
 
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+const FALLBACK_COMPANY_ID =
+  process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+function companyId(): string {
+  return getRequestCompanyId() ?? FALLBACK_COMPANY_ID;
+}
 
 function row2inv(row: { data: unknown }): ApInvoice {
   return ApInvoiceSchema.parse(row.data);
@@ -37,7 +42,7 @@ export async function createApInvoice(
   await prisma.apInvoice.create({
     data: {
       id,
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       // ApInvoice schema uses vendorName (string) not a vendorId; the
       // Prisma row's vendorId column is null until a Vendor-master FK
       // is wired up.
@@ -62,7 +67,7 @@ export async function listApInvoices(filter?: {
 }): Promise<ApInvoice[]> {
   const rows = await prisma.apInvoice.findMany({
     where: {
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       deletedAt: null,
       ...(filter?.status ? { status: filter.status } : {}),
     },
@@ -77,7 +82,7 @@ export async function listApInvoices(filter?: {
 export async function getApInvoice(id: string): Promise<ApInvoice | null> {
   if (!/^ap-[a-z0-9]{8}$/.test(id)) return null;
   const row = await prisma.apInvoice.findFirst({
-    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { id, companyId: companyId(), deletedAt: null },
   });
   return row ? row2inv(row) : null;
 }

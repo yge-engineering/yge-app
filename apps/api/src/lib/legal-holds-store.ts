@@ -9,8 +9,13 @@ import {
   type LegalHoldStatus,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
+import { getRequestCompanyId } from './request-context';
 
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+const FALLBACK_COMPANY_ID =
+  process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+function companyId(): string {
+  return getRequestCompanyId() ?? FALLBACK_COMPANY_ID;
+}
 
 function row2hold(row: { data: unknown }): LegalHold {
   return LegalHoldSchema.parse(row.data);
@@ -23,7 +28,7 @@ export interface LegalHoldFilter {
 export async function listLegalHolds(filter: LegalHoldFilter = {}): Promise<LegalHold[]> {
   const rows = await prisma.legalHold.findMany({
     where: {
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       ...(filter.status === 'ACTIVE' ? { liftedAt: null } : {}),
       ...(filter.status === 'RELEASED' ? { liftedAt: { not: null } } : {}),
     },
@@ -35,7 +40,7 @@ export async function listLegalHolds(filter: LegalHoldFilter = {}): Promise<Lega
 export async function getLegalHold(id: string): Promise<LegalHold | null> {
   if (!/^hold-[a-z0-9]{8}$/.test(id)) return null;
   const row = await prisma.legalHold.findFirst({
-    where: { id, companyId: DEFAULT_COMPANY_ID },
+    where: { id, companyId: companyId() },
   });
   return row ? row2hold(row) : null;
 }
@@ -56,7 +61,7 @@ export async function createLegalHold(
   await prisma.legalHold.create({
     data: {
       id,
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       data: h as unknown as object,
     },
   });

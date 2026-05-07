@@ -10,8 +10,13 @@ import {
   type CalendarEventPatch,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
+import { getRequestCompanyId } from './request-context';
 
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+const FALLBACK_COMPANY_ID =
+  process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+function companyId(): string {
+  return getRequestCompanyId() ?? FALLBACK_COMPANY_ID;
+}
 
 function row2evt(row: { data: unknown }): CalendarEvent {
   return CalendarEventSchema.parse(row.data);
@@ -28,7 +33,7 @@ export async function listCalendarEvents(
   filter: ListFilter = {},
 ): Promise<CalendarEvent[]> {
   const rows = await prisma.calendarEvent.findMany({
-    where: { companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { companyId: companyId(), deletedAt: null },
     orderBy: { startAt: 'asc' },
   });
   const all = rows.map(row2evt);
@@ -50,7 +55,7 @@ export async function listCalendarEvents(
 
 export async function getCalendarEvent(id: string): Promise<CalendarEvent | null> {
   const row = await prisma.calendarEvent.findFirst({
-    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { id, companyId: companyId(), deletedAt: null },
   });
   return row ? row2evt(row) : null;
 }
@@ -69,7 +74,7 @@ export async function createCalendarEvent(
   await prisma.calendarEvent.create({
     data: {
       id: event.id,
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       startAt: event.startAt,
       data: event as unknown as object,
     },

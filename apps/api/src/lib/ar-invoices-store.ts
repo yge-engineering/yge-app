@@ -9,8 +9,13 @@ import {
   type ArInvoicePatch,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
+import { getRequestCompanyId } from './request-context';
 
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+const FALLBACK_COMPANY_ID =
+  process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+function companyId(): string {
+  return getRequestCompanyId() ?? FALLBACK_COMPANY_ID;
+}
 
 function row2inv(row: { data: unknown }): ArInvoice {
   return ArInvoiceSchema.parse(row.data);
@@ -38,7 +43,7 @@ export async function createArInvoice(
   await prisma.arInvoice.create({
     data: {
       id,
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       jobId: i.jobId ?? null,
       status: i.status,
       data: i as unknown as object,
@@ -60,7 +65,7 @@ export async function listArInvoices(filter?: {
 }): Promise<ArInvoice[]> {
   const rows = await prisma.arInvoice.findMany({
     where: {
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       deletedAt: null,
       ...(filter?.status ? { status: filter.status } : {}),
       ...(filter?.jobId ? { jobId: filter.jobId } : {}),
@@ -75,7 +80,7 @@ export async function listArInvoices(filter?: {
 export async function getArInvoice(id: string): Promise<ArInvoice | null> {
   if (!/^ar-[a-z0-9]{8}$/.test(id)) return null;
   const row = await prisma.arInvoice.findFirst({
-    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { id, companyId: companyId(), deletedAt: null },
   });
   return row ? row2inv(row) : null;
 }

@@ -9,8 +9,13 @@ import {
   type TimeCardPatch,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
+import { getRequestCompanyId } from './request-context';
 
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+const FALLBACK_COMPANY_ID =
+  process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+function companyId(): string {
+  return getRequestCompanyId() ?? FALLBACK_COMPANY_ID;
+}
 
 function row2tc(row: { data: unknown }): TimeCard {
   return TimeCardSchema.parse(row.data);
@@ -34,7 +39,7 @@ export async function createTimeCard(
   await prisma.timeCard.create({
     data: {
       id,
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       employeeId: c.employeeId,
       weekStart: c.weekStarting,
       data: c as unknown as object,
@@ -57,7 +62,7 @@ export async function listTimeCards(filter?: {
 }): Promise<TimeCard[]> {
   const rows = await prisma.timeCard.findMany({
     where: {
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       deletedAt: null,
       ...(filter?.employeeId ? { employeeId: filter.employeeId } : {}),
       ...(filter?.weekStarting ? { weekStart: filter.weekStarting } : {}),
@@ -72,7 +77,7 @@ export async function listTimeCards(filter?: {
 export async function getTimeCard(id: string): Promise<TimeCard | null> {
   if (!/^tc-[a-z0-9]{8}$/.test(id)) return null;
   const row = await prisma.timeCard.findFirst({
-    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { id, companyId: companyId(), deletedAt: null },
   });
   return row ? row2tc(row) : null;
 }

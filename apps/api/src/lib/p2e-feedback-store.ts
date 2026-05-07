@@ -3,8 +3,13 @@
 // AI draft so prompt iterations can be cohort-analyzed.
 
 import { prisma } from '@yge/db';
+import { getRequestCompanyId } from './request-context';
 
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+const FALLBACK_COMPANY_ID =
+  process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+function companyId(): string {
+  return getRequestCompanyId() ?? FALLBACK_COMPANY_ID;
+}
 
 interface FeedbackEntry {
   id: string;
@@ -47,7 +52,7 @@ export async function appendFeedback(
   await prisma.ptoEFeedback.create({
     data: {
       id: entry.id,
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       draftId: entry.draftId ?? null,
       data: entry as unknown as object,
     },
@@ -57,7 +62,7 @@ export async function appendFeedback(
 
 export async function listFeedback(): Promise<FeedbackEntry[]> {
   const rows = await prisma.ptoEFeedback.findMany({
-    where: { companyId: DEFAULT_COMPANY_ID },
+    where: { companyId: companyId() },
     orderBy: { createdAt: 'asc' },
   });
   return rows.map((r) => r.data as unknown as FeedbackEntry);

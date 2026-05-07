@@ -9,8 +9,13 @@ import {
   type WeatherLogPatch,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
+import { getRequestCompanyId } from './request-context';
 
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+const FALLBACK_COMPANY_ID =
+  process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+function companyId(): string {
+  return getRequestCompanyId() ?? FALLBACK_COMPANY_ID;
+}
 
 function row2wx(row: { data: unknown }): WeatherLog {
   return WeatherLogSchema.parse(row.data);
@@ -37,7 +42,7 @@ export async function createWeatherLog(
   await prisma.weatherLog.create({
     data: {
       id,
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       jobId: w.jobId,
       recordedAt: w.observedOn,
       data: w as unknown as object,
@@ -56,7 +61,7 @@ export async function createWeatherLog(
 export async function listWeatherLogs(filter?: { jobId?: string }): Promise<WeatherLog[]> {
   const rows = await prisma.weatherLog.findMany({
     where: {
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       deletedAt: null,
       ...(filter?.jobId ? { jobId: filter.jobId } : {}),
     },
@@ -68,7 +73,7 @@ export async function listWeatherLogs(filter?: { jobId?: string }): Promise<Weat
 export async function getWeatherLog(id: string): Promise<WeatherLog | null> {
   if (!/^wx-[a-z0-9]{8}$/.test(id)) return null;
   const row = await prisma.weatherLog.findFirst({
-    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { id, companyId: companyId(), deletedAt: null },
   });
   return row ? row2wx(row) : null;
 }

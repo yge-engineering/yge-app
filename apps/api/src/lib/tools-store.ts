@@ -9,8 +9,13 @@ import {
   type ToolPatch,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
+import { getRequestCompanyId } from './request-context';
 
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+const FALLBACK_COMPANY_ID =
+  process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+function companyId(): string {
+  return getRequestCompanyId() ?? FALLBACK_COMPANY_ID;
+}
 
 function row2tool(row: { data: unknown }): Tool {
   return ToolSchema.parse(row.data);
@@ -33,7 +38,7 @@ export async function createTool(
   await prisma.toolAsset.create({
     data: {
       id,
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       status: t.status,
       data: t as unknown as object,
     },
@@ -50,7 +55,7 @@ export async function createTool(
 
 export async function listTools(): Promise<Tool[]> {
   const rows = await prisma.toolAsset.findMany({
-    where: { companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { companyId: companyId(), deletedAt: null },
     orderBy: { createdAt: 'desc' },
   });
   return rows.map(row2tool);
@@ -59,7 +64,7 @@ export async function listTools(): Promise<Tool[]> {
 export async function getTool(id: string): Promise<Tool | null> {
   if (!/^tool-[a-z0-9]{8}$/.test(id)) return null;
   const row = await prisma.toolAsset.findFirst({
-    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { id, companyId: companyId(), deletedAt: null },
   });
   return row ? row2tool(row) : null;
 }

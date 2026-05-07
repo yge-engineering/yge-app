@@ -15,9 +15,14 @@ import {
   type PdfFormMapping,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
+import { getRequestCompanyId } from './request-context';
 import { buildSeedMapping, listSeedMappings } from './pdf-form-mappings-seeds';
 
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+const FALLBACK_COMPANY_ID =
+  process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+function companyId(): string {
+  return getRequestCompanyId() ?? FALLBACK_COMPANY_ID;
+}
 
 function row2mapping(row: { data: unknown }): PdfFormMapping {
   return PdfFormMappingSchema.parse(row.data);
@@ -27,7 +32,7 @@ async function seedIfEmpty(): Promise<void> {
   const existingIds = new Set(
     (
       await prisma.pdfFormMapping.findMany({
-        where: { companyId: DEFAULT_COMPANY_ID },
+        where: { companyId: companyId() },
         select: { id: true },
       })
     ).map((r) => r.id),
@@ -40,7 +45,7 @@ async function seedIfEmpty(): Promise<void> {
     await prisma.pdfFormMapping.create({
       data: {
         id: mapping.id,
-        companyId: DEFAULT_COMPANY_ID,
+        companyId: companyId(),
         agency: mapping.agency,
         formCode: mapping.formCode ?? null,
         reviewed: mapping.reviewed,
@@ -67,7 +72,7 @@ export async function listPdfFormMappings(
     agency?: PdfFormAgency;
     reviewed?: boolean;
   } = {
-    companyId: DEFAULT_COMPANY_ID,
+    companyId: companyId(),
     deletedAt: null,
   };
   if (filter.agency) where.agency = filter.agency;
@@ -90,7 +95,7 @@ export async function getPdfFormMapping(id: string): Promise<PdfFormMapping | nu
   // ('pdf-form-abc12345'). Block obvious path-traversal / nonsense.
   if (!/^pdf-form-[a-z0-9-]{2,64}$/.test(id)) return null;
   const row = await prisma.pdfFormMapping.findFirst({
-    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { id, companyId: companyId(), deletedAt: null },
   });
   return row ? row2mapping(row) : null;
 }
@@ -115,7 +120,7 @@ export async function createPdfFormMapping(
   await prisma.pdfFormMapping.create({
     data: {
       id: m.id,
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       agency: m.agency,
       formCode: m.formCode ?? null,
       reviewed: m.reviewed,

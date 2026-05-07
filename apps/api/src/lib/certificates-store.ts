@@ -9,8 +9,13 @@ import {
   type CertificatePatch,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
+import { getRequestCompanyId } from './request-context';
 
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+const FALLBACK_COMPANY_ID =
+  process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+function companyId(): string {
+  return getRequestCompanyId() ?? FALLBACK_COMPANY_ID;
+}
 
 function row2cert(row: { data: unknown }): Certificate {
   return CertificateSchema.parse(row.data);
@@ -33,7 +38,7 @@ export async function createCertificate(
   await prisma.certificate.create({
     data: {
       id,
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       expiresOn: c.expiresOn ?? null,
       data: c as unknown as object,
     },
@@ -50,7 +55,7 @@ export async function createCertificate(
 
 export async function listCertificates(): Promise<Certificate[]> {
   const rows = await prisma.certificate.findMany({
-    where: { companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { companyId: companyId(), deletedAt: null },
     orderBy: { createdAt: 'desc' },
   });
   const all = rows.map(row2cert);
@@ -66,7 +71,7 @@ export async function listCertificates(): Promise<Certificate[]> {
 export async function getCertificate(id: string): Promise<Certificate | null> {
   if (!/^cert-[a-z0-9]{8}$/.test(id)) return null;
   const row = await prisma.certificate.findFirst({
-    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { id, companyId: companyId(), deletedAt: null },
   });
   return row ? row2cert(row) : null;
 }

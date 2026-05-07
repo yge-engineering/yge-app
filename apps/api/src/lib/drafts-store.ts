@@ -5,10 +5,15 @@
 // from the JSON without unpacking every field.
 
 import { randomBytes } from 'node:crypto';
+import { getRequestCompanyId } from './request-context';
 import { prisma } from '@yge/db';
 import type { PtoEOutput } from '@yge/shared';
 
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+const FALLBACK_COMPANY_ID =
+  process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+function companyId(): string {
+  return getRequestCompanyId() ?? FALLBACK_COMPANY_ID;
+}
 
 export interface SavedDraft {
   id: string;
@@ -92,7 +97,7 @@ export async function saveDraft(input: NewDraftInput): Promise<SavedDraft> {
   await prisma.ptoEDraft.create({
     data: {
       id,
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       jobId: input.jobId,
       data: saved as unknown as object,
     },
@@ -102,7 +107,7 @@ export async function saveDraft(input: NewDraftInput): Promise<SavedDraft> {
 
 export async function listDrafts(): Promise<DraftSummary[]> {
   const rows = await prisma.ptoEDraft.findMany({
-    where: { companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { companyId: companyId(), deletedAt: null },
     orderBy: { createdAt: 'desc' },
   });
   return rows.map((r) => summarize(r.data as unknown as SavedDraft));
@@ -112,7 +117,7 @@ export async function getDraft(id: string): Promise<SavedDraft | null> {
   // Defensive id shape — same regex as the file-store had.
   if (!/^[a-z0-9-]{10,80}$/.test(id)) return null;
   const row = await prisma.ptoEDraft.findFirst({
-    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { id, companyId: companyId(), deletedAt: null },
   });
   return row ? (row.data as unknown as SavedDraft) : null;
 }
