@@ -8,6 +8,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useTranslator } from '../lib/use-translator';
 
 interface NavLink {
@@ -27,6 +28,7 @@ interface Props {
 export function MobileNav({ groups }: Props) {
   const [open, setOpen] = useState(false);
   const t = useTranslator();
+  const pathname = usePathname() ?? '';
   return (
     <>
       <button
@@ -74,17 +76,21 @@ export function MobileNav({ groups }: Props) {
                     {group.label}
                   </div>
                   <ul className="space-y-0.5">
-                    {group.links.map((l) => (
-                      <li key={l.href}>
-                        <Link
-                          href={l.href}
-                          onClick={() => setOpen(false)}
-                          className="block rounded-md px-2 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-                        >
-                          {l.label}
-                        </Link>
-                      </li>
-                    ))}
+                    {group.links.map((l) => {
+                      const active = pathname === l.href || pathname.startsWith(l.href + '/');
+                      return (
+                        <li key={l.href}>
+                          <Link
+                            href={l.href}
+                            onClick={() => setOpen(false)}
+                            aria-current={active ? 'page' : undefined}
+                            className={`block rounded-md px-2 py-2 text-sm hover:bg-gray-100 ${active ? 'bg-yge-blue-50 font-semibold text-yge-blue-700' : 'text-gray-700 hover:text-gray-900'}`}
+                          >
+                            {l.label}
+                          </Link>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
               ))}
