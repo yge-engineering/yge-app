@@ -1,10 +1,6 @@
-// Every mutation here records an audit event via recordAudit() —
-// CLAUDE.md mandates 'every mutation is audit-logged'.
-//
-// File-based store for DIR prevailing wage rates.
+// Postgres-backed store for DIR prevailing wage rates.
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { prisma } from '@yge/db';
 import {
   DirRateSchema,
   newDirRateId,
@@ -14,46 +10,16 @@ import {
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
 
-function dataDir(): string {
-  return process.env.DIR_RATES_DATA_DIR ?? path.resolve(process.cwd(), 'data', 'dir-rates');
-}
-function indexPath(): string {
-  return path.join(dataDir(), 'index.json');
-}
-function rowPath(id: string): string {
-  return path.join(dataDir(), `${id}.json`);
-}
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
 
-async function ensureDir() {
-  await fs.mkdir(dataDir(), { recursive: true });
-}
-
-async function readIndex(): Promise<DirRate[]> {
-  try {
-    const raw = await fs.readFile(indexPath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((entry: unknown) => {
-        const result = DirRateSchema.safeParse(entry);
-        return result.success ? result.data : null;
-      })
-      .filter((r): r is DirRate => r !== null);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
-  }
-}
-
-async function writeIndex(entries: DirRate[]) {
-  await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
+function row2rate(row: { data: unknown }): DirRate {
+  return DirRateSchema.parse(row.data);
 }
 
 export async function createDirRate(
   input: DirRateCreate,
   ctx?: AuditContext,
 ): Promise<DirRate> {
-  await ensureDir();
   const now = new Date().toISOString();
   const id = newDirRateId();
   const r: DirRate = {
@@ -68,10 +34,15 @@ export async function createDirRate(
     ...input,
   };
   DirRateSchema.parse(r);
-  await fs.writeFile(rowPath(id), JSON.stringify(r, null, 2), 'utf8');
-  const index = await readIndex();
-  index.unshift(r);
-  await writeIndex(index);
+  await prisma.dirRate.create({
+    data: {
+      id,
+      companyId: DEFAULT_COMPANY_ID,
+      craft: r.classification,
+      effectiveOn: r.effectiveDate,
+      data: r as unknown as object,
+    },
+  });
   await recordAudit({
     action: 'create',
     entityType: 'DirRateSchedule',
@@ -86,29 +57,25 @@ export async function listDirRates(filter?: {
   classification?: string;
   county?: string;
 }): Promise<DirRate[]> {
-  let all = await readIndex();
-  if (filter?.classification)
-    all = all.filter((r) => r.classification === filter.classification);
-  if (filter?.county) all = all.filter((r) => r.county === filter.county);
-  all.sort((a, b) => {
-    const c = a.classification.localeCompare(b.classification);
-    if (c !== 0) return c;
-    const co = a.county.localeCompare(b.county);
-    if (co !== 0) return co;
-    return b.effectiveDate.localeCompare(a.effectiveDate);
+  const rows = await prisma.dirRate.findMany({
+    where: {
+      companyId: DEFAULT_COMPANY_ID,
+      deletedAt: null,
+      ...(filter?.classification ? { craft: filter.classification } : {}),
+    },
+    orderBy: [{ craft: 'asc' }, { effectiveOn: 'desc' }],
   });
+  let all = rows.map(row2rate);
+  if (filter?.county) all = all.filter((r) => r.county === filter.county);
   return all;
 }
 
 export async function getDirRate(id: string): Promise<DirRate | null> {
   if (!/^dir-[a-z0-9]{8}$/.test(id)) return null;
-  try {
-    const raw = await fs.readFile(rowPath(id), 'utf8');
-    return DirRateSchema.parse(JSON.parse(raw));
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    throw err;
-  }
+  const row = await prisma.dirRate.findFirst({
+    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+  });
+  return row ? row2rate(row) : null;
 }
 
 export async function updateDirRate(
@@ -127,15 +94,14 @@ export async function updateDirRate(
     updatedAt: new Date().toISOString(),
   };
   DirRateSchema.parse(updated);
-  await fs.writeFile(rowPath(id), JSON.stringify(updated, null, 2), 'utf8');
-  const index = await readIndex();
-  const idx = index.findIndex((r) => r.id === id);
-  if (idx >= 0) {
-    index[idx] = updated;
-  } else {
-    index.unshift(updated);
-  }
-  await writeIndex(index);
+  await prisma.dirRate.update({
+    where: { id },
+    data: {
+      craft: updated.classification,
+      effectiveOn: updated.effectiveDate,
+      data: updated as unknown as object,
+    },
+  });
   await recordAudit({
     action: auditAction,
     entityType: 'DirRateSchedule',

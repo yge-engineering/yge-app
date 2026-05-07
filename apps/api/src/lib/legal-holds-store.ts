@@ -1,13 +1,6 @@
-// File-based store for legal holds.
-//
-// Every mutation here records an audit event. Legal-hold creation
-// + release is exactly the kind of action that lands on the
-// auditor's desk later — the full audit trail (who, when, why,
-// from where) is the proof YGE complied with the discovery /
-// preservation request.
+// Postgres-backed store for legal holds.
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { prisma } from '@yge/db';
 import {
   LegalHoldSchema,
   newLegalHoldId,
@@ -17,46 +10,10 @@ import {
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
 
-function dataDir(): string {
-  return (
-    process.env.LEGAL_HOLDS_DATA_DIR ??
-    path.resolve(process.cwd(), 'data', 'legal-holds')
-  );
-}
-function indexPath(): string { return path.join(dataDir(), 'index.json'); }
-function rowPath(id: string): string { return path.join(dataDir(), `${id}.json`); }
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
 
-async function ensureDir() { await fs.mkdir(dataDir(), { recursive: true }); }
-
-async function readIndex(): Promise<LegalHold[]> {
-  try {
-    const raw = await fs.readFile(indexPath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((entry: unknown) => {
-        const r = LegalHoldSchema.safeParse(entry);
-        return r.success ? r.data : null;
-      })
-      .filter((h): h is LegalHold => h !== null);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
-  }
-}
-
-async function writeIndex(rows: LegalHold[]) {
-  await fs.writeFile(indexPath(), JSON.stringify(rows, null, 2), 'utf8');
-}
-
-async function persist(h: LegalHold) {
-  await ensureDir();
-  await fs.writeFile(rowPath(h.id), JSON.stringify(h, null, 2), 'utf8');
-  const index = await readIndex();
-  const at = index.findIndex((row) => row.id === h.id);
-  if (at >= 0) index[at] = h;
-  else index.unshift(h);
-  await writeIndex(index);
+function row2hold(row: { data: unknown }): LegalHold {
+  return LegalHoldSchema.parse(row.data);
 }
 
 export interface LegalHoldFilter {
@@ -64,20 +21,23 @@ export interface LegalHoldFilter {
 }
 
 export async function listLegalHolds(filter: LegalHoldFilter = {}): Promise<LegalHold[]> {
-  let rows = await readIndex();
-  if (filter.status) rows = rows.filter((h) => h.status === filter.status);
-  return rows;
+  const rows = await prisma.legalHold.findMany({
+    where: {
+      companyId: DEFAULT_COMPANY_ID,
+      ...(filter.status === 'ACTIVE' ? { liftedAt: null } : {}),
+      ...(filter.status === 'RELEASED' ? { liftedAt: { not: null } } : {}),
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  return rows.map(row2hold);
 }
 
 export async function getLegalHold(id: string): Promise<LegalHold | null> {
   if (!/^hold-[a-z0-9]{8}$/.test(id)) return null;
-  try {
-    const raw = await fs.readFile(rowPath(id), 'utf8');
-    return LegalHoldSchema.parse(JSON.parse(raw));
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    throw err;
-  }
+  const row = await prisma.legalHold.findFirst({
+    where: { id, companyId: DEFAULT_COMPANY_ID },
+  });
+  return row ? row2hold(row) : null;
 }
 
 export async function createLegalHold(
@@ -93,7 +53,13 @@ export async function createLegalHold(
     status: input.status ?? 'ACTIVE',
     ...input,
   });
-  await persist(h);
+  await prisma.legalHold.create({
+    data: {
+      id,
+      companyId: DEFAULT_COMPANY_ID,
+      data: h as unknown as object,
+    },
+  });
   await recordAudit({
     action: 'create',
     entityType: 'Document',
@@ -101,8 +67,6 @@ export async function createLegalHold(
     after: h,
     ctx,
   });
-  // Also drop an audit row against EVERY frozen entity so the
-  // per-record binder shows the freeze.
   for (const e of h.entities) {
     await recordAudit({
       action: 'archive',
@@ -133,7 +97,13 @@ export async function releaseLegalHold(
     releasedReason,
     updatedAt: now,
   });
-  await persist(updated);
+  await prisma.legalHold.update({
+    where: { id },
+    data: {
+      liftedAt: new Date(now),
+      data: updated as unknown as object,
+    },
+  });
   await recordAudit({
     action: 'restore',
     entityType: 'Document',
@@ -142,7 +112,6 @@ export async function releaseLegalHold(
     after: updated,
     ctx: { ...ctx, reason: releasedReason },
   });
-  // Mirror the un-freeze on every frozen entity.
   for (const e of existing.entities) {
     await recordAudit({
       action: 'restore',

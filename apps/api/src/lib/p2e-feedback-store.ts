@@ -1,42 +1,20 @@
-// Plans-to-Estimate feedback store.
-//
-// Plain English: the AI drafts plans-to-estimate output; the human
-// estimator either accepts it as-is, edits it, or scraps it. This
-// store records the human verdict so future prompt iterations and
-// fine-tuning passes can correlate AI accuracy with prompt versions.
-//
-// File-backed JSON at data/p2e-feedback/log.jsonl — one JSON entry
-// per line, append-only. The Phase 5 Postgres migration moves this
-// to a real table.
+// Postgres-backed store for Plans-to-Estimate feedback.
+// Append-only log: every entry records the human's verdict on an
+// AI draft so prompt iterations can be cohort-analyzed.
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { prisma } from '@yge/db';
+
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
 
 interface FeedbackEntry {
   id: string;
   loggedAt: string;
-  /** Estimator's portal email (or empty if not signed in). */
   byEmail?: string;
-  /** Linked draft id from the original AI run. */
   draftId?: string;
-  /** Linked priced estimate id (when a draft was promoted). */
   estimateId?: string;
-  /** Quick verdict. */
   kind: 'good' | 'bad' | 'mixed';
-  /** Free-form reviewer note. */
   notes?: string;
-  /** AI prompt version on the original draft, for cohort analysis. */
   promptVersion?: string;
-}
-
-function dataDir(): string {
-  return (
-    process.env.P2E_FEEDBACK_DATA_DIR ??
-    path.resolve(process.cwd(), 'data', 'p2e-feedback')
-  );
-}
-function logPath(): string {
-  return path.join(dataDir(), 'log.jsonl');
 }
 
 function newId(): string {
@@ -66,27 +44,21 @@ export async function appendFeedback(
     ...(input.notes ? { notes: input.notes } : {}),
     ...(input.promptVersion ? { promptVersion: input.promptVersion } : {}),
   };
-  await fs.mkdir(dataDir(), { recursive: true });
-  await fs.appendFile(logPath(), `${JSON.stringify(entry)}\n`, 'utf8');
+  await prisma.ptoEFeedback.create({
+    data: {
+      id: entry.id,
+      companyId: DEFAULT_COMPANY_ID,
+      draftId: entry.draftId ?? null,
+      data: entry as unknown as object,
+    },
+  });
   return entry;
 }
 
 export async function listFeedback(): Promise<FeedbackEntry[]> {
-  try {
-    const raw = await fs.readFile(logPath(), 'utf8');
-    return raw
-      .split('\n')
-      .filter((line) => line.trim().length > 0)
-      .map((line) => {
-        try {
-          return JSON.parse(line) as FeedbackEntry;
-        } catch {
-          return null;
-        }
-      })
-      .filter((e): e is FeedbackEntry => e !== null);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
-  }
+  const rows = await prisma.ptoEFeedback.findMany({
+    where: { companyId: DEFAULT_COMPANY_ID },
+    orderBy: { createdAt: 'asc' },
+  });
+  return rows.map((r) => r.data as unknown as FeedbackEntry);
 }
