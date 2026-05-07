@@ -458,6 +458,14 @@ export default async function DashboardPage() {
                   : `${pursuingJobs} bids in flight`}
               </>
             )}
+            {pipelineData.overdueCount > 0 && (
+              <>
+                {' · '}
+                <Link href="/estimates" className="font-semibold text-red-700 hover:underline">
+                  {pipelineData.overdueCount} overdue
+                </Link>
+              </>
+            )}
           </p>
         </div>
         <div className="flex items-center gap-2">
