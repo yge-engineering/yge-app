@@ -26,6 +26,10 @@ import {
   SCOPES,
 } from '../lib/microsoft-graph';
 import {
+  triageEmails,
+  type EmailTriageMessage,
+} from '../lib/email-triage';
+import {
   deleteMicrosoftToken,
   getMicrosoftToken,
 } from '../lib/microsoft-tokens-store';
@@ -299,6 +303,82 @@ microsoftRouter.get('/onedrive/recent', async (req, res, next) => {
         kind: i.folder ? 'folder' : 'file',
         mimeType: i.file?.mimeType,
       })),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+// POST /api/microsoft/inbox-triage — fetch the most recent N emails
+// for `email` and run each through the AI classifier. v1 is read-
+// only; auto-file + draft-reply ship next.
+microsoftRouter.post('/inbox-triage', async (req, res, next) => {
+  try {
+    if (!isMicrosoftConfigured()) {
+      return res.status(503).json({ error: 'Microsoft Graph not configured' });
+    }
+    const Body = z.object({
+      email: z.string().email(),
+      max: z.number().int().min(1).max(50).optional(),
+    });
+    const parsed = Body.safeParse(req.body);
+    if (!parsed.success) {
+      return res
+        .status(400)
+        .json({ error: 'Validation failed', issues: parsed.error.issues });
+    }
+    const max = parsed.data.max ?? 25;
+
+    interface GraphMessage {
+      id: string;
+      subject: string | null;
+      bodyPreview: string | null;
+      receivedDateTime: string;
+      from?: { emailAddress?: { address?: string; name?: string } };
+    }
+    const path =
+      `/me/messages?$top=${max}` +
+      `&$select=id,subject,bodyPreview,receivedDateTime,from`;
+    const graph = await graphGet<{ value: GraphMessage[] }>(
+      parsed.data.email,
+      path,
+    );
+
+    const messages: EmailTriageMessage[] = graph.value.map((m) => ({
+      id: m.id,
+      subject: m.subject ?? '(no subject)',
+      fromAddress: m.from?.emailAddress?.address ?? 'unknown@unknown',
+      fromName: m.from?.emailAddress?.name,
+      bodyPreview: m.bodyPreview ?? '',
+      receivedAtIso: m.receivedDateTime,
+    }));
+
+    const out = await triageEmails(messages);
+    if (!out) {
+      return res
+        .status(502)
+        .json({ error: 'AI returned an unparseable response' });
+    }
+
+    // Map AI items back onto the source messages so the UI gets
+    // subject + from in one shot.
+    const itemById = new Map(out.items.map((i) => [i.messageId, i]));
+    const enriched = messages.map((m) => {
+      const tri = itemById.get(m.id);
+      return {
+        id: m.id,
+        subject: m.subject,
+        fromAddress: m.fromAddress,
+        fromName: m.fromName,
+        receivedAtIso: m.receivedAtIso,
+        category: tri?.category ?? 'OTHER',
+        confidence: tri?.confidence ?? 'LOW',
+        nextAction: tri?.nextAction ?? '(unclassified)',
+      };
+    });
+
+    return res.json({
+      messages: enriched,
+      promptVersion: out.promptVersion,
     });
   } catch (err) {
     next(err);
