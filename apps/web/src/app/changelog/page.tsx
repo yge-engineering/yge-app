@@ -15,6 +15,31 @@ interface ReleaseNote {
 
 const RELEASE_NOTES: ReleaseNote[] = [
   {
+    date: '2026-05-06',
+    title: 'Print-ready everywhere',
+    body: 'Every page now prints clean: the YGE app sidebar, header, footer, and other on-screen helpers automatically hide. Tables avoid breaking rows mid-record, KPI cards stay intact, and a half-inch page margin matches standard letter paper.',
+  },
+  {
+    date: '2026-05-06',
+    title: 'Active sidebar link',
+    body: 'The sidebar (and the mobile drawer) now highlights the page you are on, so it is easier to see where you are in the app.',
+  },
+  {
+    date: '2026-05-06',
+    title: 'Keyboard nav on every list',
+    body: 'Press j and k to move down and up through rows on /jobs, /estimates, /drafts, /imported-estimates, and /bid-results. Press Enter to open the focused row. The shortcut chip in the page header lists every key.',
+  },
+  {
+    date: '2026-05-06',
+    title: 'Tooltip the full dollars',
+    body: 'Compact dollar displays like "$1.2M" now show the exact "$1,234,567" when you hover, so a roll-up never hides the underlying precision.',
+  },
+  {
+    date: '2026-05-06',
+    title: 'Trophy icon on YGE wins',
+    body: 'On /bid-results, jobs YGE won are flagged with a 🏆 next to the outcome pill so wins stand out at a glance.',
+  },
+  {
     date: '2026-05-01',
     title: 'Search box in the header',
     body: 'Type from any page to find a job, customer, vendor, or employee by name. Results group by entity type.',
