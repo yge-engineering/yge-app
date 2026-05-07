@@ -1,13 +1,13 @@
-// File-based store for PDF form mappings.
+// Postgres-backed store for PDF form mappings.
 //
-// Every mutation here records an audit event via recordAudit() —
-// CLAUDE.md mandates 'every mutation is audit-logged'. Mapping
-// changes are downstream of YGE's identity (master profile) but
-// upstream of every filled form, so the audit row is the answer
-// to 'why did the CAL FIRE 720 fill differently last week?'.
+// Uses the PdfFormMapping model added in 1345 (companyId + agency
+// metadata columns + Json data). Seeds the curated agency library
+// from listSeedMappings() on first read per company.
+//
+// Mappings are downstream of YGE's identity (master profile) but
+// upstream of every filled form, so every mutation is audited.
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { prisma } from '@yge/db';
 import {
   PdfFormMappingSchema,
   newPdfFormMappingId,
@@ -17,46 +17,37 @@ import {
 import { recordAudit, type AuditContext } from './audit-store';
 import { buildSeedMapping, listSeedMappings } from './pdf-form-mappings-seeds';
 
-function dataDir(): string {
-  return (
-    process.env.PDF_FORM_MAPPINGS_DATA_DIR ??
-    path.resolve(process.cwd(), 'data', 'pdf-form-mappings')
-  );
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'co-yge';
+
+function row2mapping(row: { data: unknown }): PdfFormMapping {
+  return PdfFormMappingSchema.parse(row.data);
 }
-function indexPath(): string { return path.join(dataDir(), 'index.json'); }
-function rowPath(id: string): string { return path.join(dataDir(), `${id}.json`); }
 
-async function ensureDir() { await fs.mkdir(dataDir(), { recursive: true }); }
-
-async function readIndex(): Promise<PdfFormMapping[]> {
-  try {
-    const raw = await fs.readFile(indexPath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((entry: unknown) => {
-        const r = PdfFormMappingSchema.safeParse(entry);
-        return r.success ? r.data : null;
+async function seedIfEmpty(): Promise<void> {
+  const existingIds = new Set(
+    (
+      await prisma.pdfFormMapping.findMany({
+        where: { companyId: DEFAULT_COMPANY_ID },
+        select: { id: true },
       })
-      .filter((m): m is PdfFormMapping => m !== null);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
+    ).map((r) => r.id),
+  );
+  const seeds = listSeedMappings();
+  const now = new Date();
+  for (const s of seeds) {
+    if (existingIds.has(s.id)) continue;
+    const mapping = PdfFormMappingSchema.parse(buildSeedMapping(s, now));
+    await prisma.pdfFormMapping.create({
+      data: {
+        id: mapping.id,
+        companyId: DEFAULT_COMPANY_ID,
+        agency: mapping.agency,
+        formCode: mapping.formCode ?? null,
+        reviewed: mapping.reviewed,
+        data: mapping as unknown as object,
+      },
+    });
   }
-}
-
-async function writeIndex(rows: PdfFormMapping[]) {
-  await fs.writeFile(indexPath(), JSON.stringify(rows, null, 2), 'utf8');
-}
-
-async function persist(m: PdfFormMapping) {
-  await ensureDir();
-  await fs.writeFile(rowPath(m.id), JSON.stringify(m, null, 2), 'utf8');
-  const index = await readIndex();
-  const at = index.findIndex((row) => row.id === m.id);
-  if (at >= 0) index[at] = m;
-  else index.unshift(m);
-  await writeIndex(index);
 }
 
 export interface ListPdfFormMappingsFilter {
@@ -66,60 +57,42 @@ export interface ListPdfFormMappingsFilter {
   search?: string;
 }
 
-/**
- * Seed the curated agency forms (IRS W-9, DAS-140, ACORD 25, ...)
- * the first time the library is read. Idempotent — only writes rows
- * whose ids aren't already on disk so re-running on top of an
- * existing library doesn't clobber operator-edited mappings.
- */
-async function seedIfEmpty(): Promise<void> {
-  const existing = await readIndex();
-  const existingIds = new Set(existing.map((m) => m.id));
-  const seeds = listSeedMappings();
-  const now = new Date();
-  let wrote = false;
-  for (const s of seeds) {
-    if (existingIds.has(s.id)) continue;
-    const mapping = PdfFormMappingSchema.parse(buildSeedMapping(s, now));
-    await persist(mapping);
-    wrote = true;
-  }
-  // If we wrote anything new, callers reading right after will pick
-  // it up via the next readIndex().
-  if (wrote) {
-    // No audit record on seed — this is library bootstrap, not a
-    // user mutation. Operator review (which DOES audit) happens
-    // when the reviewed flag flips.
-  }
-}
-
 export async function listPdfFormMappings(
   filter: ListPdfFormMappingsFilter = {},
 ): Promise<PdfFormMapping[]> {
   await seedIfEmpty();
-  let rows = await readIndex();
-  if (filter.agency) rows = rows.filter((m) => m.agency === filter.agency);
-  if (filter.reviewed !== undefined) rows = rows.filter((m) => m.reviewed === filter.reviewed);
+  const where: {
+    companyId: string;
+    deletedAt: null;
+    agency?: PdfFormAgency;
+    reviewed?: boolean;
+  } = {
+    companyId: DEFAULT_COMPANY_ID,
+    deletedAt: null,
+  };
+  if (filter.agency) where.agency = filter.agency;
+  if (filter.reviewed !== undefined) where.reviewed = filter.reviewed;
+  const rows = await prisma.pdfFormMapping.findMany({ where });
+  let mappings = rows.map(row2mapping);
   if (filter.search) {
     const q = filter.search.toLowerCase();
-    rows = rows.filter(
+    mappings = mappings.filter(
       (m) =>
         m.displayName.toLowerCase().includes(q) ||
         (m.formCode && m.formCode.toLowerCase().includes(q)),
     );
   }
-  return rows;
+  return mappings;
 }
 
 export async function getPdfFormMapping(id: string): Promise<PdfFormMapping | null> {
-  if (!/^pdf-form-[a-z0-9]{8}$/.test(id)) return null;
-  try {
-    const raw = await fs.readFile(rowPath(id), 'utf8');
-    return PdfFormMappingSchema.parse(JSON.parse(raw));
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    throw err;
-  }
+  // Accept seed-style ids ('pdf-form-irs-w9') AND user-created ones
+  // ('pdf-form-abc12345'). Block obvious path-traversal / nonsense.
+  if (!/^pdf-form-[a-z0-9-]{2,64}$/.test(id)) return null;
+  const row = await prisma.pdfFormMapping.findFirst({
+    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+  });
+  return row ? row2mapping(row) : null;
 }
 
 export type CreatePdfFormMappingInput = Omit<
@@ -139,7 +112,16 @@ export async function createPdfFormMapping(
     updatedAt: now,
     ...input,
   });
-  await persist(m);
+  await prisma.pdfFormMapping.create({
+    data: {
+      id: m.id,
+      companyId: DEFAULT_COMPANY_ID,
+      agency: m.agency,
+      formCode: m.formCode ?? null,
+      reviewed: m.reviewed,
+      data: m as unknown as object,
+    },
+  });
   await recordAudit({
     action: 'create',
     entityType: 'Document',
@@ -154,8 +136,6 @@ export async function updatePdfFormMapping(
   id: string,
   patch: Partial<PdfFormMapping>,
   ctx?: AuditContext,
-  /** Override when the patch is a domain action ('approve' = mark
-   *  reviewed=true after estimator review). */
   auditAction: 'update' | 'approve' = 'update',
 ): Promise<PdfFormMapping | null> {
   const existing = await getPdfFormMapping(id);
@@ -168,7 +148,15 @@ export async function updatePdfFormMapping(
     createdAt: existing.createdAt,
     updatedAt: new Date().toISOString(),
   });
-  await persist(updated);
+  await prisma.pdfFormMapping.update({
+    where: { id },
+    data: {
+      agency: updated.agency,
+      formCode: updated.formCode ?? null,
+      reviewed: updated.reviewed,
+      data: updated as unknown as object,
+    },
+  });
   await recordAudit({
     action: auditAction,
     entityType: 'Document',
