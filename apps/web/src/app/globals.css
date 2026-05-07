@@ -46,3 +46,13 @@
 .animate-slide-in-right {
   animation: slide-in-right 0.18s ease-out;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-slide-in-right {
+    animation: none;
+  }
+  *, *::before, *::after {
+    transition-duration: 0s !important;
+    animation-duration: 0s !important;
+  }
+}
