@@ -6,6 +6,14 @@
   --font-inter: 'Inter', system-ui, sans-serif;
 }
 
+/* Default visible focus outline — keyboard users should always see
+ * which element is focused, even on elements without their own focus
+ * styles. Components can still override. */
+:focus-visible {
+  outline: 2px solid #1d4ed8; /* tailwind blue-700 */
+  outline-offset: 2px;
+}
+
 @media print {
   @page {
     margin: 0.5in;
