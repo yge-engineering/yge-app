@@ -13,6 +13,7 @@ import { projectTypeIcon } from '../../lib/project-type-icon';
 import { DashboardRefreshButton } from '../../components/dashboard-refresh-button';
 import { DraftsPinButton, DraftsPinReorder } from '../../components/drafts-pin-button';
 import { DraftsPinFilterChip } from '../../components/drafts-pin-filter-chip';
+import { EstimatesKeyboardNav } from '../../components/estimates-keyboard-nav';
 import { PinnedCountBadge } from '../../components/pinned-count-badge';
 import { EstimatesSortHeaders } from '../../components/estimates-sort-headers';
 import { getTranslator } from '../../lib/locale';
@@ -130,6 +131,7 @@ export default async function DraftsPage() {
           </div>
           <EstimatesSortHeaders targetId="drafts-table" />
           <DraftsPinReorder targetId="drafts-table" />
+          <EstimatesKeyboardNav targetId="drafts-table" />
           <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
           <table id="drafts-table" className="w-full text-left text-sm">
             <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
