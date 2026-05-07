@@ -96,6 +96,7 @@ const NAV_SPEC: NavGroupSpec[] = [
       { key: 'nav.incomeStatement', href: '/income-statement', requires: 'financials:view' },
       { key: 'nav.cashFlow', href: '/cash-flow', requires: 'financials:view' },
       { key: 'nav.closePackage', href: '/close-package', requires: 'financials:view' },
+      { key: 'nav.adminErrors', href: '/admin/errors', requires: 'audit:view' },
     ],
   },
   {
