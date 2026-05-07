@@ -41,7 +41,7 @@ export function PinnedCountBadge({ storageKey, eventName }: Props) {
 
   if (count === 0) return null;
   return (
-    <span className="ml-2 inline-flex items-center gap-1 rounded-full border border-yge-blue-300 bg-yge-blue-50 px-2 py-0.5 text-xs font-semibold text-yge-blue-700">
+    <span className="ml-2 inline-flex items-center gap-1 rounded-full border border-yge-blue-300 bg-yge-blue-50 px-2 py-0.5 text-xs font-semibold text-yge-blue-700 print:hidden">
       📌 {count}
     </span>
   );
