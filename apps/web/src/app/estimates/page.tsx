@@ -484,7 +484,7 @@ export default async function EstimatesPage() {
           <EstimatesPinReorder targetId="estimates-table" />
           <EstimatesKeyboardNav targetId="estimates-table" />
           <EstimatesSortHeaders targetId="imported-estimates-table" />
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 print:hidden">
             <EstimatesStatusFilter targetId="estimates-table" counts={statusCounts} total={estimates.length} />
             <EstimatesDueWeekChip targetId="estimates-table" count={dueCounts.overdue + dueCounts.dueSoon} />
             <EstimatesCreatedFilter targetId="estimates-table" />
