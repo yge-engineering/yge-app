@@ -19,6 +19,7 @@ import { getTranslator } from '../../lib/locale';
 import { bidDueCountdown } from '@yge/shared';
 import { DashboardRefreshButton } from '../../components/dashboard-refresh-button';
 import { MobileAppCallout } from '../../components/mobile-app-callout';
+import { InboxTriageTile } from '../../components/inbox-triage-tile';
 import { CopyMoneyButton } from '../../components/copy-money-button';
 import { PinnedIndicator } from '../../components/pinned-indicator';
 import { relativeTime } from '../../lib/relative-time';
@@ -318,6 +319,22 @@ async function fetchJson<T>(pathname: string, key: string): Promise<T[]> {
   }
 }
 
+
+async function fetchMicrosoftConnected(email: string): Promise<boolean> {
+  if (!email) return false;
+  try {
+    const res = await fetch(
+      `${apiBaseUrl()}/api/microsoft/status?email=${encodeURIComponent(email)}`,
+      { cache: 'no-store' },
+    );
+    if (!res.ok) return false;
+    const body = (await res.json()) as { connected?: boolean };
+    return Boolean(body.connected);
+  } catch {
+    return false;
+  }
+}
+
 export default async function DashboardPage() {
   // Foremen + crew don't need the full enterprise dashboard (AR aging,
   // RFI counts, dispatch double-bookings, etc.). Redirect them to the
@@ -422,6 +439,9 @@ export default async function DashboardPage() {
 
   const user = getCurrentUser();
   const firstName = user ? user.name.split(' ')[0] : '';
+  const microsoftConnected = user?.email
+    ? await fetchMicrosoftConnected(user.email)
+    : false;
   const hour = ygeHour();
   const partOfDay = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
   const t = getTranslator();
@@ -491,6 +511,13 @@ export default async function DashboardPage() {
       </header>
 
       <MobileAppCallout />
+
+      {user?.email ? (
+        <InboxTriageTile
+          email={user.email}
+          microsoftConnected={microsoftConnected}
+        />
+      ) : null}
 
       {apiUnreachable && (
         <Alert tone="warn" title={t('dashboard.apiUnreachable.title')} className="mb-6">
