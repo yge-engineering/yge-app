@@ -49,7 +49,9 @@ export function Toaster() {
         <div
           key={t.id}
           role="status"
-          className={`pointer-events-auto animate-slide-in-right rounded-md border px-4 py-2.5 text-sm shadow-lg ${toneClass(t.variant)}`}
+          onClick={() => setToasts((cur) => cur.filter((x) => x.id !== t.id))}
+          title="Click to dismiss"
+          className={`pointer-events-auto animate-slide-in-right cursor-pointer rounded-md border px-4 py-2.5 text-sm shadow-lg transition hover:shadow-xl ${toneClass(t.variant)}`}
         >
           {t.text}
         </div>
