@@ -5,6 +5,7 @@ import { AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { BankRec } from '@yge/shared';
 import { BankRecEditor } from '../../../components/bank-rec-editor';
+import { BankRecMatchPanel } from '../../../components/bank-rec-match-panel';
 import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
@@ -43,6 +44,8 @@ export default async function BankRecDetailPage({
       <div className="mt-6">
         <BankRecEditor mode="edit" rec={rec} />
       </div>
+
+      <BankRecMatchPanel recId={rec.id} />
 
       <AuditBinderPanel entityType="BankRec" entityId={rec.id} />
     </main>
