@@ -96,9 +96,9 @@ export default async function EquipmentPage() {
           {t('equipment.empty')}
         </div>
       ) : (
-        <div className="mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+        <div className="mt-6 rounded-lg border border-gray-200 bg-white shadow-sm">
           <table className="w-full text-left text-sm">
-            <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+            <thead className="sticky top-0 z-10 bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
               <tr>
                 <th className="px-4 py-2">{t('equipment.col.unit')}</th>
                 <th className="px-4 py-2">{t('equipment.col.category')}</th>

@@ -140,9 +140,9 @@ export default async function VendorsPage({
             actions={[{ href: '/vendors/new', label: t('vendors.empty.action'), primary: true }]}
           />
         ) : (
-          <div className="overflow-x-auto rounded-md border border-gray-200 bg-white">
+          <div className="rounded-md border border-gray-200 bg-white md:overflow-visible">
             <table className="w-full text-left text-sm">
-              <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+              <thead className="sticky top-0 z-10 bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
                 <tr>
                   <th className="px-4 py-2">{t('vendors.col.vendor')}</th>
                   <th className="px-4 py-2">{t('vendors.col.kind')}</th>
