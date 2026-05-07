@@ -1,14 +1,6 @@
-// Every mutation here records an audit event via recordAudit() —
-// CLAUDE.md mandates 'every mutation is audit-logged'.
-//
-// File-based store for power tools.
-//
-// Phase 1 stand-in for the future Postgres `Tool` table. The dispatch
-// helpers (assignTool / returnTool) keep status + assignedToEmployeeId +
-// assignedAt in lockstep so the UI never sees a half-state row.
+// Postgres-backed store for hand tools / small equipment.
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { prisma } from '@yge/db';
 import {
   ToolSchema,
   newToolId,
@@ -18,48 +10,16 @@ import {
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
 
-function dataDir(): string {
-  return (
-    process.env.TOOLS_DATA_DIR ?? path.resolve(process.cwd(), 'data', 'tools')
-  );
-}
-function indexPath(): string {
-  return path.join(dataDir(), 'index.json');
-}
-function toolPath(id: string): string {
-  return path.join(dataDir(), `${id}.json`);
-}
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
 
-async function ensureDir() {
-  await fs.mkdir(dataDir(), { recursive: true });
-}
-
-async function readIndex(): Promise<Tool[]> {
-  try {
-    const raw = await fs.readFile(indexPath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((entry: unknown) => {
-        const result = ToolSchema.safeParse(entry);
-        return result.success ? result.data : null;
-      })
-      .filter((t): t is Tool => t !== null);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
-  }
-}
-
-async function writeIndex(entries: Tool[]) {
-  await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
+function row2tool(row: { data: unknown }): Tool {
+  return ToolSchema.parse(row.data);
 }
 
 export async function createTool(
   input: ToolCreate,
   ctx?: AuditContext,
 ): Promise<Tool> {
-  await ensureDir();
   const now = new Date().toISOString();
   const id = newToolId();
   const t: Tool = {
@@ -70,10 +30,14 @@ export async function createTool(
     ...input,
   };
   ToolSchema.parse(t);
-  await fs.writeFile(toolPath(id), JSON.stringify(t, null, 2), 'utf8');
-  const index = await readIndex();
-  index.unshift(t);
-  await writeIndex(index);
+  await prisma.toolAsset.create({
+    data: {
+      id,
+      companyId: DEFAULT_COMPANY_ID,
+      status: t.status,
+      data: t as unknown as object,
+    },
+  });
   await recordAudit({
     action: 'create',
     entityType: 'Tool',
@@ -85,18 +49,19 @@ export async function createTool(
 }
 
 export async function listTools(): Promise<Tool[]> {
-  return readIndex();
+  const rows = await prisma.toolAsset.findMany({
+    where: { companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    orderBy: { createdAt: 'desc' },
+  });
+  return rows.map(row2tool);
 }
 
 export async function getTool(id: string): Promise<Tool | null> {
   if (!/^tool-[a-z0-9]{8}$/.test(id)) return null;
-  try {
-    const raw = await fs.readFile(toolPath(id), 'utf8');
-    return ToolSchema.parse(JSON.parse(raw));
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    throw err;
-  }
+  const row = await prisma.toolAsset.findFirst({
+    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+  });
+  return row ? row2tool(row) : null;
 }
 
 export async function updateTool(
@@ -115,15 +80,10 @@ export async function updateTool(
     updatedAt: new Date().toISOString(),
   };
   ToolSchema.parse(updated);
-  await fs.writeFile(toolPath(id), JSON.stringify(updated, null, 2), 'utf8');
-  const index = await readIndex();
-  const idx = index.findIndex((t) => t.id === id);
-  if (idx >= 0) {
-    index[idx] = updated;
-  } else {
-    index.unshift(updated);
-  }
-  await writeIndex(index);
+  await prisma.toolAsset.update({
+    where: { id },
+    data: { status: updated.status, data: updated as unknown as object },
+  });
   await recordAudit({
     action: auditAction,
     entityType: 'Tool',
@@ -135,29 +95,37 @@ export async function updateTool(
   return updated;
 }
 
-/** Dispatch a tool out to an employee. Sets status=ASSIGNED + records the
- *  assignment time so the UI can show "out for N days". */
+/** Helper: assign a tool to an employee. Keeps status + assignee fields
+ *  in lockstep so the UI never sees a half-state row. */
 export async function assignTool(
   id: string,
   assignedToEmployeeId: string,
 ): Promise<Tool | null> {
-  return updateTool(id, {
-    status: 'ASSIGNED',
-    assignedToEmployeeId,
-    assignedAt: new Date().toISOString(),
-  });
+  return updateTool(
+    id,
+    {
+      status: 'ASSIGNED',
+      assignedToEmployeeId,
+      assignedAt: new Date().toISOString(),
+    },
+    undefined,
+    'assign',
+  );
 }
 
-/** Return a tool to the yard. Clears the assignee + assigned-at and sets
- *  status=IN_YARD. The caller can override the destination status to
- *  IN_SHOP / OUT_FOR_REPAIR if the tool needs work. */
+/** Helper: return a tool to the yard. Clears assignee/assignedAt. */
 export async function returnTool(
   id: string,
   destination: 'IN_YARD' | 'IN_SHOP' | 'OUT_FOR_REPAIR' = 'IN_YARD',
 ): Promise<Tool | null> {
-  return updateTool(id, {
-    status: destination,
-    assignedToEmployeeId: undefined,
-    assignedAt: undefined,
-  });
+  return updateTool(
+    id,
+    {
+      status: destination,
+      assignedToEmployeeId: undefined,
+      assignedAt: undefined,
+    },
+    undefined,
+    'unassign',
+  );
 }
