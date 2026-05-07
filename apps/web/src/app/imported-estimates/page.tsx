@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { EstimatesSortHeaders } from '../../components/estimates-sort-headers';
+import { JobsShortcutsChip } from '../../components/jobs-shortcuts-chip';
 import { EstimatesSearchInput } from '../../components/estimates-search-input';
 import { CopyMoneyButton } from '../../components/copy-money-button';
 import type { ImportedEstimate } from '@yge/shared';
