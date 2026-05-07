@@ -5,6 +5,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useTranslator } from '../lib/use-translator';
+import { PhotoUploadWidget } from './photo-upload-widget';
 import {
   photoCategoryLabel,
   type Photo,
@@ -231,6 +232,9 @@ export function PhotoEditor({
             required
           />
         </Field>
+        <PhotoUploadWidget
+          onUploaded={(ref) => setField('reference', ref)}
+        />
       </Section>
 
       <Section title={t('photo.secGps')}>
