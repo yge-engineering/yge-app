@@ -562,3 +562,647 @@ model AuditEvent {
   @@index([entityType, entityId])
   @@map("audit_events")
 }
+
+// ──────────────────────────────────────────────────────────────
+// Phase-1 file-store backed models (added in bulk for cutover).
+//
+// Each row carries the full shape in `data` (a JSON column matching
+// the corresponding Zod schema in packages/shared). Common metadata
+// (companyId, timestamps, soft-delete) lives as real columns so we
+// can index + query without unpacking the JSON.
+// ──────────────────────────────────────────────────────────────
+
+model Vendor {
+  id          String    @id
+  companyId   String
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([companyId, deletedAt])
+  @@map("vendors")
+}
+
+model BidResult {
+  id          String    @id
+  companyId   String
+  jobId       String?
+  bidOpenedAt String
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([companyId, bidOpenedAt])
+  @@index([companyId, jobId])
+  @@map("bid_results")
+}
+
+model BidTab {
+  id          String    @id
+  companyId   String
+  jobId       String?
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([companyId, jobId])
+  @@map("bid_tabs")
+}
+
+model DailyReport {
+  id          String    @id
+  companyId   String
+  jobId       String
+  reportDate  String
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([companyId, jobId, reportDate])
+  @@map("daily_reports")
+}
+
+model ChangeOrder {
+  id          String    @id
+  companyId   String
+  jobId       String
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([companyId, jobId])
+  @@map("change_orders")
+}
+
+model Pco {
+  id          String    @id
+  companyId   String
+  jobId       String
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([companyId, jobId])
+  @@map("pcos")
+}
+
+model TimeCard {
+  id          String    @id
+  companyId   String
+  employeeId  String
+  weekStart   String
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([companyId, weekStart])
+  @@index([companyId, employeeId])
+  @@map("time_cards")
+}
+
+model CertifiedPayroll {
+  id          String    @id
+  companyId   String
+  jobId       String
+  weekEnding  String
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([companyId, jobId, weekEnding])
+  @@map("certified_payrolls")
+}
+
+model ArInvoice {
+  id          String    @id
+  companyId   String
+  jobId       String?
+  status      String
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([companyId, status])
+  @@index([companyId, jobId])
+  @@map("ar_invoices")
+}
+
+model ApInvoice {
+  id          String    @id
+  companyId   String
+  vendorId    String?
+  status      String
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([companyId, status])
+  @@index([companyId, vendorId])
+  @@map("ap_invoices")
+}
+
+model ArPayment {
+  id          String    @id
+  companyId   String
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([companyId])
+  @@map("ar_payments")
+}
+
+model ApPayment {
+  id          String    @id
+  companyId   String
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([companyId])
+  @@map("ap_payments")
+}
+
+model BankRec {
+  id          String    @id
+  companyId   String
+  accountId   String
+  periodEnd   String
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([companyId, accountId, periodEnd])
+  @@map("bank_recs")
+}
+
+model JournalEntry {
+  id          String    @id
+  companyId   String
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([companyId])
+  @@map("journal_entries")
+}
+
+model ChartAccount {
+  id          String    @id
+  companyId   String
+  number      String
+  name        String
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@unique([companyId, number])
+  @@map("chart_accounts")
+}
+
+model Expense {
+  id          String    @id
+  companyId   String
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([companyId])
+  @@map("expenses")
+}
+
+model LienWaiver {
+  id          String    @id
+  companyId   String
+  jobId       String
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([companyId, jobId])
+  @@map("lien_waivers")
+}
+
+model Submittal {
+  id          String    @id
+  companyId   String
+  jobId       String
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([companyId, jobId])
+  @@map("submittals")
+}
+
+model Rfi {
+  id          String    @id
+  companyId   String
+  jobId       String
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([companyId, jobId])
+  @@map("rfis")
+}
+
+model Dispatch {
+  id          String    @id
+  companyId   String
+  jobId       String?
+  scheduledFor String?
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([companyId, scheduledFor])
+  @@map("dispatches")
+}
+
+model Document {
+  id          String    @id
+  companyId   String
+  folderId    String?
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([companyId, folderId])
+  @@map("documents")
+}
+
+model Folder {
+  id          String    @id
+  companyId   String
+  parentId    String?
+  name        String
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([companyId, parentId])
+  @@map("folders")
+}
+
+model Photo {
+  id          String    @id
+  companyId   String
+  jobId       String?
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([companyId, jobId])
+  @@map("photos")
+}
+
+model ToolboxTalk {
+  id          String    @id
+  companyId   String
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([companyId])
+  @@map("toolbox_talks")
+}
+
+model Incident {
+  id          String    @id
+  companyId   String
+  jobId       String?
+  occurredAt  String
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([companyId, occurredAt])
+  @@map("incidents")
+}
+
+model WeatherLog {
+  id          String    @id
+  companyId   String
+  jobId       String
+  recordedAt  String
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([companyId, jobId, recordedAt])
+  @@map("weather_logs")
+}
+
+model SwpppInspection {
+  id          String    @id
+  companyId   String
+  jobId       String
+  inspectedAt String
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([companyId, jobId, inspectedAt])
+  @@map("swppp_inspections")
+}
+
+model PunchItem {
+  id          String    @id
+  companyId   String
+  jobId       String
+  status      String
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([companyId, jobId, status])
+  @@map("punch_items")
+}
+
+model MasterProfile {
+  id          String    @id @default(cuid())
+  companyId   String    @unique
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("master_profiles")
+}
+
+model PdfFormMapping {
+  id          String    @id
+  companyId   String
+  agency      String
+  formCode    String?
+  reviewed    Boolean   @default(false)
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([companyId, agency])
+  @@map("pdf_form_mappings")
+}
+
+model PortalUser {
+  id          String    @id
+  companyId   String
+  email       String
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@unique([companyId, email])
+  @@map("portal_users")
+}
+
+model ImportedEstimate {
+  id          String    @id
+  companyId   String
+  jobNumber   String
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([companyId, jobNumber])
+  @@map("imported_estimates")
+}
+
+model PtoEDraft {
+  id          String    @id
+  companyId   String
+  jobId       String?
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([companyId, createdAt])
+  @@index([companyId, jobId])
+  @@map("ptoe_drafts")
+}
+
+model DirRate {
+  id          String    @id
+  companyId   String
+  craft       String
+  effectiveOn String
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([companyId, craft, effectiveOn])
+  @@map("dir_rates")
+}
+
+model DirRateSyncRun {
+  id          String    @id
+  companyId   String
+  startedAt   DateTime  @default(now())
+  finishedAt  DateTime?
+  status      String
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([companyId, startedAt])
+  @@map("dir_rate_sync_runs")
+}
+
+model Credential {
+  id          String    @id
+  companyId   String
+  email       String
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([companyId, email])
+  @@map("credentials")
+}
+
+model OtpRequest {
+  id          String    @id
+  email       String
+  expiresAt   DateTime
+  data        Json
+  createdAt   DateTime  @default(now())
+
+  @@index([email, expiresAt])
+  @@map("otp_requests")
+}
+
+model WebauthnCredential {
+  id          String    @id
+  email       String
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([email])
+  @@map("webauthn_credentials")
+}
+
+model CalendarEvent {
+  id          String    @id
+  companyId   String
+  startAt     String
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([companyId, startAt])
+  @@map("calendar_events")
+}
+
+model CalendarShareToken {
+  id          String    @id
+  companyId   String
+  expiresAt   DateTime
+  data        Json
+  createdAt   DateTime  @default(now())
+
+  @@index([companyId, expiresAt])
+  @@map("calendar_share_tokens")
+}
+
+model MicrosoftToken {
+  id          String    @id
+  email       String    @unique
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("microsoft_tokens")
+}
+
+model SsoHandoff {
+  id          String    @id
+  expiresAt   DateTime
+  data        Json
+  createdAt   DateTime  @default(now())
+
+  @@index([expiresAt])
+  @@map("sso_handoffs")
+}
+
+model PtoEFeedback {
+  id          String    @id
+  companyId   String
+  draftId     String?
+  data        Json
+  createdAt   DateTime  @default(now())
+
+  @@index([companyId, createdAt])
+  @@map("ptoe_feedback")
+}
+
+model Mileage {
+  id          String    @id
+  companyId   String
+  employeeId  String
+  tripDate    String
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([companyId, employeeId, tripDate])
+  @@map("mileage")
+}
+
+model LegalHold {
+  id          String    @id
+  companyId   String
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  liftedAt    DateTime?
+
+  @@index([companyId, liftedAt])
+  @@map("legal_holds")
+}
+
+model RecordsRetentionPurge {
+  id          String    @id
+  companyId   String
+  scheduledFor String
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  executedAt  DateTime?
+
+  @@index([companyId, scheduledFor])
+  @@map("records_retention_purges")
+}
+
+model SignatureRecord {
+  id          String    @id
+  companyId   String
+  data        Json
+  createdAt   DateTime  @default(now())
+
+  @@index([companyId, createdAt])
+  @@map("signatures")
+}
+
+model ToolAsset {
+  id          String    @id
+  companyId   String
+  status      String
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([companyId, status])
+  @@map("tools")
+}
+
+model Certificate {
+  id          String    @id
+  companyId   String
+  employeeId  String?
+  expiresOn   String?
+  data        Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([companyId, expiresOn])
+  @@index([companyId, employeeId])
+  @@map("certificates")
+}
