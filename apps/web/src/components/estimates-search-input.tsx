@@ -133,7 +133,7 @@ export function EstimatesSearchInput({ targetId, totalCount }: Props) {
   }, [q, targetId, totalCount]);
 
   return (
-    <div className="mb-3 flex flex-wrap items-center gap-3 text-sm">
+    <div className="mb-3 flex flex-wrap items-center gap-3 text-sm print:hidden">
       <input
         ref={inputRef}
         type="search"
