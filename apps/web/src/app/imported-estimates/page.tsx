@@ -53,8 +53,10 @@ export default async function ImportedEstimatesPage() {
           </div>
         ) : (
           <div>
-            <EstimatesSearchInput targetId="imported-list-table" totalCount={estimates.length} />
-            <EstimatesSortHeaders targetId="imported-list-table" />
+            <div id="imported-list-print-controls" className="print:hidden">
+              <EstimatesSearchInput targetId="imported-list-table" totalCount={estimates.length} />
+              <EstimatesSortHeaders targetId="imported-list-table" />
+            </div>
             <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
             <table id="imported-list-table" className="w-full text-sm">
               <thead className="bg-gray-50 text-left text-[11px] uppercase tracking-wide text-gray-500">
