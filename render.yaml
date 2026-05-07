@@ -155,6 +155,8 @@ services:
         sync: false
       - key: DATABASE_URL
         sync: false
+      - key: DIRECT_URL
+        sync: false
       - key: NEXT_PUBLIC_API_URL
         sync: false
       - key: NEXTAUTH_SECRET
