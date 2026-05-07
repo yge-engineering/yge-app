@@ -25,39 +25,39 @@ datasource db {
 // ──────────────────────────────────────────────────────────────
 
 model Company {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   name        String
   addressLine String?
   city        String?
   state       String?
   zip         String?
   phone       String?
-  cslb        String?  // CA Contractor State License Board number
-  dir         String?  // CA Department of Industrial Relations number
+  cslb        String? // CA Contractor State License Board number
+  dir         String? // CA Department of Industrial Relations number
   dot         String?
   naics       String[]
   psc         String[]
-  domain      String?  // e.g. youngge.com
+  domain      String? // e.g. youngge.com
   logoUrl     String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
 
-  users              User[]
-  employees          Employee[]
-  customers          Customer[]
-  jobs               Job[]
-  estimates          Estimate[]
-  laborRates         LaborRate[]
-  equipmentRates     EquipmentRate[]
-  equipmentRentals   EquipmentRental[]
-  materials          Material[]
-  subcontractors     Subcontractor[]
-  costCodes          CostCode[]
-  bondingProfiles    BondingProfile[]
-  insurancePolicies  InsurancePolicy[]
-  officers           Officer[]
-  auditEvents        AuditEvent[]
+  users             User[]
+  employees         Employee[]
+  customers         Customer[]
+  jobs              Job[]
+  estimates         Estimate[]
+  laborRates        LaborRate[]
+  equipmentRates    EquipmentRate[]
+  equipmentRentals  EquipmentRental[]
+  materials         Material[]
+  subcontractors    Subcontractor[]
+  costCodes         CostCode[]
+  bondingProfiles   BondingProfile[]
+  insurancePolicies InsurancePolicy[]
+  officers          Officer[]
+  auditEvents       AuditEvent[]
 
   @@map("companies")
 }
@@ -74,21 +74,21 @@ enum UserRole {
 }
 
 model User {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   companyId   String
-  email       String   @unique
+  email       String    @unique
   firstName   String
   lastName    String
   phone       String?
   role        UserRole
-  supabaseUid String?  @unique
+  supabaseUid String?   @unique
   lastLoginAt DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
 
-  company   Company   @relation(fields: [companyId], references: [id])
-  employee  Employee?
+  company  Company   @relation(fields: [companyId], references: [id])
+  employee Employee?
 
   @@index([companyId])
   @@map("users")
@@ -113,32 +113,33 @@ model Employee {
   hireDate        DateTime
   terminationDate DateTime?
   status          EmployeeStatus @default(ACTIVE)
-  classification  String         // "Operator Grp 4", "Laborer Grp 2", etc.
-  homeCounty      String?        // used for prevailing wage area lookup
+  classification  String // "Operator Grp 4", "Laborer Grp 2", etc.
+  homeCounty      String? // used for prevailing wage area lookup
   gustoEmployeeId String?
+  data            Json?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   deletedAt       DateTime?
 
-  company         Company               @relation(fields: [companyId], references: [id])
-  user            User?                 @relation(fields: [userId], references: [id])
-  certifications  EmployeeCertification[]
+  company        Company                 @relation(fields: [companyId], references: [id])
+  user           User?                   @relation(fields: [userId], references: [id])
+  certifications EmployeeCertification[]
 
   @@index([companyId])
   @@map("employees")
 }
 
 model EmployeeCertification {
-  id          String   @id @default(cuid())
-  employeeId  String
-  name        String   // "OSHA 10", "Flagger", "Class A CDL", etc.
-  issuer      String?
-  number      String?
-  issuedAt    DateTime?
-  expiresAt   DateTime?
-  fileUrl     String?  // uploaded cert card
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String    @id @default(cuid())
+  employeeId String
+  name       String // "OSHA 10", "Flagger", "Class A CDL", etc.
+  issuer     String?
+  number     String?
+  issuedAt   DateTime?
+  expiresAt  DateTime?
+  fileUrl    String? // uploaded cert card
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
   employee Employee @relation(fields: [employeeId], references: [id])
 
@@ -159,20 +160,20 @@ enum CustomerType {
 }
 
 model Customer {
-  id          String       @id @default(cuid())
-  companyId   String
-  name        String
-  type        CustomerType
-  contactName String?
+  id           String       @id @default(cuid())
+  companyId    String
+  name         String
+  type         CustomerType
+  contactName  String?
   contactEmail String?
   contactPhone String?
-  addressLine String?
-  city        String?
-  state       String?
-  zip         String?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  deletedAt   DateTime?
+  addressLine  String?
+  city         String?
+  state        String?
+  zip          String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  deletedAt    DateTime?
 
   company Company @relation(fields: [companyId], references: [id])
   jobs    Job[]
@@ -191,9 +192,9 @@ enum JobStatus {
 }
 
 enum RateType {
-  PW         // CA Prevailing Wage
-  DB         // Davis-Bacon (federal)
-  IBEW       // Union electrical
+  PW // CA Prevailing Wage
+  DB // Davis-Bacon (federal)
+  IBEW // Union electrical
   PRIVATE
 }
 
@@ -201,9 +202,9 @@ model Job {
   id           String    @id @default(cuid())
   companyId    String
   customerId   String
-  jobNumber    String    // "26-001"
-  name         String    // "Sulphur Springs Road Improvement"
-  contractNum  String?   // "1CA07840"
+  jobNumber    String // "26-001"
+  name         String // "Sulphur Springs Road Improvement"
+  contractNum  String? // "1CA07840"
   county       String?
   status       JobStatus @default(BIDDING)
   rateType     RateType  @default(PW)
@@ -213,6 +214,7 @@ model Job {
   actualEnd    DateTime?
   bondRequired Boolean   @default(false)
   retentionPct Decimal   @default(0.05) @db.Decimal(5, 4) // CA PCC §7107 caps at 5%
+  data         Json?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   deletedAt    DateTime?
@@ -246,11 +248,11 @@ model Estimate {
   jobId          String
   revision       Int            @default(1)
   status         EstimateStatus @default(DRAFT)
-  oppAmountCents BigInt         @default(0)  // O&P markup cents
+  oppAmountCents BigInt         @default(0) // O&P markup cents
   oppPercent     Decimal        @default(0.20) @db.Decimal(5, 4)
   submittedAt    DateTime?
   awardedAt      DateTime?
-  aiGenerated    Boolean        @default(false)  // true if Plans-to-Estimate drafted
+  aiGenerated    Boolean        @default(false) // true if Plans-to-Estimate drafted
   aiPromptVer    String?
   notes          String?        @db.Text
   createdAt      DateTime       @default(now())
@@ -267,11 +269,11 @@ model Estimate {
 }
 
 model BidItem {
-  id          String  @id @default(cuid())
+  id          String   @id @default(cuid())
   estimateId  String
-  itemNumber  Int     // 1, 2, 3, ...
-  name        String  // "Mobilization", "Site DRC #1: 18" Ditch Relief Culvert"
-  description String? @db.Text
+  itemNumber  Int // 1, 2, 3, ...
+  name        String // "Mobilization", "Site DRC #1: 18" Ditch Relief Culvert"
+  description String?  @db.Text
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -292,34 +294,34 @@ enum CostLineCategory {
 }
 
 model CostLine {
-  id           String           @id @default(cuid())
-  bidItemId    String
-  category     CostLineCategory
-  costCodeId   String?
+  id                 String           @id @default(cuid())
+  bidItemId          String
+  category           CostLineCategory
+  costCodeId         String?
   // One of these rate references is set based on category:
-  laborRateId       String?
-  equipmentRateId   String?
-  equipmentRentalId String?
-  materialId        String?
-  subcontractorId   String?
+  laborRateId        String?
+  equipmentRateId    String?
+  equipmentRentalId  String?
+  materialId         String?
+  subcontractorId    String?
   // Literal override (sub/other where no rate ref exists)
   literalDescription String?
-  literalUnitCost    Int?     // cents
+  literalUnitCost    Int? // cents
   // Line data
-  quantity    Decimal @db.Decimal(14, 4)
-  unit        String
-  otMultiplier Decimal @default(1) @db.Decimal(4, 2)
-  notes       String? @db.Text
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  quantity           Decimal          @db.Decimal(14, 4)
+  unit               String
+  otMultiplier       Decimal          @default(1) @db.Decimal(4, 2)
+  notes              String?          @db.Text
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
 
-  bidItem          BidItem           @relation(fields: [bidItemId], references: [id], onDelete: Cascade)
-  costCode         CostCode?         @relation(fields: [costCodeId], references: [id])
-  laborRate        LaborRate?        @relation(fields: [laborRateId], references: [id])
-  equipmentRate    EquipmentRate?    @relation(fields: [equipmentRateId], references: [id])
-  equipmentRental  EquipmentRental?  @relation(fields: [equipmentRentalId], references: [id])
-  material         Material?         @relation(fields: [materialId], references: [id])
-  subcontractor    Subcontractor?    @relation(fields: [subcontractorId], references: [id])
+  bidItem         BidItem          @relation(fields: [bidItemId], references: [id], onDelete: Cascade)
+  costCode        CostCode?        @relation(fields: [costCodeId], references: [id])
+  laborRate       LaborRate?       @relation(fields: [laborRateId], references: [id])
+  equipmentRate   EquipmentRate?   @relation(fields: [equipmentRateId], references: [id])
+  equipmentRental EquipmentRental? @relation(fields: [equipmentRentalId], references: [id])
+  material        Material?        @relation(fields: [materialId], references: [id])
+  subcontractor   Subcontractor?   @relation(fields: [subcontractorId], references: [id])
 
   @@index([bidItemId])
   @@index([costCodeId])
@@ -331,13 +333,14 @@ model CostLine {
 // ──────────────────────────────────────────────────────────────
 
 model CostCode {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   companyId String
-  code      String   // e.g. "01-00" Mobilization
+  code      String // e.g. "01-00" Mobilization
   name      String
   category  String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  data      Json?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
   company   Company    @relation(fields: [companyId], references: [id])
@@ -349,12 +352,12 @@ model CostCode {
 }
 
 model LaborRate {
-  id             String   @id @default(cuid())
-  companyId      String
-  code           String   // e.g. "LAB-OE-EXC4"
-  classification String   // e.g. "Operator Group 4 — Excavator/Dozer"
-  area           Int?     // CA DIR area (1, 2, ...)
-  burdenPct      Decimal  @db.Decimal(5, 4)
+  id               String    @id @default(cuid())
+  companyId        String
+  code             String // e.g. "LAB-OE-EXC4"
+  classification   String // e.g. "Operator Group 4 — Excavator/Dozer"
+  area             Int? // CA DIR area (1, 2, ...)
+  burdenPct        Decimal   @db.Decimal(5, 4)
   // Base rates stored as cents per hour. One per rate type.
   baseCentsPrivate Int
   baseCentsPW      Int
@@ -362,9 +365,10 @@ model LaborRate {
   baseCentsIBEW    Int?
   effectiveFrom    DateTime
   effectiveTo      DateTime?
-  source           String?  // "CA DIR 2026-01 General Determination"
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  source           String? // "CA DIR 2026-01 General Determination"
+  data             Json?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
   deletedAt        DateTime?
 
   company   Company    @relation(fields: [companyId], references: [id])
@@ -381,15 +385,15 @@ enum EquipmentOwnership {
 }
 
 model EquipmentRate {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   companyId   String
-  code        String   // "EQP-EX-20T"
-  name        String   // "Excavator 24-ton (Cat 324 or equivalent)"
-  hourlyCents Int      // internal cost rate per hour
-  ownerModel  String?  // "Cat 324"
+  code        String // "EQP-EX-20T"
+  name        String // "Excavator 24-ton (Cat 324 or equivalent)"
+  hourlyCents Int // internal cost rate per hour
+  ownerModel  String? // "Cat 324"
   serialNum   String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
 
   company   Company    @relation(fields: [companyId], references: [id])
@@ -401,18 +405,18 @@ model EquipmentRate {
 }
 
 model EquipmentRental {
-  id          String   @id @default(cuid())
-  companyId   String
-  code        String   // "EQP-R-DZ-D4K2"
-  name        String   // "Dozer Cat D4K2"
-  hourlyCents Int?
-  dailyCents  Int?
-  weeklyCents Int?
+  id           String    @id @default(cuid())
+  companyId    String
+  code         String // "EQP-R-DZ-D4K2"
+  name         String // "Dozer Cat D4K2"
+  hourlyCents  Int?
+  dailyCents   Int?
+  weeklyCents  Int?
   monthlyCents Int?
-  vendor      String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  deletedAt   DateTime?
+  vendor       String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
 
   company   Company    @relation(fields: [companyId], references: [id])
   costLines CostLine[]
@@ -423,17 +427,17 @@ model EquipmentRental {
 }
 
 model Material {
-  id          String   @id @default(cuid())
-  companyId   String
-  code        String   // "MAT-CMP-18"
-  name        String   // "CMP 18\" diameter, galvanized"
-  unit        String   // "LF", "TON", "EA", "LS"
+  id            String    @id @default(cuid())
+  companyId     String
+  code          String // "MAT-CMP-18"
+  name          String // "CMP 18\" diameter, galvanized"
+  unit          String // "LF", "TON", "EA", "LS"
   unitCostCents Int
-  vendor      String?
-  lastQuotedAt DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  deletedAt   DateTime?
+  vendor        String?
+  lastQuotedAt  DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
 
   company   Company    @relation(fields: [companyId], references: [id])
   costLines CostLine[]
@@ -444,21 +448,21 @@ model Material {
 }
 
 model Subcontractor {
-  id          String   @id @default(cuid())
-  companyId   String
-  name        String
-  trade       String?
-  contactName String?
-  phone       String?
-  email       String?
-  cslb        String?
-  dir         String?
+  id                 String    @id @default(cuid())
+  companyId          String
+  name               String
+  trade              String?
+  contactName        String?
+  phone              String?
+  email              String?
+  cslb               String?
+  dir                String?
   insuranceExpiresAt DateTime?
-  w9OnFile    Boolean  @default(false)
-  preQualified Boolean @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  deletedAt   DateTime?
+  w9OnFile           Boolean   @default(false)
+  preQualified       Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  deletedAt          DateTime?
 
   company   Company    @relation(fields: [companyId], references: [id])
   costLines CostLine[]
@@ -472,19 +476,19 @@ model Subcontractor {
 // ──────────────────────────────────────────────────────────────
 
 model BondingProfile {
-  id             String  @id @default(cuid())
-  companyId      String
-  agentName      String
-  agencyName     String
-  agentPhone     String?
-  agentEmail     String?
+  id                String    @id @default(cuid())
+  companyId         String
+  agentName         String
+  agencyName        String
+  agentPhone        String?
+  agentEmail        String?
   singleJobCapCents BigInt
   aggregateCapCents BigInt
-  rate           Decimal @db.Decimal(6, 4) // e.g. 0.0100 = 1%
-  effectiveFrom  DateTime
-  effectiveTo    DateTime?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  rate              Decimal   @db.Decimal(6, 4) // e.g. 0.0100 = 1%
+  effectiveFrom     DateTime
+  effectiveTo       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   company Company @relation(fields: [companyId], references: [id])
 
@@ -502,18 +506,18 @@ enum InsuranceKind {
 }
 
 model InsurancePolicy {
-  id             String        @id @default(cuid())
-  companyId      String
-  kind           InsuranceKind
-  carrier        String
-  policyNumber   String
-  limitCents     BigInt
-  deductibleCents Int          @default(0)
-  effectiveFrom  DateTime
-  effectiveTo    DateTime
-  certFileUrl    String?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id              String        @id @default(cuid())
+  companyId       String
+  kind            InsuranceKind
+  carrier         String
+  policyNumber    String
+  limitCents      BigInt
+  deductibleCents Int           @default(0)
+  effectiveFrom   DateTime
+  effectiveTo     DateTime
+  certFileUrl     String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
   company Company @relation(fields: [companyId], references: [id])
 
@@ -527,7 +531,7 @@ model Officer {
   companyId String
   firstName String
   lastName  String
-  title     String   // "President", "Vice President"
+  title     String // "President", "Vice President"
   phone     String?
   email     String?
   isPrimary Boolean  @default(false)
@@ -548,8 +552,8 @@ model AuditEvent {
   id          String   @id @default(cuid())
   companyId   String
   actorUserId String?
-  action      String   // "estimate.update", "employee.terminate", etc.
-  entityType  String   // "Estimate"
+  action      String // "estimate.update", "employee.terminate", etc.
+  entityType  String // "Estimate"
   entityId    String
   before      Json?
   after       Json?
@@ -574,12 +578,12 @@ model AuditEvent {
 // ──────────────────────────────────────────────────────────────
 
 model Vendor {
-  id          String    @id
-  companyId   String
-  data        Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id        String    @id
+  companyId String
+  data      Json
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   @@index([companyId, deletedAt])
   @@map("vendors")
@@ -601,67 +605,67 @@ model BidResult {
 }
 
 model BidTab {
-  id          String    @id
-  companyId   String
-  jobId       String?
-  data        Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id        String    @id
+  companyId String
+  jobId     String?
+  data      Json
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   @@index([companyId, jobId])
   @@map("bid_tabs")
 }
 
 model DailyReport {
-  id          String    @id
-  companyId   String
-  jobId       String
-  reportDate  String
-  data        Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id         String    @id
+  companyId  String
+  jobId      String
+  reportDate String
+  data       Json
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
 
   @@index([companyId, jobId, reportDate])
   @@map("daily_reports")
 }
 
 model ChangeOrder {
-  id          String    @id
-  companyId   String
-  jobId       String
-  data        Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id        String    @id
+  companyId String
+  jobId     String
+  data      Json
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   @@index([companyId, jobId])
   @@map("change_orders")
 }
 
 model Pco {
-  id          String    @id
-  companyId   String
-  jobId       String
-  data        Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id        String    @id
+  companyId String
+  jobId     String
+  data      Json
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   @@index([companyId, jobId])
   @@map("pcos")
 }
 
 model TimeCard {
-  id          String    @id
-  companyId   String
-  employeeId  String
-  weekStart   String
-  data        Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id         String    @id
+  companyId  String
+  employeeId String
+  weekStart  String
+  data       Json
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
 
   @@index([companyId, weekStart])
   @@index([companyId, employeeId])
@@ -669,28 +673,28 @@ model TimeCard {
 }
 
 model CertifiedPayroll {
-  id          String    @id
-  companyId   String
-  jobId       String
-  weekEnding  String
-  data        Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id         String    @id
+  companyId  String
+  jobId      String
+  weekEnding String
+  data       Json
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
 
   @@index([companyId, jobId, weekEnding])
   @@map("certified_payrolls")
 }
 
 model ArInvoice {
-  id          String    @id
-  companyId   String
-  jobId       String?
-  status      String
-  data        Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id        String    @id
+  companyId String
+  jobId     String?
+  status    String
+  data      Json
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   @@index([companyId, status])
   @@index([companyId, jobId])
@@ -698,14 +702,14 @@ model ArInvoice {
 }
 
 model ApInvoice {
-  id          String    @id
-  companyId   String
-  vendorId    String?
-  status      String
-  data        Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id        String    @id
+  companyId String
+  vendorId  String?
+  status    String
+  data      Json
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   @@index([companyId, status])
   @@index([companyId, vendorId])
@@ -713,209 +717,209 @@ model ApInvoice {
 }
 
 model ArPayment {
-  id          String    @id
-  companyId   String
-  data        Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id        String    @id
+  companyId String
+  data      Json
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   @@index([companyId])
   @@map("ar_payments")
 }
 
 model ApPayment {
-  id          String    @id
-  companyId   String
-  data        Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id        String    @id
+  companyId String
+  data      Json
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   @@index([companyId])
   @@map("ap_payments")
 }
 
 model BankRec {
-  id          String    @id
-  companyId   String
-  accountId   String
-  periodEnd   String
-  data        Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id        String    @id
+  companyId String
+  accountId String
+  periodEnd String
+  data      Json
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   @@index([companyId, accountId, periodEnd])
   @@map("bank_recs")
 }
 
 model JournalEntry {
-  id          String    @id
-  companyId   String
-  data        Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id        String    @id
+  companyId String
+  data      Json
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   @@index([companyId])
   @@map("journal_entries")
 }
 
 model ChartAccount {
-  id          String    @id
-  companyId   String
-  number      String
-  name        String
-  data        Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id        String    @id
+  companyId String
+  number    String
+  name      String
+  data      Json
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   @@unique([companyId, number])
   @@map("chart_accounts")
 }
 
 model Expense {
-  id          String    @id
-  companyId   String
-  data        Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id        String    @id
+  companyId String
+  data      Json
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   @@index([companyId])
   @@map("expenses")
 }
 
 model LienWaiver {
-  id          String    @id
-  companyId   String
-  jobId       String
-  data        Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id        String    @id
+  companyId String
+  jobId     String
+  data      Json
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   @@index([companyId, jobId])
   @@map("lien_waivers")
 }
 
 model Submittal {
-  id          String    @id
-  companyId   String
-  jobId       String
-  data        Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id        String    @id
+  companyId String
+  jobId     String
+  data      Json
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   @@index([companyId, jobId])
   @@map("submittals")
 }
 
 model Rfi {
-  id          String    @id
-  companyId   String
-  jobId       String
-  data        Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id        String    @id
+  companyId String
+  jobId     String
+  data      Json
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   @@index([companyId, jobId])
   @@map("rfis")
 }
 
 model Dispatch {
-  id          String    @id
-  companyId   String
-  jobId       String?
+  id           String    @id
+  companyId    String
+  jobId        String?
   scheduledFor String?
-  data        Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  data         Json
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
 
   @@index([companyId, scheduledFor])
   @@map("dispatches")
 }
 
 model Document {
-  id          String    @id
-  companyId   String
-  folderId    String?
-  data        Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id        String    @id
+  companyId String
+  folderId  String?
+  data      Json
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   @@index([companyId, folderId])
   @@map("documents")
 }
 
 model Folder {
-  id          String    @id
-  companyId   String
-  parentId    String?
-  name        String
-  data        Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id        String    @id
+  companyId String
+  parentId  String?
+  name      String
+  data      Json
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   @@index([companyId, parentId])
   @@map("folders")
 }
 
 model Photo {
-  id          String    @id
-  companyId   String
-  jobId       String?
-  data        Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id        String    @id
+  companyId String
+  jobId     String?
+  data      Json
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   @@index([companyId, jobId])
   @@map("photos")
 }
 
 model ToolboxTalk {
-  id          String    @id
-  companyId   String
-  data        Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id        String    @id
+  companyId String
+  data      Json
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   @@index([companyId])
   @@map("toolbox_talks")
 }
 
 model Incident {
-  id          String    @id
-  companyId   String
-  jobId       String?
-  occurredAt  String
-  data        Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id         String    @id
+  companyId  String
+  jobId      String?
+  occurredAt String
+  data       Json
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
 
   @@index([companyId, occurredAt])
   @@map("incidents")
 }
 
 model WeatherLog {
-  id          String    @id
-  companyId   String
-  jobId       String
-  recordedAt  String
-  data        Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id         String    @id
+  companyId  String
+  jobId      String
+  recordedAt String
+  data       Json
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
 
   @@index([companyId, jobId, recordedAt])
   @@map("weather_logs")
@@ -936,78 +940,78 @@ model SwpppInspection {
 }
 
 model PunchItem {
-  id          String    @id
-  companyId   String
-  jobId       String
-  status      String
-  data        Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id        String    @id
+  companyId String
+  jobId     String
+  status    String
+  data      Json
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   @@index([companyId, jobId, status])
   @@map("punch_items")
 }
 
 model MasterProfile {
-  id          String    @id @default(cuid())
-  companyId   String    @unique
-  data        Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id        String   @id @default(cuid())
+  companyId String   @unique
+  data      Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("master_profiles")
 }
 
 model PdfFormMapping {
-  id          String    @id
-  companyId   String
-  agency      String
-  formCode    String?
-  reviewed    Boolean   @default(false)
-  data        Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id        String    @id
+  companyId String
+  agency    String
+  formCode  String?
+  reviewed  Boolean   @default(false)
+  data      Json
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   @@index([companyId, agency])
   @@map("pdf_form_mappings")
 }
 
 model PortalUser {
-  id          String    @id
-  companyId   String
-  email       String
-  data        Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id        String    @id
+  companyId String
+  email     String
+  data      Json
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   @@unique([companyId, email])
   @@map("portal_users")
 }
 
 model ImportedEstimate {
-  id          String    @id
-  companyId   String
-  jobNumber   String
-  data        Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id        String    @id
+  companyId String
+  jobNumber String
+  data      Json
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   @@index([companyId, jobNumber])
   @@map("imported_estimates")
 }
 
 model PtoEDraft {
-  id          String    @id
-  companyId   String
-  jobId       String?
-  data        Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id        String    @id
+  companyId String
+  jobId     String?
+  data      Json
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   @@index([companyId, createdAt])
   @@index([companyId, jobId])
@@ -1029,179 +1033,179 @@ model DirRate {
 }
 
 model DirRateSyncRun {
-  id          String    @id
-  companyId   String
-  startedAt   DateTime  @default(now())
-  finishedAt  DateTime?
-  status      String
-  data        Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id         String    @id
+  companyId  String
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+  status     String
+  data       Json
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
   @@index([companyId, startedAt])
   @@map("dir_rate_sync_runs")
 }
 
 model Credential {
-  id          String    @id
-  companyId   String
-  email       String
-  data        Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id        String   @id
+  companyId String
+  email     String
+  data      Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([companyId, email])
   @@map("credentials")
 }
 
 model OtpRequest {
-  id          String    @id
-  email       String
-  expiresAt   DateTime
-  data        Json
-  createdAt   DateTime  @default(now())
+  id        String   @id
+  email     String
+  expiresAt DateTime
+  data      Json
+  createdAt DateTime @default(now())
 
   @@index([email, expiresAt])
   @@map("otp_requests")
 }
 
 model WebauthnCredential {
-  id          String    @id
-  email       String
-  data        Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id        String   @id
+  email     String
+  data      Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([email])
   @@map("webauthn_credentials")
 }
 
 model CalendarEvent {
-  id          String    @id
-  companyId   String
-  startAt     String
-  data        Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id        String    @id
+  companyId String
+  startAt   String
+  data      Json
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   @@index([companyId, startAt])
   @@map("calendar_events")
 }
 
 model CalendarShareToken {
-  id          String    @id
-  companyId   String
-  expiresAt   DateTime
-  data        Json
-  createdAt   DateTime  @default(now())
+  id        String   @id
+  companyId String
+  expiresAt DateTime
+  data      Json
+  createdAt DateTime @default(now())
 
   @@index([companyId, expiresAt])
   @@map("calendar_share_tokens")
 }
 
 model MicrosoftToken {
-  id          String    @id
-  email       String    @unique
-  data        Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id        String   @id
+  email     String   @unique
+  data      Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("microsoft_tokens")
 }
 
 model SsoHandoff {
-  id          String    @id
-  expiresAt   DateTime
-  data        Json
-  createdAt   DateTime  @default(now())
+  id        String   @id
+  expiresAt DateTime
+  data      Json
+  createdAt DateTime @default(now())
 
   @@index([expiresAt])
   @@map("sso_handoffs")
 }
 
 model PtoEFeedback {
-  id          String    @id
-  companyId   String
-  draftId     String?
-  data        Json
-  createdAt   DateTime  @default(now())
+  id        String   @id
+  companyId String
+  draftId   String?
+  data      Json
+  createdAt DateTime @default(now())
 
   @@index([companyId, createdAt])
   @@map("ptoe_feedback")
 }
 
 model Mileage {
-  id          String    @id
-  companyId   String
-  employeeId  String
-  tripDate    String
-  data        Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id         String    @id
+  companyId  String
+  employeeId String
+  tripDate   String
+  data       Json
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
 
   @@index([companyId, employeeId, tripDate])
   @@map("mileage")
 }
 
 model LegalHold {
-  id          String    @id
-  companyId   String
-  data        Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  liftedAt    DateTime?
+  id        String    @id
+  companyId String
+  data      Json
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  liftedAt  DateTime?
 
   @@index([companyId, liftedAt])
   @@map("legal_holds")
 }
 
 model RecordsRetentionPurge {
-  id          String    @id
-  companyId   String
+  id           String    @id
+  companyId    String
   scheduledFor String
-  data        Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  executedAt  DateTime?
+  data         Json
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  executedAt   DateTime?
 
   @@index([companyId, scheduledFor])
   @@map("records_retention_purges")
 }
 
 model SignatureRecord {
-  id          String    @id
-  companyId   String
-  data        Json
-  createdAt   DateTime  @default(now())
+  id        String   @id
+  companyId String
+  data      Json
+  createdAt DateTime @default(now())
 
   @@index([companyId, createdAt])
   @@map("signatures")
 }
 
 model ToolAsset {
-  id          String    @id
-  companyId   String
-  status      String
-  data        Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id        String    @id
+  companyId String
+  status    String
+  data      Json
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   @@index([companyId, status])
   @@map("tools")
 }
 
 model Certificate {
-  id          String    @id
-  companyId   String
-  employeeId  String?
-  expiresOn   String?
-  data        Json
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id         String    @id
+  companyId  String
+  employeeId String?
+  expiresOn  String?
+  data       Json
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
 
   @@index([companyId, expiresOn])
   @@index([companyId, employeeId])
