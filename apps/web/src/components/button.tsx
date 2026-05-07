@@ -50,7 +50,7 @@ const SIZE_CLASSES: Record<Size, string> = {
 };
 
 function classes({ variant = 'primary', size = 'md' }: { variant?: Variant; size?: Size }, extra?: string) {
-  return `inline-flex items-center justify-center gap-1.5 ${SIZE_CLASSES[size]} ${VARIANT_CLASSES[variant]} ${extra ?? ''}`;
+  return `inline-flex items-center justify-center gap-1.5 transition-colors ${SIZE_CLASSES[size]} ${VARIANT_CLASSES[variant]} ${extra ?? ''}`;
 }
 
 export function Button({ children, variant, size, type = 'button', disabled, onClick, name, value, className }: ButtonProps) {
