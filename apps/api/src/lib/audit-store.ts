@@ -8,6 +8,7 @@
 // failure propagate and break the caller's mutation.
 
 import { prisma, Prisma } from '@yge/db';
+import { getRequestContext } from './request-context';
 import {
   AuditEventSchema,
   applyAuditFilter,
@@ -69,18 +70,19 @@ export async function recordAudit(args: {
   ctx?: AuditContext;
 }): Promise<AuditEvent | null> {
   const id = newAuditEventId();
+  const reqCtx = getRequestContext();
   const e: AuditEvent = {
     id,
     createdAt: new Date().toISOString(),
-    companyId: args.ctx?.companyId ?? DEFAULT_COMPANY_ID,
-    actorUserId: args.ctx?.actorUserId ?? null,
+    companyId: args.ctx?.companyId ?? reqCtx?.companyId ?? DEFAULT_COMPANY_ID,
+    actorUserId: args.ctx?.actorUserId ?? reqCtx?.actorUserId ?? null,
     action: args.action,
     entityType: args.entityType,
     entityId: args.entityId,
     before: args.before ?? null,
     after: args.after ?? null,
-    ipAddress: args.ctx?.ipAddress ?? null,
-    userAgent: args.ctx?.userAgent ?? null,
+    ipAddress: args.ctx?.ipAddress ?? reqCtx?.ipAddress ?? null,
+    userAgent: args.ctx?.userAgent ?? reqCtx?.userAgent ?? null,
     reason: args.ctx?.reason ?? null,
   };
   try {
