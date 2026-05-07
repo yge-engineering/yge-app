@@ -33,6 +33,7 @@ export const SCOPES = [
   'Files.ReadWrite.All',
   'Sites.ReadWrite.All',
   'Mail.Read',
+  'Mail.ReadWrite',
 ];
 
 export function isMicrosoftConfigured(): boolean {
@@ -188,4 +189,31 @@ export async function graphGetBinary(
     bytes: Buffer.from(ab),
     contentType: res.headers.get('content-type') ?? 'application/octet-stream',
   };
+}
+
+/** POST a JSON body to Graph and parse the JSON response. Throws if
+ *  the call doesn't return 2xx. */
+export async function graphPost<T>(
+  email: string,
+  urlPath: string,
+  body: unknown,
+): Promise<T> {
+  const token = await getAccessTokenFor(email);
+  const res = await fetch(`https://graph.microsoft.com/v1.0${urlPath}`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(
+      `Graph POST ${urlPath} failed (${res.status}): ${text.slice(0, 300)}`,
+    );
+  }
+  // Some POSTs return 204 No Content. Fall through to {} in that case.
+  if (res.status === 204) return {} as T;
+  return (await res.json()) as T;
 }

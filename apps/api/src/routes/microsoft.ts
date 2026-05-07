@@ -33,6 +33,11 @@ import { listJobs } from '../lib/jobs-store';
 import { listCustomers } from '../lib/customers-store';
 import { matchEmailToJob, type EmailJobCandidateJob } from '@yge/shared';
 import {
+  ensureMailFolder,
+  jobFolderName,
+  moveMessage,
+} from '../lib/microsoft-mail-folders';
+import {
   deleteMicrosoftToken,
   getMicrosoftToken,
 } from '../lib/microsoft-tokens-store';
@@ -424,6 +429,101 @@ microsoftRouter.post('/inbox-triage', async (req, res, next) => {
       messages: enriched,
       promptVersion: out.promptVersion,
     });
+  } catch (err) {
+    next(err);
+  }
+});
+// POST /api/microsoft/inbox-triage/file-to-job — move messages into
+// per-job Outlook folders.
+//
+// Body: { email, items: [{ messageId, jobId }] }
+// Returns: { moved, skipped, errors }
+//
+// Folder layout: Inbox/Jobs/<jobNumber projectName>. The folder is
+// created on first move per job.
+microsoftRouter.post('/inbox-triage/file-to-job', async (req, res, next) => {
+  try {
+    if (!isMicrosoftConfigured()) {
+      return res.status(503).json({ error: 'Microsoft Graph not configured' });
+    }
+    const Body = z.object({
+      email: z.string().email(),
+      items: z
+        .array(
+          z.object({
+            messageId: z.string().min(1),
+            jobId: z.string().min(1),
+          }),
+        )
+        .min(1)
+        .max(100),
+    });
+    const parsed = Body.safeParse(req.body);
+    if (!parsed.success) {
+      return res
+        .status(400)
+        .json({ error: 'Validation failed', issues: parsed.error.issues });
+    }
+
+    const jobs = await listJobs();
+    const jobById = new Map(jobs.map((j) => [j.id, j]));
+
+    const moved: Array<{ messageId: string; newMessageId?: string }> = [];
+    const skipped: Array<{ messageId: string; reason: string }> = [];
+    const errors: Array<{ messageId: string; reason: string }> = [];
+
+    // Cache resolved folder ids so we don't ensureMailFolder for the
+    // same job twice in one request.
+    const folderCache = new Map<string, string>();
+
+    for (const item of parsed.data.items) {
+      const job = jobById.get(item.jobId);
+      if (!job) {
+        skipped.push({ messageId: item.messageId, reason: 'job not found' });
+        continue;
+      }
+      try {
+        let destinationId = folderCache.get(job.id);
+        if (!destinationId) {
+          // Use the trailing 8-char jobNumber from the id, matching
+          // how the Postgres jobs-store derives it.
+          const idMatch = job.id.match(/-([a-f0-9]{8})$/);
+          const jobNumber = idMatch ? idMatch[1] : undefined;
+          const folderName = jobFolderName({
+            projectName: job.projectName,
+            jobNumber,
+          });
+          destinationId = await ensureMailFolder(parsed.data.email, [
+            'Jobs',
+            folderName,
+          ]);
+          folderCache.set(job.id, destinationId);
+        }
+        const result = await moveMessage(
+          parsed.data.email,
+          item.messageId,
+          destinationId,
+        );
+        if (result) {
+          moved.push({
+            messageId: item.messageId,
+            newMessageId: result.newMessageId,
+          });
+        } else {
+          skipped.push({
+            messageId: item.messageId,
+            reason: 'message gone or already moved',
+          });
+        }
+      } catch (err) {
+        errors.push({
+          messageId: item.messageId,
+          reason: (err as Error).message,
+        });
+      }
+    }
+
+    return res.json({ moved, skipped, errors });
   } catch (err) {
     next(err);
   }
