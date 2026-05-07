@@ -772,7 +772,7 @@ export default async function DashboardPage() {
 
       {/* EDIT LOG — last few audit log entries. */}
       {recentAudit.length > 0 && (
-        <div className="mb-6 rounded-lg border border-gray-200 bg-white shadow-sm">
+        <div className="mb-6 rounded-lg border border-gray-200 bg-white shadow-sm transition hover:shadow">
           <header className="flex items-center justify-between border-b border-gray-200 px-4 py-2">
             <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
               Edit log · last 5
