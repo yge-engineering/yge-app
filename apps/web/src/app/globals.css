@@ -5,3 +5,29 @@
 :root {
   --font-inter: 'Inter', system-ui, sans-serif;
 }
+
+@media print {
+  @page {
+    margin: 0.5in;
+  }
+  body {
+    background: #fff !important;
+  }
+  /* Keep table rows together across page breaks. */
+  tr {
+    page-break-inside: avoid;
+  }
+  /* Don't break a heading + its first paragraph. */
+  h1, h2, h3 {
+    page-break-after: avoid;
+  }
+  /* Print URLs visibly are noisy; suppress the default. */
+  a[href]:after {
+    content: '';
+  }
+  /* Force colors so status pills + tones still read on paper. */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
