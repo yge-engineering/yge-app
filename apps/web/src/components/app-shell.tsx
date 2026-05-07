@@ -28,6 +28,7 @@ import { KeyboardShortcuts } from './keyboard-shortcuts';
 import { LocaleSwitcher } from './locale-switcher';
 import { MobileNav } from './mobile-nav';
 import { Toaster } from './toast';
+import { CommandPalette } from './command-palette';
 import { ScrollToTop } from './scroll-to-top';
 import { useLocale, useTranslator } from '../lib/use-translator';
 
@@ -199,6 +200,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <KeyboardShortcuts />
       <Toaster />
       <ScrollToTop />
+      <CommandPalette
+        links={NAV.flatMap((g) =>
+          g.links.map((l) => ({ ...l, group: g.label })),
+        )}
+      />
       <header className="flex items-center gap-3 border-b border-gray-200 bg-white px-4 py-3 sm:px-6 print:hidden">
         <MobileNav groups={NAV} />
         <Link href="/dashboard" className="flex items-center gap-3">
