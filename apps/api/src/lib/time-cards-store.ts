@@ -1,10 +1,6 @@
-// Every mutation here records an audit event via recordAudit() —
-// CLAUDE.md mandates 'every mutation is audit-logged'.
-//
-// File-based store for weekly time cards.
+// Postgres-backed store for time cards.
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { prisma } from '@yge/db';
 import {
   TimeCardSchema,
   newTimeCardId,
@@ -14,49 +10,16 @@ import {
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
 
-function dataDir(): string {
-  return (
-    process.env.TIME_CARDS_DATA_DIR ??
-    path.resolve(process.cwd(), 'data', 'time-cards')
-  );
-}
-function indexPath(): string {
-  return path.join(dataDir(), 'index.json');
-}
-function rowPath(id: string): string {
-  return path.join(dataDir(), `${id}.json`);
-}
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
 
-async function ensureDir() {
-  await fs.mkdir(dataDir(), { recursive: true });
-}
-
-async function readIndex(): Promise<TimeCard[]> {
-  try {
-    const raw = await fs.readFile(indexPath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((entry: unknown) => {
-        const result = TimeCardSchema.safeParse(entry);
-        return result.success ? result.data : null;
-      })
-      .filter((c): c is TimeCard => c !== null);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
-  }
-}
-
-async function writeIndex(entries: TimeCard[]) {
-  await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
+function row2tc(row: { data: unknown }): TimeCard {
+  return TimeCardSchema.parse(row.data);
 }
 
 export async function createTimeCard(
   input: TimeCardCreate,
   ctx?: AuditContext,
 ): Promise<TimeCard> {
-  await ensureDir();
   const now = new Date().toISOString();
   const id = newTimeCardId();
   const c: TimeCard = {
@@ -68,10 +31,15 @@ export async function createTimeCard(
     ...input,
   };
   TimeCardSchema.parse(c);
-  await fs.writeFile(rowPath(id), JSON.stringify(c, null, 2), 'utf8');
-  const index = await readIndex();
-  index.unshift(c);
-  await writeIndex(index);
+  await prisma.timeCard.create({
+    data: {
+      id,
+      companyId: DEFAULT_COMPANY_ID,
+      employeeId: c.employeeId,
+      weekStart: c.weekStarting,
+      data: c as unknown as object,
+    },
+  });
   await recordAudit({
     action: 'create',
     entityType: 'TimeCard',
@@ -87,23 +55,26 @@ export async function listTimeCards(filter?: {
   weekStarting?: string;
   status?: string;
 }): Promise<TimeCard[]> {
-  let all = await readIndex();
-  if (filter?.employeeId) all = all.filter((c) => c.employeeId === filter.employeeId);
-  if (filter?.weekStarting) all = all.filter((c) => c.weekStarting === filter.weekStarting);
+  const rows = await prisma.timeCard.findMany({
+    where: {
+      companyId: DEFAULT_COMPANY_ID,
+      deletedAt: null,
+      ...(filter?.employeeId ? { employeeId: filter.employeeId } : {}),
+      ...(filter?.weekStarting ? { weekStart: filter.weekStarting } : {}),
+    },
+    orderBy: { weekStart: 'desc' },
+  });
+  let all = rows.map(row2tc);
   if (filter?.status) all = all.filter((c) => c.status === filter.status);
-  all.sort((a, b) => b.weekStarting.localeCompare(a.weekStarting));
   return all;
 }
 
 export async function getTimeCard(id: string): Promise<TimeCard | null> {
   if (!/^tc-[a-z0-9]{8}$/.test(id)) return null;
-  try {
-    const raw = await fs.readFile(rowPath(id), 'utf8');
-    return TimeCardSchema.parse(JSON.parse(raw));
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    throw err;
-  }
+  const row = await prisma.timeCard.findFirst({
+    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+  });
+  return row ? row2tc(row) : null;
 }
 
 export async function updateTimeCard(
@@ -122,15 +93,14 @@ export async function updateTimeCard(
     updatedAt: new Date().toISOString(),
   };
   TimeCardSchema.parse(updated);
-  await fs.writeFile(rowPath(id), JSON.stringify(updated, null, 2), 'utf8');
-  const index = await readIndex();
-  const idx = index.findIndex((c) => c.id === id);
-  if (idx >= 0) {
-    index[idx] = updated;
-  } else {
-    index.unshift(updated);
-  }
-  await writeIndex(index);
+  await prisma.timeCard.update({
+    where: { id },
+    data: {
+      employeeId: updated.employeeId,
+      weekStart: updated.weekStarting,
+      data: updated as unknown as object,
+    },
+  });
   await recordAudit({
     action: auditAction,
     entityType: 'TimeCard',

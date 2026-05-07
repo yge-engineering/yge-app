@@ -1,10 +1,6 @@
-// Every mutation here records an audit event via recordAudit() —
-// CLAUDE.md mandates 'every mutation is audit-logged'.
-//
-// File-based store for daily dispatches.
+// Postgres-backed store for dispatches.
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { prisma } from '@yge/db';
 import {
   DispatchSchema,
   newDispatchId,
@@ -14,46 +10,16 @@ import {
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
 
-function dataDir(): string {
-  return process.env.DISPATCHES_DATA_DIR ?? path.resolve(process.cwd(), 'data', 'dispatches');
-}
-function indexPath(): string {
-  return path.join(dataDir(), 'index.json');
-}
-function rowPath(id: string): string {
-  return path.join(dataDir(), `${id}.json`);
-}
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
 
-async function ensureDir() {
-  await fs.mkdir(dataDir(), { recursive: true });
-}
-
-async function readIndex(): Promise<Dispatch[]> {
-  try {
-    const raw = await fs.readFile(indexPath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((entry: unknown) => {
-        const result = DispatchSchema.safeParse(entry);
-        return result.success ? result.data : null;
-      })
-      .filter((d): d is Dispatch => d !== null);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
-  }
-}
-
-async function writeIndex(entries: Dispatch[]) {
-  await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
+function row2disp(row: { data: unknown }): Dispatch {
+  return DispatchSchema.parse(row.data);
 }
 
 export async function createDispatch(
   input: DispatchCreate,
   ctx?: AuditContext,
 ): Promise<Dispatch> {
-  await ensureDir();
   const now = new Date().toISOString();
   const id = newDispatchId();
   const d: Dispatch = {
@@ -66,10 +32,15 @@ export async function createDispatch(
     ...input,
   };
   DispatchSchema.parse(d);
-  await fs.writeFile(rowPath(id), JSON.stringify(d, null, 2), 'utf8');
-  const index = await readIndex();
-  index.unshift(d);
-  await writeIndex(index);
+  await prisma.dispatch.create({
+    data: {
+      id,
+      companyId: DEFAULT_COMPANY_ID,
+      jobId: d.jobId,
+      scheduledFor: d.scheduledFor,
+      data: d as unknown as object,
+    },
+  });
   await recordAudit({
     action: 'create',
     entityType: 'Dispatch',
@@ -85,24 +56,26 @@ export async function listDispatches(filter?: {
   scheduledFor?: string;
   status?: string;
 }): Promise<Dispatch[]> {
-  let all = await readIndex();
-  if (filter?.jobId) all = all.filter((d) => d.jobId === filter.jobId);
-  if (filter?.scheduledFor)
-    all = all.filter((d) => d.scheduledFor === filter.scheduledFor);
+  const rows = await prisma.dispatch.findMany({
+    where: {
+      companyId: DEFAULT_COMPANY_ID,
+      deletedAt: null,
+      ...(filter?.jobId ? { jobId: filter.jobId } : {}),
+      ...(filter?.scheduledFor ? { scheduledFor: filter.scheduledFor } : {}),
+    },
+    orderBy: { scheduledFor: 'desc' },
+  });
+  let all = rows.map(row2disp);
   if (filter?.status) all = all.filter((d) => d.status === filter.status);
-  all.sort((a, b) => b.scheduledFor.localeCompare(a.scheduledFor));
   return all;
 }
 
 export async function getDispatch(id: string): Promise<Dispatch | null> {
   if (!/^disp-[a-z0-9]{8}$/.test(id)) return null;
-  try {
-    const raw = await fs.readFile(rowPath(id), 'utf8');
-    return DispatchSchema.parse(JSON.parse(raw));
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    throw err;
-  }
+  const row = await prisma.dispatch.findFirst({
+    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+  });
+  return row ? row2disp(row) : null;
 }
 
 export async function updateDispatch(
@@ -121,15 +94,14 @@ export async function updateDispatch(
     updatedAt: new Date().toISOString(),
   };
   DispatchSchema.parse(updated);
-  await fs.writeFile(rowPath(id), JSON.stringify(updated, null, 2), 'utf8');
-  const index = await readIndex();
-  const idx = index.findIndex((d) => d.id === id);
-  if (idx >= 0) {
-    index[idx] = updated;
-  } else {
-    index.unshift(updated);
-  }
-  await writeIndex(index);
+  await prisma.dispatch.update({
+    where: { id },
+    data: {
+      jobId: updated.jobId,
+      scheduledFor: updated.scheduledFor,
+      data: updated as unknown as object,
+    },
+  });
   await recordAudit({
     action: auditAction,
     entityType: 'Dispatch',

@@ -1,15 +1,6 @@
-// Every mutation here records an audit event via recordAudit() —
-// CLAUDE.md mandates 'every mutation is audit-logged'.
-//
-// File-based store for daily reports.
-//
-// Phase 1 stand-in for the future Postgres `DailyReport` table. The id
-// scheme `dr-YYYY-MM-DD-<8hex>` puts the date in the filename so a
-// straight ls of the data directory sorts chronologically — useful when
-// debugging data without the index.
+// Postgres-backed store for daily reports.
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { prisma } from '@yge/db';
 import {
   DailyReportSchema,
   newDailyReportId,
@@ -19,49 +10,16 @@ import {
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
 
-function dataDir(): string {
-  return (
-    process.env.DAILY_REPORTS_DATA_DIR ??
-    path.resolve(process.cwd(), 'data', 'daily-reports')
-  );
-}
-function indexPath(): string {
-  return path.join(dataDir(), 'index.json');
-}
-function reportPath(id: string): string {
-  return path.join(dataDir(), `${id}.json`);
-}
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
 
-async function ensureDir() {
-  await fs.mkdir(dataDir(), { recursive: true });
-}
-
-async function readIndex(): Promise<DailyReport[]> {
-  try {
-    const raw = await fs.readFile(indexPath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((entry: unknown) => {
-        const result = DailyReportSchema.safeParse(entry);
-        return result.success ? result.data : null;
-      })
-      .filter((d): d is DailyReport => d !== null);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
-  }
-}
-
-async function writeIndex(entries: DailyReport[]) {
-  await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
+function row2dr(row: { data: unknown }): DailyReport {
+  return DailyReportSchema.parse(row.data);
 }
 
 export async function createDailyReport(
   input: DailyReportCreate,
   ctx?: AuditContext,
 ): Promise<DailyReport> {
-  await ensureDir();
   const now = new Date().toISOString();
   const id = newDailyReportId(input.date);
   const r: DailyReport = {
@@ -74,10 +32,15 @@ export async function createDailyReport(
     ...input,
   };
   DailyReportSchema.parse(r);
-  await fs.writeFile(reportPath(id), JSON.stringify(r, null, 2), 'utf8');
-  const index = await readIndex();
-  index.unshift(r);
-  await writeIndex(index);
+  await prisma.dailyReport.create({
+    data: {
+      id,
+      companyId: DEFAULT_COMPANY_ID,
+      jobId: r.jobId,
+      reportDate: r.date,
+      data: r as unknown as object,
+    },
+  });
   await recordAudit({
     action: 'create',
     entityType: 'DailyReport',
@@ -92,31 +55,25 @@ export async function listDailyReports(filter?: {
   jobId?: string;
   foremanId?: string;
 }): Promise<DailyReport[]> {
-  let all = await readIndex();
-  if (filter?.jobId) {
-    all = all.filter((r) => r.jobId === filter.jobId);
-  }
-  if (filter?.foremanId) {
-    all = all.filter((r) => r.foremanId === filter.foremanId);
-  }
-  // Sort by report date (newest first), then by createdAt as tiebreaker.
-  all.sort((a, b) => {
-    const dc = b.date.localeCompare(a.date);
-    if (dc !== 0) return dc;
-    return b.createdAt.localeCompare(a.createdAt);
+  const rows = await prisma.dailyReport.findMany({
+    where: {
+      companyId: DEFAULT_COMPANY_ID,
+      deletedAt: null,
+      ...(filter?.jobId ? { jobId: filter.jobId } : {}),
+    },
+    orderBy: { reportDate: 'desc' },
   });
+  let all = rows.map(row2dr);
+  if (filter?.foremanId) all = all.filter((r) => r.foremanId === filter.foremanId);
   return all;
 }
 
 export async function getDailyReport(id: string): Promise<DailyReport | null> {
   if (!/^dr-\d{4}-\d{2}-\d{2}-[a-z0-9]{8}$/.test(id)) return null;
-  try {
-    const raw = await fs.readFile(reportPath(id), 'utf8');
-    return DailyReportSchema.parse(JSON.parse(raw));
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    throw err;
-  }
+  const row = await prisma.dailyReport.findFirst({
+    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+  });
+  return row ? row2dr(row) : null;
 }
 
 export async function updateDailyReport(
@@ -135,15 +92,14 @@ export async function updateDailyReport(
     updatedAt: new Date().toISOString(),
   };
   DailyReportSchema.parse(updated);
-  await fs.writeFile(reportPath(id), JSON.stringify(updated, null, 2), 'utf8');
-  const index = await readIndex();
-  const idx = index.findIndex((r) => r.id === id);
-  if (idx >= 0) {
-    index[idx] = updated;
-  } else {
-    index.unshift(updated);
-  }
-  await writeIndex(index);
+  await prisma.dailyReport.update({
+    where: { id },
+    data: {
+      jobId: updated.jobId,
+      reportDate: updated.date,
+      data: updated as unknown as object,
+    },
+  });
   await recordAudit({
     action: auditAction,
     entityType: 'DailyReport',
