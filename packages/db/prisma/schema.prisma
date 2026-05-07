@@ -1201,6 +1201,23 @@ model ToolAsset {
   @@map("tools")
 }
 
+model Equipment {
+  id            String    @id
+  companyId     String
+  name          String
+  category      String
+  status        String
+  assignedJobId String?
+  data          Json
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  @@index([companyId, status])
+  @@index([companyId, assignedJobId])
+  @@map("equipment_assets")
+}
+
 model Certificate {
   id         String    @id
   companyId  String

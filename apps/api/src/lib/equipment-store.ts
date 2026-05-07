@@ -1,16 +1,11 @@
-// Every mutation here records an audit event via recordAudit() —
-// CLAUDE.md mandates 'every mutation is audit-logged'.
+// Postgres-backed store for equipment + vehicles.
 //
-// File-based store for equipment + vehicles.
-//
-// Phase 1 stand-in for the future Postgres `Equipment` table. The
-// dispatch helpers (assignEquipment / returnEquipment) keep status +
+// Dispatch helpers (assignEquipment / returnEquipment) keep status +
 // assignment fields in lockstep so the UI never sees a half-state row.
-// logMaintenance() pushes a new entry and updates lastServiceUsage in a
-// single write.
+// logMaintenance() pushes a new entry and updates lastServiceUsage in
+// a single write.
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { prisma } from '@yge/db';
 import {
   EquipmentSchema,
   newEquipmentId,
@@ -21,49 +16,26 @@ import {
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
 
-function dataDir(): string {
-  return (
-    process.env.EQUIPMENT_DATA_DIR ??
-    path.resolve(process.cwd(), 'data', 'equipment')
-  );
-}
-function indexPath(): string {
-  return path.join(dataDir(), 'index.json');
-}
-function unitPath(id: string): string {
-  return path.join(dataDir(), `${id}.json`);
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+
+function row2eq(row: { data: unknown }): Equipment | null {
+  const r = EquipmentSchema.safeParse(row.data);
+  return r.success ? r.data : null;
 }
 
-async function ensureDir() {
-  await fs.mkdir(dataDir(), { recursive: true });
-}
-
-async function readIndex(): Promise<Equipment[]> {
-  try {
-    const raw = await fs.readFile(indexPath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((entry: unknown) => {
-        const result = EquipmentSchema.safeParse(entry);
-        return result.success ? result.data : null;
-      })
-      .filter((e): e is Equipment => e !== null);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
-  }
-}
-
-async function writeIndex(entries: Equipment[]) {
-  await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
+function structuredCols(e: Equipment) {
+  return {
+    name: e.name,
+    category: e.category,
+    status: e.status,
+    assignedJobId: e.assignedJobId ?? null,
+  };
 }
 
 export async function createEquipment(
   input: EquipmentCreate,
   ctx?: AuditContext,
 ): Promise<Equipment> {
-  await ensureDir();
   const now = new Date().toISOString();
   const id = newEquipmentId();
   const e: Equipment = {
@@ -76,10 +48,14 @@ export async function createEquipment(
     ...input,
   };
   EquipmentSchema.parse(e);
-  await fs.writeFile(unitPath(id), JSON.stringify(e, null, 2), 'utf8');
-  const index = await readIndex();
-  index.unshift(e);
-  await writeIndex(index);
+  await prisma.equipment.create({
+    data: {
+      id,
+      companyId: DEFAULT_COMPANY_ID,
+      ...structuredCols(e),
+      data: e as unknown as object,
+    },
+  });
   await recordAudit({
     action: 'create',
     entityType: 'Equipment',
@@ -91,18 +67,19 @@ export async function createEquipment(
 }
 
 export async function listEquipment(): Promise<Equipment[]> {
-  return readIndex();
+  const rows = await prisma.equipment.findMany({
+    where: { companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+  });
+  return rows.map(row2eq).filter((e): e is Equipment => e !== null);
 }
 
 export async function getEquipment(id: string): Promise<Equipment | null> {
   if (!/^eq-[a-z0-9]{8}$/.test(id)) return null;
-  try {
-    const raw = await fs.readFile(unitPath(id), 'utf8');
-    return EquipmentSchema.parse(JSON.parse(raw));
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    throw err;
-  }
+  const row = await prisma.equipment.findFirst({
+    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+  });
+  if (!row) return null;
+  return row2eq(row);
 }
 
 export async function updateEquipment(
@@ -121,15 +98,13 @@ export async function updateEquipment(
     updatedAt: new Date().toISOString(),
   };
   EquipmentSchema.parse(updated);
-  await fs.writeFile(unitPath(id), JSON.stringify(updated, null, 2), 'utf8');
-  const index = await readIndex();
-  const idx = index.findIndex((e) => e.id === id);
-  if (idx >= 0) {
-    index[idx] = updated;
-  } else {
-    index.unshift(updated);
-  }
-  await writeIndex(index);
+  await prisma.equipment.update({
+    where: { id },
+    data: {
+      ...structuredCols(updated),
+      data: updated as unknown as object,
+    },
+  });
   await recordAudit({
     action: auditAction,
     entityType: 'Equipment',
@@ -178,10 +153,6 @@ export async function logMaintenance(
   const log = [...existing.maintenanceLog, entry];
   return updateEquipment(id, {
     maintenanceLog: log,
-    // Bump the lastServiceUsage forward so the next-service-due math
-    // resets. We update currentUsage too if the entry's reading is
-    // higher than what's on file; otherwise the foreman is logging
-    // historical data and we leave currentUsage alone.
     lastServiceUsage: entry.usageAtService,
     currentUsage: Math.max(existing.currentUsage, entry.usageAtService),
   });
