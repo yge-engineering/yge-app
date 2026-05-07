@@ -127,6 +127,7 @@ const NAV_SPEC: NavGroupSpec[] = [
     key: 'nav.group.project',
     links: [
       { key: 'nav.jobs', href: '/jobs' },
+      { key: 'nav.jobsBoard', href: '/jobs/board' },
       { key: 'nav.estimates', href: '/estimates', requires: 'estimates:view' },
       { key: 'nav.bidResults', href: '/bid-results', requires: 'estimates:view' },
       { key: 'nav.changeOrders', href: '/change-orders' },

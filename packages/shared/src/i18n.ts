@@ -4600,6 +4600,7 @@ export const SEED_DICTIONARY: DictionaryByLocale = {
     'nav.dailyReports': 'Daily reports',
     'nav.timeCards': 'Time cards',
     'nav.jobs': 'Jobs',
+    'nav.jobsBoard': 'Pursuit board',
     'nav.estimates': 'Estimates',
     'nav.bidResults': 'Bid results',
     'nav.changeOrders': 'Change orders',
