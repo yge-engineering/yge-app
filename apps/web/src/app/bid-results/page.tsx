@@ -8,6 +8,7 @@
 import Link from 'next/link';
 
 import { EstimatesKeyboardNav } from '../../components/estimates-keyboard-nav';
+import { EstimatesSearchInput } from '../../components/estimates-search-input';
 
 import {
   AppShell,
@@ -119,7 +120,11 @@ export default async function BidResultsPage() {
               />
             </div>
           ) : (
-            <div className="mt-3 overflow-x-auto rounded-md border border-gray-200 bg-white">
+            <>
+              <div className="mt-3">
+                <EstimatesSearchInput targetId="bid-results-list-table" totalCount={results.length} />
+              </div>
+            <div className="mt-2 overflow-x-auto rounded-md border border-gray-200 bg-white">
               <table id="bid-results-list-table" className="w-full text-left text-sm">
                 <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
                   <tr>
@@ -174,6 +179,7 @@ export default async function BidResultsPage() {
               </table>
               <EstimatesKeyboardNav targetId="bid-results-list-table" />
             </div>
+            </>
           )}
         </section>
       </main>
