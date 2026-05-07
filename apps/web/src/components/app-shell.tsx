@@ -270,7 +270,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             ))}
           </nav>
         </aside>
-        <main id="main" className="flex-1 px-4 py-6 sm:px-6 lg:px-8">{children}</main>
+        <main id="main" className="flex-1 px-4 py-6 sm:px-6 lg:px-8 print:px-0 print:py-0">{children}</main>
       </div>
       {/* Mobile FAB — only on small screens since header has the same CTA */}
       <Link
