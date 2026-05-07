@@ -1,13 +1,8 @@
-// File-backed bid-tab store. One JSON file per row +
-// data/bid-tabs/index.json for fast list rendering.
-//
-// Phase 1 lives without a Postgres index — file scans are fine for
-// the volume YGE encounters in early use. The shape of the rows
-// matches BidTabSchema 1:1 so the file rows can be replayed into
-// Prisma when DB persistence ships.
+// Postgres-backed bid-tab store. The full BidTab Zod shape lives in
+// the Json `data` column; jobId mirrors `tab.ygeJobId` so we can
+// index lookups by job without parsing JSON.
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { prisma } from '@yge/db';
 import {
   BidTabSchema,
   linkYgeOnImport,
@@ -21,43 +16,27 @@ import { recordAudit, type AuditContext } from './audit-store';
 import { listBidResults } from './bid-results-store';
 import { listJobs } from './jobs-store';
 
-function dataDir(): string {
-  return process.env.BID_TABS_DATA_DIR ?? path.resolve(process.cwd(), 'data', 'bid-tabs');
-}
-function indexPath(): string { return path.join(dataDir(), 'index.json'); }
-function rowPath(id: string): string { return path.join(dataDir(), `${id}.json`); }
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
 
-async function ensureDir() { await fs.mkdir(dataDir(), { recursive: true }); }
-
-async function readIndex(): Promise<BidTab[]> {
-  try {
-    const raw = await fs.readFile(indexPath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((entry: unknown) => {
-        const r = BidTabSchema.safeParse(entry);
-        return r.success ? r.data : null;
-      })
-      .filter((b): b is BidTab => b !== null);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
-  }
+function row2tab(row: { data: unknown }): BidTab | null {
+  const r = BidTabSchema.safeParse(row.data);
+  return r.success ? r.data : null;
 }
 
-async function writeIndex(rows: BidTab[]) {
-  await fs.writeFile(indexPath(), JSON.stringify(rows, null, 2), 'utf8');
-}
-
-async function persist(t: BidTab) {
-  await ensureDir();
-  await fs.writeFile(rowPath(t.id), JSON.stringify(t, null, 2), 'utf8');
-  const index = await readIndex();
-  const at = index.findIndex((row) => row.id === t.id);
-  if (at >= 0) index[at] = t;
-  else index.unshift(t);
-  await writeIndex(index);
+async function persist(t: BidTab): Promise<void> {
+  await prisma.bidTab.upsert({
+    where: { id: t.id },
+    create: {
+      id: t.id,
+      companyId: DEFAULT_COMPANY_ID,
+      jobId: t.ygeJobId ?? null,
+      data: t as unknown as object,
+    },
+    update: {
+      jobId: t.ygeJobId ?? null,
+      data: t as unknown as object,
+    },
+  });
 }
 
 export async function listBidTabs(filter?: {
@@ -66,7 +45,10 @@ export async function listBidTabs(filter?: {
   ygeJobId?: string;
   search?: string;
 }): Promise<BidTab[]> {
-  let all = await readIndex();
+  const rows = await prisma.bidTab.findMany({
+    where: { companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+  });
+  let all = rows.map(row2tab).filter((t): t is BidTab => t !== null);
   if (filter?.source) all = all.filter((t) => t.source === filter.source);
   if (filter?.county) {
     const c = filter.county.trim().toLowerCase();
@@ -95,13 +77,11 @@ export async function listBidTabs(filter?: {
 
 export async function getBidTab(id: string): Promise<BidTab | null> {
   if (!/^bidtab-[a-z0-9]{8}$/.test(id)) return null;
-  try {
-    const raw = await fs.readFile(rowPath(id), 'utf8');
-    return BidTabSchema.parse(JSON.parse(raw));
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    throw err;
-  }
+  const row = await prisma.bidTab.findFirst({
+    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+  });
+  if (!row) return null;
+  return row2tab(row);
 }
 
 export async function createBidTab(
@@ -110,8 +90,6 @@ export async function createBidTab(
 ): Promise<BidTab> {
   const now = new Date().toISOString();
 
-  // Auto-rank when bidders[].rank wasn't filled in (manual import flow
-  // sometimes ships them in low-to-high order without explicit rank).
   let bidders = input.bidders;
   const allRanked = bidders.every((b) => Number.isFinite(b.rank) && b.rank > 0);
   if (!allRanked) {
@@ -119,16 +97,11 @@ export async function createBidTab(
     bidders = sorted.map((b, i) => ({ ...b, rank: i + 1 }));
   }
 
-  // Recompute nameNormalized server-side so the client can't drift
-  // from the canonical normalization.
   bidders = bidders.map((b) => ({
     ...b,
     nameNormalized: normalizeCompanyName(b.name),
   }));
 
-  // Mark the apparent low (rank 1) as awardedTo when the input row's
-  // awardedToBidderName matches it; honor explicit awardedTo flags
-  // on the input rows otherwise.
   const apparent = bidders.find((b) => b.rank === 1);
   if (apparent && input.awardedToBidderName) {
     bidders = bidders.map((b) => ({
@@ -146,18 +119,11 @@ export async function createBidTab(
     updatedAt: now,
   });
 
-  // Auto-link to a YGE BidResult when YGE was on the bidder list
-  // and the operator didn't already supply ygeJobId / ygeBidResultId.
-  // The matcher needs the BidResult collection joined with the Job
-  // so it can read projectName / projectNumber for the match.
   if (!tab.ygeBidResultId) {
     const [bidResults, jobs] = await Promise.all([listBidResults(), listJobs()]);
     const jobsById = new Map(jobs.map((j) => [j.id, j]));
     const enrichedResults = bidResults.map((br) => {
       const j = jobsById.get(br.jobId);
-      // Job currently has projectName but not projectNumber; the
-      // matcher reads both via duck-typing so the absence of one
-      // just makes that match strategy a no-op.
       const extra: { projectName?: string; projectNumber?: string } = {};
       if (j?.projectName) extra.projectName = j.projectName;
       const maybeNumber = (j as unknown as { projectNumber?: string } | undefined)?.projectNumber;
@@ -186,17 +152,6 @@ export async function createBidTab(
   return tab;
 }
 
-/**
- * Patch a tab's core descriptive fields. Operators routinely need
- * to fix typos or fill in missing metadata after import — the
- * scraper might leave projectNumber blank, the agency name might
- * be misspelled, etc. Bidder list, YGE link, and notes are
- * patched separately.
- *
- * Pass null to CLEAR an optional field; undefined leaves it
- * untouched. The required fields (agencyName, projectName, etc.)
- * are always overwritten when supplied.
- */
 export async function patchBidTabCore(
   id: string,
   patch: {
@@ -221,11 +176,6 @@ export async function patchBidTabCore(
         ? undefined
         : patch.awardedToBidderName;
 
-  // Mirror awardedToBidderName onto the bidder rows so the
-  // 'awarded' chip on /bid-tabs/[id] stays consistent. If the
-  // operator clears the awardedToBidderName, drop every bidder's
-  // awardedTo flag too — otherwise we'd leave stale awards on the
-  // list.
   let bidders = existing.bidders;
   if (patch.awardedToBidderName !== undefined) {
     bidders = existing.bidders.map((b) => ({
@@ -286,18 +236,6 @@ export async function patchBidTabCore(
   return updated;
 }
 
-/**
- * Replace a tab's bidder list. Operators sometimes need to fix a
- * typo, add a bidder the scraper missed, or strike a bidder that
- * the agency rejected. The whole array is replaced atomically;
- * the store re-ranks by totalCents (when ranks aren't supplied),
- * recomputes nameNormalized, and re-applies the awardedToBidderName
- * mirror so the awarded chip stays consistent.
- *
- * Re-runs the YGE auto-link in case YGE just got added (or
- * dropped) — but only when ygeBidResultId isn't already pinned
- * (operator's manual link survives).
- */
 export async function patchBidTabBidders(
   id: string,
   bidders: Array<{
@@ -319,8 +257,6 @@ export async function patchBidTabBidders(
   const existing = await getBidTab(id);
   if (!existing) return null;
 
-  // Auto-rank by totalCents when caller didn't supply explicit
-  // ranks (mirrors the create flow).
   let ordered = bidders;
   const allRanked = bidders.every((b) => Number.isFinite(b.rank) && (b.rank ?? 0) > 0);
   if (!allRanked) {
@@ -329,7 +265,6 @@ export async function patchBidTabBidders(
       .map((b, i) => ({ ...b, rank: i + 1 }));
   }
 
-  // Normalize names server-side; mirror awardedToBidderName.
   const awarded = existing.awardedToBidderName;
   const normalized = ordered.map((b) => ({
     rank: b.rank ?? 0,
@@ -353,7 +288,6 @@ export async function patchBidTabBidders(
     updatedAt: new Date().toISOString(),
   });
 
-  // Re-run YGE auto-link only when no manual link exists yet.
   if (!next.ygeBidResultId) {
     const [bidResults, jobs] = await Promise.all([listBidResults(), listJobs()]);
     const jobsById = new Map(jobs.map((j) => [j.id, j]));
@@ -387,14 +321,6 @@ export async function patchBidTabBidders(
   return next;
 }
 
-/**
- * Patch a tab's free-form notes. Operators tend to add post-import
- * context here ('Caltrans rejected Mercer's bid for missing sub
- * list — apparent low advanced to Knife River'), so the field gets
- * its own tiny endpoint instead of a kitchen-sink update form.
- *
- * Pass empty string to CLEAR the notes.
- */
 export async function patchBidTabNotes(
   id: string,
   notes: string,
@@ -420,14 +346,6 @@ export async function patchBidTabNotes(
   return updated;
 }
 
-/**
- * Patch the YGE cross-link fields on an existing tab. Used when
- * the auto-link in createBidTab didn't fire (typo in project
- * name, agency-prefix mismatch, etc.) and the operator manually
- * picks the right BidResult from the UI.
- *
- * Pass null to CLEAR a field; undefined leaves it untouched.
- */
 export async function patchBidTabLink(
   id: string,
   patch: { ygeJobId?: string | null; ygeBidResultId?: string | null },
@@ -466,10 +384,7 @@ export async function patchBidTabLink(
 export async function deleteBidTab(id: string, ctx?: AuditContext): Promise<boolean> {
   const existing = await getBidTab(id);
   if (!existing) return false;
-  try { await fs.unlink(rowPath(id)); } catch { /* best effort */ }
-  const index = await readIndex();
-  const next = index.filter((row) => row.id !== id);
-  await writeIndex(next);
+  await prisma.bidTab.delete({ where: { id } });
   await recordAudit({
     action: 'delete',
     entityType: 'BidResult',
