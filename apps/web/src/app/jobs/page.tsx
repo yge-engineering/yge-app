@@ -159,6 +159,16 @@ function sortJobsByUrgency(rows: Job[]): Job[] {
   });
 }
 
+const PROJECT_TYPE_ICON: Record<string, string> = {
+  DRAINAGE: '💧',
+  FUEL_BREAK: '🔥',
+  GRADING: '🚜',
+  PAVING: '🛣️',
+  STRUCTURE: '🏗️',
+  UTILITIES: '🔌',
+  OTHER: '🚧',
+};
+
 function jobUrgencyKey(iso: string | undefined, now: number): number {
   if (!iso) return Number.POSITIVE_INFINITY;
   const t = new Date(iso).getTime();
@@ -454,6 +464,7 @@ export default async function JobsPage({ searchParams }: PageProps) {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-700">
+                    <span className="mr-1">{PROJECT_TYPE_ICON[j.projectType] ?? '🚧'}</span>
                     {j.projectType.replace(/_/g, ' ')}
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-700">
