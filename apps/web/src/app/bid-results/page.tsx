@@ -7,6 +7,8 @@
 
 import Link from 'next/link';
 
+import { EstimatesKeyboardNav } from '../../components/estimates-keyboard-nav';
+
 import {
   AppShell,
   EmptyState,
@@ -118,7 +120,7 @@ export default async function BidResultsPage() {
             </div>
           ) : (
             <div className="mt-3 overflow-x-auto rounded-md border border-gray-200 bg-white">
-              <table className="w-full text-left text-sm">
+              <table id="bid-results-list-table" className="w-full text-left text-sm">
                 <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
                   <tr>
                     <th className="px-4 py-2">{t('bidResults.col.bidDate')}</th>
@@ -138,7 +140,7 @@ export default async function BidResultsPage() {
                     const delta = ygeDeltaToWinnerCents(r);
                     const job = jobById.get(r.jobId);
                     return (
-                      <tr key={r.id} className={r.outcome === 'WON_BY_YGE' ? 'bg-emerald-50' : ''}>
+                      <tr key={r.id} data-search={`${job?.projectName ?? ''} ${r.outcome}`} className={r.outcome === 'WON_BY_YGE' ? 'bg-emerald-50' : ''}>
                         <td className="px-4 py-3 font-mono text-xs text-gray-700">
                           <Link href={`/bid-results/${r.id}`} className="font-medium text-gray-900 hover:text-yge-blue-700 hover:underline">{r.bidOpenedAt}</Link>
                         </td>
@@ -170,6 +172,7 @@ export default async function BidResultsPage() {
                   })}
                 </tbody>
               </table>
+              <EstimatesKeyboardNav targetId="bid-results-list-table" />
             </div>
           )}
         </section>
