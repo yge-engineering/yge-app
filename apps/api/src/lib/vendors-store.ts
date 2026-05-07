@@ -1,10 +1,10 @@
-// Every mutation here records an audit event via recordAudit() —
-// CLAUDE.md mandates 'every mutation is audit-logged'.
+// Postgres-backed store for vendors. JSON `data` column holds the
+// full Zod-validated Vendor shape; companyId scopes per-tenant; the
+// route + UI are unchanged.
 //
-// File-based store for vendors.
+// Every mutation records an audit event — CLAUDE.md mandates that.
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { prisma } from '@yge/db';
 import {
   VendorSchema,
   newVendorId,
@@ -14,46 +14,16 @@ import {
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
 
-function dataDir(): string {
-  return process.env.VENDORS_DATA_DIR ?? path.resolve(process.cwd(), 'data', 'vendors');
-}
-function indexPath(): string {
-  return path.join(dataDir(), 'index.json');
-}
-function rowPath(id: string): string {
-  return path.join(dataDir(), `${id}.json`);
-}
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'co-yge';
 
-async function ensureDir() {
-  await fs.mkdir(dataDir(), { recursive: true });
-}
-
-async function readIndex(): Promise<Vendor[]> {
-  try {
-    const raw = await fs.readFile(indexPath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((entry: unknown) => {
-        const result = VendorSchema.safeParse(entry);
-        return result.success ? result.data : null;
-      })
-      .filter((v): v is Vendor => v !== null);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
-  }
-}
-
-async function writeIndex(entries: Vendor[]) {
-  await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
+function row2vendor(row: { data: unknown }): Vendor {
+  return VendorSchema.parse(row.data);
 }
 
 export async function createVendor(
   input: VendorCreate,
   ctx?: AuditContext,
 ): Promise<Vendor> {
-  await ensureDir();
   const now = new Date().toISOString();
   const id = newVendorId();
   const v: Vendor = {
@@ -68,10 +38,13 @@ export async function createVendor(
     ...input,
   };
   VendorSchema.parse(v);
-  await fs.writeFile(rowPath(id), JSON.stringify(v, null, 2), 'utf8');
-  const index = await readIndex();
-  index.unshift(v);
-  await writeIndex(index);
+  await prisma.vendor.create({
+    data: {
+      id,
+      companyId: DEFAULT_COMPANY_ID,
+      data: v as unknown as object,
+    },
+  });
   await recordAudit({
     action: 'create',
     entityType: 'Vendor',
@@ -83,7 +56,10 @@ export async function createVendor(
 }
 
 export async function listVendors(filter?: { kind?: string }): Promise<Vendor[]> {
-  let all = await readIndex();
+  const rows = await prisma.vendor.findMany({
+    where: { companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+  });
+  let all = rows.map(row2vendor);
   if (filter?.kind) all = all.filter((v) => v.kind === filter.kind);
   all.sort((a, b) => a.legalName.localeCompare(b.legalName));
   return all;
@@ -91,13 +67,11 @@ export async function listVendors(filter?: { kind?: string }): Promise<Vendor[]>
 
 export async function getVendor(id: string): Promise<Vendor | null> {
   if (!/^vnd-[a-z0-9]{8}$/.test(id)) return null;
-  try {
-    const raw = await fs.readFile(rowPath(id), 'utf8');
-    return VendorSchema.parse(JSON.parse(raw));
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    throw err;
-  }
+  const row = await prisma.vendor.findFirst({
+    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+  });
+  if (!row) return null;
+  return row2vendor(row);
 }
 
 export async function updateVendor(
@@ -116,15 +90,10 @@ export async function updateVendor(
     updatedAt: new Date().toISOString(),
   };
   VendorSchema.parse(updated);
-  await fs.writeFile(rowPath(id), JSON.stringify(updated, null, 2), 'utf8');
-  const index = await readIndex();
-  const idx = index.findIndex((v) => v.id === id);
-  if (idx >= 0) {
-    index[idx] = updated;
-  } else {
-    index.unshift(updated);
-  }
-  await writeIndex(index);
+  await prisma.vendor.update({
+    where: { id },
+    data: { data: updated as unknown as object },
+  });
   await recordAudit({
     action: auditAction,
     entityType: 'Vendor',
