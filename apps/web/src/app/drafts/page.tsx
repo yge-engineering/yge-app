@@ -9,22 +9,13 @@ import Link from 'next/link';
 import { Alert, AppShell } from '../../components';
 import { relativeTime } from '../../lib/relative-time';
 import { DraftsSearchInput } from '../../components/drafts-search-input';
+import { projectTypeIcon } from '../../lib/project-type-icon';
 import { DashboardRefreshButton } from '../../components/dashboard-refresh-button';
 import { DraftsPinButton, DraftsPinReorder } from '../../components/drafts-pin-button';
 import { DraftsPinFilterChip } from '../../components/drafts-pin-filter-chip';
 import { PinnedCountBadge } from '../../components/pinned-count-badge';
 import { EstimatesSortHeaders } from '../../components/estimates-sort-headers';
 import { getTranslator } from '../../lib/locale';
-
-const PROJECT_TYPE_ICON: Record<string, string> = {
-  DRAINAGE: '💧',
-  FUEL_BREAK: '🔥',
-  GRADING: '🚜',
-  PAVING: '🛣️',
-  STRUCTURE: '🏗️',
-  UTILITIES: '🔌',
-  OTHER: '🚧',
-};
 
 interface DraftSummary {
   id: string;
@@ -189,7 +180,7 @@ export default async function DraftsPage() {
                     )}
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-600">
-                    <span className="mr-1">{PROJECT_TYPE_ICON[d.projectType] ?? '🚧'}</span>
+                    <span className="mr-1">{projectTypeIcon(d.projectType)}</span>
                     {d.projectType.replace(/_/g, ' ')}
                   </td>
                   <td className="px-4 py-3 text-gray-700">{d.bidItemCount}</td>

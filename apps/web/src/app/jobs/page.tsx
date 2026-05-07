@@ -9,6 +9,7 @@ import { Alert, AppShell, Money } from '../../components';
 import { JobsSearchInput } from '../../components/jobs-search-input';
 import { JobsCreatedFilter } from '../../components/jobs-created-filter';
 import { JobsResetFilters } from '../../components/jobs-reset-filters';
+import { projectTypeIcon } from '../../lib/project-type-icon';
 import { DashboardRefreshButton } from '../../components/dashboard-refresh-button';
 import { JobsShortcutsChip } from '../../components/jobs-shortcuts-chip';
 import { JobsPinButton, JobsPinReorder } from '../../components/jobs-pin-button';
@@ -158,16 +159,6 @@ function sortJobsByUrgency(rows: Job[]): Job[] {
     return ub - ua;
   });
 }
-
-const PROJECT_TYPE_ICON: Record<string, string> = {
-  DRAINAGE: '💧',
-  FUEL_BREAK: '🔥',
-  GRADING: '🚜',
-  PAVING: '🛣️',
-  STRUCTURE: '🏗️',
-  UTILITIES: '🔌',
-  OTHER: '🚧',
-};
 
 function jobUrgencyKey(iso: string | undefined, now: number): number {
   if (!iso) return Number.POSITIVE_INFINITY;
@@ -464,7 +455,7 @@ export default async function JobsPage({ searchParams }: PageProps) {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-700">
-                    <span className="mr-1">{PROJECT_TYPE_ICON[j.projectType] ?? '🚧'}</span>
+                    <span className="mr-1">{projectTypeIcon(j.projectType)}</span>
                     {j.projectType.replace(/_/g, ' ')}
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-700">

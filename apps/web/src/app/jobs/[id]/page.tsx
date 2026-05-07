@@ -7,6 +7,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { AuditBinderPanel, Money } from '../../../components';
+import { projectTypeIcon } from '../../../lib/project-type-icon';
 import { relativeTime } from '../../../lib/relative-time';
 import { CopyIdChip } from '../../../components/copy-id-chip';
 import { DashboardRefreshButton } from '../../../components/dashboard-refresh-button';
@@ -149,16 +150,6 @@ function JobBidStatusPill({
   );
 }
 
-const PROJECT_TYPE_ICON: Record<string, string> = {
-  DRAINAGE: '💧',
-  FUEL_BREAK: '🔥',
-  GRADING: '🚜',
-  PAVING: '🛣️',
-  STRUCTURE: '🏗️',
-  UTILITIES: '🔌',
-  OTHER: '🚧',
-};
-
 function formatWhen(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
@@ -284,7 +275,7 @@ export default async function JobDetailPage({
             {job.projectName}
           </h1>
           <p className="mt-1 text-sm uppercase tracking-wide text-gray-500">
-            <span className="mr-1">{PROJECT_TYPE_ICON[job.projectType] ?? '🚧'}</span>
+            <span className="mr-1">{projectTypeIcon(job.projectType)}</span>
             {contractTypeLabel(job.contractType)} &middot;{' '}
             {job.projectType.replace(/_/g, ' ')}
             {estimates.length > 0 && (

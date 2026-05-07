@@ -10,6 +10,7 @@ import { bidDueCountdown, coerceLocale } from '@yge/shared';
 import { relativeTime } from '../../lib/relative-time';
 import { cookies } from 'next/headers';
 import { CopyEstimateLink } from '../../components/copy-estimate-link';
+import { projectTypeIcon } from '../../lib/project-type-icon';
 import { CopyMoneyButton } from '../../components/copy-money-button';
 import { EstimatesSearchInput } from '../../components/estimates-search-input';
 import { EstimatesSortHeaders } from '../../components/estimates-sort-headers';
@@ -125,16 +126,6 @@ function countDueBuckets(rows: { bidDueDate?: string }[]): {
   }
   return { overdue, dueSoon };
 }
-
-const PROJECT_TYPE_ICON: Record<string, string> = {
-  DRAINAGE: '💧',
-  FUEL_BREAK: '🔥',
-  GRADING: '🚜',
-  PAVING: '🛣️',
-  STRUCTURE: '🏗️',
-  UTILITIES: '🔌',
-  OTHER: '🚧',
-};
 
 function urgencyKey(iso: string | undefined, now: number): number {
   // Smaller key = more urgent. Buckets the rows so:
@@ -584,7 +575,7 @@ export default async function EstimatesPage() {
                     )}
                   </td>
                   <td className="hidden px-4 py-3 text-xs text-gray-600 md:table-cell">
-                    <span className="mr-1">{PROJECT_TYPE_ICON[e.projectType] ?? '🚧'}</span>
+                    <span className="mr-1">{projectTypeIcon(e.projectType)}</span>
                     {e.projectType.replace(/_/g, ' ')}
                   </td>
                   <td className="hidden px-4 py-3 text-gray-700 sm:table-cell">
