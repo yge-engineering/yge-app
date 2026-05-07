@@ -18,6 +18,48 @@ export function ScrollToTop() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  // 'gt' (g then t) keyboard shortcut to jump to top from anywhere.
+  // Skips when the user is typing in an input.
+  useEffect(() => {
+    let prefix = false;
+    let prefixTimer: number | undefined;
+    function onKey(e: KeyboardEvent) {
+      const t = e.target as HTMLElement | null;
+      if (
+        t &&
+        (t.tagName === 'INPUT' ||
+          t.tagName === 'TEXTAREA' ||
+          (t as HTMLElement).isContentEditable)
+      ) {
+        return;
+      }
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (prefix && e.key === 't') {
+        e.preventDefault();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        prefix = false;
+        if (prefixTimer) window.clearTimeout(prefixTimer);
+        return;
+      }
+      if (e.key === 'g') {
+        prefix = true;
+        if (prefixTimer) window.clearTimeout(prefixTimer);
+        prefixTimer = window.setTimeout(() => {
+          prefix = false;
+        }, 1200);
+      } else {
+        // Any other key clears the prefix unless it's the 't' above.
+        prefix = false;
+        if (prefixTimer) window.clearTimeout(prefixTimer);
+      }
+    }
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      if (prefixTimer) window.clearTimeout(prefixTimer);
+    };
+  }, []);
+
   if (!show) return null;
   return (
     <button
