@@ -1,10 +1,6 @@
-// File-based store for AP payments (the check register).
-//
-// Every mutation here records an audit event via recordAudit() —
-// CLAUDE.md mandates 'every mutation is audit-logged'.
+// Postgres-backed store for AP payments.
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { prisma } from '@yge/db';
 import {
   ApPaymentSchema,
   newApPaymentId,
@@ -15,46 +11,24 @@ import {
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
 
-function dataDir(): string {
-  return process.env.AP_PAYMENTS_DATA_DIR ?? path.resolve(process.cwd(), 'data', 'ap-payments');
-}
-function indexPath(): string {
-  return path.join(dataDir(), 'index.json');
-}
-function rowPath(id: string): string {
-  return path.join(dataDir(), `${id}.json`);
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+
+function row2pay(row: { data: unknown }): ApPayment {
+  return ApPaymentSchema.parse(row.data);
 }
 
-async function ensureDir() {
-  await fs.mkdir(dataDir(), { recursive: true });
-}
-
-async function readIndex(): Promise<ApPayment[]> {
-  try {
-    const raw = await fs.readFile(indexPath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((entry: unknown) => {
-        const result = ApPaymentSchema.safeParse(entry);
-        return result.success ? result.data : null;
-      })
-      .filter((p): p is ApPayment => p !== null);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
-  }
-}
-
-async function writeIndex(entries: ApPayment[]) {
-  await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
+async function readAll(): Promise<ApPayment[]> {
+  const rows = await prisma.apPayment.findMany({
+    where: { companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    orderBy: { createdAt: 'desc' },
+  });
+  return rows.map(row2pay);
 }
 
 export async function createApPayment(
   input: ApPaymentCreate,
   ctx?: AuditContext,
 ): Promise<ApPayment> {
-  await ensureDir();
   const now = new Date().toISOString();
   const id = newApPaymentId();
   const p: ApPayment = {
@@ -67,10 +41,13 @@ export async function createApPayment(
     ...input,
   };
   ApPaymentSchema.parse(p);
-  await fs.writeFile(rowPath(id), JSON.stringify(p, null, 2), 'utf8');
-  const index = await readIndex();
-  index.unshift(p);
-  await writeIndex(index);
+  await prisma.apPayment.create({
+    data: {
+      id,
+      companyId: DEFAULT_COMPANY_ID,
+      data: p as unknown as object,
+    },
+  });
   await recordAudit({
     action: 'create',
     entityType: 'ApPayment',
@@ -85,30 +62,24 @@ export async function listApPayments(filter?: {
   apInvoiceId?: string;
   method?: string;
 }): Promise<ApPayment[]> {
-  let all = await readIndex();
+  let all = await readAll();
   if (filter?.apInvoiceId) all = all.filter((p) => p.apInvoiceId === filter.apInvoiceId);
   if (filter?.method) all = all.filter((p) => p.method === filter.method);
-  all.sort((a, b) => b.paidOn.localeCompare(a.paidOn));
   return all;
 }
 
 export async function getApPayment(id: string): Promise<ApPayment | null> {
   if (!/^app-[a-z0-9]{8}$/.test(id)) return null;
-  try {
-    const raw = await fs.readFile(rowPath(id), 'utf8');
-    return ApPaymentSchema.parse(JSON.parse(raw));
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    throw err;
-  }
+  const row = await prisma.apPayment.findFirst({
+    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+  });
+  return row ? row2pay(row) : null;
 }
 
 export async function updateApPayment(
   id: string,
   patch: ApPaymentPatch,
   ctx?: AuditContext,
-  /** Override when the patch represents a domain action (void / pay /
-   *  reject) rather than a generic field edit. */
   auditAction: 'update' | 'void' | 'pay' = 'update',
 ): Promise<ApPayment | null> {
   const existing = await getApPayment(id);
@@ -121,15 +92,10 @@ export async function updateApPayment(
     updatedAt: new Date().toISOString(),
   };
   ApPaymentSchema.parse(updated);
-  await fs.writeFile(rowPath(id), JSON.stringify(updated, null, 2), 'utf8');
-  const index = await readIndex();
-  const idx = index.findIndex((p) => p.id === id);
-  if (idx >= 0) {
-    index[idx] = updated;
-  } else {
-    index.unshift(updated);
-  }
-  await writeIndex(index);
+  await prisma.apPayment.update({
+    where: { id },
+    data: { data: updated as unknown as object },
+  });
   await recordAudit({
     action: auditAction,
     entityType: 'ApPayment',
@@ -141,9 +107,7 @@ export async function updateApPayment(
   return updated;
 }
 
-/** Sum of non-voided payments applied to an invoice — drives the
- *  AP-invoice paidCents value when we re-derive on display. */
 export async function totalPaidForApInvoice(apInvoiceId: string): Promise<number> {
-  const all = await readIndex();
+  const all = await readAll();
   return sumApPaymentsForInvoice(apInvoiceId, all);
 }

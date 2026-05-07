@@ -1,10 +1,6 @@
-// File-based store for AR payments.
-//
-// Every mutation here records an audit event via recordAudit() —
-// CLAUDE.md mandates 'every mutation is audit-logged'.
+// Postgres-backed store for AR payments.
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { prisma } from '@yge/db';
 import {
   ArPaymentSchema,
   newArPaymentId,
@@ -15,46 +11,24 @@ import {
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
 
-function dataDir(): string {
-  return process.env.AR_PAYMENTS_DATA_DIR ?? path.resolve(process.cwd(), 'data', 'ar-payments');
-}
-function indexPath(): string {
-  return path.join(dataDir(), 'index.json');
-}
-function rowPath(id: string): string {
-  return path.join(dataDir(), `${id}.json`);
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+
+function row2pay(row: { data: unknown }): ArPayment {
+  return ArPaymentSchema.parse(row.data);
 }
 
-async function ensureDir() {
-  await fs.mkdir(dataDir(), { recursive: true });
-}
-
-async function readIndex(): Promise<ArPayment[]> {
-  try {
-    const raw = await fs.readFile(indexPath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((entry: unknown) => {
-        const result = ArPaymentSchema.safeParse(entry);
-        return result.success ? result.data : null;
-      })
-      .filter((p): p is ArPayment => p !== null);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
-  }
-}
-
-async function writeIndex(entries: ArPayment[]) {
-  await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
+async function readAll(): Promise<ArPayment[]> {
+  const rows = await prisma.arPayment.findMany({
+    where: { companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    orderBy: { createdAt: 'desc' },
+  });
+  return rows.map(row2pay);
 }
 
 export async function createArPayment(
   input: ArPaymentCreate,
   ctx?: AuditContext,
 ): Promise<ArPayment> {
-  await ensureDir();
   const now = new Date().toISOString();
   const id = newArPaymentId();
   const p: ArPayment = {
@@ -66,10 +40,13 @@ export async function createArPayment(
     ...input,
   };
   ArPaymentSchema.parse(p);
-  await fs.writeFile(rowPath(id), JSON.stringify(p, null, 2), 'utf8');
-  const index = await readIndex();
-  index.unshift(p);
-  await writeIndex(index);
+  await prisma.arPayment.create({
+    data: {
+      id,
+      companyId: DEFAULT_COMPANY_ID,
+      data: p as unknown as object,
+    },
+  });
   await recordAudit({
     action: 'create',
     entityType: 'ArPayment',
@@ -84,30 +61,24 @@ export async function listArPayments(filter?: {
   arInvoiceId?: string;
   jobId?: string;
 }): Promise<ArPayment[]> {
-  let all = await readIndex();
+  let all = await readAll();
   if (filter?.arInvoiceId) all = all.filter((p) => p.arInvoiceId === filter.arInvoiceId);
   if (filter?.jobId) all = all.filter((p) => p.jobId === filter.jobId);
-  all.sort((a, b) => b.receivedOn.localeCompare(a.receivedOn));
   return all;
 }
 
 export async function getArPayment(id: string): Promise<ArPayment | null> {
   if (!/^arp-[a-z0-9]{8}$/.test(id)) return null;
-  try {
-    const raw = await fs.readFile(rowPath(id), 'utf8');
-    return ArPaymentSchema.parse(JSON.parse(raw));
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    throw err;
-  }
+  const row = await prisma.arPayment.findFirst({
+    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+  });
+  return row ? row2pay(row) : null;
 }
 
 export async function updateArPayment(
   id: string,
   patch: ArPaymentPatch,
   ctx?: AuditContext,
-  /** Override when the patch is a domain action (void) rather
-   *  than a generic field edit. */
   auditAction: 'update' | 'void' = 'update',
 ): Promise<ArPayment | null> {
   const existing = await getArPayment(id);
@@ -120,15 +91,10 @@ export async function updateArPayment(
     updatedAt: new Date().toISOString(),
   };
   ArPaymentSchema.parse(updated);
-  await fs.writeFile(rowPath(id), JSON.stringify(updated, null, 2), 'utf8');
-  const index = await readIndex();
-  const idx = index.findIndex((p) => p.id === id);
-  if (idx >= 0) {
-    index[idx] = updated;
-  } else {
-    index.unshift(updated);
-  }
-  await writeIndex(index);
+  await prisma.arPayment.update({
+    where: { id },
+    data: { data: updated as unknown as object },
+  });
   await recordAudit({
     action: auditAction,
     entityType: 'ArPayment',
@@ -140,9 +106,7 @@ export async function updateArPayment(
   return updated;
 }
 
-/** Convenience used by the AR-invoice routes when applying a payment:
- *  returns the running paid total for an invoice. */
 export async function totalPaidForInvoice(arInvoiceId: string): Promise<number> {
-  const all = await readIndex();
+  const all = await readAll();
   return sumPaymentsForInvoice(arInvoiceId, all);
 }
