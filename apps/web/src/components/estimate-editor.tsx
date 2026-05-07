@@ -191,6 +191,54 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
     }
   }
 
+  // Append a clean empty row at the end. Picks the next sequential
+  // item number based on the highest existing one. Used by the
+  // "+ Add line" buttons (top + bottom). Doesn't clone — the seed
+  // row's "New line — replace me" placeholder shouldn't propagate.
+  async function addBlankRow() {
+    let nextNum = 1;
+    for (const it of estimate.bidItems) {
+      const n = parseInt(String(it.itemNumber).replace(/[^0-9]/g, ''), 10);
+      if (Number.isFinite(n) && n + 1 > nextNum) nextNum = n + 1;
+    }
+    const fresh: PricedEstimate['bidItems'][number] = {
+      itemNumber: String(nextNum),
+      description: '',
+      unit: 'LS',
+      quantity: 1,
+      confidence: 'HIGH',
+      unitPriceCents: null,
+    };
+    const next = [...estimate.bidItems, fresh];
+    setEstimate((e) => ({ ...e, bidItems: next }));
+    try {
+      const res = await fetch(
+        `${apiBaseUrl}/api/priced-estimates/${estimate.id}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bidItems: next }),
+        },
+      );
+      if (!res.ok) throw new Error(t('estEditor.errSaveStatus', { status: res.status }));
+      const json = (await res.json()) as {
+        estimate: PricedEstimate;
+        totals: PricedEstimateTotals;
+      };
+      setEstimate(json.estimate);
+      setTotals(json.totals);
+      // Focus the description field of the row we just added so
+      // the user can start typing without an extra click.
+      const idx = json.estimate.bidItems.length - 1;
+      requestAnimationFrame(() => {
+        const el = inputRefs.current[idx];
+        el?.focus();
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('estEditor.errFallback'));
+    }
+  }
+
   // Renumber every bid item sequentially starting from "1". Useful
   // after a bunch of duplicates, deletes, or reorders leave the
   // numbering looking like "1 / 1 (copy) / 2 / 4 / 4A". Confirms
@@ -860,9 +908,19 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
           </div>
         )}
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
-            {t('estEditor.bidItemsHeader')}
-          </h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+              {t('estEditor.bidItemsHeader')}
+            </h2>
+            <button
+              type="button"
+              onClick={() => void addBlankRow()}
+              className="rounded-md bg-yge-blue-600 px-3 py-1 text-xs font-semibold text-white hover:bg-yge-blue-700"
+              title="Append a fresh empty row at the bottom and focus it"
+            >
+              + Add line
+            </button>
+          </div>
           <div className="flex items-center gap-3 text-xs">
             {(showUnreviewedOnly ||
               openFindReplace ||
@@ -1205,18 +1263,10 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
           </p>
           <button
             type="button"
-            onClick={() => {
-              // Append a blank row at the bottom of the bid items.
-              // Goes through duplicateRow's append path by cloning the
-              // last row and clearing the description so the user gets
-              // a sensible default unit/quantity to overwrite.
-              const lastIdx = estimate.bidItems.length - 1;
-              if (lastIdx < 0) return;
-              void duplicateRow(lastIdx);
-            }}
-            className="rounded-md border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-700 hover:bg-yge-blue-50"
+            onClick={() => void addBlankRow()}
+            className="rounded-md border border-yge-blue-500 bg-yge-blue-50 px-3 py-1 text-xs font-semibold text-yge-blue-700 hover:bg-yge-blue-100"
           >
-            + Add row at end
+            + Add line
           </button>
         </div>
       </section>
