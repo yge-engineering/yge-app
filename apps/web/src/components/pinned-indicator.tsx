@@ -38,7 +38,7 @@ export function PinnedIndicator({ storageKey, eventName, id }: Props) {
 
   if (!pinned) return null;
   return (
-    <span className="mr-1 text-xs text-yge-blue-700" title="Pinned to top of /estimates">
+    <span className="mr-1 text-xs text-yge-blue-700 print:hidden" title="Pinned to top of /estimates">
       📌
     </span>
   );
