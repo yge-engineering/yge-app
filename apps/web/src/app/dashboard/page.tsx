@@ -20,6 +20,8 @@ import { bidDueCountdown } from '@yge/shared';
 import { DashboardRefreshButton } from '../../components/dashboard-refresh-button';
 import { MobileAppCallout } from '../../components/mobile-app-callout';
 import { InboxTriageTile } from '../../components/inbox-triage-tile';
+import { ErrorCountTile } from '../../components/error-count-tile';
+import { currentUserCan } from '../../lib/permissions';
 import { CopyMoneyButton } from '../../components/copy-money-button';
 import { PinnedIndicator } from '../../components/pinned-indicator';
 import { relativeTime } from '../../lib/relative-time';
@@ -518,6 +520,8 @@ export default async function DashboardPage() {
           microsoftConnected={microsoftConnected}
         />
       ) : null}
+
+      {currentUserCan('audit:view') ? <ErrorCountTile /> : null}
 
       {apiUnreachable && (
         <Alert tone="warn" title={t('dashboard.apiUnreachable.title')} className="mb-6">
