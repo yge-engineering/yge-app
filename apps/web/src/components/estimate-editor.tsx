@@ -81,6 +81,35 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 
+  // blank-estimate-autofocus: when the editor mounts on a fresh
+  // blank estimate (one seed row with the placeholder copy),
+  // focus the description field + select all so the user can
+  // start typing immediately. The condition is intentionally
+  // narrow so we don't grab focus on a real estimate the user
+  // is reviewing.
+  useEffect(() => {
+    if (initialEstimate.fromDraftId !== 'manual') return;
+    if (initialEstimate.bidItems.length !== 1) return;
+    const seed = initialEstimate.bidItems[0];
+    if (!seed) return;
+    if (seed.description !== 'New line — replace me') return;
+    // Wait one frame for the row component's input to mount,
+    // then focus + select.
+    const id = requestAnimationFrame(() => {
+      const el = inputRefs.current[0];
+      if (!el) return;
+      el.focus();
+      try {
+        el.select();
+      } catch {
+        // Some browsers throw on .select() for non-text inputs;
+        // ignore — the focus is the important part.
+      }
+    });
+    return () => cancelAnimationFrame(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Find/replace toolbar state. When openFindReplace is true, the
   // strip above the grid takes input. Matches are case-insensitive
   // substring matches against item.description.
