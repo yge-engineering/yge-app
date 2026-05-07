@@ -258,7 +258,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                         <Link
                           href={l.href}
                           aria-current={active ? 'page' : undefined}
-                          className={`block rounded-md px-2 py-1.5 text-sm hover:bg-gray-100 ${active ? 'bg-yge-blue-50 font-semibold text-yge-blue-700' : 'text-gray-700 hover:text-gray-900'}`}
+                          className={`block rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-gray-100 ${active ? 'bg-yge-blue-50 font-semibold text-yge-blue-700' : 'text-gray-700 hover:text-gray-900'}`}
                         >
                           {l.label}
                         </Link>
