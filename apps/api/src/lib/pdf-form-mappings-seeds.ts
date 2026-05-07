@@ -1,9 +1,7 @@
 // Pre-mapped agency form library — seed data.
 //
-// Phase-1 starter set: IRS W-9, DIR DAS-140 (apprentice journeyman
-// hours notification), ACORD 25 (Certificate of Liability Insurance).
-// More forms (CAL FIRE 720, DAS-142, PWC-100, county packets) layer
-// in subsequent commits.
+// Phase-1 starter set: IRS W-9, DIR DAS-140, ACORD 25 + expanded
+// for CAL FIRE 720, DIR DAS-142, ACORD 27, ACORD 28.
 //
 // All seed mappings start with reviewed=false. An estimator flips
 // the flag after sanity-checking the mapping against the agency's
@@ -11,9 +9,7 @@
 //
 // pdfFieldName values are placeholder. Real PDFs need their AcroForm
 // field names extracted — typically via pdftk dump_data_fields or
-// pdf-lib getFields() against the actual byte stream. The byte-
-// rewriting bundle that ships next can backfill the real names per
-// form.
+// pdf-lib getFields() against the actual byte stream.
 
 import type {
   PdfFormFieldMapping,
@@ -46,6 +42,8 @@ function f(over: Partial<PdfFormFieldMapping>): PdfFormFieldMapping {
   } as PdfFormFieldMapping;
 }
 
+const EIN_PATTERN = '^' + '\\d{2}-\\d{7}' + '$';
+
 // ---- IRS W-9 (Rev. October 2018) ---------------------------------------
 
 const IRS_W9: SeedMapping = {
@@ -70,7 +68,7 @@ const IRS_W9: SeedMapping = {
     f({ id: 'pdf-fld-w9-citystatezip', pdfFieldName: 'topmostSubform[0].Page1[0].f1_8[0]', label: 'City, state, ZIP', kind: 'TEXT', required: true,
         source: { kind: 'computed', name: 'profile.address.oneLine' } }),
     f({ id: 'pdf-fld-w9-ein', pdfFieldName: 'topmostSubform[0].Page1[0].EIN[0]', label: 'Employer identification number', kind: 'TEXT', required: true,
-        pattern: '^\\d{2}-\\d{7}$',
+        pattern: EIN_PATTERN,
         source: { kind: 'profile-path', path: 'federalEin' } }),
     f({ id: 'pdf-fld-w9-signature', pdfFieldName: 'topmostSubform[0].Page1[0].f1_30[0]', label: 'Signature of U.S. person', kind: 'SIGNATURE', required: true,
         source: { kind: 'computed', name: 'profile.officers.president.signature' } }),
@@ -115,7 +113,7 @@ const DIR_DAS_140: SeedMapping = {
     f({ id: 'pdf-fld-das140-est-journey-hours', pdfFieldName: 'EstimatedJourneymanHours', label: 'Estimated journeyman hours', kind: 'TEXT', required: true,
         source: { kind: 'prompt', label: 'Estimated journeyman hours', hint: 'Hours per journeyman over the contract', sensitive: false } }),
     f({ id: 'pdf-fld-das140-contract-amount', pdfFieldName: 'ContractAmount', label: 'Contract amount', kind: 'TEXT',
-        source: { kind: 'prompt', label: 'Contract award amount ($)', sensitive: false } }),
+        source: { kind: 'prompt', label: 'Contract award amount', sensitive: false } }),
     f({ id: 'pdf-fld-das140-start', pdfFieldName: 'EstimatedStartDate', label: 'Estimated start date', kind: 'DATE',
         source: { kind: 'prompt', label: 'Estimated start date (yyyy-mm-dd)', sensitive: false } }),
     f({ id: 'pdf-fld-das140-end', pdfFieldName: 'EstimatedEndDate', label: 'Estimated completion date', kind: 'DATE',
@@ -172,7 +170,162 @@ const ACORD_25: SeedMapping = {
   ],
 };
 
-const SEEDS: SeedMapping[] = [IRS_W9, DIR_DAS_140, ACORD_25];
+// ---- CAL FIRE 720 (Equipment Rate Form) --------------------------------
+
+const CAL_FIRE_720: SeedMapping = {
+  id: 'pdf-form-calfire-720',
+  displayName: 'CAL FIRE 720 — Equipment / Vehicle Rate Form',
+  agency: 'CAL_FIRE',
+  formCode: 'CDF-720',
+  versionDate: '2024-01-01',
+  pdfReference: 'pdf-forms/cal-fire/cdf-720.pdf',
+  agencyUrl: 'https://www.fire.ca.gov/programs/business-services/contracts/',
+  notes:
+    'CAL FIRE wildfire and forestry equipment rental rate registration. Goes with every CAL FIRE bid for engines, dozers, water tenders, fallers.',
+  fields: [
+    f({ id: 'pdf-fld-cf720-vendor', pdfFieldName: 'VendorName', label: 'Vendor / contractor name', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'legalName' } }),
+    f({ id: 'pdf-fld-cf720-cslb', pdfFieldName: 'ContractorLicense', label: 'CSLB license #', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'cslbLicense' } }),
+    f({ id: 'pdf-fld-cf720-fein', pdfFieldName: 'FEIN', label: 'Federal EIN', kind: 'TEXT', required: true,
+        pattern: EIN_PATTERN,
+        source: { kind: 'profile-path', path: 'federalEin' } }),
+    f({ id: 'pdf-fld-cf720-address', pdfFieldName: 'Address', label: 'Mailing address', kind: 'TEXT', required: true,
+        source: { kind: 'computed', name: 'profile.address.oneLine' } }),
+    f({ id: 'pdf-fld-cf720-phone', pdfFieldName: 'Phone', label: 'Phone', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'primaryPhone' } }),
+    f({ id: 'pdf-fld-cf720-email', pdfFieldName: 'Email', label: 'Email', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'primaryEmail' } }),
+    f({ id: 'pdf-fld-cf720-dot', pdfFieldName: 'USDOT', label: 'US DOT #', kind: 'TEXT',
+        source: { kind: 'profile-path', path: 'dotNumber' } }),
+    f({ id: 'pdf-fld-cf720-equipment-type', pdfFieldName: 'EquipmentType', label: 'Equipment type / class', kind: 'TEXT', required: true,
+        source: { kind: 'prompt', label: 'Equipment type (e.g. Type 4 engine, D6 dozer)', sensitive: false } }),
+    f({ id: 'pdf-fld-cf720-rate', pdfFieldName: 'HourlyRate', label: 'Hourly rate offered', kind: 'TEXT', required: true,
+        source: { kind: 'prompt', label: 'Hourly rate offered', sensitive: false } }),
+    f({ id: 'pdf-fld-cf720-signature', pdfFieldName: 'Signature', label: 'Signature', kind: 'SIGNATURE', required: true,
+        source: { kind: 'computed', name: 'profile.officers.president.signature' } }),
+    f({ id: 'pdf-fld-cf720-date', pdfFieldName: 'SignatureDate', label: 'Date', kind: 'DATE', required: true,
+        source: { kind: 'computed', name: 'date.today.us' } }),
+  ],
+};
+
+// ---- DIR DAS-142 (apprentice request + dispatch) ----------------------
+
+const DIR_DAS_142: SeedMapping = {
+  id: 'pdf-form-dir-das-142',
+  displayName: 'DAS-142 — Request for Dispatch of an Apprentice',
+  agency: 'CA_DIR',
+  formCode: 'DAS-142',
+  versionDate: '2023-04-01',
+  pdfReference: 'pdf-forms/dir/das-142.pdf',
+  agencyUrl: 'https://www.dir.ca.gov/das/PublicWorksForms.htm',
+  notes:
+    'Files 72 hours before apprentices are needed onsite. One per craft per JATC. Pairs with the DAS-140 already filed at award.',
+  fields: [
+    f({ id: 'pdf-fld-das142-contractor', pdfFieldName: 'ContractorName', label: 'Contractor name', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'legalName' } }),
+    f({ id: 'pdf-fld-das142-cslb', pdfFieldName: 'License', label: 'CSLB license #', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'cslbLicense' } }),
+    f({ id: 'pdf-fld-das142-dir', pdfFieldName: 'DIR', label: 'DIR #', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'dirNumber' } }),
+    f({ id: 'pdf-fld-das142-address', pdfFieldName: 'Address', label: 'Address', kind: 'TEXT', required: true,
+        source: { kind: 'computed', name: 'profile.address.oneLine' } }),
+    f({ id: 'pdf-fld-das142-phone', pdfFieldName: 'Phone', label: 'Phone', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'primaryPhone' } }),
+    f({ id: 'pdf-fld-das142-craft', pdfFieldName: 'Craft', label: 'Apprenticeable craft', kind: 'TEXT', required: true,
+        source: { kind: 'prompt', label: 'Apprenticeable craft', sensitive: false } }),
+    f({ id: 'pdf-fld-das142-num', pdfFieldName: 'NumberRequested', label: 'Number apprentices requested', kind: 'TEXT', required: true,
+        source: { kind: 'prompt', label: 'Number apprentices requested', sensitive: false } }),
+    f({ id: 'pdf-fld-das142-jobsite', pdfFieldName: 'JobSiteAddress', label: 'Jobsite address', kind: 'TEXT', required: true,
+        source: { kind: 'prompt', label: 'Jobsite address', sensitive: false } }),
+    f({ id: 'pdf-fld-das142-start', pdfFieldName: 'NeedDate', label: 'Date apprentice needed', kind: 'DATE', required: true,
+        source: { kind: 'prompt', label: 'Date apprentice needed (yyyy-mm-dd)', sensitive: false } }),
+    f({ id: 'pdf-fld-das142-signature', pdfFieldName: 'Signature', label: 'Authorized signature', kind: 'SIGNATURE', required: true,
+        source: { kind: 'computed', name: 'profile.officers.vp.signature' } }),
+    f({ id: 'pdf-fld-das142-date', pdfFieldName: 'SignatureDate', label: 'Date', kind: 'DATE', required: true,
+        source: { kind: 'computed', name: 'date.today.us' } }),
+  ],
+};
+
+// ---- ACORD 27 (Evidence of Property Insurance) ------------------------
+
+const ACORD_27: SeedMapping = {
+  id: 'pdf-form-acord-27',
+  displayName: 'ACORD 27 — Evidence of Property Insurance',
+  agency: 'ACORD',
+  formCode: 'ACORD-27',
+  versionDate: '2016-03-01',
+  pdfReference: 'pdf-forms/acord/acord-27.pdf',
+  agencyUrl: 'https://www.acord.org/forms/Pages/forms-library.aspx',
+  notes:
+    'Some county purchasing portals + lenders insist on ACORD 27 instead of 25 for property + builders-risk evidence.',
+  fields: [
+    f({ id: 'pdf-fld-acord27-producer', pdfFieldName: 'PRODUCER', label: 'Producer', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'insurance.PROPERTY.brokerName' } }),
+    f({ id: 'pdf-fld-acord27-insured', pdfFieldName: 'INSURED', label: 'Named insured', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'legalName' } }),
+    f({ id: 'pdf-fld-acord27-address', pdfFieldName: 'INSURED_ADDRESS', label: 'Insured address', kind: 'TEXT', required: true,
+        source: { kind: 'computed', name: 'profile.address.oneLine' } }),
+    f({ id: 'pdf-fld-acord27-carrier', pdfFieldName: 'CARRIER', label: 'Property carrier', kind: 'TEXT',
+        source: { kind: 'profile-path', path: 'insurance.PROPERTY.carrierName' } }),
+    f({ id: 'pdf-fld-acord27-policy', pdfFieldName: 'POLICY_NUMBER', label: 'Property policy #', kind: 'TEXT',
+        source: { kind: 'profile-path', path: 'insurance.PROPERTY.policyNumber' } }),
+    f({ id: 'pdf-fld-acord27-eff', pdfFieldName: 'EFFECTIVE', label: 'Effective', kind: 'DATE',
+        source: { kind: 'profile-path', path: 'insurance.PROPERTY.effectiveDate' } }),
+    f({ id: 'pdf-fld-acord27-exp', pdfFieldName: 'EXPIRES', label: 'Expires', kind: 'DATE',
+        source: { kind: 'profile-path', path: 'insurance.PROPERTY.expiresOn' } }),
+    f({ id: 'pdf-fld-acord27-holder', pdfFieldName: 'EVIDENCE_FOR', label: 'Evidence for (lender / agency)', kind: 'TEXT', required: true,
+        source: { kind: 'prompt', label: 'Evidence-for (lender or awarding body)', sensitive: false } }),
+    f({ id: 'pdf-fld-acord27-date', pdfFieldName: 'DATE', label: 'Issue date', kind: 'DATE', required: true,
+        source: { kind: 'computed', name: 'date.today.us' } }),
+  ],
+};
+
+// ---- ACORD 28 (Evidence of Commercial Property Insurance) ------------
+
+const ACORD_28: SeedMapping = {
+  id: 'pdf-form-acord-28',
+  displayName: 'ACORD 28 — Evidence of Commercial Property Insurance',
+  agency: 'ACORD',
+  formCode: 'ACORD-28',
+  versionDate: '2016-03-01',
+  pdfReference: 'pdf-forms/acord/acord-28.pdf',
+  agencyUrl: 'https://www.acord.org/forms/Pages/forms-library.aspx',
+  notes:
+    'Used when builders-risk on a specific job needs to be evidenced with multiple cert holders (owner, lender, GC).',
+  fields: [
+    f({ id: 'pdf-fld-acord28-producer', pdfFieldName: 'PRODUCER', label: 'Producer', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'insurance.BUILDERS_RISK.brokerName' } }),
+    f({ id: 'pdf-fld-acord28-insured', pdfFieldName: 'INSURED', label: 'Named insured', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'legalName' } }),
+    f({ id: 'pdf-fld-acord28-address', pdfFieldName: 'INSURED_ADDRESS', label: 'Insured address', kind: 'TEXT', required: true,
+        source: { kind: 'computed', name: 'profile.address.oneLine' } }),
+    f({ id: 'pdf-fld-acord28-carrier', pdfFieldName: 'CARRIER', label: 'Builders-risk carrier', kind: 'TEXT',
+        source: { kind: 'profile-path', path: 'insurance.BUILDERS_RISK.carrierName' } }),
+    f({ id: 'pdf-fld-acord28-policy', pdfFieldName: 'POLICY_NUMBER', label: 'Builders-risk policy #', kind: 'TEXT',
+        source: { kind: 'profile-path', path: 'insurance.BUILDERS_RISK.policyNumber' } }),
+    f({ id: 'pdf-fld-acord28-eff', pdfFieldName: 'EFFECTIVE', label: 'Effective', kind: 'DATE',
+        source: { kind: 'profile-path', path: 'insurance.BUILDERS_RISK.effectiveDate' } }),
+    f({ id: 'pdf-fld-acord28-exp', pdfFieldName: 'EXPIRES', label: 'Expires', kind: 'DATE',
+        source: { kind: 'profile-path', path: 'insurance.BUILDERS_RISK.expiresOn' } }),
+    f({ id: 'pdf-fld-acord28-job', pdfFieldName: 'JOB_DESCRIPTION', label: 'Job description', kind: 'TEXT', required: true,
+        source: { kind: 'prompt', label: 'Job description (project name + jobsite)', sensitive: false } }),
+    f({ id: 'pdf-fld-acord28-holders', pdfFieldName: 'CERTIFICATE_HOLDERS', label: 'Certificate holders', kind: 'TEXT', required: true,
+        source: { kind: 'prompt', label: 'Certificate holders (owner / lender / GC, one per line)', sensitive: false } }),
+    f({ id: 'pdf-fld-acord28-date', pdfFieldName: 'DATE', label: 'Issue date', kind: 'DATE', required: true,
+        source: { kind: 'computed', name: 'date.today.us' } }),
+  ],
+};
+
+const SEEDS: SeedMapping[] = [
+  IRS_W9,
+  DIR_DAS_140,
+  ACORD_25,
+  CAL_FIRE_720,
+  DIR_DAS_142,
+  ACORD_27,
+  ACORD_28,
+];
 
 /**
  * Realize a SeedMapping into a PdfFormMapping shape ready for the
