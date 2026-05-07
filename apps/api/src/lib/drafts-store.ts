@@ -1,30 +1,14 @@
-// File-based store for Plans-to-Estimate drafts.
+// Postgres-backed store for Plans-to-Estimate drafts (PtoEDraft model).
 //
-// Phase 1 ships before Postgres lands, but we still need history so estimators
-// can re-open a draft instead of paying Anthropic to redraft the same RFP.
-// Each successful AI run writes a single JSON file to `apps/api/data/drafts/`
-// keyed by a human-readable id (date + slug + random suffix). A small
-// `index.json` keeps a sorted summary so list-views don't read every file.
-//
-// When Phase 1 swaps to Postgres, this module's surface area (saveDraft,
-// listDrafts, getDraft) maps 1:1 to a Prisma repository — the route + UI
-// stay unchanged.
+// Each successful AI run lands as one row. JSON `data` column holds
+// the SavedDraft shape. Listing returns lightweight summaries built
+// from the JSON without unpacking every field.
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
 import { randomBytes } from 'node:crypto';
+import { prisma } from '@yge/db';
 import type { PtoEOutput } from '@yge/shared';
 
-// Resolve the data dir lazily on every call so tests can override it via
-// DRAFTS_DATA_DIR after the module has loaded.
-function dataDir(): string {
-  return (
-    process.env.DRAFTS_DATA_DIR ?? path.resolve(process.cwd(), 'data', 'drafts')
-  );
-}
-function indexPath(): string {
-  return path.join(dataDir(), 'index.json');
-}
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'co-yge';
 
 export interface SavedDraft {
   id: string;
@@ -34,8 +18,6 @@ export interface SavedDraft {
   promptVersion: string;
   usage: { inputTokens: number; outputTokens: number };
   durationMs: number;
-  /** Original document text — kept so we can re-run through a future prompt
-   *  version without making the user paste it again. */
   documentText: string;
   sessionNotes?: string;
   draft: PtoEOutput;
@@ -67,10 +49,6 @@ export interface NewDraftInput {
   draft: PtoEOutput;
 }
 
-async function ensureDir() {
-  await fs.mkdir(dataDir(), { recursive: true });
-}
-
 function slugify(s: string): string {
   return s
     .toLowerCase()
@@ -80,9 +58,9 @@ function slugify(s: string): string {
 }
 
 function makeId(projectName: string, when: Date): string {
-  const date = when.toISOString().slice(0, 10); // 2026-04-24
+  const date = when.toISOString().slice(0, 10);
   const slug = slugify(projectName) || 'draft';
-  const rand = randomBytes(4).toString('hex'); // 8 hex chars
+  const rand = randomBytes(4).toString('hex');
   return `${date}-${slug}-${rand}`;
 }
 
@@ -103,24 +81,7 @@ function summarize(d: SavedDraft): DraftSummary {
   };
 }
 
-async function readIndex(): Promise<DraftSummary[]> {
-  try {
-    const raw = await fs.readFile(indexPath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as DraftSummary[]) : [];
-  } catch (err) {
-    // First run — no index yet.
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
-  }
-}
-
-async function writeIndex(entries: DraftSummary[]) {
-  await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
-}
-
 export async function saveDraft(input: NewDraftInput): Promise<SavedDraft> {
-  await ensureDir();
   const now = new Date();
   const id = makeId(input.draft.projectName, now);
   const saved: SavedDraft = {
@@ -128,29 +89,30 @@ export async function saveDraft(input: NewDraftInput): Promise<SavedDraft> {
     createdAt: now.toISOString(),
     ...input,
   };
-  await fs.writeFile(
-    path.join(dataDir(), `${id}.json`),
-    JSON.stringify(saved, null, 2),
-    'utf8',
-  );
-  const index = await readIndex();
-  index.unshift(summarize(saved));
-  await writeIndex(index);
+  await prisma.ptoEDraft.create({
+    data: {
+      id,
+      companyId: DEFAULT_COMPANY_ID,
+      jobId: input.jobId,
+      data: saved as unknown as object,
+    },
+  });
   return saved;
 }
 
 export async function listDrafts(): Promise<DraftSummary[]> {
-  return readIndex();
+  const rows = await prisma.ptoEDraft.findMany({
+    where: { companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    orderBy: { createdAt: 'desc' },
+  });
+  return rows.map((r) => summarize(r.data as unknown as SavedDraft));
 }
 
 export async function getDraft(id: string): Promise<SavedDraft | null> {
-  // Defensive: only allow ids that match our format. Stops path traversal cold.
+  // Defensive id shape — same regex as the file-store had.
   if (!/^[a-z0-9-]{10,80}$/.test(id)) return null;
-  try {
-    const raw = await fs.readFile(path.join(dataDir(), `${id}.json`), 'utf8');
-    return JSON.parse(raw) as SavedDraft;
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    throw err;
-  }
+  const row = await prisma.ptoEDraft.findFirst({
+    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+  });
+  return row ? (row.data as unknown as SavedDraft) : null;
 }
