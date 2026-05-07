@@ -1,6 +1,7 @@
 // Photo log routes.
 
 import { Router } from 'express';
+import { photosUploadRouter } from './photos-upload';
 import { PhotoCreateSchema, PhotoPatchSchema } from '@yge/shared';
 import {
   createPhoto,
@@ -10,6 +11,9 @@ import {
 } from '../lib/photos-store';
 
 export const photosRouter = Router();
+
+// Sub-router: file upload to Supabase Storage (POST /upload).
+photosRouter.use('/', photosUploadRouter);
 
 photosRouter.get('/', async (req, res, next) => {
   try {
