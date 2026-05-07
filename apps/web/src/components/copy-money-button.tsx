@@ -38,7 +38,7 @@ export function CopyMoneyButton({ cents, children }: Props) {
         window.setTimeout(() => setCopied(false), 1200);
       }}
       title={`Click to copy ${formatPlainDollars(cents)}`}
-      className="cursor-pointer hover:underline"
+      className="cursor-pointer hover:underline print:cursor-default print:no-underline print:hover:no-underline"
     >
       {copied ? <span className="text-green-700">✓ Copied</span> : children}
     </button>
