@@ -1,13 +1,10 @@
-// File-based store for ESIGN/UETA signatures.
+// Postgres-backed store for ESIGN/UETA signatures.
 //
-// Every mutation here records an audit event via recordAudit() —
-// CLAUDE.md mandates 'every mutation is audit-logged'. Signatures
-// are particularly important to log: the audit trail IS the
-// 'attribution' element of the proof bundle, alongside the row's
-// own auditContext.
+// SignatureRecord is a Json-blob row keyed by id + companyId. The
+// audit trail (recordAudit + Signature.auditContext) is what makes
+// the proof bundle defensible.
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { prisma } from '@yge/db';
 import {
   SignatureSchema,
   newSignatureId,
@@ -17,46 +14,11 @@ import {
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
 
-function dataDir(): string {
-  return (
-    process.env.SIGNATURES_DATA_DIR ??
-    path.resolve(process.cwd(), 'data', 'signatures')
-  );
-}
-function indexPath(): string { return path.join(dataDir(), 'index.json'); }
-function rowPath(id: string): string { return path.join(dataDir(), `${id}.json`); }
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
 
-async function ensureDir() { await fs.mkdir(dataDir(), { recursive: true }); }
-
-async function readIndex(): Promise<Signature[]> {
-  try {
-    const raw = await fs.readFile(indexPath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((entry: unknown) => {
-        const result = SignatureSchema.safeParse(entry);
-        return result.success ? result.data : null;
-      })
-      .filter((s): s is Signature => s !== null);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
-  }
-}
-
-async function writeIndex(rows: Signature[]) {
-  await fs.writeFile(indexPath(), JSON.stringify(rows, null, 2), 'utf8');
-}
-
-async function persist(s: Signature) {
-  await ensureDir();
-  await fs.writeFile(rowPath(s.id), JSON.stringify(s, null, 2), 'utf8');
-  const index = await readIndex();
-  const at = index.findIndex((row) => row.id === s.id);
-  if (at >= 0) index[at] = s;
-  else index.unshift(s);
-  await writeIndex(index);
+function row2sig(row: { data: unknown }): Signature | null {
+  const r = SignatureSchema.safeParse(row.data);
+  return r.success ? r.data : null;
 }
 
 export interface SignatureListFilter {
@@ -67,33 +29,42 @@ export interface SignatureListFilter {
 }
 
 export async function listSignatures(filter: SignatureListFilter = {}): Promise<Signature[]> {
-  let rows = await readIndex();
-  if (filter.status) rows = rows.filter((s) => s.status === filter.status);
-  if (filter.documentType) rows = rows.filter((s) => s.document.documentType === filter.documentType);
-  if (filter.jobId) rows = rows.filter((s) => s.document.jobId === filter.jobId);
+  const rows = await prisma.signatureRecord.findMany({
+    where: { companyId: DEFAULT_COMPANY_ID },
+    orderBy: { createdAt: 'desc' },
+  });
+  let all = rows.map(row2sig).filter((s): s is Signature => s !== null);
+  if (filter.status) all = all.filter((s) => s.status === filter.status);
+  if (filter.documentType) all = all.filter((s) => s.document.documentType === filter.documentType);
+  if (filter.jobId) all = all.filter((s) => s.document.jobId === filter.jobId);
   if (filter.signerEmail) {
     const email = filter.signerEmail.toLowerCase();
-    rows = rows.filter((s) => s.signer.email.toLowerCase() === email);
+    all = all.filter((s) => s.signer.email.toLowerCase() === email);
   }
-  return rows;
+  return all;
 }
 
 export async function getSignature(id: string): Promise<Signature | null> {
   if (!/^sig-[a-z0-9]{8}$/.test(id)) return null;
-  try {
-    const raw = await fs.readFile(rowPath(id), 'utf8');
-    return SignatureSchema.parse(JSON.parse(raw));
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    throw err;
-  }
+  const row = await prisma.signatureRecord.findFirst({
+    where: { id, companyId: DEFAULT_COMPANY_ID },
+  });
+  if (!row) return null;
+  return row2sig(row);
 }
 
-/**
- * Open a signing session. Creates the row in DRAFT with the signer +
- * document binding. Consent + the captured signature image come in
- * on submitSignature.
- */
+async function persist(s: Signature): Promise<void> {
+  await prisma.signatureRecord.upsert({
+    where: { id: s.id },
+    create: {
+      id: s.id,
+      companyId: DEFAULT_COMPANY_ID,
+      data: s as unknown as object,
+    },
+    update: { data: s as unknown as object },
+  });
+}
+
 export async function createSignature(
   input: SignatureCreate,
   ctx?: AuditContext,
@@ -118,18 +89,6 @@ export async function createSignature(
   return s;
 }
 
-/**
- * Capture the affirmative signing event:
- *   - flips status to SIGNED
- *   - sets signedAt
- *   - merges in consent record (agreedAt + disclosureSha256 +
- *     affirmation text) + audit context (authenticatedAt + auth
- *     method + ip + ua)
- *   - optionally attaches the captured signature image (DRAWN method)
- *
- * Caller supplies the flattenedSha256 + flattenedReference once the
- * PDF has been embedded + archived (a separate finalize step).
- */
 export interface SubmitSignatureInput {
   consent: Signature['consent'];
   authContext: Pick<Signature['auditContext'],
@@ -155,7 +114,7 @@ export async function submitSignature(
   const existing = await getSignature(id);
   if (!existing) return null;
   if (existing.status !== 'DRAFT') {
-    return existing; // idempotent — already signed/voided/etc
+    return existing;
   }
   const now = new Date().toISOString();
   const updated: Signature = SignatureSchema.parse({
@@ -179,12 +138,6 @@ export async function submitSignature(
   return updated;
 }
 
-/**
- * Attach the flattened PDF hash + storage reference. Called after
- * the signing UI has captured the signature AND the server has
- * embedded + archived the certified PDF. Idempotent — a re-finalize
- * just overwrites the hash + reference.
- */
 export async function finalizeSignature(
   id: string,
   flattenedSha256: string,
@@ -212,10 +165,6 @@ export async function finalizeSignature(
   return updated;
 }
 
-/**
- * Void a signed (or draft) signature. Status flips VOIDED with the
- * voiding context recorded. The row stays — voids never delete.
- */
 export async function voidSignature(
   id: string,
   voidedReason: string,
