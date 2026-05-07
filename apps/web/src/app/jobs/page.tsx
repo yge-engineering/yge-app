@@ -372,7 +372,7 @@ export default async function JobsPage({ searchParams }: PageProps) {
 
       {filteredJobs.length > 0 && (
         <div className="mt-6">
-          <div className="mb-3 flex flex-wrap items-center gap-2">
+          <div className="mb-3 flex flex-wrap items-center gap-2 print:hidden">
             <JobsSearchInput targetId="jobs-table" totalCount={filteredJobs.length} />
             <JobsCreatedFilter targetId="jobs-table" />
             <JobsPinFilterChip targetId="jobs-table" />
