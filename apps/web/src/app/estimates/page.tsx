@@ -17,6 +17,7 @@ import { EstimatesSortHeaders } from '../../components/estimates-sort-headers';
 import { EstimatesShortcutsChip } from '../../components/estimates-shortcuts-chip';
 import { EstimatesPinButton, EstimatesPinReorder } from '../../components/estimates-pin-button';
 import { EstimatesPinFilterChip } from '../../components/estimates-pin-filter-chip';
+import { EstimatesKeyboardNav } from '../../components/estimates-keyboard-nav';
 import { PinnedCountBadge } from '../../components/pinned-count-badge';
 import { DashboardRefreshButton } from '../../components/dashboard-refresh-button';
 import { EstimatesStatusFilter } from '../../components/estimates-status-filter';
@@ -478,6 +479,7 @@ export default async function EstimatesPage() {
           <EstimatesSearchInput targetId="estimates-table,imported-estimates-table" totalCount={estimates.length + imported.length} />
           <EstimatesSortHeaders targetId="estimates-table" />
           <EstimatesPinReorder targetId="estimates-table" />
+          <EstimatesKeyboardNav targetId="estimates-table" />
           <EstimatesSortHeaders targetId="imported-estimates-table" />
           <div className="flex flex-wrap items-center gap-2">
             <EstimatesStatusFilter targetId="estimates-table" counts={statusCounts} total={estimates.length} />
