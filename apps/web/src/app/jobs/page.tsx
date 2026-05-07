@@ -10,6 +10,7 @@ import { JobsSearchInput } from '../../components/jobs-search-input';
 import { JobsCreatedFilter } from '../../components/jobs-created-filter';
 import { JobsResetFilters } from '../../components/jobs-reset-filters';
 import { DashboardRefreshButton } from '../../components/dashboard-refresh-button';
+import { JobsShortcutsChip } from '../../components/jobs-shortcuts-chip';
 import { JobsPinButton, JobsPinReorder } from '../../components/jobs-pin-button';
 import { JobsPinFilterChip } from '../../components/jobs-pin-filter-chip';
 import { PinnedCountBadge } from '../../components/pinned-count-badge';
@@ -257,6 +258,7 @@ export default async function JobsPage({ searchParams }: PageProps) {
       <div className="mb-6 flex items-center justify-between">
         <Link href="/dashboard" className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50">&larr; Dashboard</Link>
         <div className="flex items-center gap-2">
+          <JobsShortcutsChip />
           <DashboardRefreshButton />
           <Link
             href="/jobs/new"
