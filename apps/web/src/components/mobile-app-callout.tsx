@@ -18,7 +18,7 @@ export function MobileAppCallout() {
 
   if (!show) return null;
   return (
-    <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-yge-blue-300 bg-yge-blue-50 px-4 py-3 shadow-sm">
+    <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-yge-blue-300 bg-yge-blue-50 px-4 py-3 shadow-sm print:hidden">
       <div className="flex items-center gap-3">
         <span className="text-2xl">📱</span>
         <div>
