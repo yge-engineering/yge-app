@@ -260,9 +260,11 @@ function ApplyControls({
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<string | null>(null);
 
-  const eligibleHighAp = matches.filter(
+  const eligibleHigh = matches.filter(
     (m) =>
-      m.candidateKind === 'ap_payment' &&
+      (m.candidateKind === 'ap_payment' ||
+        m.candidateKind === 'ar_payment' ||
+        m.candidateKind === 'expense') &&
       m.confidence === 'HIGH' &&
       m.candidateId &&
       !applied.has(m.candidateId),
@@ -302,15 +304,22 @@ function ApplyControls({
       }
       const out = (await res.json()) as {
         appliedAp: number;
-        noopOther: number;
+        appliedAr: number;
+        appliedExpense: number;
+        appliedJournalEntry: number;
         clearedOn: string;
       };
-      setSummary(
-        `Marked ${out.appliedAp} AP payment${out.appliedAp === 1 ? '' : 's'} cleared (${out.clearedOn}).` +
-          (out.noopOther > 0
-            ? ` ${out.noopOther} non-AP match${out.noopOther === 1 ? '' : 'es'} skipped (no cleared flag yet).`
-            : ''),
-      );
+      const parts: string[] = [];
+      if (out.appliedAp) parts.push(`${out.appliedAp} AP payment${out.appliedAp === 1 ? '' : 's'}`);
+      if (out.appliedAr) parts.push(`${out.appliedAr} AR payment${out.appliedAr === 1 ? '' : 's'}`);
+      if (out.appliedExpense) parts.push(`${out.appliedExpense} expense${out.appliedExpense === 1 ? '' : 's'}`);
+      const headline = parts.length
+        ? `Marked ${parts.join(', ')} cleared (${out.clearedOn}).`
+        : `No matches applied (${out.clearedOn}).`;
+      const tail = out.appliedJournalEntry
+        ? ` ${out.appliedJournalEntry} journal-entry match${out.appliedJournalEntry === 1 ? '' : 'es'} skipped (no cleared flag yet).`
+        : '';
+      setSummary(headline + tail);
       onApplied(
         rows
           .map((r) => r.candidateId)
@@ -328,18 +337,18 @@ function ApplyControls({
       <div className="flex flex-wrap items-center gap-3">
         <button
           type="button"
-          onClick={() => postApply(eligibleHighAp)}
-          disabled={busy || eligibleHighAp.length === 0}
+          onClick={() => postApply(eligibleHigh)}
+          disabled={busy || eligibleHigh.length === 0}
           className="rounded-md bg-yge-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50"
         >
           {busy
             ? 'Applying…'
-            : `Apply HIGH AP matches (${eligibleHighAp.length})`}
+            : `Apply HIGH matches (${eligibleHigh.length})`}
         </button>
         <span className="text-xs text-gray-500">
-          Marks each AP payment cleared=true with clearedOn=statement
-          date. AR / expense matches are no-ops in v1 — those models
-          don't carry a cleared flag yet.
+          Marks each AP / AR payment + expense cleared=true with
+          clearedOn=statement date. Journal-entry matches stay
+          read-only (no cleared flag on those rows yet).
         </span>
       </div>
       {summary ? (

@@ -63,6 +63,14 @@ export const ArPaymentSchema = z.object({
   /** Free-form payer name override; defaults to invoice customerName. */
   payerName: z.string().max(200).optional(),
 
+  /** Did the bank confirm the deposit cleared? Used by the
+   *  bank-rec Apply flow to flip rows en masse. */
+  cleared: z.boolean().default(false),
+  clearedOn: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Use yyyy-mm-dd')
+    .optional(),
+
   notes: z.string().max(10_000).optional(),
 });
 export type ArPayment = z.infer<typeof ArPaymentSchema>;
