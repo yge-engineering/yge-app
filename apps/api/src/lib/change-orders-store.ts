@@ -1,10 +1,6 @@
-// Every mutation here records an audit event via recordAudit() —
-// CLAUDE.md mandates 'every mutation is audit-logged'.
-//
-// File-based store for change orders.
+// Postgres-backed store for change orders.
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { prisma } from '@yge/db';
 import {
   ChangeOrderSchema,
   newChangeOrderId,
@@ -15,49 +11,16 @@ import {
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
 
-function dataDir(): string {
-  return (
-    process.env.CHANGE_ORDERS_DATA_DIR ??
-    path.resolve(process.cwd(), 'data', 'change-orders')
-  );
-}
-function indexPath(): string {
-  return path.join(dataDir(), 'index.json');
-}
-function rowPath(id: string): string {
-  return path.join(dataDir(), `${id}.json`);
-}
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
 
-async function ensureDir() {
-  await fs.mkdir(dataDir(), { recursive: true });
-}
-
-async function readIndex(): Promise<ChangeOrder[]> {
-  try {
-    const raw = await fs.readFile(indexPath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((entry: unknown) => {
-        const result = ChangeOrderSchema.safeParse(entry);
-        return result.success ? result.data : null;
-      })
-      .filter((c): c is ChangeOrder => c !== null);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
-  }
-}
-
-async function writeIndex(entries: ChangeOrder[]) {
-  await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
+function row2co(row: { data: unknown }): ChangeOrder {
+  return ChangeOrderSchema.parse(row.data);
 }
 
 export async function createChangeOrder(
   input: ChangeOrderCreate,
   ctx?: AuditContext,
 ): Promise<ChangeOrder> {
-  await ensureDir();
   const now = new Date().toISOString();
   const id = newChangeOrderId();
   const lineItems = input.lineItems ?? [];
@@ -75,10 +38,14 @@ export async function createChangeOrder(
     ...input,
   };
   ChangeOrderSchema.parse(c);
-  await fs.writeFile(rowPath(id), JSON.stringify(c, null, 2), 'utf8');
-  const index = await readIndex();
-  index.unshift(c);
-  await writeIndex(index);
+  await prisma.changeOrder.create({
+    data: {
+      id,
+      companyId: DEFAULT_COMPANY_ID,
+      jobId: c.jobId,
+      data: c as unknown as object,
+    },
+  });
   await recordAudit({
     action: 'create',
     entityType: 'ChangeOrder',
@@ -93,22 +60,25 @@ export async function listChangeOrders(filter?: {
   jobId?: string;
   status?: string;
 }): Promise<ChangeOrder[]> {
-  let all = await readIndex();
-  if (filter?.jobId) all = all.filter((c) => c.jobId === filter.jobId);
+  const rows = await prisma.changeOrder.findMany({
+    where: {
+      companyId: DEFAULT_COMPANY_ID,
+      deletedAt: null,
+      ...(filter?.jobId ? { jobId: filter.jobId } : {}),
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  let all = rows.map(row2co);
   if (filter?.status) all = all.filter((c) => c.status === filter.status);
-  all.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   return all;
 }
 
 export async function getChangeOrder(id: string): Promise<ChangeOrder | null> {
   if (!/^co-[a-z0-9]{8}$/.test(id)) return null;
-  try {
-    const raw = await fs.readFile(rowPath(id), 'utf8');
-    return ChangeOrderSchema.parse(JSON.parse(raw));
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    throw err;
-  }
+  const row = await prisma.changeOrder.findFirst({
+    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+  });
+  return row ? row2co(row) : null;
 }
 
 export async function updateChangeOrder(
@@ -120,7 +90,6 @@ export async function updateChangeOrder(
   const existing = await getChangeOrder(id);
   if (!existing) return null;
   const merged = { ...existing, ...patch };
-  // If line items changed, recompute totals.
   if (patch.lineItems !== undefined) {
     const totals = recomputeChangeOrderTotals(patch.lineItems);
     merged.totalCostImpactCents = totals.totalCostImpactCents;
@@ -133,15 +102,13 @@ export async function updateChangeOrder(
     updatedAt: new Date().toISOString(),
   };
   ChangeOrderSchema.parse(updated);
-  await fs.writeFile(rowPath(id), JSON.stringify(updated, null, 2), 'utf8');
-  const index = await readIndex();
-  const idx = index.findIndex((c) => c.id === id);
-  if (idx >= 0) {
-    index[idx] = updated;
-  } else {
-    index.unshift(updated);
-  }
-  await writeIndex(index);
+  await prisma.changeOrder.update({
+    where: { id },
+    data: {
+      jobId: updated.jobId,
+      data: updated as unknown as object,
+    },
+  });
   await recordAudit({
     action: auditAction,
     entityType: 'ChangeOrder',
