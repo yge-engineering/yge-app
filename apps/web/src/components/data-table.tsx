@@ -29,9 +29,9 @@ interface Props<T extends { id?: string }> {
 export function DataTable<T extends { id?: string }>({ rows, columns, keyFn, rowHref }: Props<T>) {
   const getKey = keyFn ?? ((r: T) => r.id ?? Math.random().toString(36));
   return (
-    <div className="overflow-hidden rounded-md border border-gray-200 bg-white">
+    <div className="rounded-md border border-gray-200 bg-white">
       <table className="min-w-full divide-y divide-gray-200 text-sm">
-        <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
+        <thead className="sticky top-0 z-10 bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
           <tr>
             {columns.map((c) => (
               <th
