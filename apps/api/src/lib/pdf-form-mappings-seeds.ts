@@ -317,6 +317,145 @@ const ACORD_28: SeedMapping = {
   ],
 };
 
+
+// ---- DIR PWC-100 (Public Works Project award notice) -----------------
+
+const DIR_PWC_100: SeedMapping = {
+  id: 'pdf-form-dir-pwc-100',
+  displayName: 'PWC-100 — Public Works Project Award Notice',
+  agency: 'CA_DIR',
+  formCode: 'PWC-100',
+  versionDate: '2024-01-01',
+  pdfReference: 'pdf-forms/dir/pwc-100.pdf',
+  agencyUrl: 'https://www.dir.ca.gov/dlse/PWC100/PWC100.html',
+  notes: 'Awarding agencies file this within 5 days of every public-works contract award.',
+  fields: [
+    f({ id: 'pdf-fld-pwc100-awarding-body', pdfFieldName: 'AwardingBody', label: 'Awarding body', kind: 'TEXT', required: true,
+        source: { kind: 'prompt', label: 'Awarding body legal name', sensitive: false } }),
+    f({ id: 'pdf-fld-pwc100-project-name', pdfFieldName: 'ProjectName', label: 'Project name', kind: 'TEXT', required: true,
+        source: { kind: 'prompt', label: 'Project name', sensitive: false } }),
+    f({ id: 'pdf-fld-pwc100-project-num', pdfFieldName: 'ProjectNumber', label: 'Awarding agency project / contract #', kind: 'TEXT', required: true,
+        source: { kind: 'prompt', label: 'Agency project / contract #', sensitive: false } }),
+    f({ id: 'pdf-fld-pwc100-amount', pdfFieldName: 'ContractAmount', label: 'Contract amount', kind: 'TEXT', required: true,
+        source: { kind: 'prompt', label: 'Contract award amount', sensitive: false } }),
+    f({ id: 'pdf-fld-pwc100-bid-date', pdfFieldName: 'BidOpenDate', label: 'Bid open date', kind: 'DATE', required: true,
+        source: { kind: 'prompt', label: 'Bid open date (yyyy-mm-dd)', sensitive: false } }),
+    f({ id: 'pdf-fld-pwc100-award-date', pdfFieldName: 'AwardDate', label: 'Award date', kind: 'DATE', required: true,
+        source: { kind: 'prompt', label: 'Award date (yyyy-mm-dd)', sensitive: false } }),
+    f({ id: 'pdf-fld-pwc100-contractor', pdfFieldName: 'Contractor', label: 'Awarded contractor', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'legalName' } }),
+    f({ id: 'pdf-fld-pwc100-cslb', pdfFieldName: 'License', label: 'CSLB license #', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'cslbLicense' } }),
+    f({ id: 'pdf-fld-pwc100-dir', pdfFieldName: 'DIR', label: 'DIR registration #', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'dirNumber' } }),
+    f({ id: 'pdf-fld-pwc100-jobsite', pdfFieldName: 'JobSiteAddress', label: 'Project location', kind: 'TEXT', required: true,
+        source: { kind: 'prompt', label: 'Project location (jobsite address)', sensitive: false } }),
+  ],
+};
+
+// ---- IRS W-4 (Employee withholding) ----------------------------------
+
+const IRS_W4: SeedMapping = {
+  id: 'pdf-form-irs-w4',
+  displayName: 'IRS W-4 — Employee Withholding Certificate',
+  agency: 'IRS',
+  formCode: 'W-4',
+  versionDate: '2024-01-01',
+  pdfReference: 'pdf-forms/irs/fw4.pdf',
+  agencyUrl: 'https://www.irs.gov/pub/irs-pdf/fw4.pdf',
+  notes: 'Every new hire fills this on day 1. Personal info prompts; employer block fills from master profile.',
+  fields: [
+    f({ id: 'pdf-fld-w4-employee-name', pdfFieldName: 'EmployeeName', label: 'Employee name', kind: 'TEXT', required: true,
+        source: { kind: 'prompt', label: 'Employee full legal name', sensitive: false } }),
+    f({ id: 'pdf-fld-w4-ssn', pdfFieldName: 'SSN', label: 'Social security #', kind: 'TEXT', required: true,
+        source: { kind: 'prompt', label: 'Employee SSN', sensitive: true } }),
+    f({ id: 'pdf-fld-w4-address', pdfFieldName: 'EmployeeAddress', label: 'Employee address', kind: 'TEXT', required: true,
+        source: { kind: 'prompt', label: 'Employee mailing address', sensitive: false } }),
+    f({ id: 'pdf-fld-w4-marital', pdfFieldName: 'MaritalStatus', label: 'Filing status', kind: 'TEXT', required: true,
+        source: { kind: 'prompt', label: 'Single / Married / Head of household', sensitive: false } }),
+    f({ id: 'pdf-fld-w4-employer-name', pdfFieldName: 'EmployerName', label: 'Employer name', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'legalName' } }),
+    f({ id: 'pdf-fld-w4-employer-address', pdfFieldName: 'EmployerAddress', label: 'Employer address', kind: 'TEXT', required: true,
+        source: { kind: 'computed', name: 'profile.address.oneLine' } }),
+    f({ id: 'pdf-fld-w4-employer-ein', pdfFieldName: 'EmployerEIN', label: 'Employer EIN', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'federalEin' } }),
+    f({ id: 'pdf-fld-w4-first-paid', pdfFieldName: 'FirstDatePaid', label: 'First date of employment', kind: 'DATE', required: true,
+        source: { kind: 'prompt', label: 'First date paid (yyyy-mm-dd)', sensitive: false } }),
+    f({ id: 'pdf-fld-w4-signature', pdfFieldName: 'EmployeeSignature', label: 'Employee signature', kind: 'SIGNATURE', required: true,
+        source: { kind: 'prompt', label: 'Employee signature', sensitive: false } }),
+    f({ id: 'pdf-fld-w4-date', pdfFieldName: 'SignatureDate', label: 'Date', kind: 'DATE', required: true,
+        source: { kind: 'computed', name: 'date.today.us' } }),
+  ],
+};
+
+// ---- ACORD 30 (Higher Limits) ----------------------------------------
+
+const ACORD_30: SeedMapping = {
+  id: 'pdf-form-acord-30',
+  displayName: 'ACORD 30 — Certificate of Liability with Higher Limits',
+  agency: 'ACORD',
+  formCode: 'ACORD-30',
+  versionDate: '2016-03-01',
+  pdfReference: 'pdf-forms/acord/acord-30.pdf',
+  agencyUrl: 'https://www.acord.org/forms/Pages/forms-library.aspx',
+  notes: 'Used when the awarding body requires excess / umbrella + auto + GL on a single cert with higher than ACORD 25 limits.',
+  fields: [
+    f({ id: 'pdf-fld-acord30-producer', pdfFieldName: 'PRODUCER', label: 'Producer', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'insurance.GENERAL_LIABILITY.brokerName' } }),
+    f({ id: 'pdf-fld-acord30-insured', pdfFieldName: 'INSURED', label: 'Named insured', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'legalName' } }),
+    f({ id: 'pdf-fld-acord30-address', pdfFieldName: 'INSURED_ADDRESS', label: 'Insured address', kind: 'TEXT', required: true,
+        source: { kind: 'computed', name: 'profile.address.oneLine' } }),
+    f({ id: 'pdf-fld-acord30-umbrella-carrier', pdfFieldName: 'UmbrellaCarrier', label: 'Umbrella / excess carrier', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'insurance.UMBRELLA.carrierName' } }),
+    f({ id: 'pdf-fld-acord30-umbrella-policy', pdfFieldName: 'UmbrellaPolicy', label: 'Umbrella policy #', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'insurance.UMBRELLA.policyNumber' } }),
+    f({ id: 'pdf-fld-acord30-umbrella-limit', pdfFieldName: 'UmbrellaLimit', label: 'Umbrella each-occurrence limit', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'insurance.UMBRELLA.eachOccurrenceLimit' } }),
+    f({ id: 'pdf-fld-acord30-cert-holder', pdfFieldName: 'CertHolder', label: 'Certificate holder', kind: 'TEXT', required: true,
+        source: { kind: 'prompt', label: 'Certificate holder (agency name + address)', sensitive: false } }),
+    f({ id: 'pdf-fld-acord30-date', pdfFieldName: 'IssueDate', label: 'Issue date', kind: 'DATE', required: true,
+        source: { kind: 'computed', name: 'date.today.us' } }),
+  ],
+};
+
+// ---- Caltrans Bidder Pre-Qualification ------------------------------
+
+const CALTRANS_PREQUAL: SeedMapping = {
+  id: 'pdf-form-caltrans-prequal',
+  displayName: 'Caltrans Bidder Pre-Qualification (CEM-1101)',
+  agency: 'CALTRANS',
+  formCode: 'CEM-1101',
+  versionDate: '2024-01-01',
+  pdfReference: 'pdf-forms/caltrans/cem-1101.pdf',
+  agencyUrl: 'https://dot.ca.gov/programs/construction/forms',
+  notes: 'Annual contractor pre-qual on file with Caltrans. Required before bidding any state highway project.',
+  fields: [
+    f({ id: 'pdf-fld-caltrans-prequal-name', pdfFieldName: 'ContractorName', label: 'Contractor name', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'legalName' } }),
+    f({ id: 'pdf-fld-caltrans-prequal-address', pdfFieldName: 'Address', label: 'Address', kind: 'TEXT', required: true,
+        source: { kind: 'computed', name: 'profile.address.oneLine' } }),
+    f({ id: 'pdf-fld-caltrans-prequal-cslb', pdfFieldName: 'License', label: 'CSLB license #', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'cslbLicense' } }),
+    f({ id: 'pdf-fld-caltrans-prequal-cslb-classes', pdfFieldName: 'Classifications', label: 'CSLB classifications', kind: 'TEXT', required: true,
+        source: { kind: 'computed', name: 'profile.cslb.classifications.csv' } }),
+    f({ id: 'pdf-fld-caltrans-prequal-dir', pdfFieldName: 'DIR', label: 'DIR registration #', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'dirNumber' } }),
+    f({ id: 'pdf-fld-caltrans-prequal-fein', pdfFieldName: 'FEIN', label: 'Federal EIN', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'federalEin' } }),
+    f({ id: 'pdf-fld-caltrans-prequal-bond', pdfFieldName: 'BondingCapacity', label: 'Single-job bonding capacity', kind: 'TEXT',
+        source: { kind: 'profile-path', path: 'bonding.singleJobCapacityCents' } }),
+    f({ id: 'pdf-fld-caltrans-prequal-aggregate', pdfFieldName: 'AggregateBonding', label: 'Aggregate bonding capacity', kind: 'TEXT',
+        source: { kind: 'profile-path', path: 'bonding.aggregateCapacityCents' } }),
+    f({ id: 'pdf-fld-caltrans-prequal-officer', pdfFieldName: 'AuthorizedOfficer', label: 'Authorized officer', kind: 'TEXT', required: true,
+        source: { kind: 'computed', name: 'profile.officers.president.name' } }),
+    f({ id: 'pdf-fld-caltrans-prequal-signature', pdfFieldName: 'OfficerSignature', label: 'Officer signature', kind: 'SIGNATURE', required: true,
+        source: { kind: 'computed', name: 'profile.officers.president.signature' } }),
+    f({ id: 'pdf-fld-caltrans-prequal-date', pdfFieldName: 'SignatureDate', label: 'Date', kind: 'DATE', required: true,
+        source: { kind: 'computed', name: 'date.today.us' } }),
+  ],
+};
+
 const SEEDS: SeedMapping[] = [
   IRS_W9,
   DIR_DAS_140,
@@ -325,6 +464,10 @@ const SEEDS: SeedMapping[] = [
   DIR_DAS_142,
   ACORD_27,
   ACORD_28,
+  DIR_PWC_100,
+  IRS_W4,
+  ACORD_30,
+  CALTRANS_PREQUAL,
 ];
 
 /**
