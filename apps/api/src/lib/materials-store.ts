@@ -1,13 +1,10 @@
-// Every mutation here records an audit event via recordAudit() —
-// CLAUDE.md mandates 'every mutation is audit-logged'.
+// Postgres-backed store for materials + their movement ledger.
 //
-// File-based store for materials + their movement ledger.
-//
-// Movement records always update quantityOnHand atomically with the
-// ledger append, so the cached value never drifts from the truth.
+// quantityOnHand is recomputed on every recordMovement() so the cached
+// value never drifts from the truth. The full Material shape (incl.
+// the movement ledger) lives in the Json `data` column.
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { prisma } from '@yge/db';
 import {
   MaterialSchema,
   applyMovement,
@@ -21,49 +18,27 @@ import {
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
 
-function dataDir(): string {
-  return (
-    process.env.MATERIALS_DATA_DIR ??
-    path.resolve(process.cwd(), 'data', 'materials')
-  );
-}
-function indexPath(): string {
-  return path.join(dataDir(), 'index.json');
-}
-function rowPath(id: string): string {
-  return path.join(dataDir(), `${id}.json`);
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+
+function row2mat(row: { data: unknown }): Material | null {
+  if (!row.data) return null;
+  const r = MaterialSchema.safeParse(row.data);
+  return r.success ? r.data : null;
 }
 
-async function ensureDir() {
-  await fs.mkdir(dataDir(), { recursive: true });
-}
-
-async function readIndex(): Promise<Material[]> {
-  try {
-    const raw = await fs.readFile(indexPath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((entry: unknown) => {
-        const result = MaterialSchema.safeParse(entry);
-        return result.success ? result.data : null;
-      })
-      .filter((m): m is Material => m !== null);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
-  }
-}
-
-async function writeIndex(entries: Material[]) {
-  await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
+function structuredCols(m: Material) {
+  return {
+    code: m.sku ?? m.id,
+    name: m.name,
+    unit: m.unit,
+    unitCostCents: m.unitCostCents ?? 0,
+  };
 }
 
 export async function createMaterial(
   input: MaterialCreate,
   ctx?: AuditContext,
 ): Promise<Material> {
-  await ensureDir();
   const now = new Date().toISOString();
   const id = newMaterialId();
   const m: Material = {
@@ -75,10 +50,14 @@ export async function createMaterial(
     ...input,
   };
   MaterialSchema.parse(m);
-  await fs.writeFile(rowPath(id), JSON.stringify(m, null, 2), 'utf8');
-  const index = await readIndex();
-  index.unshift(m);
-  await writeIndex(index);
+  await prisma.material.create({
+    data: {
+      id,
+      companyId: DEFAULT_COMPANY_ID,
+      ...structuredCols(m),
+      data: m as unknown as object,
+    },
+  });
   await recordAudit({
     action: 'create',
     entityType: 'Material',
@@ -93,7 +72,12 @@ export async function listMaterials(filter?: {
   category?: string;
   belowReorder?: boolean;
 }): Promise<Material[]> {
-  let all = await readIndex();
+  const rows = await prisma.material.findMany({
+    where: { companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+  });
+  let all = rows
+    .map(row2mat)
+    .filter((m): m is Material => m !== null);
   if (filter?.category) all = all.filter((m) => m.category === filter.category);
   if (filter?.belowReorder) {
     all = all.filter(
@@ -106,13 +90,11 @@ export async function listMaterials(filter?: {
 
 export async function getMaterial(id: string): Promise<Material | null> {
   if (!/^mat-[a-z0-9]{8}$/.test(id)) return null;
-  try {
-    const raw = await fs.readFile(rowPath(id), 'utf8');
-    return MaterialSchema.parse(JSON.parse(raw));
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    throw err;
-  }
+  const row = await prisma.material.findFirst({
+    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+  });
+  if (!row) return null;
+  return row2mat(row);
 }
 
 export async function updateMaterial(
@@ -131,15 +113,13 @@ export async function updateMaterial(
     updatedAt: new Date().toISOString(),
   };
   MaterialSchema.parse(updated);
-  await fs.writeFile(rowPath(id), JSON.stringify(updated, null, 2), 'utf8');
-  const index = await readIndex();
-  const idx = index.findIndex((m) => m.id === id);
-  if (idx >= 0) {
-    index[idx] = updated;
-  } else {
-    index.unshift(updated);
-  }
-  await writeIndex(index);
+  await prisma.material.update({
+    where: { id },
+    data: {
+      ...structuredCols(updated),
+      data: updated as unknown as object,
+    },
+  });
   await recordAudit({
     action: auditAction,
     entityType: 'Material',

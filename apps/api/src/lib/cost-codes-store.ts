@@ -1,7 +1,6 @@
-// Cost codes master store — list + create + patch + delete.
+// Postgres-backed store for cost codes.
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { prisma } from '@yge/db';
 import {
   CostCodeSchema,
   newCostCodeId,
@@ -11,66 +10,55 @@ import {
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
 
-function dataDir(): string {
-  return process.env.COST_CODES_DATA_DIR ?? path.resolve(process.cwd(), 'data', 'cost-codes');
-}
-function indexPath(): string { return path.join(dataDir(), 'index.json'); }
-function rowPath(id: string): string { return path.join(dataDir(), `${id}.json`); }
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
 
-async function ensureDir() { await fs.mkdir(dataDir(), { recursive: true }); }
-
-async function readIndex(): Promise<CostCode[]> {
-  try {
-    const raw = await fs.readFile(indexPath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((e: unknown) => CostCodeSchema.safeParse(e))
-      .filter((r) => r.success)
-      .map((r) => (r as { success: true; data: CostCode }).data);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
-  }
-}
-async function writeIndex(rows: CostCode[]) {
-  await fs.writeFile(indexPath(), JSON.stringify(rows, null, 2), 'utf8');
+function row2cc(row: { data: unknown }): CostCode | null {
+  if (!row.data) return null;
+  const r = CostCodeSchema.safeParse(row.data);
+  return r.success ? r.data : null;
 }
 
 export async function listCostCodes(): Promise<CostCode[]> {
-  await ensureDir();
-  const rows = await readIndex();
-  return rows.sort((a, b) => a.code.localeCompare(b.code));
+  const rows = await prisma.costCode.findMany({
+    where: { companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+  });
+  return rows
+    .map(row2cc)
+    .filter((c): c is CostCode => c !== null)
+    .sort((a, b) => a.code.localeCompare(b.code));
 }
 
 export async function getCostCode(id: string): Promise<CostCode | null> {
-  await ensureDir();
-  try {
-    const raw = await fs.readFile(rowPath(id), 'utf8');
-    const r = CostCodeSchema.safeParse(JSON.parse(raw));
-    return r.success ? r.data : null;
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    throw err;
-  }
+  if (!/^cc-[a-z0-9]{8}$/.test(id)) return null;
+  const row = await prisma.costCode.findFirst({
+    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+  });
+  if (!row) return null;
+  return row2cc(row);
 }
 
 export async function createCostCode(
   input: CostCodeCreate,
   ctx: AuditContext = { actorUserId: null, reason: null },
 ): Promise<CostCode> {
-  await ensureDir();
   const now = new Date().toISOString();
+  const id = newCostCodeId();
   const row: CostCode = CostCodeSchema.parse({
     ...input,
-    id: newCostCodeId(),
+    id,
     createdAt: now,
     updatedAt: now,
   });
-  await fs.writeFile(rowPath(row.id), JSON.stringify(row, null, 2), 'utf8');
-  const idx = await readIndex();
-  idx.push(row);
-  await writeIndex(idx);
+  await prisma.costCode.create({
+    data: {
+      id,
+      companyId: DEFAULT_COMPANY_ID,
+      code: row.code,
+      name: row.description ?? row.code,
+      category: row.category ?? null,
+      data: row as unknown as object,
+    },
+  });
   await recordAudit({
     entityType: 'CostCodeMaster',
     entityId: row.id,
@@ -89,18 +77,22 @@ export async function updateCostCode(
 ): Promise<CostCode | null> {
   const existing = await getCostCode(id);
   if (!existing) return null;
-  const merged = CostCodeSchema.parse({
+  const merged: CostCode = CostCodeSchema.parse({
     ...existing,
     ...patch,
     id: existing.id,
     createdAt: existing.createdAt,
     updatedAt: new Date().toISOString(),
   });
-  await fs.writeFile(rowPath(id), JSON.stringify(merged, null, 2), 'utf8');
-  const idx = await readIndex();
-  const i = idx.findIndex((r) => r.id === id);
-  if (i >= 0) idx[i] = merged; else idx.push(merged);
-  await writeIndex(idx);
+  await prisma.costCode.update({
+    where: { id },
+    data: {
+      code: merged.code,
+      name: merged.description ?? merged.code,
+      category: merged.category ?? null,
+      data: merged as unknown as object,
+    },
+  });
   await recordAudit({
     entityType: 'CostCodeMaster',
     entityId: id,
@@ -118,9 +110,7 @@ export async function deleteCostCode(
 ): Promise<boolean> {
   const existing = await getCostCode(id);
   if (!existing) return false;
-  await fs.unlink(rowPath(id)).catch(() => undefined);
-  const idx = await readIndex();
-  await writeIndex(idx.filter((r) => r.id !== id));
+  await prisma.costCode.delete({ where: { id } });
   await recordAudit({
     entityType: 'CostCodeMaster',
     entityId: id,
