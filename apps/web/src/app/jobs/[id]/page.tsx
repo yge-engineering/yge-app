@@ -288,7 +288,7 @@ export default async function JobDetailPage({
             )}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 print:hidden">
           <DashboardRefreshButton />
           <PinnedIndicator storageKey="yge.jobs.pinnedIds" eventName="yge:jobs-pinned-changed" id={job.id} />
           <CopyIdChip id={job.id} label="job" />
