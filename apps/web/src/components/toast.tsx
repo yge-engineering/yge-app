@@ -49,7 +49,7 @@ export function Toaster() {
         <div
           key={t.id}
           role="status"
-          className={`pointer-events-auto rounded-md border px-4 py-2.5 text-sm shadow-lg ${toneClass(t.variant)}`}
+          className={`pointer-events-auto animate-slide-in-right rounded-md border px-4 py-2.5 text-sm shadow-lg ${toneClass(t.variant)}`}
         >
           {t.text}
         </div>
