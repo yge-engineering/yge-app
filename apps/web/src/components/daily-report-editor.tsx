@@ -23,6 +23,7 @@ import {
   type Job,
 } from '@yge/shared';
 
+import { NarrativeExpandButton } from './narrative-expand-button';
 interface Props {
   initial: DailyReport;
   employees: Employee[];
@@ -344,6 +345,10 @@ export function DailyReportEditor({ initial, employees, jobs, apiBaseUrl }: Prop
             onChange={(e) => setScopeCompleted(e.target.value)}
             onBlur={saveText}
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
+          />
+          <NarrativeExpandButton
+            value={scopeCompleted}
+            onApply={(next) => { setScopeCompleted(next); saveText(); }}
           />
         </Field>
         <Field label={t('dre.lblIssues')}>
