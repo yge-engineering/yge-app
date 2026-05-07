@@ -145,6 +145,7 @@ async function fetchEstimatesPipeline(): Promise<{
   /** Count of bids whose bidSubmittedAt falls in the last 30 days. */
   submitted30d: number;
   awardedThisYearCents: number;
+  overdueCount: number;
 }> {
   try {
     const res = await fetch(`${apiBaseUrl()}/api/priced-estimates`, {
@@ -163,6 +164,7 @@ async function fetchEstimatesPipeline(): Promise<{
         stalePursuing: [],
         submitted30d: 0,
         awardedThisYearCents: 0,
+        overdueCount: 0,
       };
     const json = (await res.json()) as {
       estimates: PricedEstimateSummaryLite[];
@@ -225,6 +227,13 @@ async function fetchEstimatesPipeline(): Promise<{
       const t = new Date(e.bidSubmittedAt).getTime();
       return !Number.isNaN(t) && Date.now() - t <= thirtyDaysMs;
     }).length;
+    const overdueCount = all.filter((e) => {
+      const status = e.bidStatus ?? 'pursuing';
+      if (status === 'awarded' || status === 'lost') return false;
+      if (!e.bidDueDate) return false;
+      const t = new Date(e.bidDueDate).getTime();
+      return !Number.isNaN(t) && t < Date.now();
+    }).length;
     const yearStart = new Date(new Date().getFullYear(), 0, 1).getTime();
     const awardedThisYearCents = all
       .filter((e) => {
@@ -245,6 +254,7 @@ async function fetchEstimatesPipeline(): Promise<{
       stalePursuing,
       submitted30d,
       awardedThisYearCents,
+      overdueCount,
     };
   } catch {
     return {
@@ -259,6 +269,7 @@ async function fetchEstimatesPipeline(): Promise<{
       stalePursuing: [],
       submitted30d: 0,
       awardedThisYearCents: 0,
+      overdueCount: 0,
     };
   }
 }
