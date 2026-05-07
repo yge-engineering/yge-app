@@ -58,6 +58,59 @@ interface NavGroupSpec {
   requires?: Permission;
 }
 
+
+// Curated "quick action" entries injected into the ⌘-K palette
+// alongside nav targets. These point at /<entity>/new pages so a
+// single keyboard hit lands the user at a fresh form. Permission
+// gates fall back to the sidebar's grouping — palette respects
+// the same role grants.
+interface QuickActionSpec {
+  label: string;
+  href: string;
+  /** Short label shown in the "group" slot of the palette result. */
+  group: string;
+  requires?: Permission;
+}
+
+const QUICK_ACTIONS: QuickActionSpec[] = [
+  { label: '+ New job',              href: '/jobs/new',              group: 'New' },
+  { label: '+ New estimate (blank)', href: '/estimates',             group: 'New', requires: 'estimates:view' },
+  { label: '+ New bid result',       href: '/bid-results/new',       group: 'New', requires: 'estimates:view' },
+  { label: '+ New AR invoice',       href: '/ar-invoices/new',       group: 'New', requires: 'financials:view' },
+  { label: '+ New AR payment',       href: '/ar-payments/new',       group: 'New', requires: 'financials:view' },
+  { label: '+ New AP invoice',       href: '/ap-invoices/new',       group: 'New', requires: 'financials:view' },
+  { label: '+ New AP payment',       href: '/ap-payments/new',       group: 'New', requires: 'financials:view' },
+  { label: '+ New bank rec',         href: '/bank-recs/new',         group: 'New', requires: 'financials:view' },
+  { label: '+ New expense',          href: '/expenses/new',          group: 'New' },
+  { label: '+ New mileage entry',    href: '/mileage/new',           group: 'New' },
+  { label: '+ New daily report',     href: '/daily-reports/new',     group: 'New' },
+  { label: '+ New time card',        href: '/time-cards/new',        group: 'New' },
+  { label: '+ New customer',         href: '/customers/new',         group: 'New' },
+  { label: '+ New vendor',           href: '/vendors/new',           group: 'New' },
+  { label: '+ New employee',         href: '/employees/new',         group: 'New' },
+  { label: '+ New equipment',        href: '/equipment/new',         group: 'New' },
+  { label: '+ New material',         href: '/materials/new',         group: 'New' },
+  { label: '+ New tool',             href: '/tools/new',             group: 'New' },
+  { label: '+ New photo',            href: '/photos/new',            group: 'New' },
+  { label: '+ New RFI',              href: '/rfis/new',              group: 'New' },
+  { label: '+ New submittal',        href: '/submittals/new',        group: 'New' },
+  { label: '+ New change order',     href: '/change-orders/new',     group: 'New' },
+  { label: '+ New PCO',              href: '/pcos/new',              group: 'New' },
+  { label: '+ New lien waiver',      href: '/lien-waivers/new',      group: 'New' },
+  { label: '+ New incident',         href: '/incidents/new',         group: 'New' },
+  { label: '+ New SWPPP inspection', href: '/swppp/new',             group: 'New' },
+  { label: '+ New toolbox talk',     href: '/toolbox-talks/new',     group: 'New' },
+  { label: '+ New weather log',      href: '/weather/new',           group: 'New' },
+  { label: '+ New dispatch',         href: '/dispatch/new',          group: 'New' },
+  { label: '+ New cert. payroll',    href: '/certified-payrolls/new',group: 'New' },
+  { label: '+ New certificate',      href: '/certificates/new',      group: 'New' },
+  { label: '+ New document',         href: '/documents/new',         group: 'New' },
+  { label: '+ New punch item',       href: '/punch-list/new',        group: 'New' },
+  { label: '+ New COA account',      href: '/coa/new',               group: 'New', requires: 'financials:view' },
+  { label: '+ New DIR rate',         href: '/dir-rates/new',         group: 'New' },
+  { label: '+ New crew member',      href: '/crew/new',              group: 'New' },
+];
+
 const NAV_SPEC: NavGroupSpec[] = [
   {
     key: 'nav.group.daily',
@@ -201,9 +254,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <Toaster />
       <ScrollToTop />
       <CommandPalette
-        links={NAV.flatMap((g) =>
-          g.links.map((l) => ({ ...l, group: g.label })),
-        )}
+        links={[
+          ...NAV.flatMap((g) =>
+            g.links.map((l) => ({ ...l, group: g.label })),
+          ),
+          ...QUICK_ACTIONS
+            .filter((a) => !a.requires || (grants?.includes(a.requires) ?? true))
+            .map((a) => ({ label: a.label, href: a.href, group: a.group })),
+        ]}
       />
       <header className="flex items-center gap-3 border-b border-gray-200 bg-white px-4 py-3 sm:px-6 print:hidden">
         <MobileNav groups={NAV} />
