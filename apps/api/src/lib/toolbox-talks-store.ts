@@ -1,10 +1,6 @@
-// Every mutation here records an audit event via recordAudit() —
-// CLAUDE.md mandates 'every mutation is audit-logged'.
-//
-// File-based store for toolbox talks (Cal/OSHA T8 §1509).
+// Postgres-backed store for toolbox talks.
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { prisma } from '@yge/db';
 import {
   ToolboxTalkSchema,
   newToolboxTalkId,
@@ -14,46 +10,16 @@ import {
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
 
-function dataDir(): string {
-  return process.env.TOOLBOX_TALKS_DATA_DIR ?? path.resolve(process.cwd(), 'data', 'toolbox-talks');
-}
-function indexPath(): string {
-  return path.join(dataDir(), 'index.json');
-}
-function rowPath(id: string): string {
-  return path.join(dataDir(), `${id}.json`);
-}
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
 
-async function ensureDir() {
-  await fs.mkdir(dataDir(), { recursive: true });
-}
-
-async function readIndex(): Promise<ToolboxTalk[]> {
-  try {
-    const raw = await fs.readFile(indexPath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((entry: unknown) => {
-        const result = ToolboxTalkSchema.safeParse(entry);
-        return result.success ? result.data : null;
-      })
-      .filter((t): t is ToolboxTalk => t !== null);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
-  }
-}
-
-async function writeIndex(entries: ToolboxTalk[]) {
-  await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
+function row2tbt(row: { data: unknown }): ToolboxTalk {
+  return ToolboxTalkSchema.parse(row.data);
 }
 
 export async function createToolboxTalk(
   input: ToolboxTalkCreate,
   ctx?: AuditContext,
 ): Promise<ToolboxTalk> {
-  await ensureDir();
   const now = new Date().toISOString();
   const id = newToolboxTalkId();
   const t: ToolboxTalk = {
@@ -65,10 +31,13 @@ export async function createToolboxTalk(
     ...input,
   };
   ToolboxTalkSchema.parse(t);
-  await fs.writeFile(rowPath(id), JSON.stringify(t, null, 2), 'utf8');
-  const index = await readIndex();
-  index.unshift(t);
-  await writeIndex(index);
+  await prisma.toolboxTalk.create({
+    data: {
+      id,
+      companyId: DEFAULT_COMPANY_ID,
+      data: t as unknown as object,
+    },
+  });
   await recordAudit({
     action: 'create',
     entityType: 'ToolboxTalk',
@@ -83,22 +52,22 @@ export async function listToolboxTalks(filter?: {
   jobId?: string;
   status?: string;
 }): Promise<ToolboxTalk[]> {
-  let all = await readIndex();
+  const rows = await prisma.toolboxTalk.findMany({
+    where: { companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    orderBy: { createdAt: 'desc' },
+  });
+  let all = rows.map(row2tbt);
   if (filter?.jobId) all = all.filter((t) => t.jobId === filter.jobId);
   if (filter?.status) all = all.filter((t) => t.status === filter.status);
-  all.sort((a, b) => b.heldOn.localeCompare(a.heldOn));
   return all;
 }
 
 export async function getToolboxTalk(id: string): Promise<ToolboxTalk | null> {
   if (!/^tbt-[a-z0-9]{8}$/.test(id)) return null;
-  try {
-    const raw = await fs.readFile(rowPath(id), 'utf8');
-    return ToolboxTalkSchema.parse(JSON.parse(raw));
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    throw err;
-  }
+  const row = await prisma.toolboxTalk.findFirst({
+    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+  });
+  return row ? row2tbt(row) : null;
 }
 
 export async function updateToolboxTalk(
@@ -117,15 +86,10 @@ export async function updateToolboxTalk(
     updatedAt: new Date().toISOString(),
   };
   ToolboxTalkSchema.parse(updated);
-  await fs.writeFile(rowPath(id), JSON.stringify(updated, null, 2), 'utf8');
-  const index = await readIndex();
-  const idx = index.findIndex((t) => t.id === id);
-  if (idx >= 0) {
-    index[idx] = updated;
-  } else {
-    index.unshift(updated);
-  }
-  await writeIndex(index);
+  await prisma.toolboxTalk.update({
+    where: { id },
+    data: { data: updated as unknown as object },
+  });
   await recordAudit({
     action: auditAction,
     entityType: 'ToolboxTalk',

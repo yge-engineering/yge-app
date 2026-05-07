@@ -1,10 +1,6 @@
-// Every mutation here records an audit event via recordAudit() —
-// CLAUDE.md mandates 'every mutation is audit-logged'.
-//
-// File-based store for SWPPP/BMP inspections.
+// Postgres-backed store for SWPPP inspections.
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { prisma } from '@yge/db';
 import {
   SwpppInspectionSchema,
   newSwpppInspectionId,
@@ -14,46 +10,16 @@ import {
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
 
-function dataDir(): string {
-  return process.env.SWPPP_INSPECTIONS_DATA_DIR ?? path.resolve(process.cwd(), 'data', 'swppp-inspections');
-}
-function indexPath(): string {
-  return path.join(dataDir(), 'index.json');
-}
-function rowPath(id: string): string {
-  return path.join(dataDir(), `${id}.json`);
-}
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
 
-async function ensureDir() {
-  await fs.mkdir(dataDir(), { recursive: true });
-}
-
-async function readIndex(): Promise<SwpppInspection[]> {
-  try {
-    const raw = await fs.readFile(indexPath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((entry: unknown) => {
-        const result = SwpppInspectionSchema.safeParse(entry);
-        return result.success ? result.data : null;
-      })
-      .filter((s): s is SwpppInspection => s !== null);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
-  }
-}
-
-async function writeIndex(entries: SwpppInspection[]) {
-  await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
+function row2swp(row: { data: unknown }): SwpppInspection {
+  return SwpppInspectionSchema.parse(row.data);
 }
 
 export async function createSwpppInspection(
   input: SwpppInspectionCreate,
   ctx?: AuditContext,
 ): Promise<SwpppInspection> {
-  await ensureDir();
   const now = new Date().toISOString();
   const id = newSwpppInspectionId();
   const s: SwpppInspection = {
@@ -68,10 +34,15 @@ export async function createSwpppInspection(
     ...input,
   };
   SwpppInspectionSchema.parse(s);
-  await fs.writeFile(rowPath(id), JSON.stringify(s, null, 2), 'utf8');
-  const index = await readIndex();
-  index.unshift(s);
-  await writeIndex(index);
+  await prisma.swpppInspection.create({
+    data: {
+      id,
+      companyId: DEFAULT_COMPANY_ID,
+      jobId: s.jobId,
+      inspectedAt: s.inspectedOn,
+      data: s as unknown as object,
+    },
+  });
   await recordAudit({
     action: 'create',
     entityType: 'SwpppInspection',
@@ -82,24 +53,24 @@ export async function createSwpppInspection(
   return s;
 }
 
-export async function listSwpppInspections(filter?: {
-  jobId?: string;
-}): Promise<SwpppInspection[]> {
-  let all = await readIndex();
-  if (filter?.jobId) all = all.filter((s) => s.jobId === filter.jobId);
-  all.sort((a, b) => b.inspectedOn.localeCompare(a.inspectedOn));
-  return all;
+export async function listSwpppInspections(filter?: { jobId?: string }): Promise<SwpppInspection[]> {
+  const rows = await prisma.swpppInspection.findMany({
+    where: {
+      companyId: DEFAULT_COMPANY_ID,
+      deletedAt: null,
+      ...(filter?.jobId ? { jobId: filter.jobId } : {}),
+    },
+    orderBy: { inspectedAt: 'desc' },
+  });
+  return rows.map(row2swp);
 }
 
 export async function getSwpppInspection(id: string): Promise<SwpppInspection | null> {
   if (!/^swp-[a-z0-9]{8}$/.test(id)) return null;
-  try {
-    const raw = await fs.readFile(rowPath(id), 'utf8');
-    return SwpppInspectionSchema.parse(JSON.parse(raw));
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    throw err;
-  }
+  const row = await prisma.swpppInspection.findFirst({
+    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+  });
+  return row ? row2swp(row) : null;
 }
 
 export async function updateSwpppInspection(
@@ -118,15 +89,14 @@ export async function updateSwpppInspection(
     updatedAt: new Date().toISOString(),
   };
   SwpppInspectionSchema.parse(updated);
-  await fs.writeFile(rowPath(id), JSON.stringify(updated, null, 2), 'utf8');
-  const index = await readIndex();
-  const idx = index.findIndex((s) => s.id === id);
-  if (idx >= 0) {
-    index[idx] = updated;
-  } else {
-    index.unshift(updated);
-  }
-  await writeIndex(index);
+  await prisma.swpppInspection.update({
+    where: { id },
+    data: {
+      jobId: updated.jobId,
+      inspectedAt: updated.inspectedOn,
+      data: updated as unknown as object,
+    },
+  });
   await recordAudit({
     action: auditAction,
     entityType: 'SwpppInspection',

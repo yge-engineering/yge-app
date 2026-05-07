@@ -1,10 +1,6 @@
-// Every mutation here records an audit event via recordAudit() —
-// CLAUDE.md mandates 'every mutation is audit-logged'.
-//
-// File-based store for daily weather logs.
+// Postgres-backed store for weather logs.
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { prisma } from '@yge/db';
 import {
   WeatherLogSchema,
   newWeatherLogId,
@@ -14,46 +10,16 @@ import {
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
 
-function dataDir(): string {
-  return process.env.WEATHER_LOGS_DATA_DIR ?? path.resolve(process.cwd(), 'data', 'weather-logs');
-}
-function indexPath(): string {
-  return path.join(dataDir(), 'index.json');
-}
-function rowPath(id: string): string {
-  return path.join(dataDir(), `${id}.json`);
-}
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
 
-async function ensureDir() {
-  await fs.mkdir(dataDir(), { recursive: true });
-}
-
-async function readIndex(): Promise<WeatherLog[]> {
-  try {
-    const raw = await fs.readFile(indexPath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((entry: unknown) => {
-        const result = WeatherLogSchema.safeParse(entry);
-        return result.success ? result.data : null;
-      })
-      .filter((w): w is WeatherLog => w !== null);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
-  }
-}
-
-async function writeIndex(entries: WeatherLog[]) {
-  await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
+function row2wx(row: { data: unknown }): WeatherLog {
+  return WeatherLogSchema.parse(row.data);
 }
 
 export async function createWeatherLog(
   input: WeatherLogCreate,
   ctx?: AuditContext,
 ): Promise<WeatherLog> {
-  await ensureDir();
   const now = new Date().toISOString();
   const id = newWeatherLogId();
   const w: WeatherLog = {
@@ -68,10 +34,15 @@ export async function createWeatherLog(
     ...input,
   };
   WeatherLogSchema.parse(w);
-  await fs.writeFile(rowPath(id), JSON.stringify(w, null, 2), 'utf8');
-  const index = await readIndex();
-  index.unshift(w);
-  await writeIndex(index);
+  await prisma.weatherLog.create({
+    data: {
+      id,
+      companyId: DEFAULT_COMPANY_ID,
+      jobId: w.jobId,
+      recordedAt: w.observedOn,
+      data: w as unknown as object,
+    },
+  });
   await recordAudit({
     action: 'create',
     entityType: 'WeatherLog',
@@ -82,24 +53,24 @@ export async function createWeatherLog(
   return w;
 }
 
-export async function listWeatherLogs(filter?: {
-  jobId?: string;
-}): Promise<WeatherLog[]> {
-  let all = await readIndex();
-  if (filter?.jobId) all = all.filter((w) => w.jobId === filter.jobId);
-  all.sort((a, b) => b.observedOn.localeCompare(a.observedOn));
-  return all;
+export async function listWeatherLogs(filter?: { jobId?: string }): Promise<WeatherLog[]> {
+  const rows = await prisma.weatherLog.findMany({
+    where: {
+      companyId: DEFAULT_COMPANY_ID,
+      deletedAt: null,
+      ...(filter?.jobId ? { jobId: filter.jobId } : {}),
+    },
+    orderBy: { recordedAt: 'desc' },
+  });
+  return rows.map(row2wx);
 }
 
 export async function getWeatherLog(id: string): Promise<WeatherLog | null> {
   if (!/^wx-[a-z0-9]{8}$/.test(id)) return null;
-  try {
-    const raw = await fs.readFile(rowPath(id), 'utf8');
-    return WeatherLogSchema.parse(JSON.parse(raw));
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    throw err;
-  }
+  const row = await prisma.weatherLog.findFirst({
+    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+  });
+  return row ? row2wx(row) : null;
 }
 
 export async function updateWeatherLog(
@@ -118,15 +89,14 @@ export async function updateWeatherLog(
     updatedAt: new Date().toISOString(),
   };
   WeatherLogSchema.parse(updated);
-  await fs.writeFile(rowPath(id), JSON.stringify(updated, null, 2), 'utf8');
-  const index = await readIndex();
-  const idx = index.findIndex((w) => w.id === id);
-  if (idx >= 0) {
-    index[idx] = updated;
-  } else {
-    index.unshift(updated);
-  }
-  await writeIndex(index);
+  await prisma.weatherLog.update({
+    where: { id },
+    data: {
+      jobId: updated.jobId,
+      recordedAt: updated.observedOn,
+      data: updated as unknown as object,
+    },
+  });
   await recordAudit({
     action: auditAction,
     entityType: 'WeatherLog',
