@@ -58,6 +58,14 @@ export function JobsShortcutsChip() {
               <kbd className="rounded border border-gray-300 bg-gray-50 px-1.5 py-0.5 font-mono text-[10px]">Enter</kbd>
             </li>
             <li className="flex items-center justify-between">
+              <span>Back to top</span>
+              <span className="text-[10px] text-gray-500">
+                <kbd className="rounded border border-gray-300 bg-gray-50 px-1 py-0.5 font-mono">g</kbd>
+                {' '}then{' '}
+                <kbd className="rounded border border-gray-300 bg-gray-50 px-1 py-0.5 font-mono">t</kbd>
+              </span>
+            </li>
+            <li className="flex items-center justify-between">
               <span>Open shortcuts dialog</span>
               <kbd className="rounded border border-gray-300 bg-gray-50 px-1.5 py-0.5 font-mono text-[10px]">
                 ?
