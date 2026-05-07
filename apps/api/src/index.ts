@@ -3,6 +3,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import { tenantMiddleware } from './middleware/tenant';
 import pinoHttp from 'pino-http';
 import { logger } from './lib/logger';
 import { healthRouter } from './routes/health';
@@ -105,6 +106,10 @@ app.use(
 
 app.use(express.json({ limit: '10mb' }));
 app.use(pinoHttp({ logger }));
+
+// Tenant resolution — every downstream handler reads its companyId
+// from the per-request AsyncLocalStorage seeded here.
+app.use(tenantMiddleware);
 
 app.use('/health', healthRouter);
 app.use('/api/jobs', jobsRouter);
