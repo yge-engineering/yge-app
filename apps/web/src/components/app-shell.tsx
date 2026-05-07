@@ -184,7 +184,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen flex flex-col">
       <KeyboardShortcuts />
       <Toaster />
-      <header className="flex items-center gap-3 border-b border-gray-200 bg-white px-4 py-3 sm:px-6">
+      <header className="flex items-center gap-3 border-b border-gray-200 bg-white px-4 py-3 sm:px-6 print:hidden">
         <MobileNav groups={NAV} />
         <Link href="/dashboard" className="flex items-center gap-3">
           {/* New logo provided May 2026: Y in red over GE, with the
@@ -233,7 +233,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
       <div className="flex flex-1">
-        <aside className="hidden w-56 shrink-0 border-r border-gray-200 bg-white px-3 py-4 lg:block">
+        <aside className="hidden w-56 shrink-0 border-r border-gray-200 bg-white px-3 py-4 lg:block print:hidden">
           <nav className="space-y-5">
             {NAV.map((group) => (
               <div key={group.label}>
@@ -262,12 +262,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <Link
         href="/plans-to-estimate"
         data-fab-new-estimate="1"
-        className="fixed bottom-4 right-4 z-50 inline-flex items-center justify-center rounded-full bg-yge-blue-500 px-4 py-3 text-sm font-semibold text-white shadow-lg hover:bg-yge-blue-700 sm:hidden"
+        className="fixed bottom-4 right-4 z-50 inline-flex items-center justify-center rounded-full bg-yge-blue-500 px-4 py-3 text-sm font-semibold text-white shadow-lg hover:bg-yge-blue-700 sm:hidden print:hidden"
         title="Start a new estimate"
       >
         + Estimate
       </Link>
-      <footer className="border-t border-gray-200 bg-white px-6 py-3 text-center text-xs text-gray-400">
+      <footer className="border-t border-gray-200 bg-white px-6 py-3 text-center text-xs text-gray-400 print:hidden">
         {t('shell.footer')}{' '}
         <Link href="/changelog" className="hover:underline">{t('shell.footer.whatsNew')}</Link>
         {' · '}
