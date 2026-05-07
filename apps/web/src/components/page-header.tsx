@@ -30,7 +30,7 @@ export function PageHeader({ title, subtitle, back, actions }: Props) {
   return (
     <header className="mb-6">
       {backLink ? (
-        <div className="mb-3 text-sm">
+        <div className="mb-3 text-sm print:hidden">
           <Link href={backLink.href} className="text-blue-700 hover:underline">
             {backLink.label}
           </Link>
@@ -41,7 +41,7 @@ export function PageHeader({ title, subtitle, back, actions }: Props) {
           <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
           {subtitle ? <p className="mt-1 text-sm text-gray-600">{subtitle}</p> : null}
         </div>
-        {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
+        {actions ? <div className="flex flex-wrap items-center gap-2 print:hidden">{actions}</div> : null}
       </div>
     </header>
   );
