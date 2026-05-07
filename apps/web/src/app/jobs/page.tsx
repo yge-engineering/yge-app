@@ -381,9 +381,9 @@ export default async function JobsPage({ searchParams }: PageProps) {
           <EstimatesSortHeaders targetId="jobs-table" />
           <JobsPinReorder targetId="jobs-table" />
           <EstimatesKeyboardNav targetId="jobs-table" />
-          <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+          <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
           <table id="jobs-table" className="w-full text-left text-sm">
-            <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+            <thead className="sticky top-0 z-10 bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
               <tr>
                 <th data-sort-key="name" className="select-none px-4 py-2 hover:bg-gray-100">
                   {t('jobs.col.project')}
