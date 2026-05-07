@@ -5,6 +5,7 @@
 // file goes away and /api/estimates absorbs the surface.
 
 import { Router } from 'express';
+import { pricedEstimatesImportRouter } from './priced-estimates-import';
 import { z } from 'zod';
 import {
   AddendumSchema,
@@ -29,6 +30,9 @@ import {
 } from '../lib/estimates-store';
 
 export const pricedEstimatesRouter = Router();
+
+// Sub-router: CSV import (POST /import-csv).
+pricedEstimatesRouter.use('/', pricedEstimatesImportRouter);
 
 const FromDraftBody = z.object({
   fromDraftId: z.string().min(1),

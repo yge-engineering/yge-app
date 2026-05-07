@@ -234,6 +234,68 @@ export async function createBlankEstimate(
   return est;
 }
 
+
+export interface ImportEstimateInput {
+  jobId: string;
+  projectName: string;
+  projectType?: PricedEstimate['projectType'];
+  ownerAgency?: string;
+  location?: string;
+  bidDueDate?: string;
+  oppPercent?: number;
+  bidItems: PricedBidItem[];
+}
+
+/** Build a PricedEstimate from imported bid items (CSV upload, etc.).
+ *  Behaves like createBlankEstimate but uses the caller's items
+ *  instead of seeding a placeholder row. */
+export async function createEstimateFromImport(
+  input: ImportEstimateInput,
+  ctx?: AuditContext,
+): Promise<PricedEstimate> {
+  const now = new Date();
+  const id = makeId(input.projectName, now);
+  const iso = now.toISOString();
+  const est: PricedEstimate = {
+    id,
+    fromDraftId: 'imported',
+    jobId: input.jobId,
+    createdAt: iso,
+    updatedAt: iso,
+    projectName: input.projectName,
+    projectType: input.projectType ?? 'OTHER',
+    location: input.location,
+    ownerAgency: input.ownerAgency,
+    bidDueDate: input.bidDueDate,
+    bidItems: input.bidItems.length > 0
+      ? input.bidItems
+      : [
+          {
+            itemNumber: '1',
+            description: 'New line — replace me',
+            unit: 'LS',
+            quantity: 1,
+            confidence: 'HIGH',
+            unitPriceCents: null,
+          },
+        ],
+    oppPercent: input.oppPercent ?? 0.2,
+    subBids: [],
+    addenda: [],
+    subLeveling: [],
+  };
+  PricedEstimateSchema.parse(est);
+  await persist(est);
+  await recordAudit({
+    action: 'create',
+    entityType: 'Estimate',
+    entityId: id,
+    after: est,
+    ctx,
+  });
+  return est;
+}
+
 export async function listEstimates(): Promise<EstimateSummary[]> {
   const rows = await prisma.estimate.findMany({
     where: { companyId: companyId(), deletedAt: null },

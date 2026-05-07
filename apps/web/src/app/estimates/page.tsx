@@ -24,6 +24,7 @@ import { EstimatesStatusFilter } from '../../components/estimates-status-filter'
 import { EstimatesDueWeekChip } from '../../components/estimates-due-week-chip';
 import { EstimatesResetFilters } from '../../components/estimates-reset-filters';
 import { EstimatesCreatedFilter } from '../../components/estimates-created-filter';
+import { ImportEstimateButton } from '../../components/import-estimate-button';
 import { getTranslator } from '../../lib/locale';
 import { requirePermission } from '../../lib/permissions';
 
@@ -354,6 +355,7 @@ export default async function EstimatesPage() {
         </div>
         <div className="flex items-center gap-2">
           <DashboardRefreshButton />
+      <ImportEstimateButton />
           <EstimatesShortcutsChip />
           <Link
             href="/plans-to-estimate"
