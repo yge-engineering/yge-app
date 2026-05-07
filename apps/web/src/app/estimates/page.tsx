@@ -126,6 +126,16 @@ function countDueBuckets(rows: { bidDueDate?: string }[]): {
   return { overdue, dueSoon };
 }
 
+const PROJECT_TYPE_ICON: Record<string, string> = {
+  DRAINAGE: '💧',
+  FUEL_BREAK: '🔥',
+  GRADING: '🚜',
+  PAVING: '🛣️',
+  STRUCTURE: '🏗️',
+  UTILITIES: '🔌',
+  OTHER: '🚧',
+};
+
 function urgencyKey(iso: string | undefined, now: number): number {
   // Smaller key = more urgent. Buckets the rows so:
   //   - overdue (negative deltas) sort top, most-overdue first
@@ -574,6 +584,7 @@ export default async function EstimatesPage() {
                     )}
                   </td>
                   <td className="hidden px-4 py-3 text-xs text-gray-600 md:table-cell">
+                    <span className="mr-1">{PROJECT_TYPE_ICON[e.projectType] ?? '🚧'}</span>
                     {e.projectType.replace(/_/g, ' ')}
                   </td>
                   <td className="hidden px-4 py-3 text-gray-700 sm:table-cell">
