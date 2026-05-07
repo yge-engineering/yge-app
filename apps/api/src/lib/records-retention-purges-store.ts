@@ -1,21 +1,14 @@
-// File-based store for records-retention purge batches.
+// Postgres-backed store for records-retention purge batches.
 //
 // Each batch is the operator's confirmation that a specific set of
 // records cleared their statutory retention window AND are not
-// frozen by an active legal hold. The batch is the audit-grade
-// proof; the underlying records are then either:
-//   - left in place (Phase 1 — operator decision recorded, byte
-//     deletion deferred to a per-store delete pass), OR
-//   - actually purged from the underlying store (later phase, when
-//     each store grows a purgeRecord helper).
+// frozen by an active legal hold. The batch is the audit-grade proof.
 //
-// Phase 1 ships with bytesDeleted = false on every batch. The
-// batch + per-row audit entries are durable; the stores still
-// contain the rows. This lets us iterate UI/UX with no risk of
-// data loss while still building the audit trail.
+// Phase 1 ships with bytesDeleted=false on every batch — the operator
+// decision is recorded but the underlying rows stay. Byte deletion
+// becomes a per-store opt-in later.
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { prisma } from '@yge/db';
 import {
   RETENTION_RULES,
   RetentionPurgeBatchSchema,
@@ -33,57 +26,25 @@ import { recordAudit, type AuditContext } from './audit-store';
 import { listLegalHolds } from './legal-holds-store';
 import { collectRetentionCandidates, computePurgeDate } from './records-retention-job';
 
-function dataDir(): string {
-  return (
-    process.env.RETENTION_PURGES_DATA_DIR ??
-    path.resolve(process.cwd(), 'data', 'retention-purges')
-  );
-}
-function indexPath(): string { return path.join(dataDir(), 'index.json'); }
-function rowPath(id: string): string { return path.join(dataDir(), `${id}.json`); }
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
 
-async function ensureDir() { await fs.mkdir(dataDir(), { recursive: true }); }
-
-async function readIndex(): Promise<RetentionPurgeBatch[]> {
-  try {
-    const raw = await fs.readFile(indexPath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((entry: unknown) => {
-        const r = RetentionPurgeBatchSchema.safeParse(entry);
-        return r.success ? r.data : null;
-      })
-      .filter((b): b is RetentionPurgeBatch => b !== null);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
-  }
-}
-
-async function writeIndex(rows: RetentionPurgeBatch[]) {
-  await fs.writeFile(indexPath(), JSON.stringify(rows, null, 2), 'utf8');
-}
-
-async function persist(b: RetentionPurgeBatch) {
-  await ensureDir();
-  await fs.writeFile(rowPath(b.id), JSON.stringify(b, null, 2), 'utf8');
-  const index = await readIndex();
-  index.unshift(b);
-  await writeIndex(index);
+function row2batch(row: { data: unknown }): RetentionPurgeBatch | null {
+  const r = RetentionPurgeBatchSchema.safeParse(row.data);
+  return r.success ? r.data : null;
 }
 
 export async function listRetentionPurgeBatches(): Promise<RetentionPurgeBatch[]> {
-  const rows = await readIndex();
-  return [...rows].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  const rows = await prisma.recordsRetentionPurge.findMany({
+    where: { companyId: DEFAULT_COMPANY_ID },
+    orderBy: { createdAt: 'desc' },
+  });
+  return rows.map(row2batch).filter((b): b is RetentionPurgeBatch => b !== null);
 }
 
 function findRuleForEntityType(
   entityType: AuditEntityType,
   ruleAuthority?: string,
 ): RecordRetentionRule | undefined {
-  // Document buckets pivot through the synthetic 'CompanyDocument'
-  // rules + the authority disambiguator (FEDERAL_I9 vs CA_DOI).
   if (entityType === 'Document') {
     return RETENTION_RULES.find(
       (r) => r.entityType === 'CompanyDocument' && (!ruleAuthority || r.authority === ruleAuthority),
@@ -111,14 +72,6 @@ function holdsFreezing(
   return ids;
 }
 
-/**
- * Confirm a per-bucket purge. Re-evaluates eligibility + hold
- * state at apply-time so a stale dry-run report can't drive a
- * purge of records that have since been frozen or that aren't yet
- * past their retention window.
- *
- * Phase 1: writes the batch + audit entries; bytesDeleted=false.
- */
 export async function confirmRetentionPurge(
   input: RetentionPurgeBatchCreate,
   ctx?: AuditContext,
@@ -173,7 +126,7 @@ export async function confirmRetentionPurge(
   const batch: RetentionPurgeBatch = {
     id: newRetentionPurgeBatchId(),
     createdAt: asOfIso,
-    companyId: ctx?.companyId ?? process.env.DEFAULT_COMPANY_ID ?? 'co-yge',
+    companyId: ctx?.companyId ?? DEFAULT_COMPANY_ID,
     entityType: input.entityType,
     ruleLabel: rule.label,
     ruleAuthority: rule.authority,
@@ -185,10 +138,16 @@ export async function confirmRetentionPurge(
     rows: acceptedRows,
     bytesDeleted: false,
   };
-  await persist(batch);
 
-  // One purge audit per row + a batch-level audit so the auditor
-  // can see both granular per-record decisions and the bulk action.
+  await prisma.recordsRetentionPurge.create({
+    data: {
+      id: batch.id,
+      companyId: batch.companyId,
+      scheduledFor: batch.asOfIso,
+      data: batch as unknown as object,
+    },
+  });
+
   await recordAudit({
     action: 'purge',
     entityType: input.entityType,
