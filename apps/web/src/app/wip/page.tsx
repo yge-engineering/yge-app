@@ -178,9 +178,9 @@ export default async function WipPage({
             {t('wip.empty')}
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-md border border-gray-200 bg-white">
+          <div className="rounded-md border border-gray-200 bg-white md:overflow-visible">
             <table className="w-full text-left text-xs">
-              <thead className="bg-gray-50 uppercase tracking-wide text-gray-500">
+              <thead className="sticky top-0 z-10 bg-gray-50 uppercase tracking-wide text-gray-500">
                 <tr>
                   <th className="px-3 py-2">{t('wip.col.job')}</th>
                   <th className="px-3 py-2 text-right">{t('wip.col.contract')}</th>
@@ -272,9 +272,9 @@ export default async function WipPage({
               />
             </div>
 
-            <div className="mt-4 overflow-x-auto rounded-md border border-gray-200 bg-white">
+            <div className="mt-4 rounded-md border border-gray-200 bg-white md:overflow-visible">
               <table className="w-full text-left text-xs">
-                <thead className="bg-gray-50 uppercase tracking-wide text-gray-500">
+                <thead className="sticky top-0 z-10 bg-gray-50 uppercase tracking-wide text-gray-500">
                   <tr>
                     <th className="px-3 py-2">{t('wip.col.job')}</th>
                     <th className="px-3 py-2 text-right">{t('wip.forecast.col.bac')}</th>
