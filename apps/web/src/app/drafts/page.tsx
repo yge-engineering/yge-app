@@ -13,6 +13,7 @@ import { projectTypeIcon } from '../../lib/project-type-icon';
 import { DashboardRefreshButton } from '../../components/dashboard-refresh-button';
 import { DraftsPinButton, DraftsPinReorder } from '../../components/drafts-pin-button';
 import { DraftsPinFilterChip } from '../../components/drafts-pin-filter-chip';
+import { JobsShortcutsChip } from '../../components/jobs-shortcuts-chip';
 import { EstimatesKeyboardNav } from '../../components/estimates-keyboard-nav';
 import { PinnedCountBadge } from '../../components/pinned-count-badge';
 import { EstimatesSortHeaders } from '../../components/estimates-sort-headers';
@@ -95,6 +96,7 @@ export default async function DraftsPage() {
           &larr; Dashboard
         </Link>
         <div className="flex items-center gap-2">
+          <JobsShortcutsChip />
           <DashboardRefreshButton />
           <Link href="/plans-to-estimate" className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50">
             {t('drafts.newDraft')} &rarr;
