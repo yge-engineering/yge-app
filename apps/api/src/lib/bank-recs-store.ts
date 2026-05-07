@@ -1,10 +1,6 @@
-// File-based store for bank reconciliations.
-//
-// Every mutation here records an audit event via recordAudit() —
-// CLAUDE.md mandates 'every mutation is audit-logged'.
+// Postgres-backed store for bank reconciliations.
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { prisma } from '@yge/db';
 import {
   BankRecSchema,
   newBankRecId,
@@ -14,46 +10,16 @@ import {
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
 
-function dataDir(): string {
-  return process.env.BANK_RECS_DATA_DIR ?? path.resolve(process.cwd(), 'data', 'bank-recs');
-}
-function indexPath(): string {
-  return path.join(dataDir(), 'index.json');
-}
-function rowPath(id: string): string {
-  return path.join(dataDir(), `${id}.json`);
-}
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
 
-async function ensureDir() {
-  await fs.mkdir(dataDir(), { recursive: true });
-}
-
-async function readIndex(): Promise<BankRec[]> {
-  try {
-    const raw = await fs.readFile(indexPath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((entry: unknown) => {
-        const result = BankRecSchema.safeParse(entry);
-        return result.success ? result.data : null;
-      })
-      .filter((r): r is BankRec => r !== null);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
-  }
-}
-
-async function writeIndex(entries: BankRec[]) {
-  await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
+function row2rec(row: { data: unknown }): BankRec {
+  return BankRecSchema.parse(row.data);
 }
 
 export async function createBankRec(
   input: BankRecCreate,
   ctx?: AuditContext,
 ): Promise<BankRec> {
-  await ensureDir();
   const now = new Date().toISOString();
   const id = newBankRecId();
   const r: BankRec = {
@@ -67,10 +33,15 @@ export async function createBankRec(
     ...input,
   };
   BankRecSchema.parse(r);
-  await fs.writeFile(rowPath(id), JSON.stringify(r, null, 2), 'utf8');
-  const index = await readIndex();
-  index.unshift(r);
-  await writeIndex(index);
+  await prisma.bankRec.create({
+    data: {
+      id,
+      companyId: DEFAULT_COMPANY_ID,
+      accountId: r.bankAccountLabel,
+      periodEnd: r.statementDate,
+      data: r as unknown as object,
+    },
+  });
   await recordAudit({
     action: 'create',
     entityType: 'BankRec',
@@ -85,32 +56,31 @@ export async function listBankRecs(filter?: {
   bankAccountLabel?: string;
   status?: string;
 }): Promise<BankRec[]> {
-  let all = await readIndex();
-  if (filter?.bankAccountLabel)
-    all = all.filter((r) => r.bankAccountLabel === filter.bankAccountLabel);
+  const rows = await prisma.bankRec.findMany({
+    where: {
+      companyId: DEFAULT_COMPANY_ID,
+      deletedAt: null,
+      ...(filter?.bankAccountLabel ? { accountId: filter.bankAccountLabel } : {}),
+    },
+    orderBy: { periodEnd: 'desc' },
+  });
+  let all = rows.map(row2rec);
   if (filter?.status) all = all.filter((r) => r.status === filter.status);
-  all.sort((a, b) => b.statementDate.localeCompare(a.statementDate));
   return all;
 }
 
 export async function getBankRec(id: string): Promise<BankRec | null> {
   if (!/^bnk-[a-z0-9]{8}$/.test(id)) return null;
-  try {
-    const raw = await fs.readFile(rowPath(id), 'utf8');
-    return BankRecSchema.parse(JSON.parse(raw));
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    throw err;
-  }
+  const row = await prisma.bankRec.findFirst({
+    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+  });
+  return row ? row2rec(row) : null;
 }
 
 export async function updateBankRec(
   id: string,
   patch: BankRecPatch,
   ctx?: AuditContext,
-  /** Override when the patch represents a domain action (post a
-   *  reconciled rec, void a draft) rather than a generic field
-   *  edit. */
   auditAction: 'update' | 'post' | 'void' = 'update',
 ): Promise<BankRec | null> {
   const existing = await getBankRec(id);
@@ -123,15 +93,14 @@ export async function updateBankRec(
     updatedAt: new Date().toISOString(),
   };
   BankRecSchema.parse(updated);
-  await fs.writeFile(rowPath(id), JSON.stringify(updated, null, 2), 'utf8');
-  const index = await readIndex();
-  const idx = index.findIndex((r) => r.id === id);
-  if (idx >= 0) {
-    index[idx] = updated;
-  } else {
-    index.unshift(updated);
-  }
-  await writeIndex(index);
+  await prisma.bankRec.update({
+    where: { id },
+    data: {
+      accountId: updated.bankAccountLabel,
+      periodEnd: updated.statementDate,
+      data: updated as unknown as object,
+    },
+  });
   await recordAudit({
     action: auditAction,
     entityType: 'BankRec',

@@ -1,13 +1,6 @@
-// Folders store — file-backed CRUD for the /files explorer.
-//
-// Plain English: folders are nodes in a tree. Each folder has a
-// parent (or null for root). The store keeps an index.json with all
-// folders flat, plus per-folder JSON rows. Same shape as the other
-// stores so we can swap in Postgres later without touching the
-// route layer.
+// Postgres-backed store for folder metadata.
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { prisma } from '@yge/db';
 import {
   FolderSchema,
   newFolderId,
@@ -17,66 +10,32 @@ import {
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
 
-function dataDir(): string {
-  return (
-    process.env.FOLDERS_DATA_DIR ??
-    path.resolve(process.cwd(), 'data', 'folders')
-  );
-}
-function indexPath(): string {
-  return path.join(dataDir(), 'index.json');
-}
-function rowPath(id: string): string {
-  return path.join(dataDir(), `${id}.json`);
-}
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
 
-async function ensureDir() {
-  await fs.mkdir(dataDir(), { recursive: true });
-}
-
-async function readIndex(): Promise<Folder[]> {
-  try {
-    const raw = await fs.readFile(indexPath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((entry: unknown) => {
-        const result = FolderSchema.safeParse(entry);
-        return result.success ? result.data : null;
-      })
-      .filter((f): f is Folder => f !== null);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
-  }
-}
-
-async function writeIndex(entries: Folder[]) {
-  await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
+function row2folder(row: { data: unknown }): Folder {
+  return FolderSchema.parse(row.data);
 }
 
 export async function listFolders(): Promise<Folder[]> {
-  await ensureDir();
-  return await readIndex();
+  const rows = await prisma.folder.findMany({
+    where: { companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    orderBy: { name: 'asc' },
+  });
+  return rows.map(row2folder);
 }
 
 export async function getFolder(id: string): Promise<Folder | null> {
-  await ensureDir();
-  try {
-    const raw = await fs.readFile(rowPath(id), 'utf8');
-    const parsed = FolderSchema.safeParse(JSON.parse(raw));
-    return parsed.success ? parsed.data : null;
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    throw err;
-  }
+  if (!/^fld-[a-z0-9]{8}$/.test(id)) return null;
+  const row = await prisma.folder.findFirst({
+    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+  });
+  return row ? row2folder(row) : null;
 }
 
 export async function createFolder(
   input: FolderCreate,
   ctx: AuditContext = { actorUserId: null, reason: null },
 ): Promise<Folder> {
-  await ensureDir();
   const now = new Date().toISOString();
   const folder: Folder = FolderSchema.parse({
     ...input,
@@ -84,15 +43,19 @@ export async function createFolder(
     createdAt: now,
     updatedAt: now,
   });
-  await fs.writeFile(rowPath(folder.id), JSON.stringify(folder, null, 2), 'utf8');
-  const idx = await readIndex();
-  idx.push(folder);
-  await writeIndex(idx);
+  await prisma.folder.create({
+    data: {
+      id: folder.id,
+      companyId: DEFAULT_COMPANY_ID,
+      parentId: folder.parentFolderId ?? null,
+      name: folder.name,
+      data: folder as unknown as object,
+    },
+  });
   await recordAudit({
     entityType: 'Folder',
     entityId: folder.id,
     action: 'create',
-    before: null,
     after: folder,
     ctx,
   });
@@ -106,44 +69,45 @@ export async function updateFolder(
 ): Promise<Folder | null> {
   const existing = await getFolder(id);
   if (!existing) return null;
-  // Guard against simple cycle: setting parent to self or a descendant.
   if (patch.parentFolderId === id) {
     throw new Error('Folder cannot be its own parent');
   }
   if (patch.parentFolderId) {
-    const folders = await readIndex();
+    const folders = await listFolders();
     const byId = new Map(folders.map((f) => [f.id, f]));
     let cursor: Folder | undefined = byId.get(patch.parentFolderId);
     let safety = 64;
     while (cursor && safety-- > 0) {
       if (cursor.id === id) {
-        throw new Error('Cannot move folder into its own descendant');
+        throw new Error('Cannot move folder under its own descendant');
       }
       cursor = cursor.parentFolderId ? byId.get(cursor.parentFolderId) : undefined;
     }
   }
-  const merged: Folder = FolderSchema.parse({
+  const updated: Folder = FolderSchema.parse({
     ...existing,
     ...patch,
     id: existing.id,
     createdAt: existing.createdAt,
     updatedAt: new Date().toISOString(),
   });
-  await fs.writeFile(rowPath(id), JSON.stringify(merged, null, 2), 'utf8');
-  const idx = await readIndex();
-  const i = idx.findIndex((f) => f.id === id);
-  if (i >= 0) idx[i] = merged;
-  else idx.push(merged);
-  await writeIndex(idx);
+  await prisma.folder.update({
+    where: { id },
+    data: {
+      parentId: updated.parentFolderId ?? null,
+      name: updated.name,
+      data: updated as unknown as object,
+    },
+  });
   await recordAudit({
     entityType: 'Folder',
     entityId: id,
     action: 'update',
     before: existing,
-    after: merged,
+    after: updated,
     ctx,
   });
-  return merged;
+  return updated;
 }
 
 export async function deleteFolder(
@@ -152,19 +116,30 @@ export async function deleteFolder(
 ): Promise<boolean> {
   const existing = await getFolder(id);
   if (!existing) return false;
-  await fs.unlink(rowPath(id)).catch(() => undefined);
-  const idx = await readIndex();
-  const next = idx.filter((f) => f.id !== id);
-  // Reparent any direct children to the deleted folder's parent so
-  // they aren't orphaned. The route layer is responsible for moving
-  // documents — we only handle folders here.
-  for (const f of next) {
-    if (f.parentFolderId === id) {
-      f.parentFolderId = existing.parentFolderId ?? null;
-      await fs.writeFile(rowPath(f.id), JSON.stringify(f, null, 2), 'utf8');
-    }
+  // Reparent direct children to the deleted folder's parent.
+  const children = await prisma.folder.findMany({
+    where: { companyId: DEFAULT_COMPANY_ID, parentId: id, deletedAt: null },
+  });
+  for (const child of children) {
+    const childFolder = row2folder(child);
+    const newParent = existing.parentFolderId ?? null;
+    const reparented: Folder = {
+      ...childFolder,
+      parentFolderId: newParent,
+      updatedAt: new Date().toISOString(),
+    };
+    await prisma.folder.update({
+      where: { id: child.id },
+      data: {
+        parentId: newParent,
+        data: reparented as unknown as object,
+      },
+    });
   }
-  await writeIndex(next);
+  await prisma.folder.update({
+    where: { id },
+    data: { deletedAt: new Date() },
+  });
   await recordAudit({
     entityType: 'Folder',
     entityId: id,

@@ -1,15 +1,6 @@
-// Every mutation here records an audit event via recordAudit() —
-// CLAUDE.md mandates 'every mutation is audit-logged'.
-//
-// File-based store for document metadata.
-//
-// Phase 1 only stores the metadata + a URL/path pointing at where the
-// PDF actually lives (Drive, SharePoint, Bluebeam Studio, a local
-// path). The real upload + signed-URL + virus-scan layer lands in a
-// later doc-vault module — this module's surface is the scaffold.
+// Postgres-backed store for document metadata.
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+import { prisma } from '@yge/db';
 import {
   DocumentSchema,
   newDocumentId,
@@ -20,43 +11,7 @@ import {
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
 
-function dataDir(): string {
-  return (
-    process.env.DOCUMENTS_DATA_DIR ??
-    path.resolve(process.cwd(), 'data', 'documents')
-  );
-}
-function indexPath(): string {
-  return path.join(dataDir(), 'index.json');
-}
-function rowPath(id: string): string {
-  return path.join(dataDir(), `${id}.json`);
-}
-
-async function ensureDir() {
-  await fs.mkdir(dataDir(), { recursive: true });
-}
-
-async function readIndex(): Promise<Document[]> {
-  try {
-    const raw = await fs.readFile(indexPath(), 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((entry: unknown) => {
-        const result = DocumentSchema.safeParse(entry);
-        return result.success ? result.data : null;
-      })
-      .filter((d): d is Document => d !== null);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw err;
-  }
-}
-
-async function writeIndex(entries: Document[]) {
-  await fs.writeFile(indexPath(), JSON.stringify(entries, null, 2), 'utf8');
-}
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
 
 function sanitizeTags(tags?: string[]): string[] {
   if (!tags) return [];
@@ -71,11 +26,14 @@ function sanitizeTags(tags?: string[]): string[] {
   return out;
 }
 
+function row2doc(row: { data: unknown }): Document {
+  return DocumentSchema.parse(row.data);
+}
+
 export async function createDocument(
   input: DocumentCreate,
   ctx?: AuditContext,
 ): Promise<Document> {
-  await ensureDir();
   const now = new Date().toISOString();
   const id = newDocumentId();
   const d: Document = {
@@ -85,14 +43,16 @@ export async function createDocument(
     tags: sanitizeTags(input.tags),
     ...input,
   };
-  // Re-apply tag sanitization on the merged object so the spread can't
-  // overwrite our tag list with the raw input.
   d.tags = sanitizeTags(input.tags);
   DocumentSchema.parse(d);
-  await fs.writeFile(rowPath(id), JSON.stringify(d, null, 2), 'utf8');
-  const index = await readIndex();
-  index.unshift(d);
-  await writeIndex(index);
+  await prisma.document.create({
+    data: {
+      id,
+      companyId: DEFAULT_COMPANY_ID,
+      folderId: d.folderId ?? null,
+      data: d as unknown as object,
+    },
+  });
   await recordAudit({
     action: 'create',
     entityType: 'Document',
@@ -108,18 +68,17 @@ export async function listDocuments(filter?: {
   kind?: string;
   tag?: string;
 }): Promise<Document[]> {
-  let all = await readIndex();
-  if (filter?.jobId) {
-    all = all.filter((d) => d.jobId === filter.jobId);
-  }
-  if (filter?.kind) {
-    all = all.filter((d) => d.kind === filter.kind);
-  }
+  const rows = await prisma.document.findMany({
+    where: { companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    orderBy: { createdAt: 'desc' },
+  });
+  let all = rows.map(row2doc);
+  if (filter?.jobId) all = all.filter((d) => d.jobId === filter.jobId);
+  if (filter?.kind) all = all.filter((d) => d.kind === filter.kind);
   if (filter?.tag) {
     const t = normalizeTag(filter.tag);
     all = all.filter((d) => d.tags.includes(t));
   }
-  // Sort by documentDate desc when present, falling back to createdAt.
   all.sort((a, b) => {
     const ad = a.documentDate ?? a.createdAt.slice(0, 10);
     const bd = b.documentDate ?? b.createdAt.slice(0, 10);
@@ -130,13 +89,10 @@ export async function listDocuments(filter?: {
 
 export async function getDocument(id: string): Promise<Document | null> {
   if (!/^doc-[a-z0-9]{8}$/.test(id)) return null;
-  try {
-    const raw = await fs.readFile(rowPath(id), 'utf8');
-    return DocumentSchema.parse(JSON.parse(raw));
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    throw err;
-  }
+  const row = await prisma.document.findFirst({
+    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+  });
+  return row ? row2doc(row) : null;
 }
 
 export async function updateDocument(
@@ -147,31 +103,29 @@ export async function updateDocument(
 ): Promise<Document | null> {
   const existing = await getDocument(id);
   if (!existing) return null;
-  const updated: Document = {
+  const merged: Document = {
     ...existing,
     ...patch,
     id: existing.id,
     createdAt: existing.createdAt,
     updatedAt: new Date().toISOString(),
-    tags: patch.tags !== undefined ? sanitizeTags(patch.tags) : existing.tags,
   };
-  DocumentSchema.parse(updated);
-  await fs.writeFile(rowPath(id), JSON.stringify(updated, null, 2), 'utf8');
-  const index = await readIndex();
-  const idx = index.findIndex((d) => d.id === id);
-  if (idx >= 0) {
-    index[idx] = updated;
-  } else {
-    index.unshift(updated);
-  }
-  await writeIndex(index);
+  if (patch.tags !== undefined) merged.tags = sanitizeTags(patch.tags);
+  DocumentSchema.parse(merged);
+  await prisma.document.update({
+    where: { id },
+    data: {
+      folderId: merged.folderId ?? null,
+      data: merged as unknown as object,
+    },
+  });
   await recordAudit({
     action: auditAction,
     entityType: 'Document',
     entityId: id,
     before: existing,
-    after: updated,
+    after: merged,
     ctx,
   });
-  return updated;
+  return merged;
 }
