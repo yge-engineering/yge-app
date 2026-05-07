@@ -1,0 +1,55 @@
+# Render Blueprint for the YGE API service.
+#
+# Push this file to the repo, point Render's "New Blueprint" at the repo
+# URL, and Render will provision the API service automatically. Costs:
+# starter plan ($7/mo) is enough for Phase 1 traffic; bump to standard
+# once foremen mobile loads pile up.
+#
+# After Render creates the service:
+#   1. Set ANTHROPIC_API_KEY (sync: false — pasted by hand) in the
+#      service's Environment tab.
+#   2. Set DATABASE_URL to the Supabase connection string.
+#   3. Set the auth secrets (NEXTAUTH_SECRET, MOBILE_TOKEN_SECRET).
+#   4. Set the Microsoft OAuth secrets if SSO is wanted at launch.
+
+services:
+  - type: web
+    name: yge-api
+    runtime: node
+    plan: starter
+    region: oregon
+    branch: main
+    rootDir: .
+    buildCommand: pnpm install --frozen-lockfile && pnpm --filter @yge/db exec prisma generate && pnpm --filter @yge/api build
+    startCommand: pnpm --filter @yge/api start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: API_PORT
+        value: "10000"
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_API_URL
+        sync: false
+      - key: NEXTAUTH_SECRET
+        sync: false
+      - key: MOBILE_TOKEN_SECRET
+        sync: false
+      - key: MICROSOFT_CLIENT_ID
+        sync: false
+      - key: MICROSOFT_CLIENT_SECRET
+        sync: false
+      - key: MICROSOFT_TENANT_ID
+        sync: false
+      - key: MICROSOFT_REDIRECT_URI
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
