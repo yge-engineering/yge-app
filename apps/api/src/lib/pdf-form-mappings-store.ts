@@ -17,7 +17,7 @@ import {
 import { recordAudit, type AuditContext } from './audit-store';
 import { buildSeedMapping, listSeedMappings } from './pdf-form-mappings-seeds';
 
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'co-yge';
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
 
 function row2mapping(row: { data: unknown }): PdfFormMapping {
   return PdfFormMappingSchema.parse(row.data);

@@ -8,7 +8,7 @@ import { randomBytes } from 'node:crypto';
 import { prisma } from '@yge/db';
 import type { PtoEOutput } from '@yge/shared';
 
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'co-yge';
+const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
 
 export interface SavedDraft {
   id: string;

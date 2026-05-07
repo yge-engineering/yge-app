@@ -28,6 +28,8 @@ services:
         value: production
       - key: API_PORT
         value: "10000"
+      - key: DEFAULT_COMPANY_ID
+        value: yge-root
       # Default file-store data dir lives on the persistent disk so
       # restart-day doesn't wipe seeded customers / drafts / RFIs.
       # Stores that have been migrated to Postgres (master-profile,

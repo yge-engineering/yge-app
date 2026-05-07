@@ -17,7 +17,7 @@ import {
 import { recordAudit, type AuditContext } from './audit-store';
 
 const DEFAULT_COMPANY_ID =
-  process.env.DEFAULT_COMPANY_ID ?? 'co-yge';
+  process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
 
 function seed(): MasterProfile {
   const c = YGE_COMPANY_INFO;
