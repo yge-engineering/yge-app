@@ -74,7 +74,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
               : t('search.placeholderSubtitle')
           }
         />
-        <form action="/search" method="get" className="mb-6">
+        <form action="/search" method="get" className="mb-6 print:hidden">
           <input
             name="q"
             type="search"
