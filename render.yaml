@@ -1,14 +1,9 @@
 # Render Blueprint for the YGE API service.
 #
-# Push this file to the repo, point Render's "New Blueprint" at the repo
-# URL, and Render will provision the API service automatically. Costs:
-# starter plan ($7/mo) is enough for Phase 1 traffic; bump to standard
-# once foremen mobile loads pile up.
-#
 # After Render creates the service:
-#   1. Set ANTHROPIC_API_KEY (sync: false — pasted by hand) in the
-#      service's Environment tab.
-#   2. Set DATABASE_URL to the Supabase connection string.
+#   1. Set ANTHROPIC_API_KEY (sync: false) in the service's
+#      Environment tab.
+#   2. Set DATABASE_URL to the Supabase pooled connection.
 #   3. Set the auth secrets (NEXTAUTH_SECRET, MOBILE_TOKEN_SECRET).
 #   4. Set the Microsoft OAuth secrets if SSO is wanted at launch.
 
@@ -24,11 +19,136 @@ services:
     startCommand: pnpm --filter @yge/api start
     healthCheckPath: /health
     autoDeploy: true
+    disk:
+      name: yge-api-data
+      mountPath: /var/data
+      sizeGB: 5
     envVars:
       - key: NODE_ENV
         value: production
       - key: API_PORT
         value: "10000"
+      # Default file-store data dir lives on the persistent disk so
+      # restart-day doesn't wipe seeded customers / drafts / RFIs.
+      # Stores that have been migrated to Postgres (master-profile,
+      # vendors) ignore these env vars.
+      - key: DATA_DIR
+        value: /var/data
+      - key: VENDORS_DATA_DIR
+        value: /var/data/vendors
+      - key: CUSTOMERS_DATA_DIR
+        value: /var/data/customers
+      - key: JOBS_DATA_DIR
+        value: /var/data/jobs
+      - key: ESTIMATES_DATA_DIR
+        value: /var/data/estimates
+      - key: DRAFTS_DATA_DIR
+        value: /var/data/drafts
+      - key: BID_RESULTS_DATA_DIR
+        value: /var/data/bid-results
+      - key: BID_TABS_DATA_DIR
+        value: /var/data/bid-tabs
+      - key: IMPORTED_ESTIMATES_DATA_DIR
+        value: /var/data/imported-estimates
+      - key: PDF_FORM_MAPPINGS_DATA_DIR
+        value: /var/data/pdf-form-mappings
+      - key: PORTAL_USERS_DATA_DIR
+        value: /var/data/portal-users
+      - key: DAILY_REPORTS_DATA_DIR
+        value: /var/data/daily-reports
+      - key: TIME_CARDS_DATA_DIR
+        value: /var/data/time-cards
+      - key: CHANGE_ORDERS_DATA_DIR
+        value: /var/data/change-orders
+      - key: PCOS_DATA_DIR
+        value: /var/data/pcos
+      - key: AR_INVOICES_DATA_DIR
+        value: /var/data/ar-invoices
+      - key: AP_INVOICES_DATA_DIR
+        value: /var/data/ap-invoices
+      - key: AR_PAYMENTS_DATA_DIR
+        value: /var/data/ar-payments
+      - key: AP_PAYMENTS_DATA_DIR
+        value: /var/data/ap-payments
+      - key: BANK_RECS_DATA_DIR
+        value: /var/data/bank-recs
+      - key: JOURNAL_ENTRIES_DATA_DIR
+        value: /var/data/journal-entries
+      - key: COA_DATA_DIR
+        value: /var/data/coa
+      - key: EXPENSES_DATA_DIR
+        value: /var/data/expenses
+      - key: LIEN_WAIVERS_DATA_DIR
+        value: /var/data/lien-waivers
+      - key: SUBMITTALS_DATA_DIR
+        value: /var/data/submittals
+      - key: RFIS_DATA_DIR
+        value: /var/data/rfis
+      - key: DISPATCHES_DATA_DIR
+        value: /var/data/dispatches
+      - key: DOCUMENTS_DATA_DIR
+        value: /var/data/documents
+      - key: FOLDERS_DATA_DIR
+        value: /var/data/folders
+      - key: PHOTOS_DATA_DIR
+        value: /var/data/photos
+      - key: TOOLBOX_TALKS_DATA_DIR
+        value: /var/data/toolbox-talks
+      - key: INCIDENTS_DATA_DIR
+        value: /var/data/incidents
+      - key: WEATHER_LOGS_DATA_DIR
+        value: /var/data/weather-logs
+      - key: SWPPP_INSPECTIONS_DATA_DIR
+        value: /var/data/swppp-inspections
+      - key: PUNCH_ITEMS_DATA_DIR
+        value: /var/data/punch-items
+      - key: MASTER_PROFILE_DATA_DIR
+        value: /var/data/master-profile
+      - key: DIR_RATES_DATA_DIR
+        value: /var/data/dir-rates
+      - key: COST_CODES_DATA_DIR
+        value: /var/data/cost-codes
+      - key: EQUIPMENT_RATES_DATA_DIR
+        value: /var/data/equipment-rates
+      - key: EQUIPMENT_DATA_DIR
+        value: /var/data/equipment
+      - key: MATERIALS_DATA_DIR
+        value: /var/data/materials
+      - key: EMPLOYEES_DATA_DIR
+        value: /var/data/employees
+      - key: AUDIT_DATA_DIR
+        value: /var/data/audit
+      - key: CERTIFICATES_DATA_DIR
+        value: /var/data/certificates
+      - key: CERTIFIED_PAYROLLS_DATA_DIR
+        value: /var/data/certified-payrolls
+      - key: SIGNATURES_DATA_DIR
+        value: /var/data/signatures
+      - key: TOOLS_DATA_DIR
+        value: /var/data/tools
+      - key: WEBAUTHN_DATA_DIR
+        value: /var/data/webauthn
+      - key: CREDENTIALS_DATA_DIR
+        value: /var/data/credentials
+      - key: OTP_DATA_DIR
+        value: /var/data/otp
+      - key: MICROSOFT_TOKENS_DATA_DIR
+        value: /var/data/microsoft-tokens
+      - key: SSO_HANDOFF_DATA_DIR
+        value: /var/data/sso-handoff
+      - key: P2E_FEEDBACK_DATA_DIR
+        value: /var/data/p2e-feedback
+      - key: MILEAGE_DATA_DIR
+        value: /var/data/mileage
+      - key: CALENDAR_EVENTS_DATA_DIR
+        value: /var/data/calendar-events
+      - key: CALENDAR_SHARE_TOKENS_DATA_DIR
+        value: /var/data/calendar-share-tokens
+      - key: LEGAL_HOLDS_DATA_DIR
+        value: /var/data/legal-holds
+      - key: RECORDS_RETENTION_PURGES_DATA_DIR
+        value: /var/data/records-retention-purges
+      # Secrets — paste in Render's Environment tab, not here.
       - key: ANTHROPIC_API_KEY
         sync: false
       - key: DATABASE_URL
