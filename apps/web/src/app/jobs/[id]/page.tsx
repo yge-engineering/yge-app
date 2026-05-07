@@ -6,6 +6,7 @@
 
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { BlankEstimateButton } from '@/components/blank-estimate-button';
 import { AuditBinderPanel, Money } from '../../../components';
 import { projectTypeIcon } from '../../../lib/project-type-icon';
 import { relativeTime } from '../../../lib/relative-time';
@@ -249,9 +250,20 @@ export default async function JobDetailPage({
           <Link
             href={`/plans-to-estimate?jobId=${encodeURIComponent(job.id)}`}
             className="rounded-md bg-yge-blue-500 px-3 py-1.5 text-sm font-semibold text-white hover:bg-yge-blue-700"
+            title="Use AI to draft bid items from a plan PDF or RFP text"
           >
-            + Start new estimate
+            + AI estimate
           </Link>
+          <BlankEstimateButton
+            jobId={job.id}
+            projectName={job.projectName}
+            projectType={job.projectType}
+            ownerAgency={job.ownerAgency}
+            location={job.location}
+            bidDueDate={job.bidDueDate}
+            className="rounded-md bg-white border border-yge-blue-500 px-3 py-1.5 text-sm font-semibold text-yge-blue-500 hover:bg-yge-blue-50 disabled:opacity-60"
+            label="+ Blank estimate"
+          />
           {canSeeFinancials && (
             <Link
               href={`/jobs/${job.id}/cost-breakdown`}
@@ -574,12 +586,24 @@ export default async function JobDetailPage({
         {estimates.length === 0 ? (
           <div className="mt-3 rounded-lg border border-dashed border-gray-300 bg-gray-50 p-6 text-center">
             <p className="text-sm text-gray-700">{t('jobDetail.estimates.empty')}</p>
-            <Link
-              href={`/plans-to-estimate?jobId=${encodeURIComponent(job.id)}`}
-              className="mt-3 inline-block rounded-md bg-yge-blue-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-yge-blue-700"
-            >
-              + Start AI draft
-            </Link>
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+              <Link
+                href={`/plans-to-estimate?jobId=${encodeURIComponent(job.id)}`}
+                className="rounded-md bg-yge-blue-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-yge-blue-700"
+              >
+                + Start AI draft
+              </Link>
+              <BlankEstimateButton
+                jobId={job.id}
+                projectName={job.projectName}
+                projectType={job.projectType}
+                ownerAgency={job.ownerAgency}
+                location={job.location}
+                bidDueDate={job.bidDueDate}
+                className="rounded-md border border-yge-blue-500 bg-white px-4 py-2 text-sm font-semibold text-yge-blue-500 hover:bg-yge-blue-50 disabled:opacity-60"
+                label="+ Blank estimate"
+              />
+            </div>
           </div>
         ) : (
           <ul className="mt-3 divide-y divide-gray-100 rounded-lg border border-gray-200 bg-white shadow-sm">

@@ -273,7 +273,6 @@ export default async function JobsPage({ searchParams }: PageProps) {
 
       <h1 className="text-3xl font-bold text-yge-blue-500">{t('jobs.title')}</h1>
           <PinnedCountBadge storageKey="yge.jobs.pinnedIds" eventName="yge:jobs-pinned-changed" />
-          <PinnedCountBadge storageKey="yge.jobs.pinnedIds" eventName="yge:jobs-pinned-changed" />
       <p className="mt-2 text-gray-700">
         {filteredJobs.length === 0 ? (
           t('jobs.subtitle')

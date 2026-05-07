@@ -17,6 +17,7 @@ import {
 import { getDraft } from '../lib/drafts-store';
 import {
   computeVariance,
+  createBlankEstimate,
   createFromDraft,
   createFromTemplate,
   findHistoricalPrices,
@@ -55,6 +56,36 @@ pricedEstimatesRouter.post('/from-draft', async (req, res, next) => {
       draft: draft.draft,
       oppPercent: parsed.data.oppPercent,
     });
+    return res.status(201).json({ estimate });
+  } catch (err) {
+    next(err);
+  }
+});
+
+const BlankBody = z.object({
+  jobId: z.string().min(1),
+  projectName: z.string().min(1).max(200),
+  projectType: z
+    .enum(['ROAD_RECONSTRUCTION', 'DRAINAGE', 'BRIDGE', 'GRADING', 'FIRE_FUEL_REDUCTION', 'OTHER'])
+    .optional(),
+  ownerAgency: z.string().max(200).optional(),
+  location: z.string().max(200).optional(),
+  bidDueDate: z.string().max(40).optional(),
+  oppPercent: z.number().min(0).max(2).optional(),
+});
+
+// POST /api/priced-estimates/blank — create an editable, empty estimate
+// not tied to any AI draft. Used when the estimator wants to type bid
+// items manually rather than starting from Plans-to-Estimate.
+pricedEstimatesRouter.post('/blank', async (req, res, next) => {
+  try {
+    const parsed = BlankBody.safeParse(req.body);
+    if (!parsed.success) {
+      return res
+        .status(400)
+        .json({ error: 'Validation failed', issues: parsed.error.issues });
+    }
+    const estimate = await createBlankEstimate(parsed.data);
     return res.status(201).json({ estimate });
   } catch (err) {
     next(err);

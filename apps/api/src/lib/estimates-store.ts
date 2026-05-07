@@ -205,6 +205,75 @@ export async function createFromDraft(
   return est;
 }
 
+export interface CreateBlankInput {
+  jobId: string;
+  projectName: string;
+  /** Optional — defaults to 'OTHER'. Pulled from the Job when posted from
+   *  /jobs/[id], left to OTHER when started from anywhere else. */
+  projectType?: PricedEstimate['projectType'];
+  ownerAgency?: string;
+  location?: string;
+  bidDueDate?: string;
+  oppPercent?: number;
+}
+
+/**
+ * Build a fresh, empty PricedEstimate not tied to any AI draft. Used
+ * when the estimator wants to compose a bid manually instead of
+ * starting from Plans-to-Estimate. Seeds one empty bid item so the
+ * editor has something to render — the schema requires `bidItems` to
+ * have at least one entry.
+ */
+export async function createBlankEstimate(
+  input: CreateBlankInput,
+  ctx?: AuditContext,
+): Promise<PricedEstimate> {
+  await ensureDir();
+  const now = new Date();
+  const id = makeId(input.projectName, now);
+  const iso = now.toISOString();
+  const seedItem: PricedBidItem = {
+    itemNumber: '1',
+    description: 'New line — replace me',
+    unit: 'LS',
+    quantity: 1,
+    confidence: 'HIGH',
+    unitPriceCents: null,
+  };
+  const est: PricedEstimate = {
+    id,
+    // No source draft for a blank estimate. Use a sentinel so callers
+    // can detect manual estimates without breaking required-string.
+    fromDraftId: 'manual',
+    jobId: input.jobId,
+    createdAt: iso,
+    updatedAt: iso,
+    projectName: input.projectName,
+    projectType: input.projectType ?? 'OTHER',
+    location: input.location,
+    ownerAgency: input.ownerAgency,
+    bidDueDate: input.bidDueDate,
+    bidItems: [seedItem],
+    oppPercent: input.oppPercent ?? 0.2,
+    subBids: [],
+    addenda: [],
+    subLeveling: [],
+  };
+  PricedEstimateSchema.parse(est);
+  await fs.writeFile(estimatePath(id), JSON.stringify(est, null, 2), 'utf8');
+  const index = await readIndex();
+  index.unshift(summarize(est));
+  await writeIndex(index);
+  await recordAudit({
+    action: 'create',
+    entityType: 'Estimate',
+    entityId: id,
+    after: est,
+    ctx,
+  });
+  return est;
+}
+
 export async function listEstimates(): Promise<EstimateSummary[]> {
   return readIndex();
 }
