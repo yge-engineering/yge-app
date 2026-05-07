@@ -10,8 +10,13 @@ import {
   type CustomerPatch,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
+import { getRequestCompanyId } from './request-context';
 
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+const FALLBACK_COMPANY_ID =
+  process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+function companyId(): string {
+  return getRequestCompanyId() ?? FALLBACK_COMPANY_ID;
+}
 
 type DbCustomerType = 'PUBLIC_AGENCY' | 'PRIVATE' | 'UTILITY' | 'OTHER';
 
@@ -58,7 +63,7 @@ export async function createCustomer(
   await prisma.customer.create({
     data: {
       id,
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       name: c.legalName,
       type: kindToType(c.kind),
       contactName: c.contactName ?? null,
@@ -83,7 +88,7 @@ export async function createCustomer(
 
 export async function listCustomers(filter?: { kind?: string }): Promise<Customer[]> {
   const rows = await prisma.customer.findMany({
-    where: { companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { companyId: companyId(), deletedAt: null },
   });
   let all = rows
     .map((r) => row2cus(r))
@@ -96,7 +101,7 @@ export async function listCustomers(filter?: { kind?: string }): Promise<Custome
 export async function getCustomer(id: string): Promise<Customer | null> {
   if (!/^cus-[a-z0-9]{8}$/.test(id)) return null;
   const row = await prisma.customer.findFirst({
-    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { id, companyId: companyId(), deletedAt: null },
   });
   if (!row) return null;
   return row2cus(row);

@@ -10,8 +10,13 @@ import {
   type EmploymentStatus,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
+import { getRequestCompanyId } from './request-context';
 
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+const FALLBACK_COMPANY_ID =
+  process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+function companyId(): string {
+  return getRequestCompanyId() ?? FALLBACK_COMPANY_ID;
+}
 
 type DbStatus = 'ACTIVE' | 'ON_LEAVE' | 'TERMINATED';
 
@@ -51,7 +56,7 @@ export async function createEmployee(
   await prisma.employee.create({
     data: {
       id,
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       firstName: e.firstName,
       lastName: e.lastName,
       hireDate,
@@ -72,7 +77,7 @@ export async function createEmployee(
 
 export async function listEmployees(): Promise<Employee[]> {
   const rows = await prisma.employee.findMany({
-    where: { companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { companyId: companyId(), deletedAt: null },
   });
   return rows
     .map((r) => row2emp(r))
@@ -82,7 +87,7 @@ export async function listEmployees(): Promise<Employee[]> {
 export async function getEmployee(id: string): Promise<Employee | null> {
   if (!/^emp-[a-z0-9]{8}$/.test(id)) return null;
   const row = await prisma.employee.findFirst({
-    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { id, companyId: companyId(), deletedAt: null },
   });
   if (!row) return null;
   return row2emp(row);

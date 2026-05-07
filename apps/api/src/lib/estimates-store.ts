@@ -19,8 +19,13 @@ import {
   type SubBid,
 } from '@yge/shared';
 import { recordAudit, type AuditContext } from './audit-store';
+import { getRequestCompanyId } from './request-context';
 
-const DEFAULT_COMPANY_ID = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+const FALLBACK_COMPANY_ID =
+  process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+function companyId(): string {
+  return getRequestCompanyId() ?? FALLBACK_COMPANY_ID;
+}
 
 export interface EstimateSummary {
   id: string;
@@ -124,7 +129,7 @@ async function persist(est: PricedEstimate): Promise<void> {
     where: { id: est.id },
     create: {
       id: est.id,
-      companyId: DEFAULT_COMPANY_ID,
+      companyId: companyId(),
       jobId: est.jobId,
       revision: 1,
       status: 'DRAFT',
@@ -231,7 +236,7 @@ export async function createBlankEstimate(
 
 export async function listEstimates(): Promise<EstimateSummary[]> {
   const rows = await prisma.estimate.findMany({
-    where: { companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { companyId: companyId(), deletedAt: null },
     orderBy: { createdAt: 'desc' },
   });
   return rows
@@ -243,7 +248,7 @@ export async function listEstimates(): Promise<EstimateSummary[]> {
 export async function getEstimate(id: string): Promise<PricedEstimate | null> {
   if (!/^est-[a-z0-9-]{10,80}$/.test(id)) return null;
   const row = await prisma.estimate.findFirst({
-    where: { id, companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { id, companyId: companyId(), deletedAt: null },
   });
   if (!row) return null;
   return row2est(row);
@@ -458,7 +463,7 @@ export async function findHistoricalPrices(opts: {
   if (targetWords.size === 0) return [];
 
   const rows = await prisma.estimate.findMany({
-    where: { companyId: DEFAULT_COMPANY_ID, deletedAt: null },
+    where: { companyId: companyId(), deletedAt: null },
     orderBy: { createdAt: 'desc' },
   });
   const all = rows.map(row2est).filter((e): e is PricedEstimate => e !== null);
