@@ -42,20 +42,58 @@ Supabase Postgres" without a route or UI change.
 - `render.yaml` now runs `prisma migrate deploy` on every build
   (bundle 1405). New migrations land automatically on next deploy.
 
+## AI features
+
+### Already in production
+- **Plans-to-Estimate** — PDF plan set → draft estimate (Phase 1)
+- **AP-invoice extract** — vendor PDF → pre-filled invoice (Phase 1)
+- **Title-block / scope-gap / spec-extras / bid-schedule** prompts
+  on the estimate review pane (Phase 1)
+- **Cross-check addenda** between RFP + bid response (Phase 1)
+
+### Newly shipped (Phase 2 sweep)
+- **Bank-rec auto-match** (bundles 1370, 1414-1416) — bookkeeper
+  pastes unmatched statement rows, AI suggests AR / AP / expense
+  matches with HIGH/MEDIUM/LOW confidence + reasoning. Read-only
+  review pane on `/bank-recs/[id]`.
+- **Daily-report narrative expansion** (bundles 1417, 1419-1420) —
+  foreman types 3 bullets, "Expand to prose (AI)" button returns
+  a 2-4 sentence paragraph for the agency PM. Foreman edits before
+  saving — AI never auto-commits.
+- **Bid-tab PDF extract** (bundles 1423-1424) — drop a Caltrans /
+  county / agency bid-tab PDF on `/bid-tabs/new`, AI returns
+  structured agency / project / bid-open / bidder list. Operator
+  reviews + saves through the existing import form.
+
+## Multi-tenant foundation (bundles 1421-1422)
+- `apps/api/src/lib/request-context.ts` — Node AsyncLocalStorage
+  carrying `companyId` / `actorUserId` / IP / UA per request.
+- `apps/api/src/middleware/tenant.ts` — Express middleware seeds
+  the context from `X-YGE-Company` header (or env default).
+- `recordAudit()` reads from the request context as a fallback so
+  audit rows are tagged with the right tenant + actor even when
+  the calling route forgot to thread an `AuditContext` through.
+- Stores can opt in to read `getRequestCompanyId()` instead of
+  the hardcoded env default — that migration is mechanical and
+  follows store-by-store.
+
 ## What's next
 
 Phase 2 plan order:
 
-1. **Foundations** ✓ — store migration done, Supabase Storage
-   helper shipped (1383), bank-rec matcher library shipped (1370)
-2. **AP invoice AI extract** ✓ — already in production
-3. **Bank rec auto-match UI** — the matcher library is ready;
-   needs the consumer page (CSV upload → match table → confirm)
-4. **Daily report narrative + photos** — narrative AI not yet
-   wired; photo capture works through the storage helper
-5. **Bookkeeping completion** — financial reports need GL math
-6. **Payroll Gusto sync** — deferred
-7. **Portals + email intelligence** — deferred
+1. **Foundations** ✓ DONE
+2. **AP invoice AI extract** ✓ DONE
+3. **Bank-rec auto-match** ✓ DONE
+4. **Daily-report narrative** ✓ DONE
+5. **Bid-tab AI extract** ✓ DONE
+6. **Multi-tenant scoping** ✓ FOUNDATION DONE — store-by-store
+   opt-in + real auth resolution still pending
+7. **Photo capture for daily reports** — Supabase Storage helper
+   exists; needs the foreman-facing upload widget
+8. **Bookkeeping completion** — financial reports (P&L, balance
+   sheet, WIP, cash flow) need GL math + UI
+9. **Payroll Gusto sync** — deferred
+10. **Portals + email intelligence** — deferred
 
 ## Things still on the file system (ok to leave)
 
