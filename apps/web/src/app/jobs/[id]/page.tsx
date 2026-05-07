@@ -727,7 +727,9 @@ export default async function JobDetailPage({
         )}
       </section>
 
-      <AuditBinderPanel entityType="Job" entityId={job.id} />
+      <div className="print:hidden">
+        <AuditBinderPanel entityType="Job" entityId={job.id} />
+      </div>
     </main>
   );
 }
