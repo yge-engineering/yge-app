@@ -124,9 +124,9 @@ export default async function BidResultsPage() {
               <div className="mt-3">
                 <EstimatesSearchInput targetId="bid-results-list-table" totalCount={results.length} />
               </div>
-            <div className="mt-2 overflow-x-auto rounded-md border border-gray-200 bg-white">
+            <div className="mt-2 rounded-md border border-gray-200 bg-white md:overflow-visible">
               <table id="bid-results-list-table" className="w-full text-left text-sm">
-                <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+                <thead className="sticky top-0 z-10 bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
                   <tr>
                     <th className="px-4 py-2">{t('bidResults.col.bidDate')}</th>
                     <th className="px-4 py-2">{t('bidResults.col.job')}</th>
