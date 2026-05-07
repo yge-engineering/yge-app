@@ -25,7 +25,7 @@ interface Props {
 export function EmptyState({ title, body, actions, compact }: Props) {
   return (
     <div
-      className={`rounded-md border border-dashed border-gray-300 bg-white text-center text-gray-700 ${compact ? 'p-6' : 'p-12'}`}
+      className={`rounded-md border border-dashed border-gray-300 bg-white text-center text-gray-700 print:break-inside-avoid ${compact ? 'p-6' : 'p-12'}`}
     >
       <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-gray-100">
         <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" className="text-gray-400" aria-hidden="true">
