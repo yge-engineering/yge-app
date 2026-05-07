@@ -1175,7 +1175,7 @@ function RecentEstimatesTile({
   estimates: PricedEstimateSummaryLite[];
 }) {
   return (
-    <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
+    <div className="rounded-lg border border-gray-200 bg-white shadow-sm transition hover:shadow">
       <header className="flex items-center justify-between border-b border-gray-200 px-4 py-2">
         <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
           Active bids
