@@ -15,7 +15,7 @@ services:
     region: oregon
     branch: main
     rootDir: .
-    buildCommand: pnpm install --frozen-lockfile && pnpm --filter @yge/db exec prisma generate && pnpm --filter @yge/api build
+    buildCommand: pnpm install --frozen-lockfile && pnpm --filter @yge/db exec prisma generate && pnpm --filter @yge/db exec prisma migrate deploy && pnpm --filter @yge/api build
     startCommand: pnpm --filter @yge/api start
     healthCheckPath: /health
     autoDeploy: true
