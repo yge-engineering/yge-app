@@ -456,6 +456,135 @@ const CALTRANS_PREQUAL: SeedMapping = {
   ],
 };
 
+
+// ---- DIR DAS-141 (affidavit of training contributions) -------------
+
+const DIR_DAS_141: SeedMapping = {
+  id: 'pdf-form-dir-das-141',
+  displayName: 'DAS-141 — Apprenticeship Training Contribution Affidavit',
+  agency: 'CA_DIR',
+  formCode: 'DAS-141',
+  versionDate: '2023-04-01',
+  pdfReference: 'pdf-forms/dir/das-141.pdf',
+  agencyUrl: 'https://www.dir.ca.gov/das/PublicWorksForms.htm',
+  notes: 'Confirms training fund contributions paid (or owed) per craft on a public-works contract. Files alongside DAS-140 + 142 packet.',
+  fields: [
+    f({ id: 'pdf-fld-das141-contractor', pdfFieldName: 'ContractorName', label: 'Contractor name', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'legalName' } }),
+    f({ id: 'pdf-fld-das141-cslb', pdfFieldName: 'License', label: 'CSLB license #', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'cslbLicense' } }),
+    f({ id: 'pdf-fld-das141-dir', pdfFieldName: 'DIR', label: 'DIR registration #', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'dirNumber' } }),
+    f({ id: 'pdf-fld-das141-craft', pdfFieldName: 'Craft', label: 'Craft', kind: 'TEXT', required: true,
+        source: { kind: 'prompt', label: 'Craft', sensitive: false } }),
+    f({ id: 'pdf-fld-das141-hours', pdfFieldName: 'JourneymanHours', label: 'Journeyman hours worked', kind: 'TEXT', required: true,
+        source: { kind: 'prompt', label: 'Total journeyman hours worked on contract', sensitive: false } }),
+    f({ id: 'pdf-fld-das141-contributed', pdfFieldName: 'TrainingContributed', label: 'Training fund contribution paid', kind: 'TEXT', required: true,
+        source: { kind: 'prompt', label: 'Training fund $ contribution paid', sensitive: false } }),
+    f({ id: 'pdf-fld-das141-recipient', pdfFieldName: 'RecipientFund', label: 'Recipient training fund', kind: 'TEXT', required: true,
+        source: { kind: 'prompt', label: 'Recipient training fund (or CAC if no JATC)', sensitive: false } }),
+    f({ id: 'pdf-fld-das141-signature', pdfFieldName: 'Signature', label: 'Authorized signature', kind: 'SIGNATURE', required: true,
+        source: { kind: 'computed', name: 'profile.officers.vp.signature' } }),
+    f({ id: 'pdf-fld-das141-date', pdfFieldName: 'SignatureDate', label: 'Date', kind: 'DATE', required: true,
+        source: { kind: 'computed', name: 'date.today.us' } }),
+  ],
+};
+
+// ---- USCIS I-9 (Employment eligibility) ----------------------------
+
+const USCIS_I9: SeedMapping = {
+  id: 'pdf-form-uscis-i9',
+  displayName: 'USCIS I-9 — Employment Eligibility Verification',
+  agency: 'US_DOL',
+  formCode: 'I-9',
+  versionDate: '2024-08-01',
+  pdfReference: 'pdf-forms/uscis/i-9.pdf',
+  agencyUrl: 'https://www.uscis.gov/i-9',
+  notes: 'Required on first day of employment for every new hire (citizen or not). Section 1 by employee, Section 2 by employer within 3 business days.',
+  fields: [
+    f({ id: 'pdf-fld-i9-employee-name', pdfFieldName: 'EmployeeName', label: 'Employee name', kind: 'TEXT', required: true,
+        source: { kind: 'prompt', label: 'Employee full legal name', sensitive: false } }),
+    f({ id: 'pdf-fld-i9-dob', pdfFieldName: 'DateOfBirth', label: 'Date of birth', kind: 'DATE', required: true,
+        source: { kind: 'prompt', label: 'Employee date of birth', sensitive: true } }),
+    f({ id: 'pdf-fld-i9-ssn', pdfFieldName: 'SSN', label: 'SSN', kind: 'TEXT',
+        source: { kind: 'prompt', label: 'Employee SSN (optional unless E-Verify)', sensitive: true } }),
+    f({ id: 'pdf-fld-i9-citizen', pdfFieldName: 'CitizenshipStatus', label: 'Citizenship status', kind: 'TEXT', required: true,
+        source: { kind: 'prompt', label: 'Citizenship status', sensitive: false } }),
+    f({ id: 'pdf-fld-i9-employer-name', pdfFieldName: 'EmployerName', label: 'Employer name', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'legalName' } }),
+    f({ id: 'pdf-fld-i9-employer-address', pdfFieldName: 'EmployerAddress', label: 'Employer address', kind: 'TEXT', required: true,
+        source: { kind: 'computed', name: 'profile.address.oneLine' } }),
+    f({ id: 'pdf-fld-i9-employer-ein', pdfFieldName: 'EmployerEIN', label: 'Employer EIN', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'federalEin' } }),
+    f({ id: 'pdf-fld-i9-first-day', pdfFieldName: 'FirstDayOfEmployment', label: 'First day of employment', kind: 'DATE', required: true,
+        source: { kind: 'prompt', label: 'First day of employment (yyyy-mm-dd)', sensitive: false } }),
+    f({ id: 'pdf-fld-i9-employer-signature', pdfFieldName: 'EmployerSignature', label: 'Authorized representative signature', kind: 'SIGNATURE', required: true,
+        source: { kind: 'computed', name: 'profile.officers.president.signature' } }),
+    f({ id: 'pdf-fld-i9-employer-date', pdfFieldName: 'EmployerSignatureDate', label: 'Signature date', kind: 'DATE', required: true,
+        source: { kind: 'computed', name: 'date.today.us' } }),
+  ],
+};
+
+// ---- EDD DE 4 (California Employee Withholding Allowance) ----------
+
+const EDD_DE4: SeedMapping = {
+  id: 'pdf-form-edd-de4',
+  displayName: 'EDD DE 4 — Employee Withholding Allowance Certificate',
+  agency: 'CA_FTB',
+  formCode: 'DE-4',
+  versionDate: '2024-01-01',
+  pdfReference: 'pdf-forms/edd/de-4.pdf',
+  agencyUrl: 'https://edd.ca.gov/pdf_pub_ctr/de4.pdf',
+  notes: 'California state-tax companion to the federal W-4. Required for new hires + when an employee changes withholding.',
+  fields: [
+    f({ id: 'pdf-fld-de4-employee-name', pdfFieldName: 'EmployeeName', label: 'Employee name', kind: 'TEXT', required: true,
+        source: { kind: 'prompt', label: 'Employee full legal name', sensitive: false } }),
+    f({ id: 'pdf-fld-de4-ssn', pdfFieldName: 'SSN', label: 'SSN', kind: 'TEXT', required: true,
+        source: { kind: 'prompt', label: 'Employee SSN', sensitive: true } }),
+    f({ id: 'pdf-fld-de4-address', pdfFieldName: 'Address', label: 'Employee address', kind: 'TEXT', required: true,
+        source: { kind: 'prompt', label: 'Employee mailing address', sensitive: false } }),
+    f({ id: 'pdf-fld-de4-marital', pdfFieldName: 'MaritalStatus', label: 'Marital status', kind: 'TEXT', required: true,
+        source: { kind: 'prompt', label: 'Single / Married / Head of household', sensitive: false } }),
+    f({ id: 'pdf-fld-de4-allowances', pdfFieldName: 'Allowances', label: 'Total allowances', kind: 'TEXT', required: true,
+        source: { kind: 'prompt', label: 'Total state withholding allowances', sensitive: false } }),
+    f({ id: 'pdf-fld-de4-employer-name', pdfFieldName: 'EmployerName', label: 'Employer name', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'legalName' } }),
+    f({ id: 'pdf-fld-de4-signature', pdfFieldName: 'EmployeeSignature', label: 'Employee signature', kind: 'SIGNATURE', required: true,
+        source: { kind: 'prompt', label: 'Employee signature', sensitive: false } }),
+    f({ id: 'pdf-fld-de4-date', pdfFieldName: 'SignatureDate', label: 'Date', kind: 'DATE', required: true,
+        source: { kind: 'computed', name: 'date.today.us' } }),
+  ],
+};
+
+// ---- ACORD 855 (Notice of Cancellation) -----------------------------
+
+const ACORD_855: SeedMapping = {
+  id: 'pdf-form-acord-855',
+  displayName: 'ACORD 855 — Notice of Cancellation',
+  agency: 'ACORD',
+  formCode: 'ACORD-855',
+  versionDate: '2016-03-01',
+  pdfReference: 'pdf-forms/acord/acord-855.pdf',
+  agencyUrl: 'https://www.acord.org/forms/Pages/forms-library.aspx',
+  notes: 'Used to notify a certificate holder that a policy has been or will be cancelled. YGE rarely originates this; usually receives them from carriers.',
+  fields: [
+    f({ id: 'pdf-fld-acord855-producer', pdfFieldName: 'PRODUCER', label: 'Producer', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'insurance.GENERAL_LIABILITY.brokerName' } }),
+    f({ id: 'pdf-fld-acord855-insured', pdfFieldName: 'INSURED', label: 'Named insured', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'legalName' } }),
+    f({ id: 'pdf-fld-acord855-policy', pdfFieldName: 'POLICY_NUMBER', label: 'Policy number', kind: 'TEXT', required: true,
+        source: { kind: 'prompt', label: 'Policy number being cancelled', sensitive: false } }),
+    f({ id: 'pdf-fld-acord855-effective', pdfFieldName: 'CANCEL_EFFECTIVE', label: 'Cancellation effective', kind: 'DATE', required: true,
+        source: { kind: 'prompt', label: 'Cancellation effective date', sensitive: false } }),
+    f({ id: 'pdf-fld-acord855-reason', pdfFieldName: 'REASON', label: 'Reason', kind: 'TEXT', required: true,
+        source: { kind: 'prompt', label: 'Reason for cancellation', sensitive: false } }),
+    f({ id: 'pdf-fld-acord855-holder', pdfFieldName: 'CERT_HOLDER', label: 'Certificate holder', kind: 'TEXT', required: true,
+        source: { kind: 'prompt', label: 'Certificate holder name + address', sensitive: false } }),
+    f({ id: 'pdf-fld-acord855-date', pdfFieldName: 'NoticeDate', label: 'Notice date', kind: 'DATE', required: true,
+        source: { kind: 'computed', name: 'date.today.us' } }),
+  ],
+};
+
 const SEEDS: SeedMapping[] = [
   IRS_W9,
   DIR_DAS_140,
@@ -468,6 +597,10 @@ const SEEDS: SeedMapping[] = [
   IRS_W4,
   ACORD_30,
   CALTRANS_PREQUAL,
+  DIR_DAS_141,
+  USCIS_I9,
+  EDD_DE4,
+  ACORD_855,
 ];
 
 /**
