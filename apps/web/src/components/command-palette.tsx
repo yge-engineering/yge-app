@@ -41,6 +41,8 @@ export function CommandPalette({ links }: CommandPaletteProps) {
   const [query, setQuery] = useState('');
   const [activeIdx, setActiveIdx] = useState(0);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const [entityLinks, setEntityLinks] = useState<PaletteNavLink[]>([]);
+  const fetchedEntities = useRef(false);
 
   // Global ⌘-K / Ctrl-K to toggle. Esc to close.
   useEffect(() => {
@@ -62,6 +64,62 @@ export function CommandPalette({ links }: CommandPaletteProps) {
     return () => window.removeEventListener('keydown', onKey);
   }, [open]);
 
+  // Lazy-fetch jobs + estimate summaries on first open. The palette
+  // is now a true jump-anywhere — type a project name to land on
+  // that job's detail or its estimate. Entities are merged into the
+  // same fuzzy-match pool as nav links and quick actions.
+  useEffect(() => {
+    if (!open) return;
+    if (fetchedEntities.current) return;
+    fetchedEntities.current = true;
+    const apiBase =
+      process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+    void (async () => {
+      const merged: PaletteNavLink[] = [];
+      try {
+        const jobsRes = await fetch(`${apiBase}/api/jobs`, { cache: 'no-store' });
+        if (jobsRes.ok) {
+          const body = (await jobsRes.json()) as {
+            jobs: Array<{ id: string; projectName: string; ownerAgency?: string }>;
+          };
+          for (const j of body.jobs) {
+            merged.push({
+              label: j.projectName + (j.ownerAgency ? ` (${j.ownerAgency})` : ''),
+              href: `/jobs/${j.id}`,
+              group: 'Job',
+            });
+          }
+        }
+      } catch {
+        /* swallow — palette still works without jobs */
+      }
+      try {
+        const estRes = await fetch(`${apiBase}/api/priced-estimates`, {
+          cache: 'no-store',
+        });
+        if (estRes.ok) {
+          const body = (await estRes.json()) as {
+            estimates: Array<{ id: string; projectName: string; bidStatus?: string }>;
+          };
+          for (const e of body.estimates) {
+            merged.push({
+              label:
+                e.projectName +
+                (e.bidStatus && e.bidStatus !== 'pursuing'
+                  ? ` [${e.bidStatus}]`
+                  : ''),
+              href: `/estimates/${e.id}`,
+              group: 'Estimate',
+            });
+          }
+        }
+      } catch {
+        /* swallow */
+      }
+      setEntityLinks(merged);
+    })();
+  }, [open]);
+
   // Auto-focus the input each time the palette opens.
   useEffect(() => {
     if (!open) return;
@@ -70,12 +128,13 @@ export function CommandPalette({ links }: CommandPaletteProps) {
   }, [open]);
 
   const ranked = useMemo(() => {
-    const scored = links
+    const allLinks = [...links, ...entityLinks];
+    const scored = allLinks
       .map((l) => ({ link: l, score: fuzzyScore(query, l.label, l.href) }))
       .filter((s) => s.score > 0)
       .sort((a, b) => b.score - a.score);
     return scored.slice(0, 12);
-  }, [links, query]);
+  }, [links, entityLinks, query]);
 
   // Reset active index when results change.
   useEffect(() => {
