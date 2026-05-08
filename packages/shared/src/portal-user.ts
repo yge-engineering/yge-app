@@ -19,6 +19,9 @@ const PORTAL_ROLES = [
   'PROJECT_MANAGER',
   'FOREMAN',
   'CREW',
+  'EXTERNAL_OWNER',
+  'EXTERNAL_SUB',
+  'EXTERNAL_BOND',
 ] as const satisfies readonly PortalRole[];
 
 export const PortalRoleSchema = z.enum(PORTAL_ROLES);

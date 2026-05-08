@@ -19,7 +19,10 @@ export type PortalRole =
   | 'OFFICE'
   | 'PROJECT_MANAGER'
   | 'FOREMAN'
-  | 'CREW';
+  | 'CREW'
+  | 'EXTERNAL_OWNER'
+  | 'EXTERNAL_SUB'
+  | 'EXTERNAL_BOND';
 
 export type Permission =
   // Estimating
@@ -52,7 +55,11 @@ export type Permission =
   // Portal admin — invite/remove users, change roles
   | 'portalUsers:manage'
   // Settings + integrations (Microsoft 365, etc.)
-  | 'settings:manage';
+  | 'settings:manage'
+  // External portal scopes — read-only views only.
+  | 'portal:owner'
+  | 'portal:sub'
+  | 'portal:bond';
 
 const ALL_PERMISSIONS: Permission[] = [
   'estimates:view',
@@ -75,6 +82,9 @@ const ALL_PERMISSIONS: Permission[] = [
   'audit:view',
   'portalUsers:manage',
   'settings:manage',
+  'portal:owner',
+  'portal:sub',
+  'portal:bond',
 ];
 
 export const ROLE_PERMISSIONS: Record<PortalRole, Permission[]> = {
@@ -131,6 +141,11 @@ export const ROLE_PERMISSIONS: Record<PortalRole, Permission[]> = {
 
   // Crew — own profile, own time card, safety docs only.
   CREW: ['safety:view'],
+
+  // External portals — read-only, scoped to their portal view.
+  EXTERNAL_OWNER: ['portal:owner'],
+  EXTERNAL_SUB: ['portal:sub'],
+  EXTERNAL_BOND: ['portal:bond'],
 };
 
 interface PortalUserShape {
@@ -190,5 +205,11 @@ export function portalRoleLabel(r: PortalRole): string {
       return 'Foreman';
     case 'CREW':
       return 'Crew member';
+    case 'EXTERNAL_OWNER':
+      return 'Agency / owner (external)';
+    case 'EXTERNAL_SUB':
+      return 'Subcontractor (external)';
+    case 'EXTERNAL_BOND':
+      return 'Bond agent (external)';
   }
 }
