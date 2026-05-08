@@ -761,6 +761,43 @@ export default async function JobDetailPage({
         )}
       </section>
 
+      <section className="mt-10 print:hidden">
+        <h2 className="text-xl font-semibold text-gray-900">
+          Compliance forms
+        </h2>
+        <p className="text-xs text-gray-500">
+          Print-to-PDF templates for the CA prevailing-wage docs Brook
+          files per job. Hand-fill the trade-specific blanks before
+          mailing.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <a
+            href={`/jobs/${job.id}/das-140`}
+            target="_blank"
+            rel="noreferrer"
+            className="rounded border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+          >
+            🖨 DAS-140 (Notice of contract award)
+          </a>
+          <a
+            href={`/jobs/${job.id}/das-141`}
+            target="_blank"
+            rel="noreferrer"
+            className="rounded border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+          >
+            🖨 DAS-141 (Request for dispatch)
+          </a>
+          <a
+            href={`/jobs/${job.id}/das-142`}
+            target="_blank"
+            rel="noreferrer"
+            className="rounded border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+          >
+            🖨 DAS-142 (Training fund contributions)
+          </a>
+        </div>
+      </section>
+
       <div className="print:hidden">
         <AuditBinderPanel entityType="Job" entityId={job.id} />
       </div>
