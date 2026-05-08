@@ -1,27 +1,16 @@
 'use client';
 
-// Tiny client island so /estimates/[id]/print can stay a server component
-// (it does its own data fetch). The print button is the only interactive
-// element on that page.
+// Reusable "Print to PDF" button for any printable page. Hides
+// itself in @media print so it doesn't appear on the printout.
 
-import { useTranslator } from '../lib/use-translator';
-
-interface Props {
-  className?: string;
-  label?: string;
-}
-
-export function PrintButton({ className, label }: Props) {
-  const t = useTranslator();
+export function PrintButton({ label }: { label?: string } = {}) {
   return (
     <button
+      type="button"
       onClick={() => window.print()}
-      className={
-        className ??
-        'rounded bg-yge-blue-500 px-3 py-1 text-xs font-medium text-white hover:bg-yge-blue-700 print:hidden'
-      }
+      className="rounded bg-yge-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-yge-blue-700 print:hidden"
     >
-      {label ?? t('printButton.default')}
+      {label ?? '🖨 Print to PDF'}
     </button>
   );
 }

@@ -18,7 +18,7 @@ import {
   type Expense,
   type JournalEntry,
 } from '@yge/shared';
-import { PrintButton } from './print-button';
+import { PrintButton } from '../../components/print-button';
 
 function apiBaseUrl(): string {
   return (
