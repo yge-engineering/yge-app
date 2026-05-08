@@ -75,6 +75,7 @@ import { takeoffExtractRouter } from './routes/takeoff-extract';
 import { crossCheckAddendaRouter } from './routes/cross-check-addenda';
 import { adminErrorsRouter } from './routes/admin-errors';
 import { adminBackfillRouter } from './routes/admin-backfill';
+import { gustoRouter } from './routes/gusto';
 
 const app = express();
 
@@ -183,6 +184,7 @@ app.use('/api/takeoff', takeoffExtractRouter);
 app.use('/api/priced-estimates', crossCheckAddendaRouter);
 app.use('/api/admin', adminErrorsRouter);
 app.use('/api/admin', adminBackfillRouter);
+app.use('/api/gusto', gustoRouter);
 
 // 404
 app.use((_req, res) => {
