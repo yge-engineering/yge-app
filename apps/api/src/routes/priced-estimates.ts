@@ -6,6 +6,7 @@
 
 import { Router } from 'express';
 import { pricedEstimatesImportRouter } from './priced-estimates-import';
+import { pricedEstimatesReviewRouter } from './priced-estimates-review';
 import { z } from 'zod';
 import {
   AddendumSchema,
@@ -33,6 +34,7 @@ export const pricedEstimatesRouter = Router();
 
 // Sub-router: CSV import (POST /import-csv).
 pricedEstimatesRouter.use('/', pricedEstimatesImportRouter);
+pricedEstimatesRouter.use('/', pricedEstimatesReviewRouter);
 
 const FromDraftBody = z.object({
   fromDraftId: z.string().min(1),
