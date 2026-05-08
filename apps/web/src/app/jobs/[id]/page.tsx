@@ -30,6 +30,7 @@ import { BidDueBanner } from '@/components/bid-due-banner';
 import { JobAgencyCompetitors } from '@/components/job-agency-competitors';
 import { JobLinkedBidTabs } from '@/components/job-linked-bid-tabs';
 import { JobProfitabilityTile } from '@/components/job-profitability-tile';
+import { ImportEstimateButton } from '@/components/import-estimate-button';
 import { ForecastStrip } from '@/components/forecast-strip';
 import { fetchNwsForecast } from '@/lib/nws';
 
@@ -461,12 +462,18 @@ export default async function JobDetailPage({
           <h2 className="text-xl font-semibold text-gray-900">
             {t('jobDetail.h.drafts')}
           </h2>
-          <Link
-            href={`/plans-to-estimate?jobId=${encodeURIComponent(job.id)}`}
-            className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50"
-          >
-            {t('jobDetail.newDraft')}
-          </Link>
+          <div className="flex items-center gap-2">
+            <ImportEstimateButton
+              presetJobId={job.id}
+              label="⬆ Import from Excel"
+            />
+            <Link
+              href={`/plans-to-estimate?jobId=${encodeURIComponent(job.id)}`}
+              className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50"
+            >
+              {t('jobDetail.newDraft')}
+            </Link>
+          </div>
         </div>
         {drafts.length === 0 ? (
           <p className="mt-2 text-sm text-gray-500">
