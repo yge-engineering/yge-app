@@ -22,6 +22,7 @@ import { MobileAppCallout } from '../../components/mobile-app-callout';
 import { InboxTriageTile } from '../../components/inbox-triage-tile';
 import { ErrorCountTile } from '../../components/error-count-tile';
 import { ArAgingTile } from '../../components/ar-aging-tile';
+import { CprDueTile } from '../../components/cpr-due-tile';
 import { currentUserCan } from '../../lib/permissions';
 import { CopyMoneyButton } from '../../components/copy-money-button';
 import { PinnedIndicator } from '../../components/pinned-indicator';
@@ -523,6 +524,7 @@ export default async function DashboardPage() {
       ) : null}
 
       {currentUserCan('financials:view') ? <ArAgingTile /> : null}
+      {currentUserCan('financials:view') ? <CprDueTile /> : null}
       {currentUserCan('audit:view') ? <ErrorCountTile /> : null}
 
       {apiUnreachable && (
