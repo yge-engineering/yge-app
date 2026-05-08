@@ -152,6 +152,9 @@ const NAV_SPEC: NavGroupSpec[] = [
       { key: 'nav.cashFlow', href: '/cash-flow', requires: 'financials:view' },
       { key: 'nav.closePackage', href: '/close-package', requires: 'financials:view' },
       { key: 'nav.adminErrors', href: '/admin/errors', requires: 'audit:view' },
+      { key: 'nav.portalOwnerPreview', href: '/portal/owner', requires: 'portal:owner' },
+      { key: 'nav.portalSubPreview', href: '/portal/sub', requires: 'portal:sub' },
+      { key: 'nav.portalBondPreview', href: '/portal/bond', requires: 'portal:bond' },
     ],
   },
   {
