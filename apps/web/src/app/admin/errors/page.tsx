@@ -33,6 +33,30 @@ function apiBaseUrl(): string {
   );
 }
 
+interface ApiErrorGroup {
+  message: string;
+  count: number;
+  latestAt: string;
+  sampleStatusCode: number;
+  sampleRoute: string;
+  sampleRequestId: string | null;
+}
+
+async function fetchByMessage(params: { since?: string }): Promise<ApiErrorGroup[]> {
+  const qs = new URLSearchParams();
+  if (params.since) qs.set('since', params.since);
+  try {
+    const res = await fetch(
+      `${apiBaseUrl()}/api/admin/errors/by-message?${qs.toString()}`,
+      { cache: 'no-store' },
+    );
+    if (!res.ok) return [];
+    return ((await res.json()) as { groups: ApiErrorGroup[] }).groups;
+  } catch {
+    return [];
+  }
+}
+
 async function fetchErrors(params: {
   since?: string;
   statusCode?: string;
@@ -61,7 +85,10 @@ export default async function AdminErrorsPage({
   searchParams: { since?: string; statusCode?: string; search?: string };
 }) {
   requirePermission('audit:view');
-  const errors = await fetchErrors(searchParams);
+  const [errors, groups] = await Promise.all([
+    fetchErrors(searchParams),
+    fetchByMessage({ since: searchParams.since }),
+  ]);
   const t = getTranslator();
 
   // Default since = 7 days ago for the form display.
@@ -129,6 +156,48 @@ export default async function AdminErrorsPage({
           </button>
         </form>
 
+        {groups.length > 0 ? (
+          <section className="mb-6">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+              Top errors by message (in window)
+            </h2>
+            <div className="mt-2 overflow-x-auto rounded-md border border-gray-200 bg-white">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-600">
+                  <tr>
+                    <th className="px-3 py-2">Count</th>
+                    <th className="px-3 py-2">Message</th>
+                    <th className="px-3 py-2">Latest</th>
+                    <th className="px-3 py-2">Sample route</th>
+                    <th className="px-3 py-2">Sample req id</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {groups.map((g) => (
+                    <tr key={g.message + g.sampleRequestId}>
+                      <td className="px-3 py-1 font-mono font-bold">
+                        {g.count}
+                      </td>
+                      <td className="px-3 py-1">{g.message}</td>
+                      <td className="px-3 py-1 font-mono text-xs text-gray-700">
+                        {g.latestAt.replace('T', ' ').slice(0, 19)}
+                      </td>
+                      <td className="px-3 py-1 font-mono text-xs text-gray-700 break-all">
+                        {g.sampleRoute}
+                      </td>
+                      <td className="px-3 py-1 font-mono text-[11px] text-gray-500">
+                        {g.sampleRequestId ?? '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-1 text-[11px] text-gray-500">
+              Top 20 messages, scanning the most-recent 5,000 rows in the window.
+            </p>
+          </section>
+        ) : null}
         {errors.length === 0 ? (
           <div className="rounded-md border border-green-300 bg-green-50 px-4 py-6 text-center text-sm text-green-800">
             No captured errors in this window. ✓

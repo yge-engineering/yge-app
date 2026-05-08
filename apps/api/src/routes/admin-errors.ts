@@ -72,3 +72,61 @@ adminErrorsRouter.get('/errors', async (req, res, next) => {
     next(err);
   }
 });
+adminErrorsRouter.get('/errors/by-message', async (req, res, next) => {
+  try {
+    const parsed = ListQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      return res
+        .status(400)
+        .json({ error: 'Validation failed', issues: parsed.error.issues });
+    }
+    const sinceMs = parsed.data.since
+      ? Date.parse(parsed.data.since)
+      : Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const since = Number.isFinite(sinceMs)
+      ? new Date(sinceMs)
+      : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const rows = await prisma.apiError.findMany({
+      where: { occurredAt: { gte: since } },
+      orderBy: { occurredAt: 'desc' },
+      take: 5000,
+    });
+    interface Bucket {
+      message: string;
+      count: number;
+      latestAt: string;
+      sampleStatusCode: number;
+      sampleRoute: string;
+      sampleRequestId: string | null;
+    }
+    const buckets = new Map<string, Bucket>();
+    for (const r of rows) {
+      const key = r.message.slice(0, 200);
+      const existing = buckets.get(key);
+      if (existing) {
+        existing.count += 1;
+        if (r.occurredAt.toISOString() > existing.latestAt) {
+          existing.latestAt = r.occurredAt.toISOString();
+          existing.sampleStatusCode = r.statusCode;
+          existing.sampleRoute = r.route;
+          existing.sampleRequestId = r.requestId;
+        }
+      } else {
+        buckets.set(key, {
+          message: key,
+          count: 1,
+          latestAt: r.occurredAt.toISOString(),
+          sampleStatusCode: r.statusCode,
+          sampleRoute: r.route,
+          sampleRequestId: r.requestId,
+        });
+      }
+    }
+    const top = [...buckets.values()]
+      .sort((a, b) => b.count - a.count || b.latestAt.localeCompare(a.latestAt))
+      .slice(0, 20);
+    return res.json({ groups: top, totalRowsScanned: rows.length });
+  } catch (err) {
+    next(err);
+  }
+});
