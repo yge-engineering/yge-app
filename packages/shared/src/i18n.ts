@@ -4620,6 +4620,7 @@ export const SEED_DICTIONARY: DictionaryByLocale = {
     'nav.cashFlow': 'Cash flow',
     'nav.closePackage': 'Close package',
     'nav.adminErrors': 'Server errors',
+    'nav.adminGusto': 'Gusto integration',
     'nav.portalOwnerPreview': 'Portal: Owner (preview)',
     'nav.portalSubPreview': 'Portal: Sub (preview)',
     'nav.portalBondPreview': 'Portal: Bond (preview)',
