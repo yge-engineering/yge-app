@@ -1,30 +1,83 @@
 // Excel / CSV import button for the estimates list page.
 //
-// Plain English: Ryan works the bid in Excel (multi-tab workbook is
-// fine), drops the .xlsx here, picks which tab holds the items, and
-// lands in the editor with the bid populated. CSV also works.
-// Required columns: itemNumber, description, unit, quantity.
-// unitPrice is optional. First row can be a header.
+// Drop in an .xlsx (multi-tab workbook is fine — pick the tab in
+// the next step) or a .csv. Required columns: itemNumber,
+// description, unit, quantity. unitPrice optional. Header row
+// auto-detected.
 
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import type { Job } from '@yge/shared';
 
 function apiBaseUrl(): string {
   return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 }
 
-export function ImportEstimateButton() {
+export interface ImportEstimateButtonProps {
+  /** When set, the dialog skips the job dropdown and pins the import
+   *  to this job. Used by the per-job button on /jobs/[id]. */
+  presetJobId?: string;
+  /** Optional override for the trigger label. */
+  label?: string;
+}
+
+export function ImportEstimateButton({
+  presetJobId,
+  label,
+}: ImportEstimateButtonProps = {}) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [jobId, setJobId] = useState('');
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [jobId, setJobId] = useState(presetJobId ?? '');
   const [projectName, setProjectName] = useState('');
   const [availableSheets, setAvailableSheets] = useState<string[] | null>(null);
   const [sheetName, setSheetName] = useState('');
+
+  // Fetch jobs once when the dialog opens, unless we have a presetJobId.
+  useEffect(() => {
+    if (!open) return;
+    if (presetJobId) {
+      // Just resolve the project name for the preset job.
+      void (async () => {
+        try {
+          const res = await fetch(
+            `${apiBaseUrl()}/api/jobs/${encodeURIComponent(presetJobId)}`,
+            { cache: 'no-store' },
+          );
+          if (!res.ok) return;
+          const body = (await res.json()) as { job?: Job };
+          if (body.job) {
+            setJobs([body.job]);
+            setProjectName((p) => p || body.job!.projectName);
+          }
+        } catch {
+          /* ignore */
+        }
+      })();
+      return;
+    }
+    void (async () => {
+      try {
+        const res = await fetch(`${apiBaseUrl()}/api/jobs`, {
+          cache: 'no-store',
+        });
+        if (!res.ok) return;
+        const body = (await res.json()) as { jobs: Job[] };
+        const sorted = [...body.jobs].sort((a, b) =>
+          b.createdAt.localeCompare(a.createdAt),
+        );
+        setJobs(sorted);
+      } catch {
+        /* ignore — user can still type the job id by hand if we
+         *  surface a fallback in the future */
+      }
+    })();
+  }, [open, presetJobId]);
 
   function reset() {
     setError(null);
@@ -32,7 +85,15 @@ export function ImportEstimateButton() {
     setSheetName('');
   }
 
-  async function submit(picked?: string) {
+  function onJobChange(next: string) {
+    setJobId(next);
+    const job = jobs.find((j) => j.id === next);
+    if (job && !projectName) {
+      setProjectName(job.projectName);
+    }
+  }
+
+  async function submit() {
     setError(null);
     const file = fileRef.current?.files?.[0];
     if (!file) {
@@ -40,7 +101,7 @@ export function ImportEstimateButton() {
       return;
     }
     if (!jobId.trim() || !projectName.trim()) {
-      setError('Job id and project name are both required.');
+      setError('Job and project name are both required.');
       return;
     }
     setBusy(true);
@@ -49,8 +110,7 @@ export function ImportEstimateButton() {
       fd.append('file', file);
       fd.append('jobId', jobId.trim());
       fd.append('projectName', projectName.trim());
-      const useSheet = picked ?? sheetName;
-      if (useSheet) fd.append('sheetName', useSheet);
+      if (sheetName) fd.append('sheetName', sheetName);
       const res = await fetch(
         `${apiBaseUrl()}/api/priced-estimates/import-csv`,
         { method: 'POST', body: fd },
@@ -62,7 +122,6 @@ export function ImportEstimateButton() {
           summary?: { skippedReasons?: string[] };
         };
         if (body.availableSheets && body.availableSheets.length > 0) {
-          // Multi-sheet workbook — show picker.
           setAvailableSheets(body.availableSheets);
           setSheetName(body.availableSheets[0] ?? '');
           setError(null);
@@ -93,7 +152,7 @@ export function ImportEstimateButton() {
         }}
         className="rounded-md border border-yge-blue-500 bg-white px-3 py-1.5 text-xs font-semibold text-yge-blue-700 hover:bg-yge-blue-50"
       >
-        ⬆ Import from Excel / CSV
+        {label ?? '⬆ Import from Excel / CSV'}
       </button>
     );
   }
@@ -122,24 +181,41 @@ export function ImportEstimateButton() {
           <code className="font-mono">description</code>,{' '}
           <code className="font-mono">unit</code>,{' '}
           <code className="font-mono">quantity</code>. Optional:{' '}
-          <code className="font-mono">unitPrice</code>. A header row is
-          auto-detected.
+          <code className="font-mono">unitPrice</code>.
         </p>
 
         <label className="mt-4 block text-xs">
-          <span className="mb-1 block font-medium text-gray-700">Job ID</span>
-          <input
-            type="text"
-            value={jobId}
-            onChange={(e) => setJobId(e.target.value)}
-            placeholder="job-2026-..."
-            className="w-full rounded border border-gray-300 px-2 py-1 text-sm font-mono"
-            required
-          />
+          <span className="mb-1 block font-medium text-gray-700">Job</span>
+          {presetJobId ? (
+            <input
+              type="text"
+              value={jobs[0]?.projectName ?? presetJobId}
+              readOnly
+              className="w-full rounded border border-gray-300 bg-gray-50 px-2 py-1 text-sm"
+            />
+          ) : (
+            <select
+              value={jobId}
+              onChange={(e) => onJobChange(e.target.value)}
+              className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
+              required
+            >
+              <option value="">Pick a job…</option>
+              {jobs.map((j) => (
+                <option key={j.id} value={j.id}>
+                  {j.projectName}
+                  {j.ownerAgency ? ` — ${j.ownerAgency}` : ''}
+                </option>
+              ))}
+            </select>
+          )}
         </label>
         <label className="mt-3 block text-xs">
           <span className="mb-1 block font-medium text-gray-700">
             Project name
+            <span className="ml-1 text-[11px] text-gray-500">
+              (auto-filled from job — you can override)
+            </span>
           </span>
           <input
             type="text"
@@ -159,7 +235,6 @@ export function ImportEstimateButton() {
             type="file"
             accept=".csv,.xlsx,.xlsm,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             onChange={() => {
-              // Reset sheet picker when the user swaps files.
               setAvailableSheets(null);
               setSheetName('');
             }}
@@ -184,7 +259,7 @@ export function ImportEstimateButton() {
               ))}
             </select>
             <p className="mt-1 text-[11px] text-gray-500">
-              Click "Import" again with this sheet selected.
+              Click "Import this sheet" once you've picked the right one.
             </p>
           </label>
         ) : null}
