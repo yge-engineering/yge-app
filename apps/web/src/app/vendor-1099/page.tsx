@@ -71,11 +71,21 @@ export default async function Vendor1099Page({
           title={t('v1099.title')}
           subtitle={t('v1099.subtitle', { threshold: thresholdDollars, year: report.year })}
           actions={
-            <Vendor1099CsvButton
-              rows={report.rows}
-              vendors={vendors}
-              year={report.year}
-            />
+            <div className="flex items-center gap-2">
+              <a
+                href={`/vendor-1099/print?year=${report.year}`}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+              >
+                🖨 Printable worksheet
+              </a>
+              <Vendor1099CsvButton
+                rows={report.rows}
+                vendors={vendors}
+                year={report.year}
+              />
+            </div>
           }
         />
 
