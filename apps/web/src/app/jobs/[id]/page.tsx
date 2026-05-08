@@ -780,6 +780,14 @@ export default async function JobDetailPage({
             🖨 DAS-140 (Notice of contract award)
           </a>
           <a
+            href={`/jobs/${job.id}/bid-invite`}
+            target="_blank"
+            rel="noreferrer"
+            className="rounded border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+          >
+            🖨 Bid invitation letter
+          </a>
+          <a
             href={`/jobs/${job.id}/das-141`}
             target="_blank"
             rel="noreferrer"
