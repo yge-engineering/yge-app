@@ -1,107 +1,88 @@
-# Phase 2 status — 2026-05-07
+# Phase 2 status — 2026-05-07 (afternoon checkpoint)
 
-## Migration sweep — DONE
+## Foundations — DONE
 
-All 58 server-side stores are Postgres-backed. None still import
-`node:fs/promises`. The full `apps/api/src/lib/*-store.ts` suite
-went from "files on a Render persistent disk" to "rows in Supabase
-Postgres" without a route or UI change.
-
-### Schema additions (auto-applied via Render `prisma migrate deploy`)
-- `data Json?` on Customer / Employee / Job / CostCode / LaborRate /
-  EquipmentRate / Material / Estimate (mirrors the full Zod shape so
-  no field-by-field column mapping was needed)
-- `reason String?` on AuditEvent
-- New `Equipment` model + `equipment_assets` table for asset tracking
-- New `DirRateProposal` model + `dir_rate_proposals` table
-- `Job.customerId` made nullable (file-store rows have no customer
-  link yet — UI follow-up)
-
-### Operational changes
-- `render.yaml` runs `prisma migrate deploy` on every build (1405).
-- New migrations land automatically on next deploy.
-
-## Multi-tenant scoping — WIRED
-
-Every Postgres-backed store now resolves its tenant `companyId`
-from the active request context, falling back to the
-`DEFAULT_COMPANY_ID` env var only when there's no request (CLI,
-background jobs, tests).
-
-- `apps/api/src/lib/request-context.ts` — Node AsyncLocalStorage
-  carrying `companyId` / `actorUserId` / `ipAddress` / `userAgent`
-- `apps/api/src/middleware/tenant.ts` — Express middleware seeds
-  the context from the `X-YGE-Company` header (or env default)
-  before any router fires
-- `recordAudit()` reads from the request context as a fallback so
-  audit rows are correctly tagged with the right tenant + actor
-  even when the calling route forgets to pass an explicit
-  `AuditContext` (1422)
-- All 53 tenant-scoped stores read `getRequestCompanyId() ??
-  FALLBACK_COMPANY_ID` (1429-1432). The `microsoft-tokens` and
-  `sso-handoff` stores are keyed by email/token so they don't need
-  a tenant scope.
-
-The header read in `tenantMiddleware` is the temporary plumbing —
-real Phase 2 multi-tenant ties it to a session-cookie auth lookup
-(user → user.companyId). The store-side consumer is permanent.
+- All 58 server-side stores Postgres-backed (no `node:fs/promises`
+  in the read path)
+- Multi-tenant scoping foundation (AsyncLocalStorage + middleware,
+  53 stores opted in to `getRequestCompanyId()`)
+- `render.yaml` runs `prisma migrate deploy` on every build
+- Observability: `api_errors` Postgres capture + `X-Request-Id`
+  correlation + `/admin/errors` page + dashboard server-health tile
+- Backfill endpoint (`POST /api/admin/backfill-from-disk`) recovers
+  pre-cutover JSON snapshots into Postgres if data was lost during
+  the file-store → Postgres migration
 
 ## AI features
 
-### Already in production
-- **Plans-to-Estimate** — PDF plan set → draft estimate (Phase 1)
-- **AP-invoice extract** — vendor PDF → pre-filled invoice (Phase 1)
+### Already shipped (chronological)
+- **Plans-to-Estimate** — PDF plan set → draft estimate
+- **AP-invoice extract** — vendor PDF → pre-filled invoice
 - **Title-block / scope-gap / spec-extras / bid-schedule** prompts
-  on the estimate review pane (Phase 1)
-- **Cross-check addenda** between RFP + bid response (Phase 1)
+  on the estimate review pane
+- **Cross-check addenda** between RFP + bid response
+- **Bank-rec auto-match** (read panel + Apply HIGH for AP/AR/expense)
+- **Daily-report narrative** (bullets → prose)
+- **Bid-tab PDF extract** (Caltrans-style → structured JSON)
+- **Email triage scaffold** (`POST /api/microsoft/inbox-triage`) +
+  dashboard tile + match-to-job suggester + auto-file-to-Outlook-
+  folder by job
+- **AI bid review** (`POST /api/priced-estimates/:id/review` + 🔍
+  button on `/estimates/[id]`)
+- **Explain-line** (per-row ❓ explanation in estimate editor)
 
-### Newly shipped (Phase 2 sweep, 2026-05-07)
-- **Bank-rec auto-match** (1370, 1414-1416) — bookkeeper pastes
-  unmatched statement rows, AI suggests AR / AP / expense matches
-  with HIGH/MEDIUM/LOW confidence + reasoning. Read-only review
-  pane on `/bank-recs/[id]`.
-- **Daily-report narrative expansion** (1417, 1419-1420) — foreman
-  types 3 bullets, "Expand to prose (AI)" button returns a 2-4
-  sentence paragraph. Foreman edits before saving.
-- **Bid-tab PDF extract** (1423-1424) — drop a Caltrans / county /
-  agency bid-tab PDF on `/bid-tabs/new`, AI returns structured
-  agency / project / bid-open / bidder list. Operator reviews +
-  saves through the existing import form.
+## Estimate import flow
 
-## Storage
+- `POST /api/priced-estimates/import-csv` — accepts both `.csv` and
+  `.xlsx` (via SheetJS). Multi-sheet workbooks return `availableSheets`
+  on first POST so the UI can render a sheet picker.
+- Required CSV columns: `itemNumber, description, unit, quantity`
+  (+ optional `unitPrice`). Header row auto-detected.
+- Import dialog has a job dropdown (no more pasting `job-...`),
+  per-job "⬆ Import from Excel" button on `/jobs/[id]`, and a
+  "Mark imported lines as reviewed" toggle (default on) so the
+  unreviewed counter doesn't pollute on hand-typed Excel data.
 
-- **Supabase Storage helper** (1383) — server-side wrapper around
-  the REST API. Buckets: `yge-photos`, `yge-docs`, `yge-extracts`.
-- **Photo upload endpoint** (1426) — `POST /api/photos/upload` takes
-  a multipart image, pushes to `yge-photos`, returns the storage
-  key + a 10-minute signed URL.
-- **Photo upload widget** (1427) — `<PhotoUploadWidget>` on the
-  photo editor handles file pick / mobile camera capture, stuffs
-  the resulting object key into the `reference` field.
+## Financial reports
+
+- `/trial-balance`, `/income-statement`, `/balance-sheet`, `/wip`
+  (existed) + `/cash-flow` (1445) + `/close-package` (1447) —
+  print-ready, browser-PDF.
+- `/vendor-1099` (existed) + `/vendor-1099/print` printable
+  worksheet + CSV export with TaxID + address for CPA filing.
+
+## Workflow polish
+
+- ⌘-K command palette: nav targets + 36 quick-action shortcuts +
+  lazy-fetched jobs + estimates as fuzzy-match entries
+- `/jobs/board` Kanban pursuit pipeline (5 columns, sorted by
+  bid-due proximity)
+- Job profitability tile on `/jobs/[id]` (cleared revenue vs.
+  cleared cost vs. margin%)
+- AR aging snapshot tile on `/dashboard` (4 buckets)
+- Photo capture: Supabase Storage helper, `<PhotoUploadWidget>`,
+  daily-report inline panel + DR editor link
+- Bank-rec match Apply button (extends to AR + expense via the
+  `cleared` / `clearedOn` fields added to those schemas)
 
 ## What's next
 
-1. **Foundations** ✓ DONE
-2. **AP invoice AI extract** ✓ DONE
-3. **Bank-rec auto-match** ✓ DONE
-4. **Daily-report narrative** ✓ DONE
-5. **Bid-tab AI extract** ✓ DONE
-6. **Multi-tenant scoping** ✓ DONE (foundation + all 53 stores wired)
-7. **Photo capture for daily reports** ✓ DONE (uploadwidget shipped;
-   wiring it into the daily-report editor is a follow-up)
-8. **Bank-rec match Apply button** — turn the read-only review panel
-   into one-click match application (set ApPayment.cleared, etc.)
-9. **Bookkeeping completion** — financial reports (P&L, balance
-   sheet, WIP, cash flow) need GL math + UI; some pages already
-   exist but need data plumbing
-10. **Payroll Gusto sync** — deferred
-11. **Portals + email intelligence** — deferred
+1. ✓ Foundations
+2. ✓ AP invoice extract
+3. ✓ Bank-rec auto-match
+4. ✓ Daily-report narrative
+5. ✓ Bid-tab AI extract
+6. ✓ Multi-tenant scoping
+7. ✓ Photo capture
+8. Estimate share-link for subs (read-only public URL) — **pending**
+9. Mobile app: Apple Developer + TestFlight + Play Console — **deferred**
+10. Payroll Gusto sync — **deferred**
 
 ## Things still on the file system (ok to leave)
 
 - `audit-store` row JSON files on Render's `/var/data/audit-events/`
-  from before the cutover — kept as a backup snapshot. Newly-
-  recorded events go straight to Postgres.
+  from before the cutover — backup snapshot. New events go straight
+  to Postgres.
 - Old estimate JSON files under `/var/data/estimates/` — same story.
 
 Both are inert post-cutover. A later sweep can move them off the
