@@ -156,6 +156,10 @@ const ImportFieldsSchema = z.object({
   projectName: z.string().min(1).max(200),
   oppPercent: z.string().optional(),
   sheetName: z.string().max(120).optional(),
+  /** When 'true' (string from multipart form), tag each imported
+   *  bid item with reviewState='accepted' so they don't pollute
+   *  the editor's unreviewed counter. Default true on the UI. */
+  markAllReviewed: z.string().optional(),
 });
 
 pricedEstimatesImportRouter.post('/import-csv', upload.single('file'), async (req, res, next) => {
@@ -221,10 +225,14 @@ pricedEstimatesImportRouter.post('/import-csv', upload.single('file'), async (re
     const oppNumber = parsedFields.data.oppPercent
       ? Number(parsedFields.data.oppPercent)
       : undefined;
+    const tagReviewed = parsedFields.data.markAllReviewed === 'true';
+    const finalItems = tagReviewed
+      ? items.map((it) => ({ ...it, reviewState: 'accepted' as const }))
+      : items;
     const estimate = await createEstimateFromImport({
       jobId: parsedFields.data.jobId,
       projectName: parsedFields.data.projectName,
-      bidItems: items,
+      bidItems: finalItems,
       oppPercent: Number.isFinite(oppNumber) ? oppNumber : undefined,
     });
 

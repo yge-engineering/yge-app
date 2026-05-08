@@ -37,6 +37,7 @@ export function ImportEstimateButton({
   const [projectName, setProjectName] = useState('');
   const [availableSheets, setAvailableSheets] = useState<string[] | null>(null);
   const [sheetName, setSheetName] = useState('');
+  const [markAllReviewed, setMarkAllReviewed] = useState(true);
 
   // Fetch jobs once when the dialog opens, unless we have a presetJobId.
   useEffect(() => {
@@ -240,6 +241,14 @@ export function ImportEstimateButton({
             }}
             className="text-xs"
           />
+        </label>
+        <label className="mt-3 flex items-center gap-2 text-xs text-gray-700">
+          <input
+            type="checkbox"
+            checked={markAllReviewed}
+            onChange={(e) => setMarkAllReviewed(e.target.checked)}
+          />
+          Mark imported lines as reviewed (skip the unreviewed counter)
         </label>
 
         {availableSheets ? (
