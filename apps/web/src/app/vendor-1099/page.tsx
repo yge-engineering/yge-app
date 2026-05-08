@@ -17,6 +17,7 @@ import {
 } from '../../components';
 import { getTranslator, type Translator } from '../../lib/locale';
 import { requirePermission } from '../../lib/permissions';
+import { Vendor1099CsvButton } from '../../components/vendor-1099-csv-button';
 import {
   buildVendor1099Report,
   type ApPayment,
@@ -69,6 +70,13 @@ export default async function Vendor1099Page({
         <PageHeader
           title={t('v1099.title')}
           subtitle={t('v1099.subtitle', { threshold: thresholdDollars, year: report.year })}
+          actions={
+            <Vendor1099CsvButton
+              rows={report.rows}
+              vendors={vendors}
+              year={report.year}
+            />
+          }
         />
 
         <form action="/vendor-1099" className="mb-4 flex flex-wrap items-end gap-3 rounded-md border border-gray-200 bg-white p-3">
