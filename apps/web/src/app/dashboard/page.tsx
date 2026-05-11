@@ -23,6 +23,7 @@ import { InboxTriageTile } from '../../components/inbox-triage-tile';
 import { ErrorCountTile } from '../../components/error-count-tile';
 import { ArAgingTile } from '../../components/ar-aging-tile';
 import { CprDueTile } from '../../components/cpr-due-tile';
+import { CprStatusTile } from '../../components/cpr-status-tile';
 import { ExternalPortalTile } from '../../components/external-portal-tile';
 import { currentUserCan } from '../../lib/permissions';
 import { CopyMoneyButton } from '../../components/copy-money-button';
@@ -526,6 +527,7 @@ export default async function DashboardPage() {
 
       {currentUserCan('financials:view') ? <ArAgingTile /> : null}
       {currentUserCan('financials:view') ? <CprDueTile /> : null}
+      {currentUserCan('financials:view') ? <CprStatusTile /> : null}
       {currentUserCan('portalUsers:manage') ? <ExternalPortalTile /> : null}
       {currentUserCan('audit:view') ? <ErrorCountTile /> : null}
 
