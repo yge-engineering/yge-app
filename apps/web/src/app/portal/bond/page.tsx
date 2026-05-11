@@ -7,7 +7,10 @@ import { Money } from '../../../components/money';
 import { getCurrentUser } from '../../../lib/auth';
 import { currentUserCan } from '../../../lib/permissions';
 import {
+  buildBalanceSheet,
+  type Account,
   type Job,
+  type JournalEntry,
   type MasterProfile,
 } from '@yge/shared';
 
@@ -30,6 +33,26 @@ async function fetchMasterProfile(): Promise<MasterProfile | null> {
   }
 }
 
+async function fetchAccounts(): Promise<Account[]> {
+  try {
+    const res = await fetch(`${apiBaseUrl()}/api/coa`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    return ((await res.json()) as { accounts: Account[] }).accounts;
+  } catch {
+    return [];
+  }
+}
+async function fetchJournalEntries(): Promise<JournalEntry[]> {
+  try {
+    const res = await fetch(`${apiBaseUrl()}/api/journal-entries`, {
+      cache: 'no-store',
+    });
+    if (!res.ok) return [];
+    return ((await res.json()) as { entries: JournalEntry[] }).entries;
+  } catch {
+    return [];
+  }
+}
 async function fetchJobs(): Promise<Job[]> {
   try {
     const res = await fetch(`${apiBaseUrl()}/api/jobs`, { cache: 'no-store' });
@@ -45,10 +68,18 @@ export default async function BondPortalPage() {
     redirect('/login');
   }
   const me = getCurrentUser();
-  const [profile, jobs] = await Promise.all([
+  const [profile, jobs, accounts, entries] = await Promise.all([
     fetchMasterProfile(),
     fetchJobs(),
+    fetchAccounts(),
+    fetchJournalEntries(),
   ]);
+  const today = new Date().toISOString().slice(0, 10);
+  const balanceSheet = buildBalanceSheet({
+    accounts,
+    entries,
+    asOf: today,
+  });
   const active = jobs.filter(
     (j) => j.status === 'AWARDED' || j.status === 'BID_SUBMITTED' || j.status === 'PURSUING',
   );
@@ -185,6 +216,41 @@ export default async function BondPortalPage() {
               ))}
             </ul>
           )}
+        </section>
+
+        <section className="rounded-md border border-gray-200 bg-white p-4">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+            Latest financial summary (as of {today})
+          </h2>
+          <div className="mt-2 grid grid-cols-3 gap-3 text-sm">
+            <div>
+              <div className="text-xs text-gray-500">Total assets</div>
+              <div className="mt-1 font-mono text-lg font-bold">
+                <Money cents={balanceSheet.assets.totalCents} />
+              </div>
+            </div>
+            <div>
+              <div className="text-xs text-gray-500">Total liabilities</div>
+              <div className="mt-1 font-mono text-lg font-bold">
+                <Money cents={balanceSheet.liabilities.totalCents} />
+              </div>
+            </div>
+            <div>
+              <div className="text-xs text-gray-500">Equity + retained</div>
+              <div className="mt-1 font-mono text-lg font-bold">
+                <Money
+                  cents={
+                    balanceSheet.equity.totalCents +
+                    balanceSheet.currentPeriodEarningsCents
+                  }
+                />
+              </div>
+            </div>
+          </div>
+          <p className="mt-2 text-[11px] text-gray-500">
+            Auto-computed from the GL through today. Ask Brook for a
+            CPA-prepared statement for credit-decision underwriting.
+          </p>
         </section>
 
         <p className="text-[11px] text-gray-500">
