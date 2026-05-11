@@ -31,9 +31,19 @@ const GROUPS: ReportGroup[] = [
         blurb: 'Today’s tiles — close progress, risk register, AR aging, vendor spend.',
       },
       {
+        href: '/morning-briefing',
+        label: 'Morning briefing',
+        blurb: 'Yard-meet brief — headlines + reports + dispatches + safety + AR.',
+      },
+      {
         href: '/risk-register',
         label: 'Risk register',
         blurb: 'One page rolling up concentration / tax / COI / AR / cash.',
+      },
+      {
+        href: '/executive-snapshot',
+        label: 'Executive snapshot',
+        blurb: 'One-page board / bank / bonding summary — cash + revenue + concentration.',
       },
       {
         href: '/cash-position',
@@ -94,8 +104,8 @@ const GROUPS: ReportGroup[] = [
     ],
   },
   {
-    title: 'Close cycles',
-    caption: 'Monthly + year-end close playbooks.',
+    title: 'Close cycles + tax',
+    caption: 'Monthly + year-end close playbooks, 1099 prep.',
     links: [
       {
         href: '/close-checklist',
@@ -122,11 +132,16 @@ const GROUPS: ReportGroup[] = [
         label: '1099-NEC worksheet',
         blurb: 'Year-end 1099 prep with W-9 / TIN blocker flags.',
       },
+      {
+        href: '/vendor-w9-chase',
+        label: 'W-9 chase list',
+        blurb: 'Vendors over $600 missing a current W-9. Mailto: chase template per row.',
+      },
     ],
   },
   {
     title: 'Compliance + records',
-    caption: 'Lien waivers, CPRs, submittals, RFIs.',
+    caption: 'Lien waivers, CPRs, submittals, RFIs, COIs.',
     links: [
       {
         href: '/lien-waivers',
@@ -157,6 +172,11 @@ const GROUPS: ReportGroup[] = [
         href: '/vendors',
         label: 'Vendor / sub master',
         blurb: 'COI, W-9, prequal status. COI aging is built in.',
+      },
+      {
+        href: '/coi-chase',
+        label: 'COI chase list',
+        blurb: 'Subs with expired or expiring COIs. Mailto: COI request per row.',
       },
     ],
   },
