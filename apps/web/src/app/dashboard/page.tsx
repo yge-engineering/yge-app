@@ -20,6 +20,7 @@ import { bidDueCountdown } from '@yge/shared';
 import { DashboardRefreshButton } from '../../components/dashboard-refresh-button';
 import { MobileAppCallout } from '../../components/mobile-app-callout';
 import { InboxTriageTile } from '../../components/inbox-triage-tile';
+import { MorningBriefingTile } from '../../components/morning-briefing-tile';
 import { ErrorCountTile } from '../../components/error-count-tile';
 import { ArAgingTile } from '../../components/ar-aging-tile';
 import { CprDueTile } from '../../components/cpr-due-tile';
@@ -522,6 +523,8 @@ export default async function DashboardPage() {
       </header>
 
       <MobileAppCallout />
+
+      <MorningBriefingTile />
 
       {user?.email ? (
         <InboxTriageTile
