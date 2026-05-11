@@ -6,7 +6,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from "react";
 
 interface ParsedTx {
   date: string;
@@ -158,6 +158,7 @@ export function BankRecMatchPanel({ recId }: { recId: string }) {
         </code>
         . Negative amounts = withdrawals.
       </p>
+      <OfxUploadRow recId={recId} onParsed={(csv) => setCsv(csv)} />
       <textarea
         value={csv}
         onChange={(e) => setCsv(e.target.value)}
@@ -242,6 +243,93 @@ export function BankRecMatchPanel({ recId }: { recId: string }) {
         </div>
       ) : null}
     </section>
+  );
+}
+
+
+
+function OfxUploadRow({
+  recId,
+  onParsed,
+}: {
+  recId: string;
+  onParsed: (csv: string) => void;
+}) {
+  const ref = useRef<HTMLInputElement | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [summary, setSummary] = useState<string | null>(null);
+
+  async function onChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setError(null);
+    setSummary(null);
+    setBusy(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch(
+        `${apiBaseUrl()}/api/bank-recs/${recId}/import-ofx`,
+        { method: 'POST', body: fd },
+      );
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        setError(body.error ?? `Import failed (${res.status})`);
+        return;
+      }
+      const body = (await res.json()) as {
+        transactions: Array<{ date: string; description: string; amountCents: number }>;
+        statementStartDate: string | null;
+        statementEndDate: string | null;
+      };
+      // Convert parsed transactions into the same CSV the existing
+      // match flow expects.
+      const lines = body.transactions.map((t) => {
+        const dollars = (t.amountCents / 100).toFixed(2);
+        const safeDesc = t.description.replace(/[,\n\r]/g, ' ');
+        return `${t.date},${safeDesc},${dollars}`;
+      });
+      onParsed(lines.join('\n'));
+      const range =
+        body.statementStartDate && body.statementEndDate
+          ? `${body.statementStartDate} → ${body.statementEndDate}`
+          : '';
+      setSummary(
+        `${body.transactions.length} transaction${body.transactions.length === 1 ? '' : 's'} parsed${range ? ` (${range})` : ''}. Click "Match with AI" below.`,
+      );
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setBusy(false);
+      if (ref.current) ref.current.value = '';
+    }
+  }
+
+  return (
+    <div className="mt-3 rounded-md border border-gray-200 bg-gray-50 p-3">
+      <div className="flex flex-wrap items-center gap-3">
+        <strong className="text-xs text-gray-800">Or import OFX/QFX:</strong>
+        <input
+          ref={ref}
+          type="file"
+          accept=".ofx,.qfx,application/x-ofx"
+          onChange={onChange}
+          disabled={busy}
+          className="text-xs"
+        />
+        {busy ? <span className="text-xs text-gray-700">Parsing…</span> : null}
+        <span className="text-[11px] text-gray-500">
+          Most banks let you export OFX from your statement page for free.
+        </span>
+      </div>
+      {error ? (
+        <p className="mt-2 text-xs text-red-700">{error}</p>
+      ) : null}
+      {summary ? (
+        <p className="mt-2 text-xs text-green-800">{summary}</p>
+      ) : null}
+    </div>
   );
 }
 
