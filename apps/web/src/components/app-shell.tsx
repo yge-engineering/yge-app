@@ -160,6 +160,7 @@ const NAV_SPEC: NavGroupSpec[] = [
       { key: 'nav.adminErrors', href: '/admin/errors', requires: 'audit:view' },
       { key: 'nav.adminGusto', href: '/admin/gusto', requires: 'audit:view' },
       { key: 'nav.adminHealth', href: '/admin/health', requires: 'audit:view' },
+      { key: 'nav.adminDataHealth', href: '/admin/data-health', requires: 'audit:view' },
       { key: 'nav.portalOwnerPreview', href: '/portal/owner', requires: 'portal:owner' },
       { key: 'nav.portalSubPreview', href: '/portal/sub', requires: 'portal:sub' },
       { key: 'nav.portalBondPreview', href: '/portal/bond', requires: 'portal:bond' },

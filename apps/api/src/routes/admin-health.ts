@@ -64,3 +64,71 @@ adminHealthRouter.get('/health/integrations', async (_req, res, next) => {
     next(err);
   }
 });
+
+// Per-entity record counts. Used by /admin/data-health to flag
+// a wiped table (count=0) before the user notices.
+adminHealthRouter.get('/health/data-counts', async (_req, res, next) => {
+  try {
+    const [
+      jobs, customers, vendors, employees, users,
+      estimates, bidItems, costLines,
+      arInvoices, apInvoices, arPayments, apPayments,
+      bankRecs, journalEntries, expenses,
+      dailyReports, timeCards, dispatches,
+      lienWaivers, certifiedPayrolls, submittals, rfis,
+      changeOrders, pcos, bidTabs, bidResults,
+      documents,
+    ] = await Promise.all([
+      prisma.job.count(),
+      prisma.customer.count(),
+      prisma.vendor.count(),
+      prisma.employee.count(),
+      prisma.user.count(),
+      prisma.estimate.count(),
+      prisma.bidItem.count(),
+      prisma.costLine.count(),
+      prisma.arInvoice.count(),
+      prisma.apInvoice.count(),
+      prisma.arPayment.count(),
+      prisma.apPayment.count(),
+      prisma.bankRec.count(),
+      prisma.journalEntry.count(),
+      prisma.expense.count(),
+      prisma.dailyReport.count(),
+      prisma.timeCard.count(),
+      prisma.dispatch.count(),
+      prisma.lienWaiver.count(),
+      prisma.certifiedPayroll.count(),
+      prisma.submittal.count(),
+      prisma.rfi.count(),
+      prisma.changeOrder.count(),
+      prisma.pco.count(),
+      prisma.bidTab.count(),
+      prisma.bidResult.count(),
+      prisma.document.count(),
+    ]);
+
+    res.json({
+      counts: {
+        // Master data — non-zero is required for the app to be useful.
+        jobs, customers, vendors, employees, users,
+        // Estimating module.
+        estimates, bidItems, costLines, bidTabs, bidResults,
+        // Money module.
+        arInvoices, apInvoices, arPayments, apPayments,
+        bankRecs, journalEntries, expenses,
+        // Field-ops module.
+        dailyReports, timeCards, dispatches,
+        // Compliance module.
+        lienWaivers, certifiedPayrolls, submittals, rfis,
+        changeOrders, pcos,
+        // Document store.
+        documents,
+      },
+      asOf: new Date().toISOString(),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
