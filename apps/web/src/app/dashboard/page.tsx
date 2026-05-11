@@ -31,6 +31,7 @@ import { Tax1099ReadinessTile } from '../../components/tax-1099-readiness-tile';
 import { VendorSpendTile } from '../../components/vendor-spend-tile';
 import { CustomerConcentrationTile } from '../../components/customer-concentration-tile';
 import { CoiAgingTile } from '../../components/coi-aging-tile';
+import { W9ChaseTile } from '../../components/w9-chase-tile';
 import { ExternalPortalTile } from '../../components/external-portal-tile';
 import { currentUserCan } from '../../lib/permissions';
 import { CopyMoneyButton } from '../../components/copy-money-button';
@@ -543,6 +544,7 @@ export default async function DashboardPage() {
       {currentUserCan('financials:view') ? <VendorSpendTile /> : null}
       {currentUserCan('financials:view') ? <CustomerConcentrationTile /> : null}
       {currentUserCan('financials:view') ? <CoiAgingTile /> : null}
+      {currentUserCan('financials:view') ? <W9ChaseTile /> : null}
       {currentUserCan('portalUsers:manage') ? <ExternalPortalTile /> : null}
       {currentUserCan('audit:view') ? <ErrorCountTile /> : null}
 
