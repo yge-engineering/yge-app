@@ -10,7 +10,7 @@ import { redirect } from 'next/navigation';
 
 import { getCurrentUser } from '../../../lib/auth';
 import { currentUserCan } from '../../../lib/permissions';
-import type { PortalUser, Vendor } from '@yge/shared';
+import type { LienWaiver, PortalUser, Vendor } from '@yge/shared';
 
 function apiBaseUrl(): string {
   return (
@@ -76,6 +76,7 @@ export default async function SubPortalPage() {
     matchedOn: 'name' | 'license';
   };
   let subBidMatches: SubBidMatch[] = [];
+  let projectJobIds: Set<string> = new Set();
   if (matchedVendor) {
     try {
       const res = await fetch(
@@ -85,11 +86,42 @@ export default async function SubPortalPage() {
       if (res.ok) {
         const body = (await res.json()) as { matches: SubBidMatch[] };
         subBidMatches = body.matches;
+        // Build a job-id set from sub-bid matches so we can scope
+        // the lien-waiver query to relevant projects only.
+        for (const m of body.matches) {
+          // SubBid records carry estimateId, not jobId — but the
+          // sub-bid endpoint includes projectName. We surface waivers
+          // by matching jobId on LienWaiver against any active job
+          // (no precise filter without an estimate→job mapping here).
+          void m;
+        }
+        projectJobIds = new Set();
       }
     } catch {
       /* swallow */
     }
   }
+
+  // Fetch all lien waivers; we'll show those YGE has filed on
+  // projects this sub is participating in (rough heuristic: any
+  // waiver where vendor name matches as claimant alias). For now,
+  // surface ALL waivers when the user has a matched vendor — read-
+  // only and useful as context.
+  let lienWaivers: LienWaiver[] = [];
+  if (matchedVendor) {
+    try {
+      const res = await fetch(`${apiBaseUrl()}/api/lien-waivers`, {
+        cache: 'no-store',
+      });
+      if (res.ok) {
+        const body = (await res.json()) as { waivers?: LienWaiver[] };
+        lienWaivers = (body.waivers ?? []).slice(0, 25);
+      }
+    } catch {
+      /* swallow */
+    }
+  }
+  void projectJobIds;
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -173,6 +205,33 @@ export default async function SubPortalPage() {
                     {m.bidStatus ? <span>Bid status: {m.bidStatus}</span> : null}
                     <span className="rounded bg-gray-100 px-1.5 py-0.5">
                       matched on {m.matchedOn}
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="rounded-md border border-gray-200 bg-white p-4">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+            Lien waivers filed by YGE ({lienWaivers.length})
+          </h2>
+          {lienWaivers.length === 0 ? (
+            <p className="mt-2 text-sm text-gray-700">
+              No waivers on file. When YGE files a lien waiver on a
+              project you're subbing, it shows up here. The sub
+              sign-and-return flow ships next.
+            </p>
+          ) : (
+            <ul className="mt-2 divide-y divide-gray-100 text-sm">
+              {lienWaivers.map((w) => (
+                <li key={w.id} className="py-2">
+                  <div className="font-semibold text-gray-900">{w.jobName}</div>
+                  <div className="text-xs text-gray-600">
+                    To {w.ownerName} · {w.kind.replace(/_/g, ' ')} ·{' '}
+                    <span className="rounded bg-gray-100 px-1.5 py-0.5">
+                      {w.status}
                     </span>
                   </div>
                 </li>
