@@ -191,9 +191,12 @@ export default async function SubPortalPage() {
             <ul className="mt-2 divide-y divide-gray-100 text-sm">
               {subBidMatches.map((m) => (
                 <li key={m.estimateId + m.contractorName + m.portionOfWork} className="py-2">
-                  <div className="font-semibold text-gray-900">
+                  <a
+                    href={`/portal/sub/estimates/${m.estimateId}`}
+                    className="font-semibold text-yge-blue-700 hover:underline"
+                  >
                     {m.projectName}
-                  </div>
+                  </a>
                   <div className="text-xs text-gray-700">
                     Portion: {m.portionOfWork}
                   </div>
