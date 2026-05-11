@@ -1,8 +1,4 @@
-// /admin/data-health — record counts per entity. Red flag when zero.
-//
-// Plain English: did somebody (or something) just wipe a table?
-// This page is the smoke alarm. We hit it after a deploy or any
-// time the app feels weirdly empty.
+// /admin/data-health — record counts + last-activity per entity.
 
 import {
   AppShell,
@@ -18,6 +14,7 @@ function apiBaseUrl(): string {
 
 interface DataCountsResponse {
   counts: Record<string, number>;
+  mostRecentCreatedAt?: Record<string, string | null>;
   asOf: string;
 }
 
@@ -38,24 +35,27 @@ interface Section {
   caption: string;
   keys: string[];
   zeroIsBlocker: boolean;
+  staleDays: number;
 }
 
 const SECTIONS: Section[] = [
   {
     title: 'Master data',
-    caption: 'Zero here means the app is broken. Anyone missing should be restored.',
+    caption: 'Zero here means the app is broken.',
     keys: ['jobs', 'customers', 'vendors', 'employees', 'users'],
     zeroIsBlocker: true,
+    staleDays: 90,
   },
   {
     title: 'Estimating',
-    caption: 'Zero is normal on a fresh install — populates as bids are entered.',
+    caption: 'Populates as bids are entered.',
     keys: ['estimates', 'bidItems', 'costLines', 'bidTabs', 'bidResults'],
     zeroIsBlocker: false,
+    staleDays: 45,
   },
   {
     title: 'Money',
-    caption: 'AR/AP + cash. Sparse early, dense after a few months in production.',
+    caption: 'AR + AP + cash. Should see new activity weekly in production.',
     keys: [
       'arInvoices',
       'apInvoices',
@@ -66,12 +66,14 @@ const SECTIONS: Section[] = [
       'expenses',
     ],
     zeroIsBlocker: false,
+    staleDays: 30,
   },
   {
     title: 'Field ops',
-    caption: 'Daily reports, time cards, dispatches.',
+    caption: 'Daily reports + time cards + dispatches.',
     keys: ['dailyReports', 'timeCards', 'dispatches'],
     zeroIsBlocker: false,
+    staleDays: 7,
   },
   {
     title: 'Compliance',
@@ -85,12 +87,14 @@ const SECTIONS: Section[] = [
       'pcos',
     ],
     zeroIsBlocker: false,
+    staleDays: 30,
   },
   {
     title: 'Documents',
     caption: 'Document store.',
     keys: ['documents'],
     zeroIsBlocker: false,
+    staleDays: 60,
   },
 ];
 
@@ -99,6 +103,13 @@ function labelFor(key: string): string {
     .replace(/([A-Z])/g, ' $1')
     .replace(/^./, (s) => s.toUpperCase())
     .trim();
+}
+
+function daysAgo(iso: string | null): number | null {
+  if (!iso) return null;
+  const ms = Date.parse(iso);
+  if (!Number.isFinite(ms)) return null;
+  return Math.floor((Date.now() - ms) / (24 * 60 * 60 * 1000));
 }
 
 export default async function AdminDataHealthPage() {
@@ -119,14 +130,14 @@ export default async function AdminDataHealthPage() {
     );
   }
 
-  const { counts, asOf } = result;
+  const { counts, mostRecentCreatedAt = {}, asOf } = result;
 
   return (
     <AppShell>
       <main className="mx-auto max-w-3xl">
         <PageHeader
           title="Data health"
-          subtitle={`Live record counts per entity. As of ${asOf.slice(0, 19).replace('T', ' ')}.`}
+          subtitle={`Live record counts + last-activity per entity. As of ${asOf.slice(0, 19).replace('T', ' ')}.`}
         />
 
         <div className="space-y-4">
@@ -142,12 +153,17 @@ export default async function AdminDataHealthPage() {
                   <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-700">
                     {sec.title}
                   </h2>
-                  <p className="text-xs text-gray-600">{sec.caption}</p>
+                  <p className="text-xs text-gray-600">
+                    {sec.caption} Stale &gt; {sec.staleDays}d.
+                  </p>
                 </header>
                 <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                   {sec.keys.map((k) => {
                     const count = counts[k] ?? 0;
                     const isZero = count === 0;
+                    const ageDays = daysAgo(mostRecentCreatedAt[k] ?? null);
+                    const isStale =
+                      ageDays !== null && ageDays > sec.staleDays;
                     const flagClass = sec.zeroIsBlocker && isZero
                       ? 'text-red-700'
                       : isZero
@@ -166,6 +182,18 @@ export default async function AdminDataHealthPage() {
                             </span>
                           ) : null}
                         </dd>
+                        {ageDays !== null ? (
+                          <div
+                            className={`text-[10px] ${isStale ? 'font-semibold text-amber-700' : 'text-gray-500'}`}
+                          >
+                            last: {ageDays}d ago
+                            {isStale ? ' · stale' : ''}
+                          </div>
+                        ) : count > 0 ? (
+                          <div className="text-[10px] text-gray-400">
+                            last: unknown
+                          </div>
+                        ) : null}
                       </div>
                     );
                   })}
@@ -176,10 +204,9 @@ export default async function AdminDataHealthPage() {
         </div>
 
         <p className="mt-6 text-xs text-gray-500">
-          Red flags appear when a Master-data table reads zero. If you see
-          one after a deploy, check Render logs + run the backfill from
-          /admin/backfill before panicking. Estimating / Money / Field
-          counts can legitimately be zero on a fresh install.
+          Red flags appear when a Master-data table reads zero. Amber
+          appears when a module hasn&apos;t seen a new row in longer than
+          its expected cadence (field ops &gt; 7d, money &gt; 30d, etc).
         </p>
       </main>
     </AppShell>

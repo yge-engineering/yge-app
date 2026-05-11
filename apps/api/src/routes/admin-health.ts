@@ -69,62 +69,78 @@ adminHealthRouter.get('/health/integrations', async (_req, res, next) => {
 // a wiped table (count=0) before the user notices.
 adminHealthRouter.get('/health/data-counts', async (_req, res, next) => {
   try {
-    const [
-      jobs, customers, vendors, employees, users,
-      estimates, bidItems, costLines,
-      arInvoices, apInvoices, arPayments, apPayments,
-      bankRecs, journalEntries, expenses,
-      dailyReports, timeCards, dispatches,
-      lienWaivers, certifiedPayrolls, submittals, rfis,
-      changeOrders, pcos, bidTabs, bidResults,
-      documents,
-    ] = await Promise.all([
-      prisma.job.count(),
-      prisma.customer.count(),
-      prisma.vendor.count(),
-      prisma.employee.count(),
-      prisma.user.count(),
-      prisma.estimate.count(),
-      prisma.bidItem.count(),
-      prisma.costLine.count(),
-      prisma.arInvoice.count(),
-      prisma.apInvoice.count(),
-      prisma.arPayment.count(),
-      prisma.apPayment.count(),
-      prisma.bankRec.count(),
-      prisma.journalEntry.count(),
-      prisma.expense.count(),
-      prisma.dailyReport.count(),
-      prisma.timeCard.count(),
-      prisma.dispatch.count(),
-      prisma.lienWaiver.count(),
-      prisma.certifiedPayroll.count(),
-      prisma.submittal.count(),
-      prisma.rfi.count(),
-      prisma.changeOrder.count(),
-      prisma.pco.count(),
-      prisma.bidTab.count(),
-      prisma.bidResult.count(),
-      prisma.document.count(),
-    ]);
+    const tables = [
+      'job', 'customer', 'vendor', 'employee', 'user',
+      'estimate', 'bidItem', 'costLine', 'bidTab', 'bidResult',
+      'arInvoice', 'apInvoice', 'arPayment', 'apPayment',
+      'bankRec', 'journalEntry', 'expense',
+      'dailyReport', 'timeCard', 'dispatch',
+      'lienWaiver', 'certifiedPayroll', 'submittal', 'rfi',
+      'changeOrder', 'pco',
+      'document',
+    ] as const;
+
+    const counts: Record<string, number> = {};
+    const mostRecentCreatedAt: Record<string, string | null> = {};
+
+    // We run count + findFirst (orderBy createdAt desc) per table in
+    // parallel. Each table gives us {count, latestCreatedAt}.
+    await Promise.all(
+      tables.map(async (t) => {
+        interface ModelLike {
+          count(): Promise<number>;
+          findFirst(args: {
+            orderBy: { createdAt: 'desc' };
+            select: { createdAt: true };
+          }): Promise<{ createdAt: Date } | null>;
+        }
+        const model = (prisma as unknown as Record<string, ModelLike | undefined>)[t];
+        if (!model) return;
+        const [n, latest] = await Promise.all([
+          model.count(),
+          model.findFirst({
+            orderBy: { createdAt: 'desc' },
+            select: { createdAt: true },
+          }),
+        ]);
+        // camelCase API field — convert table name's first char.
+        const apiKey = t === 'user' ? 'users'
+          : t === 'job' ? 'jobs'
+          : t === 'customer' ? 'customers'
+          : t === 'vendor' ? 'vendors'
+          : t === 'employee' ? 'employees'
+          : t === 'estimate' ? 'estimates'
+          : t === 'bidItem' ? 'bidItems'
+          : t === 'costLine' ? 'costLines'
+          : t === 'bidTab' ? 'bidTabs'
+          : t === 'bidResult' ? 'bidResults'
+          : t === 'arInvoice' ? 'arInvoices'
+          : t === 'apInvoice' ? 'apInvoices'
+          : t === 'arPayment' ? 'arPayments'
+          : t === 'apPayment' ? 'apPayments'
+          : t === 'bankRec' ? 'bankRecs'
+          : t === 'journalEntry' ? 'journalEntries'
+          : t === 'expense' ? 'expenses'
+          : t === 'dailyReport' ? 'dailyReports'
+          : t === 'timeCard' ? 'timeCards'
+          : t === 'dispatch' ? 'dispatches'
+          : t === 'lienWaiver' ? 'lienWaivers'
+          : t === 'certifiedPayroll' ? 'certifiedPayrolls'
+          : t === 'submittal' ? 'submittals'
+          : t === 'rfi' ? 'rfis'
+          : t === 'changeOrder' ? 'changeOrders'
+          : t === 'pco' ? 'pcos'
+          : 'documents';
+        counts[apiKey] = n;
+        mostRecentCreatedAt[apiKey] = latest?.createdAt
+          ? latest.createdAt.toISOString()
+          : null;
+      }),
+    );
 
     res.json({
-      counts: {
-        // Master data — non-zero is required for the app to be useful.
-        jobs, customers, vendors, employees, users,
-        // Estimating module.
-        estimates, bidItems, costLines, bidTabs, bidResults,
-        // Money module.
-        arInvoices, apInvoices, arPayments, apPayments,
-        bankRecs, journalEntries, expenses,
-        // Field-ops module.
-        dailyReports, timeCards, dispatches,
-        // Compliance module.
-        lienWaivers, certifiedPayrolls, submittals, rfis,
-        changeOrders, pcos,
-        // Document store.
-        documents,
-      },
+      counts,
+      mostRecentCreatedAt,
       asOf: new Date().toISOString(),
     });
   } catch (err) {
