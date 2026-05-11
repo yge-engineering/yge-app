@@ -4628,6 +4628,7 @@ export const SEED_DICTIONARY: DictionaryByLocale = {
     'nav.periodClose': 'Monthly close wizard',
     'nav.yearEndClose': 'Year-end close',
     'nav.riskRegister': 'Risk register',
+    'nav.executiveSnapshot': 'Executive snapshot',
     'nav.tax1099Worksheet': '1099 worksheet',
     'nav.vendorW9Chase': 'W-9 chase list',
     'nav.coiChase': 'COI chase list',
