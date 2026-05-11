@@ -4616,6 +4616,7 @@ export const SEED_DICTIONARY: DictionaryByLocale = {
     'nav.bankRecs': 'Bank recs',
     'nav.cashPosition': 'Cash position',
     'nav.apCheckRun': 'AP check run',
+    'nav.vendorSpend': 'Vendor spend',
     'nav.balanceSheet': 'Balance sheet',
     'nav.trialBalance': 'Trial balance',
     'nav.incomeStatement': 'Income statement',
