@@ -120,13 +120,13 @@ export default async function AgingPage({
         <section id="ar" className="scroll-mt-8">
           <h2 className="text-xl font-bold text-gray-900">{t('aging.ar.heading')}</h2>
           <p className="mt-1 text-sm text-gray-600">{t('aging.ar.body')}</p>
-          <PartyTable report={ar} partyHeader={t('aging.col.customer')} empty={t('aging.empty.ar')} t={t} />
+          <PartyTable side="AR" report={ar} partyHeader={t('aging.col.customer')} empty={t('aging.empty.ar')} t={t} />
         </section>
 
         <section id="ap" className="mt-12 scroll-mt-8">
           <h2 className="text-xl font-bold text-gray-900">{t('aging.ap.heading')}</h2>
           <p className="mt-1 text-sm text-gray-600">{t('aging.ap.body')}</p>
-          <PartyTable report={ap} partyHeader={t('aging.col.vendor')} empty={t('aging.empty.ap')} t={t} />
+          <PartyTable side="AP" report={ap} partyHeader={t('aging.col.vendor')} empty={t('aging.empty.ap')} t={t} />
         </section>
       </main>
     </AppShell>
@@ -138,11 +138,13 @@ function PartyTable({
   partyHeader,
   empty,
   t,
+  side,
 }: {
   report: AgingReport;
   partyHeader: string;
   empty: string;
   t: Translator;
+  side: 'AR' | 'AP';
 }) {
   if (report.byParty.length === 0) {
     return (
@@ -163,6 +165,9 @@ function PartyTable({
             ))}
             <th className="px-3 py-2 text-right">{t('aging.col.totalOpen')}</th>
             <th className="px-3 py-2 text-right">{t('aging.col.oldest')}</th>
+            {side === 'AR' ? (
+              <th className="px-3 py-2 text-right">Action</th>
+            ) : null}
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
@@ -199,6 +204,13 @@ function PartyTable({
               >
                 {p.oldestDaysOverdue > 0 ? `${p.oldestDaysOverdue}d` : t('aging.current')}
               </td>
+              {side === 'AR' && p.oldestDaysOverdue > 0 ? (
+                <td className="px-3 py-2 text-right">
+                  <ArReminderLink party={p} rowsForParty={report.rows.filter((r) => r.partyName === p.partyName)} asOf={report.asOf} />
+                </td>
+              ) : side === 'AR' ? (
+                <td className="px-3 py-2 text-right"></td>
+              ) : null}
             </tr>
           ))}
           <tr className="border-t-2 border-black bg-gray-50 font-semibold">
@@ -213,6 +225,7 @@ function PartyTable({
               <Money cents={report.totalOpenCents} />
             </td>
             <td></td>
+          {side === 'AR' ? <td className="px-3 py-3"></td> : null}
           </tr>
         </tbody>
       </table>
@@ -222,4 +235,58 @@ function PartyTable({
 
 // `AgingBucket` import kept for future strict-mode tightening of the
 // PartyTable column iterator.
+
+function ArReminderLink({
+  party,
+  rowsForParty,
+  asOf,
+}: {
+  party: { partyName: string; totalOpenCents: number; oldestDaysOverdue: number };
+  rowsForParty: AgingReport['rows'];
+  asOf: string;
+}) {
+  const lines: string[] = [];
+  for (const r of rowsForParty) {
+    const dollars = (r.openCents / 100).toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+    const overdue = r.daysOverdue > 0 ? ` — ${r.daysOverdue}d past due` : '';
+    lines.push(`  #${r.invoiceNumber} (dated ${r.invoiceDate}): $${dollars}${overdue}`);
+  }
+  const totalDollars = (party.totalOpenCents / 100).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  const body = [
+    `Hi ${party.partyName} team,`,
+    '',
+    `This is a friendly reminder on the following past-due invoices as of ${asOf}:`,
+    '',
+    ...lines,
+    '',
+    `Total open: $${totalDollars}.`,
+    '',
+    'Could you confirm the payment status when you get a chance? If you\'ve already cut a check, please share the check # so we can mark it received on our side.',
+    '',
+    'Thanks,',
+    'Young General Engineering',
+    'office@youngge.com · 707-499-7065',
+  ].join('\n');
+  const subject = `Past-due invoice reminder — ${party.partyName} (${asOf})`;
+  const mailto =
+    'mailto:?subject=' +
+    encodeURIComponent(subject) +
+    '&body=' +
+    encodeURIComponent(body);
+  return (
+    <a
+      href={mailto}
+      className="rounded border border-yge-blue-300 bg-yge-blue-50 px-2 py-1 text-[11px] font-semibold text-yge-blue-700 hover:bg-yge-blue-100"
+    >
+      📧 Reminder
+    </a>
+  );
+}
+
 export type { AgingBucket };
