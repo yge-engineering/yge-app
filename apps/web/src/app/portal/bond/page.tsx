@@ -198,9 +198,12 @@ export default async function BondPortalPage() {
             <ul className="mt-2 divide-y divide-gray-100">
               {active.map((j) => (
                 <li key={j.id} className="py-2 text-sm">
-                  <span className="font-semibold text-gray-900">
+                  <a
+                    href={`/portal/bond/jobs/${j.id}`}
+                    className="font-semibold text-yge-blue-700 hover:underline"
+                  >
                     {j.projectName}
-                  </span>
+                  </a>
                   {j.ownerAgency ? (
                     <span className="ml-2 text-xs text-gray-600">
                       ({j.ownerAgency})
