@@ -4622,6 +4622,7 @@ export const SEED_DICTIONARY: DictionaryByLocale = {
     'nav.closePackage': 'Close package',
     'nav.adminErrors': 'Server errors',
     'nav.adminGusto': 'Gusto integration',
+    'nav.adminHealth': 'System health',
     'nav.portalOwnerPreview': 'Portal: Owner (preview)',
     'nav.portalSubPreview': 'Portal: Sub (preview)',
     'nav.portalBondPreview': 'Portal: Bond (preview)',
