@@ -1,97 +1,104 @@
 # Phase 3 status — 2026-05-10
 
-Phase 3 has shipped 26 bundles across two sittings (1478-1503).
-Major themes covered:
+Phase 3 has shipped 33 bundles across multiple sittings (1478-1510).
 
 ## Foundation — DONE
-- **Phase 3 plan** (1478) — 5 themes ranked by leverage:
-  portals → CPRs → Gusto → mobile → external tenant rollout
-- **3 external portal roles** + `portal:owner/sub/bond`
-  permissions (1479-80)
-- **`/portal`** role-aware redirect landing (1487)
+- Phase 3 plan doc + 3 external portal roles + permissions
+- Role-aware /portal redirect landing
+- Sidebar preview links for internal admins
 
-## Portals — DONE (read-only v1)
-- **`/portal/owner`** — agency PM landing + per-project view with
-  daily reports, photos, RFIs, change orders (1481-83)
+## Owner portal — DONE (multi-page read-only)
+- **`/portal/owner`** — landing with quick-stats strip (photos last
+  7d / open RFIs / pending change orders) + project grid with
+  per-card activity chips ("Last report: 3d ago" / "Last photo:
+  today") + bid-due countdowns
+- **`/portal/owner/jobs/[id]`** — full project view: summary,
+  recent daily reports, recent photos (12), open RFIs (10), change
+  orders (10) with "See all" links to the sub-pages
+- **`/portal/owner/jobs/[id]/photos`** — full photo gallery grouped
+  by month
+- **`/portal/owner/jobs/[id]/rfis`** — full RFI list grouped by
+  status (open / answered / closed)
 - **`/portal/owner/photos/[id]`** — read-only photo detail with
-  metadata, GPS, caption (1498)
-- **`/portal/sub`** — sub landing with Vendor record match by
-  email + §4104 sub-bid listings showing where YGE has placed this
-  vendor on a bid sheet (1484, 1499)
-- **`/portal/bond`** — bonding capacity, % used, active jobs
-  (1485)
-- Sidebar preview links for internal admins to QA each portal
+  metadata, GPS, caption
+- Auth gates verify the user is in the job's `assignedJobIds` at
+  every layer
+
+## Sub portal — Read-only context
+- **`/portal/sub`** — landing with account info + Vendor record
+  match by email + §4104 sub-bid listings + lien waivers filed
+  by YGE
+- TODO: sub sign-and-return flow on lien waivers (schema work)
+
+## Bond portal — DONE (5 sections)
+- **`/portal/bond`** — bonding capacity, capacity utilization gauge,
+  active jobs, completed jobs this year (track record), latest
+  financial summary (assets / liabilities / equity from posted
+  journal entries)
 
 ## Compliance forms — DONE (browser-print to PDF)
-- **`/certified-payrolls/[id]/print`** — DIR A-1-131 / federal
-  WH-347 layout (1486)
-- **`/jobs/[id]/das-140`** — Notice of Contract Award (1489)
-- **`/jobs/[id]/das-141`** — Request for Dispatch (1490)
-- **`/jobs/[id]/das-142`** — Training Fund Contributions (1491)
-- **`/jobs/[id]/bid-invite`** — sub bid invitation letter (1497)
-- All four linked from `/jobs/[id]` Compliance forms section,
-  alongside a "+ Start this week's CPR" button that pre-fills
-  the new-CPR form with the job id (1492, 1502)
+- `/certified-payrolls/[id]/print` — DIR A-1-131 / WH-347 layout
+- `/jobs/[id]/das-140` — Notice of Contract Award
+- `/jobs/[id]/das-141` — Request for Dispatch
+- `/jobs/[id]/das-142` — Training Fund Contributions
+- `/jobs/[id]/bid-invite` — sub bid invitation letter
+- All linked from `/jobs/[id]` Compliance section, plus
+  "+ Start this week's CPR" button that opens the new-CPR form
+  pre-filled with the job id
 
 ## Gusto integration — SCAFFOLDED
-- **`apps/api/src/lib/gusto.ts`** — Bearer-auth wrapper for the
-  Gusto v1 API (1493)
-- **`GET /api/gusto/status`** + **`GET /api/gusto/employees`** —
-  no-op when env vars aren't set (1493)
-- **`/admin/gusto`** page with status banner + employee match
-  preview against YGE Employee records by normalized name (1494)
-- Setup steps inline so the office can wire it up themselves
+- `apps/api/src/lib/gusto.ts` Bearer-auth wrapper
+- `GET /api/gusto/status` + `GET /api/gusto/employees` (no-op
+  when env vars not set)
+- `/admin/gusto` page with status banner + employee match
+  preview against YGE Employee records
 
 ## Dashboard tiles (Brook's morning glance)
-- **CPR-due tile** — active prevailing-wage jobs missing this
-  week's CPR (1496)
-- **CPR pipeline status tile** — DRAFT / SUBMITTED / ACCEPTED /
-  REJECTED / AMENDED counts (1501)
-- **External portal activity tile** — count of agency / sub /
-  bond agent users + preview links (1500)
+- **CPR-due** — active prevailing-wage jobs missing this week's CPR
+- **CPR pipeline status** — DRAFT / SUBMITTED / ACCEPTED / REJECTED
+  / AMENDED counts
+- **External portal activity** — counts of owner / sub / bond agent
+  users + preview links
 
-## Not yet started
-- **Sub portal: lien-waiver sign-and-return flow** — needs the
-  LienWaiver schema to grow a "claimant=sub" mode + a reusable
-  signature flow tied to portal users
-- **DIR e-CPR API submission** — currently manual print + mail /
-  e-file. API auto-submission ships once we have a test DIR
-  account
-- **Mobile app TestFlight + Play Store** — gated on Apple
-  Developer verification step from Ryan
-- **External tenant rollout** — defer until a second contractor
-  signs on
-- **Gusto two-way sync** (push hours + pull paychecks) — gated
-  on YGE opening a real Gusto account
+## Not yet started (external-dep blocked)
+- **Sub portal lien-waiver sign-and-return** — needs LienWaiver
+  schema redesign for sub-as-claimant
+- **DIR e-CPR API submission** — DIR test account needed
+- **Mobile app TestFlight + Play Store** — Apple Developer
+  verification needed
+- **Gusto two-way sync** (push hours + pull paychecks) — real
+  Gusto account needed
+- **External tenant rollout** — second contractor signup needed
 
-## What Ryan + Brook can do today
+## What Ryan + Brook + an external user can do today
 
 After Render + Vercel auto-deploy the latest commit:
 
-1. **External users:** invite via `/admin/portal-users`. Owners
-   land on `/portal/owner`, subs on `/portal/sub`, bond agents on
-   `/portal/bond`. Read-only — all writes still go through
-   internal flows.
-2. **Compliance per job:** on `/jobs/[id]`, the Compliance forms
-   section has DAS-140/141/142 + bid invitation + "Start this
-   week's CPR" — every link opens a print-ready page.
-3. **Morning glance:** `/dashboard` has CPR-due + CPR pipeline +
-   external portal activity tiles. One scroll tells you what
-   needs attention this week.
-4. **Gusto onboarding:** set `GUSTO_API_KEY` + `GUSTO_COMPANY_UUID`
-   in Render → `/admin/gusto` shows matched employees.
+**Internal users:**
+- Invite an external user via `/admin/portal-users` with role
+  `EXTERNAL_OWNER` / `EXTERNAL_SUB` / `EXTERNAL_BOND`
+- Watch the dashboard tiles: CPR-due + pipeline status +
+  external portal activity
+- Print DAS-140/141/142 + bid invitation + CPR per job from the
+  Compliance forms section on `/jobs/[id]`
+- Click "+ Start this week's CPR" to open a pre-filled new-CPR
+  form
+
+**Owner portal user:** lands on `/portal/owner`, scans quick stats
++ project grid, clicks a project, sees daily reports / photos /
+RFIs / change orders, clicks into the full photo gallery or RFI
+list, clicks a photo for the detail view.
+
+**Sub portal user:** lands on `/portal/sub`, sees account info,
+sub-bid listings, lien waivers filed by YGE.
+
+**Bond agent:** lands on `/portal/bond`, sees capacity / active
+jobs / completed jobs / financial summary.
 
 ## Phase 3 round-up
 
-26 bundles, two sittings. Same cadence as Phase 2. Next obvious
-wins (in order):
-
-1. Sub portal lien-waiver sign-and-return (the one external-portal
-   write-back) — schema work + signature flow
-2. DIR e-CPR API submission (DIR test account dependency)
-3. Mobile launch (Apple Developer dependency)
-4. Gusto two-way sync (real Gusto account dependency)
-
-External-dep blockers are why these are deferred — the YGE side
-is ready; we just need the upstream account or verification step
-done.
+33 bundles. Most external-facing functionality is now live; the
+remaining work is gated on external dependencies (DIR test
+account, Apple Developer verification, real Gusto account,
+lien-waiver schema redesign). The YGE side is ready and
+shipping as fast as the watcher + typecheck cycle allows.
