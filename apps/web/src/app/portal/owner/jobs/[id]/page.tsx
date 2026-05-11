@@ -270,6 +270,18 @@ export default async function OwnerPortalJobPage({
         </section>
 
         <section className="rounded-md border border-gray-200 bg-white p-4">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+            Submittals
+          </h2>
+          <a
+            href={`/portal/owner/jobs/${params.id}/submittals`}
+            className="mt-2 inline-block text-xs text-yge-blue-700 hover:underline"
+          >
+            See submittals list →
+          </a>
+        </section>
+
+        <section className="rounded-md border border-gray-200 bg-white p-4">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
               Change orders ({cos.length})
