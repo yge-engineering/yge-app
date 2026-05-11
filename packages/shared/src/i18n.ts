@@ -4628,6 +4628,7 @@ export const SEED_DICTIONARY: DictionaryByLocale = {
     'nav.yearEndClose': 'Year-end close',
     'nav.riskRegister': 'Risk register',
     'nav.tax1099Worksheet': '1099 worksheet',
+    'nav.vendorW9Chase': 'W-9 chase list',
     'nav.adminErrors': 'Server errors',
     'nav.adminGusto': 'Gusto integration',
     'nav.adminHealth': 'System health',
