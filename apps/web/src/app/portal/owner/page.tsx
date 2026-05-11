@@ -12,10 +12,12 @@ import { getCurrentUser } from '../../../lib/auth';
 import { currentUserCan } from '../../../lib/permissions';
 import {
   bidDueCountdown,
+  type ChangeOrder,
   type DailyReport,
   type Job,
   type Photo,
   type PortalUser,
+  type Rfi,
 } from '@yge/shared';
 
 function apiBaseUrl(): string {
@@ -114,12 +116,33 @@ export default async function OwnerPortalPage() {
   }
   const me = getCurrentUser();
   const { user, jobs } = await fetchAssigned(me?.email ?? '');
-  const [reports, photos] = await Promise.all([
+  const [reports, photos, rfis, changeOrders] = await Promise.all([
     fetchJson<DailyReport>('/api/daily-reports', 'reports'),
     fetchJson<Photo>('/api/photos', 'photos'),
+    fetchJson<Rfi>('/api/rfis', 'rfis'),
+    fetchJson<ChangeOrder>('/api/change-orders', 'orders'),
   ]);
   const activity = buildActivityMap(reports, photos);
   const now = new Date();
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
+  const assignedSet = new Set((user?.assignedJobIds ?? []) as string[]);
+  const photos7d = photos.filter(
+    (p) => assignedSet.has(p.jobId) && p.takenOn >= sevenDaysAgo,
+  ).length;
+  const openRfis = rfis.filter(
+    (r) =>
+      assignedSet.has(r.jobId) &&
+      r.status !== 'CLOSED' &&
+      r.status !== 'WITHDRAWN' &&
+      r.status !== 'ANSWERED',
+  ).length;
+  const pendingCos = changeOrders.filter(
+    (c) =>
+      assignedSet.has(c.jobId) &&
+      (c.status === 'PROPOSED' || c.status === 'AGENCY_REVIEW'),
+  ).length;
 
   const sorted = [...jobs].sort((a, b) =>
     b.createdAt.localeCompare(a.createdAt),
@@ -161,6 +184,34 @@ export default async function OwnerPortalPage() {
           </div>
         ) : (
           <>
+            <section className="mb-4 grid grid-cols-3 gap-3">
+              <div className="rounded-md border border-gray-200 bg-white p-3">
+                <div className="text-xs text-gray-600">Photos last 7 days</div>
+                <div className="mt-1 font-mono text-2xl font-bold text-yge-blue-900">
+                  {photos7d}
+                </div>
+              </div>
+              <div className="rounded-md border border-gray-200 bg-white p-3">
+                <div className="text-xs text-gray-600">Open RFIs</div>
+                <div
+                  className={`mt-1 font-mono text-2xl font-bold ${
+                    openRfis > 0 ? 'text-amber-800' : 'text-yge-blue-900'
+                  }`}
+                >
+                  {openRfis}
+                </div>
+              </div>
+              <div className="rounded-md border border-gray-200 bg-white p-3">
+                <div className="text-xs text-gray-600">Pending change orders</div>
+                <div
+                  className={`mt-1 font-mono text-2xl font-bold ${
+                    pendingCos > 0 ? 'text-amber-800' : 'text-yge-blue-900'
+                  }`}
+                >
+                  {pendingCos}
+                </div>
+              </div>
+            </section>
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">
               Your projects ({sorted.length})
             </h2>
