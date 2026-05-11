@@ -139,6 +139,7 @@ const NAV_SPEC: NavGroupSpec[] = [
   {
     key: 'nav.group.money',
     links: [
+      { key: 'nav.reports', href: '/reports', requires: 'financials:view' },
       { key: 'nav.arInvoices', href: '/ar-invoices', requires: 'financials:view' },
       { key: 'nav.arPayments', href: '/ar-payments', requires: 'financials:view' },
       { key: 'nav.apInvoices', href: '/ap-invoices', requires: 'financials:view' },

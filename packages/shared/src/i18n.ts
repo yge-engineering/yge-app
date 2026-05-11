@@ -4607,6 +4607,7 @@ export const SEED_DICTIONARY: DictionaryByLocale = {
     'nav.rfis': 'RFIs',
     'nav.submittals': 'Submittals',
     'nav.punchLists': 'Punch lists',
+    'nav.reports': 'Reports',
     'nav.arInvoices': 'AR invoices',
     'nav.arPayments': 'AR payments',
     'nav.apInvoices': 'AP invoices',
