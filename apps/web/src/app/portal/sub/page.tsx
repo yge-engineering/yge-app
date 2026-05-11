@@ -63,6 +63,34 @@ export default async function SubPortalPage() {
       )
     : undefined;
 
+  // Optional sub-bid listings — populated when there's a matched
+  // vendor record so we can query by vendorId.
+  type SubBidMatch = {
+    estimateId: string;
+    projectName: string;
+    bidDueDate?: string;
+    bidStatus?: string;
+    contractorName: string;
+    portionOfWork: string;
+    bidAmountCents: number;
+    matchedOn: 'name' | 'license';
+  };
+  let subBidMatches: SubBidMatch[] = [];
+  if (matchedVendor) {
+    try {
+      const res = await fetch(
+        `${apiBaseUrl()}/api/portal-sub/my-sub-bids?vendorId=${encodeURIComponent(matchedVendor.id)}`,
+        { cache: 'no-store' },
+      );
+      if (res.ok) {
+        const body = (await res.json()) as { matches: SubBidMatch[] };
+        subBidMatches = body.matches;
+      }
+    } catch {
+      /* swallow */
+    }
+  }
+
   return (
     <main className="min-h-screen bg-gray-50">
       <header className="border-b border-gray-200 bg-white px-6 py-4 shadow-sm">
@@ -115,6 +143,42 @@ export default async function SubPortalPage() {
               </>
             ) : null}
           </dl>
+        </section>
+
+        <section className="rounded-md border border-gray-200 bg-white p-4">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+            Sub-bid listings ({subBidMatches.length})
+          </h2>
+          {subBidMatches.length === 0 ? (
+            <p className="mt-2 text-sm text-gray-700">
+              {matchedVendor
+                ? `YGE hasn't listed ${matchedVendor.legalName} on any active bid §4104 sub list yet. Quotes you've submitted are still under consideration.`
+                : 'Connect your vendor record (email match) so we can show your sub-bid listings.'}
+            </p>
+          ) : (
+            <ul className="mt-2 divide-y divide-gray-100 text-sm">
+              {subBidMatches.map((m) => (
+                <li key={m.estimateId + m.contractorName + m.portionOfWork} className="py-2">
+                  <div className="font-semibold text-gray-900">
+                    {m.projectName}
+                  </div>
+                  <div className="text-xs text-gray-700">
+                    Portion: {m.portionOfWork}
+                  </div>
+                  <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-gray-600">
+                    <span className="font-mono">
+                      ${(m.bidAmountCents / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </span>
+                    {m.bidDueDate ? <span>Bid due {m.bidDueDate}</span> : null}
+                    {m.bidStatus ? <span>Bid status: {m.bidStatus}</span> : null}
+                    <span className="rounded bg-gray-100 px-1.5 py-0.5">
+                      matched on {m.matchedOn}
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
 
         <section className="rounded-md border border-gray-200 bg-white p-4">

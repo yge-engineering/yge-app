@@ -76,6 +76,7 @@ import { crossCheckAddendaRouter } from './routes/cross-check-addenda';
 import { adminErrorsRouter } from './routes/admin-errors';
 import { adminBackfillRouter } from './routes/admin-backfill';
 import { gustoRouter } from './routes/gusto';
+import { portalSubRouter } from './routes/portal-sub';
 
 const app = express();
 
@@ -185,6 +186,7 @@ app.use('/api/priced-estimates', crossCheckAddendaRouter);
 app.use('/api/admin', adminErrorsRouter);
 app.use('/api/admin', adminBackfillRouter);
 app.use('/api/gusto', gustoRouter);
+app.use('/api/portal-sub', portalSubRouter);
 
 // 404
 app.use((_req, res) => {
