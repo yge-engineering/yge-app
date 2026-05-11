@@ -220,6 +220,58 @@ export default async function BondPortalPage() {
 
         <section className="rounded-md border border-gray-200 bg-white p-4">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+            Completed jobs (this year)
+          </h2>
+          {(() => {
+            const year = new Date().getFullYear();
+            const closed = jobs.filter(
+              (j) => j.status === 'ARCHIVED' || j.status === 'AWARDED',
+            );
+            // We don't store actualEnd on the file-store Job, so fall
+            // back to updatedAt's year as a proxy.
+            const thisYearClosed = closed.filter((j) =>
+              j.updatedAt.startsWith(String(year)),
+            );
+            if (thisYearClosed.length === 0) {
+              return (
+                <p className="mt-2 text-sm text-gray-500">
+                  No closed jobs yet this year.
+                </p>
+              );
+            }
+            return (
+              <ul className="mt-2 divide-y divide-gray-100 text-sm">
+                {thisYearClosed.map((j) => (
+                  <li key={j.id} className="flex items-center justify-between py-2">
+                    <div>
+                      <div className="font-semibold text-gray-900">
+                        {j.projectName}
+                      </div>
+                      <div className="text-xs text-gray-600">
+                        {j.ownerAgency ?? '—'}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-mono text-sm font-semibold">
+                        {j.engineersEstimateCents != null ? (
+                          <Money cents={j.engineersEstimateCents} />
+                        ) : (
+                          '—'
+                        )}
+                      </span>
+                      <div className="text-[10px] uppercase tracking-wide text-gray-500">
+                        {j.status}
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            );
+          })()}
+        </section>
+
+        <section className="rounded-md border border-gray-200 bg-white p-4">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
             Latest financial summary (as of {today})
           </h2>
           <div className="mt-2 grid grid-cols-3 gap-3 text-sm">
