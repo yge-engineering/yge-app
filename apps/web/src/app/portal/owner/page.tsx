@@ -12,7 +12,9 @@ import { getCurrentUser } from '../../../lib/auth';
 import { currentUserCan } from '../../../lib/permissions';
 import {
   bidDueCountdown,
+  type DailyReport,
   type Job,
+  type Photo,
   type PortalUser,
 } from '@yge/shared';
 
@@ -64,12 +66,60 @@ async function fetchAssigned(email: string): Promise<{
   return { user, jobs };
 }
 
+async function fetchJson<T>(path: string, key: string): Promise<T[]> {
+  try {
+    const res = await fetch(`${apiBaseUrl()}${path}`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    const body = (await res.json()) as Record<string, unknown>;
+    const arr = body[key];
+    return Array.isArray(arr) ? (arr as T[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+interface JobActivity {
+  lastReportDate: string | null;
+  lastPhotoDate: string | null;
+}
+
+function buildActivityMap(
+  reports: DailyReport[],
+  photos: Photo[],
+): Map<string, JobActivity> {
+  const m = new Map<string, JobActivity>();
+  for (const r of reports) {
+    const cur = m.get(r.jobId) ?? { lastReportDate: null, lastPhotoDate: null };
+    if (!cur.lastReportDate || r.date > cur.lastReportDate) cur.lastReportDate = r.date;
+    m.set(r.jobId, cur);
+  }
+  for (const p of photos) {
+    const cur = m.get(p.jobId) ?? { lastReportDate: null, lastPhotoDate: null };
+    if (!cur.lastPhotoDate || p.takenOn > cur.lastPhotoDate) cur.lastPhotoDate = p.takenOn;
+    m.set(p.jobId, cur);
+  }
+  return m;
+}
+
+function daysAgo(isoDate: string | null, now: Date): number | null {
+  if (!isoDate) return null;
+  const t = Date.parse(isoDate + 'T00:00:00');
+  if (!Number.isFinite(t)) return null;
+  return Math.floor((now.getTime() - t) / (24 * 60 * 60 * 1000));
+}
+
 export default async function OwnerPortalPage() {
   if (!currentUserCan('portal:owner')) {
     redirect('/login');
   }
   const me = getCurrentUser();
   const { user, jobs } = await fetchAssigned(me?.email ?? '');
+  const [reports, photos] = await Promise.all([
+    fetchJson<DailyReport>('/api/daily-reports', 'reports'),
+    fetchJson<Photo>('/api/photos', 'photos'),
+  ]);
+  const activity = buildActivityMap(reports, photos);
+  const now = new Date();
 
   const sorted = [...jobs].sort((a, b) =>
     b.createdAt.localeCompare(a.createdAt),
@@ -133,6 +183,41 @@ export default async function OwnerPortalPage() {
                           {j.location}
                         </div>
                       ) : null}
+                      {(() => {
+                        const a = activity.get(j.id);
+                        const reportAge = daysAgo(a?.lastReportDate ?? null, now);
+                        const photoAge = daysAgo(a?.lastPhotoDate ?? null, now);
+                        return (
+                          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                            {reportAge != null ? (
+                              <span
+                                className={`rounded-full px-2 py-0.5 ${
+                                  reportAge === 0
+                                    ? 'bg-green-100 text-green-900'
+                                    : reportAge <= 7
+                                      ? 'bg-gray-100 text-gray-700'
+                                      : 'bg-amber-100 text-amber-900'
+                                }`}
+                              >
+                                Last report: {reportAge === 0 ? 'today' : `${reportAge}d ago`}
+                              </span>
+                            ) : null}
+                            {photoAge != null ? (
+                              <span
+                                className={`rounded-full px-2 py-0.5 ${
+                                  photoAge === 0
+                                    ? 'bg-green-100 text-green-900'
+                                    : photoAge <= 7
+                                      ? 'bg-gray-100 text-gray-700'
+                                      : 'bg-amber-100 text-amber-900'
+                                }`}
+                              >
+                                Last photo: {photoAge === 0 ? 'today' : `${photoAge}d ago`}
+                              </span>
+                            ) : null}
+                          </div>
+                        );
+                      })()}
                       <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs">
                         <span className="rounded-full bg-gray-100 px-2 py-0.5 font-mono text-gray-700">
                           {j.status}
