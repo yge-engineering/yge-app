@@ -26,6 +26,7 @@ import { CprDueTile } from '../../components/cpr-due-tile';
 import { CprStatusTile } from '../../components/cpr-status-tile';
 import { CloseProgressTile } from '../../components/close-progress-tile';
 import { Tax1099ReadinessTile } from '../../components/tax-1099-readiness-tile';
+import { VendorSpendTile } from '../../components/vendor-spend-tile';
 import { ExternalPortalTile } from '../../components/external-portal-tile';
 import { currentUserCan } from '../../lib/permissions';
 import { CopyMoneyButton } from '../../components/copy-money-button';
@@ -532,6 +533,7 @@ export default async function DashboardPage() {
       {currentUserCan('financials:view') ? <CprStatusTile /> : null}
       {currentUserCan('financials:view') ? <CloseProgressTile /> : null}
       {currentUserCan('financials:view') ? <Tax1099ReadinessTile /> : null}
+      {currentUserCan('financials:view') ? <VendorSpendTile /> : null}
       {currentUserCan('portalUsers:manage') ? <ExternalPortalTile /> : null}
       {currentUserCan('audit:view') ? <ErrorCountTile /> : null}
 
