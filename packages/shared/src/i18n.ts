@@ -4596,6 +4596,7 @@ export const SEED_DICTIONARY: DictionaryByLocale = {
     'nav.dashboard': 'Dashboard',
     'nav.myToday': 'My today',
     'nav.calendar': 'Calendar',
+    'nav.morningBriefing': 'Morning briefing',
     'nav.dispatch': 'Dispatch',
     'nav.dailyReports': 'Daily reports',
     'nav.timeCards': 'Time cards',
