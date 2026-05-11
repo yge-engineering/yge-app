@@ -190,9 +190,19 @@ export default async function OwnerPortalJobPage({
         </section>
 
         <section className="rounded-md border border-gray-200 bg-white p-4">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-            Recent photos ({photos.length})
-          </h2>
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Recent photos ({photos.length})
+            </h2>
+            {photos.length > 0 ? (
+              <a
+                href={`/portal/owner/jobs/${params.id}/photos`}
+                className="text-xs text-yge-blue-700 hover:underline"
+              >
+                See all photos →
+              </a>
+            ) : null}
+          </div>
           {photos.length === 0 ? (
             <p className="mt-2 text-sm text-gray-500">No photos yet.</p>
           ) : (
