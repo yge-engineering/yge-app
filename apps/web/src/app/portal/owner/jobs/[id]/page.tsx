@@ -198,9 +198,10 @@ export default async function OwnerPortalJobPage({
           ) : (
             <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-4">
               {photos.map((p) => (
-                <div
+                <a
                   key={p.id}
-                  className="aspect-square overflow-hidden rounded border border-gray-200 bg-gray-100 text-center text-[10px] text-gray-600"
+                  href={`/portal/owner/photos/${p.id}`}
+                  className="aspect-square overflow-hidden rounded border border-gray-200 bg-gray-100 text-center text-[10px] text-gray-600 hover:border-yge-blue-500"
                 >
                   <div className="px-1 py-2 font-semibold uppercase tracking-wide text-gray-500">
                     {p.category}
@@ -209,7 +210,7 @@ export default async function OwnerPortalJobPage({
                     {p.takenOn}
                     {p.caption ? ` · ${p.caption.slice(0, 40)}` : ''}
                   </div>
-                </div>
+                </a>
               ))}
             </div>
           )}
