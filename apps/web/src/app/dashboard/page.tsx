@@ -25,6 +25,7 @@ import { ArAgingTile } from '../../components/ar-aging-tile';
 import { CprDueTile } from '../../components/cpr-due-tile';
 import { CprStatusTile } from '../../components/cpr-status-tile';
 import { CloseProgressTile } from '../../components/close-progress-tile';
+import { RiskRegisterTile } from '../../components/risk-register-tile';
 import { Tax1099ReadinessTile } from '../../components/tax-1099-readiness-tile';
 import { VendorSpendTile } from '../../components/vendor-spend-tile';
 import { CustomerConcentrationTile } from '../../components/customer-concentration-tile';
@@ -532,6 +533,7 @@ export default async function DashboardPage() {
       {currentUserCan('financials:view') ? <ArAgingTile /> : null}
       {currentUserCan('financials:view') ? <CprDueTile /> : null}
       {currentUserCan('financials:view') ? <CprStatusTile /> : null}
+      {currentUserCan('financials:view') ? <RiskRegisterTile /> : null}
       {currentUserCan('financials:view') ? <CloseProgressTile /> : null}
       {currentUserCan('financials:view') ? <Tax1099ReadinessTile /> : null}
       {currentUserCan('financials:view') ? <VendorSpendTile /> : null}
