@@ -4622,6 +4622,7 @@ export const SEED_DICTIONARY: DictionaryByLocale = {
     'nav.cashFlow': 'Cash flow',
     'nav.closePackage': 'Close package',
     'nav.periodClose': 'Monthly close wizard',
+    'nav.tax1099Worksheet': '1099 worksheet',
     'nav.adminErrors': 'Server errors',
     'nav.adminGusto': 'Gusto integration',
     'nav.adminHealth': 'System health',
