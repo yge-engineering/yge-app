@@ -227,9 +227,19 @@ export default async function OwnerPortalJobPage({
         </section>
 
         <section className="rounded-md border border-gray-200 bg-white p-4">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-            Open RFIs ({rfis.length})
-          </h2>
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Open RFIs ({rfis.length})
+            </h2>
+            {rfis.length > 0 ? (
+              <a
+                href={`/portal/owner/jobs/${params.id}/rfis`}
+                className="text-xs text-yge-blue-700 hover:underline"
+              >
+                See all RFIs →
+              </a>
+            ) : null}
+          </div>
           {rfis.length === 0 ? (
             <p className="mt-2 text-sm text-gray-500">No RFIs yet.</p>
           ) : (
