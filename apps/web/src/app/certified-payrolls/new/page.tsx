@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
 import { Alert, AppShell } from '../../../components';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { mondayOfWeek, type CertifiedPayroll, type Job } from '@yge/shared';
 import { ApiError, postJson } from '@/lib/api';
 import { useTranslator } from '../../../lib/use-translator';
@@ -19,7 +19,13 @@ function sundayOfWeek(monday: string): string {
 export default function NewCprPage() {
   const t = useTranslator();
   const router = useRouter();
-  const [jobId, setJobId] = useState('');
+  const initialJobId =
+    typeof window !== 'undefined'
+      ? new URLSearchParams(window.location.search).get('jobId') ?? ''
+      : '';
+  const [jobId, setJobId] = useState(initialJobId);
+  // Suppress unused-search-params lint warning if Next adds the hook later.
+  void useSearchParams;
   const [weekStarting, setWeekStarting] = useState(mondayOfWeek(new Date().toISOString().slice(0, 10)));
   const [payrollNumber, setPayrollNumber] = useState('1');
   const [jobs, setJobs] = useState<Job[]>([]);

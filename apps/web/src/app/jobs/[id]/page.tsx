@@ -788,6 +788,12 @@ export default async function JobDetailPage({
             🖨 Bid invitation letter
           </a>
           <a
+            href={`/certified-payrolls/new?jobId=${job.id}`}
+            className="rounded border border-yge-blue-500 bg-yge-blue-50 px-3 py-1.5 text-xs font-semibold text-yge-blue-700 hover:bg-yge-blue-100"
+          >
+            + Start this week's CPR
+          </a>
+          <a
             href={`/jobs/${job.id}/das-141`}
             target="_blank"
             rel="noreferrer"
