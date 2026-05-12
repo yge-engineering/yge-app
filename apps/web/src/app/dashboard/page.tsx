@@ -528,7 +528,7 @@ export default async function DashboardPage() {
 
       <MobileAppCallout />
 
-      <MorningBriefingTile />
+      {/* TILE DISABLED (1563): <MorningBriefingTile /> */}
 
       {user?.email ? (
         <InboxTriageTile
@@ -540,15 +540,15 @@ export default async function DashboardPage() {
       {currentUserCan('financials:view') ? <ArAgingTile /> : null}
       {currentUserCan('financials:view') ? <CprDueTile /> : null}
       {currentUserCan('financials:view') ? <CprStatusTile /> : null}
-      {currentUserCan('financials:view') ? <RiskRegisterTile /> : null}
+      {/* TILE DISABLED (1563): <RiskRegisterTile /> */}
       {currentUserCan('financials:view') ? <CloseProgressTile /> : null}
-      {currentUserCan('financials:view') ? <Tax1099ReadinessTile /> : null}
-      {currentUserCan('financials:view') ? <VendorSpendTile /> : null}
-      {currentUserCan('financials:view') ? <CustomerConcentrationTile /> : null}
-      {currentUserCan('financials:view') ? <CoiAgingTile /> : null}
-      {currentUserCan('financials:view') ? <W9ChaseTile /> : null}
-      {currentUserCan('financials:view') ? <LienWaiverChaseTile /> : null}
-      {currentUserCan('financials:view') ? <JobProfitTile /> : null}
+      {/* TILE DISABLED (1563): <Tax1099ReadinessTile /> */}
+      {/* TILE DISABLED (1563): <VendorSpendTile /> */}
+      {/* TILE DISABLED (1563): <CustomerConcentrationTile /> */}
+      {/* TILE DISABLED (1563): <CoiAgingTile /> */}
+      {/* TILE DISABLED (1563): <W9ChaseTile /> */}
+      {/* TILE DISABLED (1563): <LienWaiverChaseTile /> */}
+      {/* TILE DISABLED (1563): <JobProfitTile /> */}
       {currentUserCan('portalUsers:manage') ? <ExternalPortalTile /> : null}
       {currentUserCan('audit:view') ? <ErrorCountTile /> : null}
 
