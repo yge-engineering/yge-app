@@ -1440,6 +1440,29 @@ export default async function DashboardPage() {
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error('[/dashboard] DashboardPageInner threw:', err);
+    // Server-side beacon so /admin/errors shows the actual message
+    // + stack. Production Next.js redacts client-visible errors, but
+    // server→server has no such redaction.
+    try {
+      const apiBase =
+        process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+      await fetch(`${apiBase}/api/admin/errors/log-client`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          message: err instanceof Error ? err.message : String(err),
+          stack: err instanceof Error ? err.stack : null,
+          url: '/dashboard',
+          userAgent: 'SSR (Next.js)',
+          digest:
+            err && typeof err === 'object' && 'digest' in err
+              ? (err as { digest?: string }).digest ?? null
+              : null,
+        }),
+      });
+    } catch {
+      // observability shouldn't crash the fallback
+    }
     return <DashboardFallback error={err} />;
   }
 }
