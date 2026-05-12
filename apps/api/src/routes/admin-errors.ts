@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 // Admin: list captured api_errors.
 
 import { Router } from 'express';
@@ -130,3 +131,37 @@ adminErrorsRouter.get('/errors/by-message', async (req, res, next) => {
     next(err);
   }
 });
+
+// POST /api/admin/errors/log-client — capture an SSR/client error
+// reported by the web's error.tsx. Production Next.js strips the
+// real error message, so we capture digest + URL + UA at minimum.
+adminErrorsRouter.post('/errors/log-client', async (req, res, next) => {
+  try {
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    const digest = typeof body.digest === 'string' ? body.digest.slice(0, 200) : null;
+    const url = typeof body.url === 'string' ? body.url.slice(0, 500) : 'unknown';
+    const message =
+      typeof body.message === 'string' ? body.message.slice(0, 4000) : '(client error)';
+    const stack = typeof body.stack === 'string' ? body.stack.slice(0, 16000) : null;
+    const userAgent = typeof body.userAgent === 'string' ? body.userAgent.slice(0, 500) : null;
+
+    await prisma.apiError.create({
+      data: {
+        id: randomUUID(),
+        companyId: null,
+        requestId: null,
+        method: 'GET',
+        route: url,
+        statusCode: 500,
+        message: digest ? `[digest:${digest}] ${message}` : message,
+        stack,
+        ipAddress: null,
+        userAgent,
+      },
+    });
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
+});
+
