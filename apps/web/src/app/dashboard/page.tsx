@@ -528,7 +528,7 @@ async function DashboardPageInner() {
 
       <MobileAppCallout />
 
-      <MorningBriefingTile />
+      {/* TILE STRIPPED (1571): <MorningBriefingTile /> */}
 
       {user?.email ? (
         <InboxTriageTile
@@ -540,15 +540,15 @@ async function DashboardPageInner() {
       {currentUserCan('financials:view') ? <ArAgingTile /> : null}
       {currentUserCan('financials:view') ? <CprDueTile /> : null}
       {currentUserCan('financials:view') ? <CprStatusTile /> : null}
-      {currentUserCan('financials:view') ? <RiskRegisterTile /> : null}
+      {/* TILE STRIPPED (1571): {currentUserCan('financials:view') ? <RiskRegister */}
       {currentUserCan('financials:view') ? <CloseProgressTile /> : null}
-      {currentUserCan('financials:view') ? <Tax1099ReadinessTile /> : null}
-      {currentUserCan('financials:view') ? <VendorSpendTile /> : null}
-      {currentUserCan('financials:view') ? <CustomerConcentrationTile /> : null}
-      {currentUserCan('financials:view') ? <CoiAgingTile /> : null}
-      {currentUserCan('financials:view') ? <W9ChaseTile /> : null}
-      {currentUserCan('financials:view') ? <LienWaiverChaseTile /> : null}
-      {currentUserCan('financials:view') ? <JobProfitTile /> : null}
+      {/* TILE STRIPPED (1571): {currentUserCan('financials:view') ? <Tax1099Readi */}
+      {/* TILE STRIPPED (1571): {currentUserCan('financials:view') ? <VendorSpendT */}
+      {/* TILE STRIPPED (1571): {currentUserCan('financials:view') ? <CustomerConc */}
+      {/* TILE STRIPPED (1571): {currentUserCan('financials:view') ? <CoiAgingTile */}
+      {/* TILE STRIPPED (1571): {currentUserCan('financials:view') ? <W9ChaseTile  */}
+      {/* TILE STRIPPED (1571): {currentUserCan('financials:view') ? <LienWaiverCh */}
+      {/* TILE STRIPPED (1571): {currentUserCan('financials:view') ? <JobProfitTil */}
       {currentUserCan('portalUsers:manage') ? <ExternalPortalTile /> : null}
       {currentUserCan('audit:view') ? <ErrorCountTile /> : null}
 
