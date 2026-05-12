@@ -1,3 +1,4 @@
+import * as React from 'react';
 // Dashboard tile — customer revenue concentration for the current year.
 //
 // Plain English: who pays us, and are we too dependent on one
@@ -27,7 +28,7 @@ async function fetchJson<T>(pathname: string, key: string): Promise<T[]> {
   }
 }
 
-export async function CustomerConcentrationTile() {
+async function CustomerConcentrationTileInner() {
   const now = new Date();
   const year = now.getUTCFullYear();
   const start = `${year}-01-01`;
@@ -125,4 +126,16 @@ export async function CustomerConcentrationTile() {
       </dl>
     </section>
   );
+}
+
+// Resilient wrapper — if anything throws inside CustomerConcentrationTileInner (bad
+// data shape, API timeout, builder bug), we render null instead of
+// crashing the dashboard. Errors get logged server-side.
+export async function CustomerConcentrationTile(): Promise<React.ReactElement | null> {
+  try {
+    return await CustomerConcentrationTileInner();
+  } catch (err) {
+    console.error('[CustomerConcentrationTile] render failed:', err);
+    return null;
+  }
 }

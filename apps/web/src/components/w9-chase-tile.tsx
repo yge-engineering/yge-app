@@ -1,3 +1,4 @@
+import * as React from 'react';
 // Dashboard tile — W-9 chase summary.
 //
 // Plain English: how many 1099-reportable vendors are over the
@@ -25,7 +26,7 @@ async function fetchJson<T>(pathname: string, key: string): Promise<T[]> {
   }
 }
 
-export async function W9ChaseTile() {
+async function W9ChaseTileInner() {
   const [vendors, apInvoices] = await Promise.all([
     fetchJson<Vendor>('/api/vendors', 'vendors'),
     fetchJson<ApInvoice>('/api/ap-invoices', 'invoices'),
@@ -101,4 +102,16 @@ export async function W9ChaseTile() {
       </dl>
     </section>
   );
+}
+
+// Resilient wrapper — if anything throws inside W9ChaseTileInner (bad
+// data shape, API timeout, builder bug), we render null instead of
+// crashing the dashboard. Errors get logged server-side.
+export async function W9ChaseTile(): Promise<React.ReactElement | null> {
+  try {
+    return await W9ChaseTileInner();
+  } catch (err) {
+    console.error('[W9ChaseTile] render failed:', err);
+    return null;
+  }
 }

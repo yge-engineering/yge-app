@@ -1,3 +1,4 @@
+import * as React from 'react';
 // Dashboard tile — subcontractor COI aging.
 //
 // Plain English: how many subs are walking around without
@@ -24,7 +25,7 @@ async function fetchJson<T>(pathname: string, key: string): Promise<T[]> {
   }
 }
 
-export async function CoiAgingTile() {
+async function CoiAgingTileInner() {
   const vendors = await fetchJson<Vendor>('/api/vendors', 'vendors');
   const { rollup } = buildVendorCoiAging({
     vendors,
@@ -99,4 +100,16 @@ export async function CoiAgingTile() {
       </dl>
     </section>
   );
+}
+
+// Resilient wrapper — if anything throws inside CoiAgingTileInner (bad
+// data shape, API timeout, builder bug), we render null instead of
+// crashing the dashboard. Errors get logged server-side.
+export async function CoiAgingTile(): Promise<React.ReactElement | null> {
+  try {
+    return await CoiAgingTileInner();
+  } catch (err) {
+    console.error('[CoiAgingTile] render failed:', err);
+    return null;
+  }
 }

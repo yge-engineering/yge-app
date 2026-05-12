@@ -1,3 +1,4 @@
+import * as React from 'react';
 // Dashboard tile — lien-waiver chase summary.
 //
 // Plain English: every AR payment we receive needs a signed
@@ -25,7 +26,7 @@ async function fetchJson<T>(pathname: string, key: string): Promise<T[]> {
   }
 }
 
-export async function LienWaiverChaseTile() {
+async function LienWaiverChaseTileInner() {
   const [arPayments, lienWaivers] = await Promise.all([
     fetchJson<ArPayment>('/api/ar-payments', 'payments'),
     fetchJson<LienWaiver>('/api/lien-waivers', 'waivers'),
@@ -103,4 +104,16 @@ export async function LienWaiverChaseTile() {
       </dl>
     </section>
   );
+}
+
+// Resilient wrapper — if anything throws inside LienWaiverChaseTileInner (bad
+// data shape, API timeout, builder bug), we render null instead of
+// crashing the dashboard. Errors get logged server-side.
+export async function LienWaiverChaseTile(): Promise<React.ReactElement | null> {
+  try {
+    return await LienWaiverChaseTileInner();
+  } catch (err) {
+    console.error('[LienWaiverChaseTile] render failed:', err);
+    return null;
+  }
 }

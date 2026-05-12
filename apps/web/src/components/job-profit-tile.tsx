@@ -1,3 +1,4 @@
+import * as React from 'react';
 // Dashboard tile — job profitability watch.
 
 import Link from 'next/link';
@@ -31,7 +32,7 @@ async function fetchJson<T>(pathname: string, key: string): Promise<T[]> {
   }
 }
 
-export async function JobProfitTile() {
+async function JobProfitTileInner() {
   const [jobs, arInvoices, apInvoices, changeOrders, expenses, mileage] =
     await Promise.all([
       fetchJson<Job>('/api/jobs', 'jobs'),
@@ -119,4 +120,16 @@ export async function JobProfitTile() {
       ) : null}
     </section>
   );
+}
+
+// Resilient wrapper — if anything throws inside JobProfitTileInner (bad
+// data shape, API timeout, builder bug), we render null instead of
+// crashing the dashboard. Errors get logged server-side.
+export async function JobProfitTile(): Promise<React.ReactElement | null> {
+  try {
+    return await JobProfitTileInner();
+  } catch (err) {
+    console.error('[JobProfitTile] render failed:', err);
+    return null;
+  }
 }

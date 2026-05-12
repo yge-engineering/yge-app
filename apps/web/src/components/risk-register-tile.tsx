@@ -1,3 +1,4 @@
+import * as React from 'react';
 // Dashboard tile — overall risk-register summary.
 //
 // Plain English: how many red / amber / green risks are there
@@ -37,7 +38,7 @@ async function fetchJson<T>(pathname: string, key: string): Promise<T[]> {
 
 type Severity = 'RED' | 'AMBER' | 'GREEN';
 
-export async function RiskRegisterTile() {
+async function RiskRegisterTileInner() {
   const now = new Date();
   const year = now.getUTCFullYear();
   const start = `${year}-01-01`;
@@ -148,4 +149,16 @@ export async function RiskRegisterTile() {
       </div>
     </section>
   );
+}
+
+// Resilient wrapper — if anything throws inside RiskRegisterTileInner (bad
+// data shape, API timeout, builder bug), we render null instead of
+// crashing the dashboard. Errors get logged server-side.
+export async function RiskRegisterTile(): Promise<React.ReactElement | null> {
+  try {
+    return await RiskRegisterTileInner();
+  } catch (err) {
+    console.error('[RiskRegisterTile] render failed:', err);
+    return null;
+  }
 }

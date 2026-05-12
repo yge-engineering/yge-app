@@ -1,3 +1,4 @@
+import * as React from 'react';
 // Dashboard tile — 1099-NEC readiness for the current calendar year.
 //
 // Plain English: as of right now, how many vendors are over the
@@ -28,7 +29,7 @@ async function fetchJson<T>(pathname: string, key: string): Promise<T[]> {
   }
 }
 
-export async function Tax1099ReadinessTile() {
+async function Tax1099ReadinessTileInner() {
   const now = new Date();
   const year = now.getUTCFullYear();
   const [vendors, payments] = await Promise.all([
@@ -95,4 +96,16 @@ export async function Tax1099ReadinessTile() {
       </dl>
     </section>
   );
+}
+
+// Resilient wrapper — if anything throws inside Tax1099ReadinessTileInner (bad
+// data shape, API timeout, builder bug), we render null instead of
+// crashing the dashboard. Errors get logged server-side.
+export async function Tax1099ReadinessTile(): Promise<React.ReactElement | null> {
+  try {
+    return await Tax1099ReadinessTileInner();
+  } catch (err) {
+    console.error('[Tax1099ReadinessTile] render failed:', err);
+    return null;
+  }
 }

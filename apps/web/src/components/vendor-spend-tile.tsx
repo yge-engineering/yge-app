@@ -1,3 +1,4 @@
+import * as React from 'react';
 // Dashboard tile — vendor spend snapshot for the current calendar year.
 //
 // Plain English: which 3 vendors are getting most of our money this
@@ -28,7 +29,7 @@ async function fetchJson<T>(pathname: string, key: string): Promise<T[]> {
   }
 }
 
-export async function VendorSpendTile() {
+async function VendorSpendTileInner() {
   const now = new Date();
   const year = now.getUTCFullYear();
   const start = `${year}-01-01`;
@@ -118,4 +119,16 @@ export async function VendorSpendTile() {
       </dl>
     </section>
   );
+}
+
+// Resilient wrapper — if anything throws inside VendorSpendTileInner (bad
+// data shape, API timeout, builder bug), we render null instead of
+// crashing the dashboard. Errors get logged server-side.
+export async function VendorSpendTile(): Promise<React.ReactElement | null> {
+  try {
+    return await VendorSpendTileInner();
+  } catch (err) {
+    console.error('[VendorSpendTile] render failed:', err);
+    return null;
+  }
 }

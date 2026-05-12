@@ -1,3 +1,4 @@
+import * as React from 'react';
 // Dashboard tile — morning-briefing headlines preview.
 //
 // Plain English: top 3 headlines from today's briefing, with a link
@@ -32,7 +33,7 @@ async function fetchJson<T>(pathname: string, key: string): Promise<T[]> {
   }
 }
 
-export async function MorningBriefingTile() {
+async function MorningBriefingTileInner() {
   const forDate = new Date().toISOString().slice(0, 10);
   const [dailyReports, dispatches, incidents, employees, vendors, arInvoices] =
     await Promise.all([
@@ -91,4 +92,16 @@ export async function MorningBriefingTile() {
       )}
     </section>
   );
+}
+
+// Resilient wrapper — if anything throws inside MorningBriefingTileInner (bad
+// data shape, API timeout, builder bug), we render null instead of
+// crashing the dashboard. Errors get logged server-side.
+export async function MorningBriefingTile(): Promise<React.ReactElement | null> {
+  try {
+    return await MorningBriefingTileInner();
+  } catch (err) {
+    console.error('[MorningBriefingTile] render failed:', err);
+    return null;
+  }
 }
