@@ -351,7 +351,7 @@ async function fetchMicrosoftConnected(email: string): Promise<boolean> {
   }
 }
 
-export default async function DashboardPage() {
+async function DashboardPageInner() {
   // Foremen + crew don't need the full enterprise dashboard (AR aging,
   // RFI counts, dispatch double-bookings, etc.). Redirect them to the
   // focused /me/today view that surfaces just their work.
@@ -1384,3 +1384,63 @@ function ApInboxFreshnessTile({
     </Link>
   );
 }
+
+
+// Minimal fallback dashboard rendered when DashboardPageInner throws.
+// Guarantees the user can always navigate away even if data fetching
+// or rendering hits a runtime crash.
+function DashboardFallback({ error }: { error: unknown }) {
+  const msg =
+    error instanceof Error ? error.message : 'Unknown error';
+  return (
+    <main className="min-h-screen bg-gray-50 px-4 py-8">
+      <div className="mx-auto max-w-3xl">
+        <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 p-4">
+          <h1 className="text-base font-semibold text-amber-900">
+            Dashboard hit a runtime error.
+          </h1>
+          <p className="mt-1 text-sm text-amber-800">
+            One of the data sources or tiles threw on render. The pages
+            below all work — pick one to get back to your day.
+          </p>
+          <pre className="mt-2 max-h-32 overflow-auto whitespace-pre-wrap break-words rounded bg-amber-100 px-2 py-1 font-mono text-[11px] text-amber-900">
+            {msg}
+          </pre>
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {[
+            { href: '/reports', label: 'Reports directory' },
+            { href: '/morning-briefing', label: 'Morning briefing' },
+            { href: '/risk-register', label: 'Risk register' },
+            { href: '/cash-position', label: 'Cash position' },
+            { href: '/aging', label: 'AR + AP aging' },
+            { href: '/jobs', label: 'Jobs' },
+            { href: '/estimates', label: 'Estimates' },
+            { href: '/admin/errors', label: 'Admin: server errors' },
+            { href: '/admin/data-health', label: 'Admin: data health' },
+            { href: '/me/today', label: 'My day' },
+          ].map((l) => (
+            <Link
+              key={l.href}
+              href={l.href}
+              className="rounded-md border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-yge-blue-700 shadow-sm hover:bg-gray-50 hover:underline"
+            >
+              → {l.label}
+            </Link>
+          ))}
+        </div>
+      </div>
+    </main>
+  );
+}
+
+export default async function DashboardPage() {
+  try {
+    return await DashboardPageInner();
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('[/dashboard] DashboardPageInner threw:', err);
+    return <DashboardFallback error={err} />;
+  }
+}
+
