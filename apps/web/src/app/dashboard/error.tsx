@@ -1,14 +1,13 @@
 'use client';
 
 // Dashboard-specific error boundary.
-//
-// When the dashboard render fails, Next.js renders this. We surface
-// the error message + digest and give the user multiple ways out
-// (instead of the circular "back to dashboard" link in the root
-// error.tsx).
 
 import { useEffect } from 'react';
 import Link from 'next/link';
+
+function apiBaseUrl(): string {
+  return process.env.NEXT_PUBLIC_API_URL ?? '';
+}
 
 export default function DashboardError({
   error,
@@ -20,6 +19,29 @@ export default function DashboardError({
   useEffect(() => {
     // eslint-disable-next-line no-console
     console.error('[/dashboard] error:', error);
+
+    // Beacon to /admin/errors so we can correlate with Vercel runtime logs.
+    try {
+      const base = apiBaseUrl();
+      if (base) {
+        void fetch(`${base}/api/admin/errors/log-client`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            digest: error.digest ?? null,
+            message: error.message ?? null,
+            stack: error.stack ?? null,
+            url: typeof window !== 'undefined' ? window.location.href : '/dashboard',
+            userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
+          }),
+          keepalive: true,
+        }).catch(() => {
+          /* swallow */
+        });
+      }
+    } catch {
+      /* swallow */
+    }
   }, [error]);
 
   return (
@@ -71,78 +93,16 @@ export default function DashboardError({
             Jump to a working page
           </p>
           <ul className="grid grid-cols-1 gap-1 sm:grid-cols-2">
-            <li>
-              <Link
-                href="/reports"
-                className="text-sm text-yge-blue-700 hover:underline"
-              >
-                → Reports directory
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/morning-briefing"
-                className="text-sm text-yge-blue-700 hover:underline"
-              >
-                → Morning briefing
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/risk-register"
-                className="text-sm text-yge-blue-700 hover:underline"
-              >
-                → Risk register
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/cash-position"
-                className="text-sm text-yge-blue-700 hover:underline"
-              >
-                → Cash position
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/aging"
-                className="text-sm text-yge-blue-700 hover:underline"
-              >
-                → AR + AP aging
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/jobs"
-                className="text-sm text-yge-blue-700 hover:underline"
-              >
-                → Jobs
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/estimates"
-                className="text-sm text-yge-blue-700 hover:underline"
-              >
-                → Estimates
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/admin/data-health"
-                className="text-sm text-yge-blue-700 hover:underline"
-              >
-                → Admin: data health
-              </Link>
-            </li>
+            <li><Link href="/reports" className="text-sm text-yge-blue-700 hover:underline">→ Reports directory</Link></li>
+            <li><Link href="/morning-briefing" className="text-sm text-yge-blue-700 hover:underline">→ Morning briefing</Link></li>
+            <li><Link href="/risk-register" className="text-sm text-yge-blue-700 hover:underline">→ Risk register</Link></li>
+            <li><Link href="/cash-position" className="text-sm text-yge-blue-700 hover:underline">→ Cash position</Link></li>
+            <li><Link href="/aging" className="text-sm text-yge-blue-700 hover:underline">→ AR + AP aging</Link></li>
+            <li><Link href="/jobs" className="text-sm text-yge-blue-700 hover:underline">→ Jobs</Link></li>
+            <li><Link href="/estimates" className="text-sm text-yge-blue-700 hover:underline">→ Estimates</Link></li>
+            <li><Link href="/admin/errors" className="text-sm text-yge-blue-700 hover:underline">→ Admin: errors</Link></li>
           </ul>
         </div>
-
-        <p className="mt-4 text-[11px] text-gray-500">
-          To dig deeper: open Chrome DevTools → Network tab → refresh.
-          Look for an /api/... request returning a non-200 status or
-          a response shape that doesn&apos;t match what the page expects.
-        </p>
       </div>
     </main>
   );
