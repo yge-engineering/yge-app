@@ -1,3 +1,4 @@
+import * as React from 'react';
 // Dashboard tile — which prevailing-wage jobs need a CPR filed.
 //
 // Logic: for each AWARDED / ACTIVE job, find the most recent CPR
@@ -35,7 +36,7 @@ interface DueRow {
   daysSince: number;
 }
 
-export async function CprDueTile() {
+async function CprDueTileInner() {
   const [jobs, cprs] = await Promise.all([
     fetchJson<Job>('/api/jobs', 'jobs'),
     fetchJson<CertifiedPayroll>('/api/certified-payrolls', 'cprs'),
@@ -146,3 +147,14 @@ export async function CprDueTile() {
     </section>
   );
 }
+
+// Resilient wrapper — return null instead of crashing the dashboard.
+export async function CprDueTile(): Promise<React.ReactElement | null> {
+  try {
+    return await CprDueTileInner();
+  } catch (err) {
+    console.error('[CprDueTile] render failed:', err);
+    return null;
+  }
+}
+

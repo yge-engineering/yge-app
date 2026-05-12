@@ -1,3 +1,4 @@
+import * as React from 'react';
 // Dashboard tile — CPR pipeline by status.
 
 import Link from 'next/link';
@@ -21,7 +22,7 @@ async function fetchCprs(): Promise<CertifiedPayroll[]> {
   }
 }
 
-export async function CprStatusTile() {
+async function CprStatusTileInner() {
   const cprs = await fetchCprs();
   if (cprs.length === 0) return null;
 
@@ -111,3 +112,14 @@ function Pill({
     </div>
   );
 }
+
+// Resilient wrapper — return null instead of crashing the dashboard.
+export async function CprStatusTile(): Promise<React.ReactElement | null> {
+  try {
+    return await CprStatusTileInner();
+  } catch (err) {
+    console.error('[CprStatusTile] render failed:', err);
+    return null;
+  }
+}
+

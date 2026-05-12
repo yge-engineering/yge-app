@@ -1,3 +1,4 @@
+import * as React from 'react';
 // Dashboard tile — month-end close progress at a glance.
 
 import Link from 'next/link';
@@ -40,7 +41,7 @@ function lastMonthLabel(): string {
   ).padStart(2, '0')}`;
 }
 
-export async function CloseProgressTile() {
+async function CloseProgressTileInner() {
   const [arInvoices, apInvoices, apPayments, dailyReports, journalEntries, swpppInspections] =
     await Promise.all([
       fetchJson<ArInvoice>('/api/ar-invoices', 'invoices'),
@@ -137,3 +138,14 @@ export async function CloseProgressTile() {
     </section>
   );
 }
+
+// Resilient wrapper — return null instead of crashing the dashboard.
+export async function CloseProgressTile(): Promise<React.ReactElement | null> {
+  try {
+    return await CloseProgressTileInner();
+  } catch (err) {
+    console.error('[CloseProgressTile] render failed:', err);
+    return null;
+  }
+}
+

@@ -1,3 +1,4 @@
+import * as React from 'react';
 // Dashboard error-count tile.
 //
 // Server component — fetches recent api_errors counts from
@@ -34,7 +35,7 @@ async function fetchErrorsSince(daysBack: number): Promise<ApiErrorRow[]> {
   }
 }
 
-export async function ErrorCountTile() {
+async function ErrorCountTileInner() {
   const errors = await fetchErrorsSince(7);
   const today = new Date().toISOString().slice(0, 10);
   const todays = errors.filter((e) => e.occurredAt.slice(0, 10) === today);
@@ -76,3 +77,14 @@ export async function ErrorCountTile() {
     </section>
   );
 }
+
+// Resilient wrapper — return null instead of crashing the dashboard.
+export async function ErrorCountTile(): Promise<React.ReactElement | null> {
+  try {
+    return await ErrorCountTileInner();
+  } catch (err) {
+    console.error('[ErrorCountTile] render failed:', err);
+    return null;
+  }
+}
+

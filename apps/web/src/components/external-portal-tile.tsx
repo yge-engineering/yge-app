@@ -1,3 +1,4 @@
+import * as React from 'react';
 // Dashboard tile — count of external portal users by role.
 
 import Link from 'next/link';
@@ -22,7 +23,7 @@ async function fetchUsers(): Promise<PortalUser[]> {
   }
 }
 
-export async function ExternalPortalTile() {
+async function ExternalPortalTileInner() {
   const users = await fetchUsers();
   if (users.length === 0) return null;
 
@@ -83,3 +84,14 @@ export async function ExternalPortalTile() {
     </section>
   );
 }
+
+// Resilient wrapper — return null instead of crashing the dashboard.
+export async function ExternalPortalTile(): Promise<React.ReactElement | null> {
+  try {
+    return await ExternalPortalTileInner();
+  } catch (err) {
+    console.error('[ExternalPortalTile] render failed:', err);
+    return null;
+  }
+}
+

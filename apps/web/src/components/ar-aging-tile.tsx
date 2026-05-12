@@ -1,3 +1,4 @@
+import * as React from 'react';
 // AR aging snapshot tile — at-a-glance "what's overdue."
 //
 // Server component — fetches AR invoices, runs buildArAgingReport,
@@ -44,7 +45,7 @@ const BUCKET_TONE: Record<AgingBucket, string> = {
   '90+': 'border-red-300 bg-red-50 text-red-900',
 };
 
-export async function ArAgingTile() {
+async function ArAgingTileInner() {
   const invoices = await fetchArInvoices();
   const asOf = new Date().toISOString().slice(0, 10);
   const report = buildArAgingReport({ asOf, arInvoices: invoices });
@@ -99,3 +100,14 @@ export async function ArAgingTile() {
     </section>
   );
 }
+
+// Resilient wrapper — return null instead of crashing the dashboard.
+export async function ArAgingTile(): Promise<React.ReactElement | null> {
+  try {
+    return await ArAgingTileInner();
+  } catch (err) {
+    console.error('[ArAgingTile] render failed:', err);
+    return null;
+  }
+}
+

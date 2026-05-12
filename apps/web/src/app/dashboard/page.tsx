@@ -541,7 +541,7 @@ async function DashboardPageInner() {
       {currentUserCan('financials:view') ? <CprDueTile /> : null}
       {currentUserCan('financials:view') ? <CprStatusTile /> : null}
       {/* TILE STRIPPED (1571): {currentUserCan('financials:view') ? <RiskRegister */}
-      {currentUserCan('financials:view') ? <CloseProgressTile /> : null}
+      {/* TILE STRIPPED (1572): CloseProgressTile */}
       {/* TILE STRIPPED (1571): {currentUserCan('financials:view') ? <Tax1099Readi */}
       {/* TILE STRIPPED (1571): {currentUserCan('financials:view') ? <VendorSpendT */}
       {/* TILE STRIPPED (1571): {currentUserCan('financials:view') ? <CustomerConc */}
