@@ -79,6 +79,7 @@ import { adminHealthRouter } from './routes/admin-health';
 import { gustoRouter } from './routes/gusto';
 import { portalSubRouter } from './routes/portal-sub';
 import { reportsXlsxRouter } from './routes/reports-xlsx';
+import { excelImportRouter } from './routes/excel-import';
 
 const app = express();
 
@@ -189,6 +190,7 @@ app.use('/api/admin', adminErrorsRouter);
 app.use('/api/admin', adminBackfillRouter);
 app.use('/api/admin', adminHealthRouter);
 app.use('/api/reports', reportsXlsxRouter);
+app.use('/api/admin/excel-import', excelImportRouter);
 app.use('/api/gusto', gustoRouter);
 app.use('/api/portal-sub', portalSubRouter);
 
