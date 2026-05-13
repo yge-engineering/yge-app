@@ -34,6 +34,10 @@ export const SCOPES = [
   'Sites.ReadWrite.All',
   'Mail.Read',
   'Mail.ReadWrite',
+  // Wave 4 additions: Calendar + Tasks + Teams.
+  'Calendars.ReadWrite',
+  'Tasks.ReadWrite',
+  'ChannelMessage.Send',
 ];
 
 export function isMicrosoftConfigured(): boolean {
