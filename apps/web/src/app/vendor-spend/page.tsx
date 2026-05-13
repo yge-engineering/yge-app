@@ -14,6 +14,10 @@ import {
   type Vendor,
 } from '@yge/shared';
 
+
+function publicApiBase(): string {
+  return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+}
 function apiBaseUrl(): string {
   return (
     process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
@@ -115,6 +119,12 @@ export default async function VendorSpendPage({
           >
             Refresh
           </button>
+          <a
+            href={`${publicApiBase()}/api/reports/vendor-spend.xlsx?start=${start}&end=${end}`}
+            className="rounded border border-yge-blue-600 bg-white px-3 py-1.5 text-xs font-semibold text-yge-blue-700 hover:bg-yge-blue-100"
+          >
+            ↓ Excel
+          </a>
           <span className="ml-auto text-xs text-gray-600">
             {report.vendorCount} vendor{report.vendorCount === 1 ? '' : 's'}
           </span>

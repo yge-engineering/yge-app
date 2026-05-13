@@ -78,6 +78,7 @@ import { adminBackfillRouter } from './routes/admin-backfill';
 import { adminHealthRouter } from './routes/admin-health';
 import { gustoRouter } from './routes/gusto';
 import { portalSubRouter } from './routes/portal-sub';
+import { reportsXlsxRouter } from './routes/reports-xlsx';
 
 const app = express();
 
@@ -187,6 +188,7 @@ app.use('/api/priced-estimates', crossCheckAddendaRouter);
 app.use('/api/admin', adminErrorsRouter);
 app.use('/api/admin', adminBackfillRouter);
 app.use('/api/admin', adminHealthRouter);
+app.use('/api/reports', reportsXlsxRouter);
 app.use('/api/gusto', gustoRouter);
 app.use('/api/portal-sub', portalSubRouter);
 

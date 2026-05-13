@@ -15,6 +15,10 @@ import {
   type Customer,
 } from '@yge/shared';
 
+
+function publicApiBase(): string {
+  return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+}
 function apiBaseUrl(): string {
   return (
     process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
@@ -118,6 +122,12 @@ export default async function CustomerConcentrationPage({
           >
             Refresh
           </button>
+          <a
+            href={`${publicApiBase()}/api/reports/customer-concentration.xlsx?start=${start}&end=${end}`}
+            className="rounded border border-yge-blue-600 bg-white px-3 py-1.5 text-xs font-semibold text-yge-blue-700 hover:bg-yge-blue-100"
+          >
+            ↓ Excel
+          </a>
         </form>
 
         <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-4">
