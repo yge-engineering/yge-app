@@ -12,6 +12,48 @@ export function EstimateExcelButtons({ estimateId }: { estimateId: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savedTo, setSavedTo] = useState<{ webUrl: string | null; path: string } | null>(null);
+  const [pullBusy, setPullBusy] = useState(false);
+  const [pullResult, setPullResult] = useState<unknown>(null);
+  const [pullError, setPullError] = useState<string | null>(null);
+
+  async function pullFromOneDrive() {
+    setPullBusy(true);
+    setPullError(null);
+    setPullResult(null);
+    try {
+      const meRes = await fetch(`${apiBaseUrl()}/api/me`, { cache: 'no-store' });
+      let email = '';
+      if (meRes.ok) {
+        const me = (await meRes.json()) as { email?: string };
+        email = me.email ?? '';
+      }
+      if (!email) {
+        setPullError("Couldn't read your email from session. Try refreshing.");
+        return;
+      }
+      const res = await fetch(
+        `${apiBaseUrl()}/api/estimates/${estimateId}/excel/pull`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        },
+      );
+      const body = (await res.json()) as { error?: string; warnings?: string[] };
+      if (!res.ok) {
+        setPullError(body.error ?? `Pull failed (${res.status})`);
+        return;
+      }
+      setPullResult(body);
+      // Refresh the page after a successful pull so the user sees the new data.
+      setTimeout(() => window.location.reload(), 1500);
+    } catch (err) {
+      setPullError((err as Error).message);
+    } finally {
+      setPullBusy(false);
+    }
+  }
+
 
   async function saveToOneDrive() {
     // Need the user's email — fetch from /api/me which exists in the app.
@@ -67,6 +109,14 @@ export function EstimateExcelButtons({ estimateId }: { estimateId: string }) {
       >
         {busy ? 'Saving…' : '📁 Save to OneDrive'}
       </button>
+      <button
+        type="button"
+        onClick={() => void pullFromOneDrive()}
+        disabled={pullBusy}
+        className="inline-flex items-center gap-1 rounded-md border border-green-600 bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-800 hover:bg-green-100 disabled:opacity-50"
+      >
+        {pullBusy ? 'Pulling…' : '↻ Pull latest from Excel'}
+      </button>
       {savedTo ? (
         savedTo.webUrl ? (
           <a
@@ -83,6 +133,14 @@ export function EstimateExcelButtons({ estimateId }: { estimateId: string }) {
       ) : null}
       {error ? (
         <span className="text-xs text-red-700">{error}</span>
+      ) : null}
+      {pullError ? (
+        <span className="text-xs text-red-700">Pull: {pullError}</span>
+      ) : null}
+      {pullResult ? (
+        <span className="text-xs text-green-700">
+          ✓ Pulled from Excel — page refreshing…
+        </span>
       ) : null}
     </div>
   );

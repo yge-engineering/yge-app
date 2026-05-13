@@ -102,3 +102,89 @@ estimatesExcelRouter.post('/:id/excel/save-to-onedrive', async (req, res, next) 
     next(err);
   }
 });
+
+// POST /api/estimates/:id/excel/pull { email } — re-read the estimate
+// from its OneDrive workbook and update the app's data.
+estimatesExcelRouter.post('/:id/excel/pull', async (req, res, next) => {
+  try {
+    const Body = z.object({ email: z.string().email() });
+    const parsed = Body.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Validation failed', issues: parsed.error.issues });
+    }
+    const id = req.params.id ?? '';
+    const row = await prisma.estimate.findFirst({
+      where: { id, deletedAt: null },
+      include: { job: true },
+    });
+    if (!row) {
+      return res.status(404).json({ error: 'Estimate not found' });
+    }
+
+    const stored = (row.data ?? {}) as { jobNumber?: string; projectName?: string };
+    const jobNumber = stored.jobNumber ?? row.job.jobNumber;
+    const projectName = stored.projectName ?? row.job.name;
+
+    const { findByPath, downloadFile, jobFolderPath } = await import('../lib/onedrive');
+    const path = `${jobFolderPath(jobNumber, projectName)}/Est_${jobNumber}.xlsx`;
+    const item = await findByPath(parsed.data.email, path);
+    if (!item) {
+      return res.status(404).json({
+        error: 'Workbook not found in OneDrive at that path',
+        path,
+        hint: 'Save the estimate to OneDrive first (use the "📁 Save to OneDrive" button).',
+      });
+    }
+    const { bytes } = await downloadFile(parsed.data.email, item.id);
+    const { parseEstimates } = await import('../lib/excel-master-tables');
+    const result = parseEstimates(Buffer.from(bytes));
+
+    // Match by jobNumber.
+    const match = result.estimates.find((e) => e.jobNumber === jobNumber);
+    if (!match) {
+      return res.status(422).json({
+        error: 'Workbook has no Est_<jobNumber> sheet matching this job',
+        expectedJobNumber: jobNumber,
+        sheetsFound: result.estimates.map((e) => e.sheetName),
+        warnings: result.warnings,
+      });
+    }
+
+    const estimateData = JSON.parse(
+      JSON.stringify({
+        sheetName: match.sheetName,
+        jobNumber: match.jobNumber,
+        projectName: match.projectName,
+        rateType: match.rateType,
+        oppPercent: match.oppPercent,
+        directCostCents: match.directCostCents,
+        oppMarkupCents: match.oppMarkupCents,
+        bidPriceCents: match.bidPriceCents,
+        bidItems: match.bidItems,
+        importedFromExcel: true,
+        importedAt: new Date().toISOString(),
+        pulledFrom: path,
+      }),
+    );
+
+    await prisma.estimate.update({
+      where: { id: row.id },
+      data: {
+        oppAmountCents: BigInt(match.oppMarkupCents),
+        data: estimateData,
+      },
+    });
+
+    res.json({
+      ok: true,
+      bidItems: match.bidItems.length,
+      costLines: match.bidItems.reduce((s, b) => s + b.costLines.length, 0),
+      directCost: match.directCostCents / 100,
+      oppMarkup: match.oppMarkupCents / 100,
+      bidPrice: match.bidPriceCents / 100,
+      warnings: result.warnings,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
