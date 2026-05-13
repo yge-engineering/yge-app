@@ -623,3 +623,69 @@ microsoftRouter.get('/onedrive/browse', async (req, res, next) => {
   }
 });
 
+// GET /api/microsoft/calendar/today?email=&date= — list today's
+// Outlook calendar events for the user. Used by /morning-briefing.
+// 'date' is optional yyyy-mm-dd (default = today UTC).
+microsoftRouter.get('/calendar/today', async (req, res, next) => {
+  try {
+    if (!isMicrosoftConfigured()) {
+      return res.status(503).json({ error: 'Microsoft Graph not configured' });
+    }
+    const Q = z.object({
+      email: z.string().email(),
+      date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    });
+    const parsed = Q.safeParse(req.query);
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Validation failed', issues: parsed.error.issues });
+    }
+    const date = parsed.data.date ?? new Date().toISOString().slice(0, 10);
+    const startIso = date + 'T00:00:00';
+    const endIso = date + 'T23:59:59';
+
+    interface CalendarEvent {
+      id: string;
+      subject?: string;
+      bodyPreview?: string;
+      start?: { dateTime: string; timeZone: string };
+      end?: { dateTime: string; timeZone: string };
+      location?: { displayName?: string };
+      isAllDay?: boolean;
+      isCancelled?: boolean;
+      webLink?: string;
+      attendees?: Array<{ emailAddress?: { name?: string; address?: string } }>;
+    }
+    try {
+      const path = `/me/calendarview?startDateTime=${encodeURIComponent(startIso)}&endDateTime=${encodeURIComponent(endIso)}&$select=id,subject,bodyPreview,start,end,location,isAllDay,isCancelled,webLink,attendees&$orderby=start/dateTime&$top=50`;
+      const data = await graphGet<{ value: CalendarEvent[] }>(parsed.data.email, path);
+      const events = data.value
+        .filter((e) => !e.isCancelled)
+        .map((e) => ({
+          id: e.id,
+          subject: e.subject ?? '(no subject)',
+          bodyPreview: e.bodyPreview ?? null,
+          startDateTime: e.start?.dateTime ?? null,
+          endDateTime: e.end?.dateTime ?? null,
+          location: e.location?.displayName ?? null,
+          isAllDay: !!e.isAllDay,
+          webLink: e.webLink ?? null,
+          attendeeCount: e.attendees?.length ?? 0,
+        }));
+      return res.json({ events, date });
+    } catch (err) {
+      // Token may not have Calendars.ReadWrite scope yet — return
+      // 403 with a hint so the UI can show "reconnect to enable
+      // calendar".
+      if (err instanceof Error && /forbidden|insufficient|consent|scope/i.test(err.message)) {
+        return res.status(403).json({
+          error: 'Calendar scope not granted. Disconnect + reconnect Microsoft 365 on /files.',
+          needsReconsent: true,
+        });
+      }
+      throw err;
+    }
+  } catch (err) {
+    next(err);
+  }
+});
+

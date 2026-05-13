@@ -24,6 +24,35 @@ function apiBaseUrl(): string {
   );
 }
 
+interface CalendarEvent {
+  id: string;
+  subject: string;
+  startDateTime: string | null;
+  endDateTime: string | null;
+  location: string | null;
+  isAllDay: boolean;
+  webLink: string | null;
+  attendeeCount: number;
+}
+
+async function fetchTodaysEvents(email: string, date: string): Promise<{ events: CalendarEvent[]; needsReconsent: boolean }> {
+  try {
+    const res = await fetch(
+      `${apiBaseUrl()}/api/microsoft/calendar/today?email=${encodeURIComponent(email)}&date=${date}`,
+      { cache: 'no-store' },
+    );
+    if (res.status === 403) {
+      const body = (await res.json()) as { needsReconsent?: boolean };
+      return { events: [], needsReconsent: body.needsReconsent === true };
+    }
+    if (!res.ok) return { events: [], needsReconsent: false };
+    const body = (await res.json()) as { events: CalendarEvent[] };
+    return { events: body.events, needsReconsent: false };
+  } catch {
+    return { events: [], needsReconsent: false };
+  }
+}
+
 async function fetchJson<T>(pathname: string, key: string): Promise<T[]> {
   try {
     const res = await fetch(`${apiBaseUrl()}${pathname}`, { cache: 'no-store' });
@@ -61,7 +90,15 @@ export default async function MorningBriefingPage({
       fetchJson<ArInvoice>('/api/ar-invoices', 'invoices'),
     ]);
 
-  const briefing = buildMorningBriefing({
+  // Fetch today's Outlook events alongside the rest. Best-effort —
+  // a 403 (scope not granted yet) renders a "reconnect to enable" hint.
+  const { getCurrentUser } = await import('../../lib/auth');
+  const user = getCurrentUser();
+  const calendar = user?.email
+    ? await fetchTodaysEvents(user.email, forDate)
+    : { events: [], needsReconsent: false };
+
+    const briefing = buildMorningBriefing({
     forDate,
     dailyReports,
     dispatches,
@@ -100,7 +137,47 @@ export default async function MorningBriefingPage({
           </button>
         </form>
 
-        {briefing.headlines.length > 0 ? (
+        {/* Today's Outlook events (new in Wave 4B). */}
+        {calendar.events.length > 0 ? (
+          <section className="mb-4 rounded-md border border-gray-200 bg-white p-4">
+            <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-700">
+              Today's Outlook calendar
+            </h2>
+            <ul className="space-y-1 text-sm">
+              {calendar.events.map((e) => (
+                <li key={e.id} className="flex items-baseline justify-between gap-3 border-b border-gray-100 pb-1 last:border-0">
+                  <div>
+                    <span className="font-semibold text-gray-900">{e.subject}</span>
+                    {e.location ? (
+                      <span className="ml-2 text-xs text-gray-500">@ {e.location}</span>
+                    ) : null}
+                  </div>
+                  <div className="text-right text-xs text-gray-600">
+                    {e.isAllDay
+                      ? 'all day'
+                      : e.startDateTime
+                        ? new Date(e.startDateTime + 'Z').toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+                        : ''}
+                    {e.attendeeCount > 0 ? (
+                      <span className="ml-2 text-gray-500">· {e.attendeeCount} attendee{e.attendeeCount === 1 ? '' : 's'}</span>
+                    ) : null}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : calendar.needsReconsent ? (
+          <section className="mb-4 rounded-md border border-amber-300 bg-amber-50 p-4">
+            <p className="text-sm text-amber-900">
+              <strong>To see today's calendar here</strong>, disconnect + reconnect
+              Microsoft 365 on{' '}
+              <a href="/files" className="underline">/files</a>{' '}
+              to grant the Calendar scope.
+            </p>
+          </section>
+        ) : null}
+
+                {briefing.headlines.length > 0 ? (
           <section className="mb-4 rounded-md border border-yge-blue-300 bg-yge-blue-50 p-4">
             <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-yge-blue-900">
               Headlines
