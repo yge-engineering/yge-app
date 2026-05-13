@@ -18,6 +18,27 @@ interface DataCountsResponse {
   asOf: string;
 }
 
+interface MigrationStatusResponse {
+  inSync: boolean;
+  missingFromDb: string[];
+  extraInDb: string[];
+  verdict: string;
+  onDiskCount: number;
+  appliedOnDbCount: number;
+}
+
+async function fetchMigrationStatus(): Promise<MigrationStatusResponse | null> {
+  try {
+    const res = await fetch(`${apiBaseUrl()}/api/admin/health/migrations-status`, {
+      cache: 'no-store',
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as MigrationStatusResponse;
+  } catch {
+    return null;
+  }
+}
+
 async function fetchCounts(): Promise<DataCountsResponse | null> {
   try {
     const res = await fetch(`${apiBaseUrl()}/api/admin/health/data-counts`, {
@@ -114,7 +135,10 @@ function daysAgo(iso: string | null): number | null {
 
 export default async function AdminDataHealthPage() {
   requirePermission('audit:view');
-  const result = await fetchCounts();
+  const [result, migrations] = await Promise.all([
+    fetchCounts(),
+    fetchMigrationStatus(),
+  ]);
 
   if (!result) {
     return (
@@ -139,6 +163,30 @@ export default async function AdminDataHealthPage() {
           title="Data health"
           subtitle={`Live record counts + last-activity per entity. As of ${asOf.slice(0, 19).replace('T', ' ')}.`}
         />
+
+        {migrations && !migrations.inSync ? (
+          <div className="mb-4 rounded-md border border-red-300 bg-red-50 p-4">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-red-800">
+              Migration drift detected
+            </h2>
+            <p className="mt-1 text-xs text-red-700">{migrations.verdict}</p>
+            {migrations.missingFromDb.length > 0 ? (
+              <ul className="mt-2 list-disc pl-5 text-[11px] font-mono text-red-900">
+                {migrations.missingFromDb.map((m) => (
+                  <li key={m}>not applied: {m}</li>
+                ))}
+              </ul>
+            ) : null}
+            <p className="mt-2 text-[11px] text-red-700">
+              Apply via Render rebuild (runs prisma migrate deploy) or
+              the diagnostic SQL in docs/MIGRATION_TROUBLESHOOTING.md.
+            </p>
+          </div>
+        ) : migrations ? (
+          <p className="mb-4 text-[11px] text-green-700">
+            Migrations in sync: {migrations.onDiskCount} on disk, {migrations.appliedOnDbCount} applied.
+          </p>
+        ) : null}
 
         <div className="space-y-4">
           {SECTIONS.map((sec) => {

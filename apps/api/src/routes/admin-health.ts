@@ -148,3 +148,75 @@ adminHealthRouter.get('/health/data-counts', async (_req, res, next) => {
   }
 });
 
+// GET /api/admin/health/migrations-status — compare migrations on
+// disk (in packages/db/prisma/migrations/) to rows in
+// _prisma_migrations. Drift = silent prod bugs (see
+// docs/MIGRATION_TROUBLESHOOTING.md for the 2026-05-13 incident).
+adminHealthRouter.get('/health/migrations-status', async (_req, res, next) => {
+  try {
+    // List migration directories that ship with the deployed code.
+    const path = await import('node:path');
+    const fs = await import('node:fs/promises');
+    // The API runs from apps/api; migrations live at
+    // packages/db/prisma/migrations relative to repo root.
+    // Try a few candidate paths so this works both in dev (tsx from src)
+    // and prod (compiled dist).
+    const candidates = [
+      path.join(process.cwd(), 'packages/db/prisma/migrations'),
+      path.join(process.cwd(), '..', '..', 'packages/db/prisma/migrations'),
+      path.join(__dirname, '..', '..', '..', '..', 'packages/db/prisma/migrations'),
+    ];
+    let migrationsDir: string | null = null;
+    for (const c of candidates) {
+      try {
+        const stat = await fs.stat(c);
+        if (stat.isDirectory()) {
+          migrationsDir = c;
+          break;
+        }
+      } catch {
+        /* try next */
+      }
+    }
+
+    let onDisk: string[] = [];
+    if (migrationsDir) {
+      const entries = await fs.readdir(migrationsDir, { withFileTypes: true });
+      onDisk = entries
+        .filter((e) => e.isDirectory() && /^d{14}_/.test(e.name))
+        .map((e) => e.name)
+        .sort();
+    }
+
+    // Read _prisma_migrations.
+    const rows = await prisma.$queryRawUnsafe<Array<{ migration_name: string; finished_at: Date | null }>>(
+      `SELECT migration_name, finished_at FROM _prisma_migrations ORDER BY migration_name ASC`,
+    );
+    const appliedOnDb = rows.map((r) => r.migration_name);
+
+    const dbSet = new Set(appliedOnDb);
+    const diskSet = new Set(onDisk);
+    const missingFromDb = onDisk.filter((m) => !dbSet.has(m));
+    const extraInDb = appliedOnDb.filter((m) => !diskSet.has(m));
+
+    const inSync = missingFromDb.length === 0 && extraInDb.length === 0;
+
+    res.json({
+      inSync,
+      migrationsDir: migrationsDir ?? '(not found at runtime)',
+      onDiskCount: onDisk.length,
+      appliedOnDbCount: appliedOnDb.length,
+      missingFromDb,
+      extraInDb,
+      // Loud diagnostic so the answer is obvious from the response alone.
+      verdict: inSync
+        ? 'OK — all migrations on disk are applied in production.'
+        : missingFromDb.length > 0
+          ? `DRIFT — ${missingFromDb.length} migration(s) on disk are NOT applied. Run prisma migrate deploy or apply manually.`
+          : `EXTRA — ${extraInDb.length} migration(s) in DB are not in the codebase. Investigate before assuming DB is canonical.`,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
