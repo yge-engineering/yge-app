@@ -33,7 +33,7 @@ export const PtoEOutputSchema = z.object({
   location: z.string().max(200).optional(),
   ownerAgency: z.string().max(200).optional(),
   bidDueDate: z.string().max(40).optional(),
-  prebidMeeting: z.string().max(200).optional(),
+  prebidMeeting: z.string().max(1000).optional(),
   bidItems: z.array(PtoEBidItemSchema).min(1),
   assumptions: z.array(z.string().max(500)).default([]),
   questionsForEstimator: z.array(z.string().max(500)).default([]),
