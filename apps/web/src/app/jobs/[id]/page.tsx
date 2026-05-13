@@ -16,6 +16,7 @@ import { PinnedIndicator } from '../../../components/pinned-indicator';
 import { CopyMoneyButton } from '../../../components/copy-money-button';
 import { getTranslator } from '../../../lib/locale';
 import { JobOneDriveLink } from '../../../components/job-onedrive-link';
+import { AddToCalendarButton } from '../../../components/add-to-calendar-button';
 import {
   contractTypeLabel,
   nextBidAction,
@@ -307,6 +308,7 @@ export default async function JobDetailPage({
           </h1>
         {/* OneDrive folder pill — creates + opens on first click. */}
         <JobOneDriveLinkSlot job={job} />
+        <JobBidDueCalendarSlot job={job} />
         <a href={`/jobs/${params.id}/pwc-100/print`} target="_blank" rel="noopener noreferrer" className="ml-2 inline-flex items-center gap-1 rounded-md border border-yge-blue-600 bg-white px-3 py-1.5 text-xs font-semibold text-yge-blue-700 hover:bg-yge-blue-100">↓ DIR PWC-100</a>
           <p className="mt-1 text-sm uppercase tracking-wide text-gray-500">
             <span className="mr-1">{projectTypeIcon(job.projectType)}</span>
@@ -854,6 +856,26 @@ async function JobOneDriveLinkSlot({ job }: { job: { jobNumber?: string; name?: 
       jobNumber={jobNumber}
       projectName={projectName}
       microsoftConnected={true}
+    />
+  );
+}
+async function JobBidDueCalendarSlot({ job }: { job: { bidDueDate?: string; projectName?: string } }) {
+  if (!job.bidDueDate) return null;
+  const { getCurrentUser } = await import('../../../lib/auth');
+  const user = getCurrentUser();
+  if (!user?.email) return null;
+  const connected = await fetchMicrosoftConnected(user.email);
+  if (!connected) return null;
+  // bidDueDate is yyyy-mm-dd; create an all-day event on that date.
+  const startDateTime = job.bidDueDate + 'T09:00:00';
+  const endDateTime = job.bidDueDate + 'T10:00:00';
+  return (
+    <AddToCalendarButton
+      email={user.email}
+      subject={`Bid due: ${job.projectName ?? 'YGE bid'}`}
+      startDateTime={startDateTime}
+      endDateTime={endDateTime}
+      label="Add bid-due to my Outlook"
     />
   );
 }

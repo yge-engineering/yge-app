@@ -689,3 +689,57 @@ microsoftRouter.get('/calendar/today', async (req, res, next) => {
   }
 });
 
+// POST /api/microsoft/calendar/events — create an Outlook event on
+// the user's primary calendar.
+microsoftRouter.post('/calendar/events', async (req, res, next) => {
+  try {
+    if (!isMicrosoftConfigured()) {
+      return res.status(503).json({ error: 'Microsoft Graph not configured' });
+    }
+    const Body = z.object({
+      email: z.string().email(),
+      subject: z.string().min(1).max(300),
+      startDateTime: z.string().min(10).max(40),
+      endDateTime: z.string().min(10).max(40),
+      location: z.string().max(300).optional(),
+      body: z.string().max(5000).optional(),
+      isAllDay: z.boolean().optional(),
+    });
+    const parsed = Body.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Validation failed', issues: parsed.error.issues });
+    }
+    const { email, subject, startDateTime, endDateTime, location, body, isAllDay } = parsed.data;
+    const { graphPost } = await import('../lib/microsoft-graph');
+    interface EventOut {
+      id: string;
+      webLink?: string;
+      subject?: string;
+    }
+    const payload = {
+      subject,
+      body: body
+        ? { contentType: 'text', content: body }
+        : undefined,
+      start: { dateTime: startDateTime, timeZone: 'America/Los_Angeles' },
+      end: { dateTime: endDateTime, timeZone: 'America/Los_Angeles' },
+      location: location ? { displayName: location } : undefined,
+      isAllDay: !!isAllDay,
+    };
+    try {
+      const event = await graphPost<EventOut>(email, '/me/events', payload);
+      return res.json({ id: event.id, webLink: event.webLink ?? null });
+    } catch (err) {
+      if (err instanceof Error && /forbidden|insufficient|consent|scope/i.test(err.message)) {
+        return res.status(403).json({
+          error: 'Calendar scope not granted. Disconnect + reconnect Microsoft 365 on /files.',
+          needsReconsent: true,
+        });
+      }
+      throw err;
+    }
+  } catch (err) {
+    next(err);
+  }
+});
+
