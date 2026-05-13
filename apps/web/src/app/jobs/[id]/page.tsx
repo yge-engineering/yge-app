@@ -15,6 +15,7 @@ import { DashboardRefreshButton } from '../../../components/dashboard-refresh-bu
 import { PinnedIndicator } from '../../../components/pinned-indicator';
 import { CopyMoneyButton } from '../../../components/copy-money-button';
 import { getTranslator } from '../../../lib/locale';
+import { JobOneDriveLink } from '../../../components/job-onedrive-link';
 import {
   contractTypeLabel,
   nextBidAction,
@@ -175,6 +176,22 @@ function formatDate(iso: string): string {
   });
 }
 
+
+async function fetchMicrosoftConnected(email: string): Promise<boolean> {
+  if (!email) return false;
+  try {
+    const res = await fetch(
+      `${apiBaseUrl()}/api/microsoft/status?email=${encodeURIComponent(email)}`,
+      { cache: 'no-store' },
+    );
+    if (!res.ok) return false;
+    const body = (await res.json()) as { connected?: boolean };
+    return Boolean(body.connected);
+  } catch {
+    return false;
+  }
+}
+
 export default async function JobDetailPage({
   params,
 }: {
@@ -288,6 +305,8 @@ export default async function JobDetailPage({
           <h1 className="text-3xl font-bold text-yge-blue-500">
             {job.projectName}
           </h1>
+        {/* OneDrive folder pill — creates + opens on first click. */}
+        <JobOneDriveLinkSlot job={job} />
           <p className="mt-1 text-sm uppercase tracking-wide text-gray-500">
             <span className="mr-1">{projectTypeIcon(job.projectType)}</span>
             {contractTypeLabel(job.contractType)} &middot;{' '}
@@ -818,3 +837,23 @@ export default async function JobDetailPage({
     </main>
   );
 }
+
+async function JobOneDriveLinkSlot({ job }: { job: { jobNumber?: string; name?: string; projectName?: string } }) {
+  const { getCurrentUser } = await import('../../../lib/auth');
+  const user = getCurrentUser();
+  if (!user?.email) return null;
+  const connected = await fetchMicrosoftConnected(user.email);
+  if (!connected) return null;
+  const jobNumber = job.jobNumber ?? '';
+  const projectName = job.projectName ?? job.name ?? 'Untitled job';
+  if (!jobNumber) return null;
+  return (
+    <JobOneDriveLink
+      email={user.email}
+      jobNumber={jobNumber}
+      projectName={projectName}
+      microsoftConnected={true}
+    />
+  );
+}
+

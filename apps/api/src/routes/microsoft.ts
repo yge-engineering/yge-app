@@ -530,3 +530,62 @@ microsoftRouter.post('/inbox-triage/file-to-job', async (req, res, next) => {
     next(err);
   }
 });
+
+// GET /api/microsoft/onedrive/job-folder?email=&jobNumber=&projectName=
+// — resolve the existing OneDrive folder for this job. 404 if missing.
+microsoftRouter.get('/onedrive/job-folder', async (req, res, next) => {
+  try {
+    if (!isMicrosoftConfigured()) {
+      return res.status(503).json({ error: 'Microsoft Graph not configured' });
+    }
+    const Q = z.object({
+      email: z.string().email(),
+      jobNumber: z.string().min(1).max(40),
+      projectName: z.string().min(1).max(200),
+    });
+    const parsed = Q.safeParse(req.query);
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Validation failed', issues: parsed.error.issues });
+    }
+    const { email, jobNumber, projectName } = parsed.data;
+    const { findByPath, jobFolderPath } = await import('../lib/onedrive');
+    const path = jobFolderPath(jobNumber, projectName);
+    const item = await findByPath(email, path);
+    if (!item) return res.status(404).json({ error: 'Folder not yet created', path });
+    return res.json({ webUrl: item.webUrl ?? null, itemId: item.id, path });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/microsoft/onedrive/job-folder { email, jobNumber, projectName }
+// — idempotently create the YGE Jobs/<job> folder tree.
+microsoftRouter.post('/onedrive/job-folder', async (req, res, next) => {
+  try {
+    if (!isMicrosoftConfigured()) {
+      return res.status(503).json({ error: 'Microsoft Graph not configured' });
+    }
+    const Body = z.object({
+      email: z.string().email(),
+      jobNumber: z.string().min(1).max(40),
+      projectName: z.string().min(1).max(200),
+    });
+    const parsed = Body.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Validation failed', issues: parsed.error.issues });
+    }
+    const { email, jobNumber, projectName } = parsed.data;
+    const { ensureFolderPath, jobFolderPath } = await import('../lib/onedrive');
+    const basePath = jobFolderPath(jobNumber, projectName);
+    const root = await ensureFolderPath(email, basePath);
+    // Create the standard sub-folders YGE uses on every job.
+    const subfolders = ['RFIs', 'Submittals', 'Photos', 'Daily Reports', 'Plans', 'CPRs', 'Lien Waivers', 'Change Orders'];
+    for (const sub of subfolders) {
+      await ensureFolderPath(email, basePath + '/' + sub);
+    }
+    return res.json({ webUrl: root.webUrl ?? null, itemId: root.id, path: basePath, subfolders });
+  } catch (err) {
+    next(err);
+  }
+});
+
