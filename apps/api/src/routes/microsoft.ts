@@ -743,3 +743,54 @@ microsoftRouter.post('/calendar/events', async (req, res, next) => {
   }
 });
 
+// POST /api/microsoft/tasks/create — create an Outlook To-Do task on
+// the user's default task list.
+microsoftRouter.post('/tasks/create', async (req, res, next) => {
+  try {
+    if (!isMicrosoftConfigured()) {
+      return res.status(503).json({ error: 'Microsoft Graph not configured' });
+    }
+    const Body = z.object({
+      email: z.string().email(),
+      title: z.string().min(1).max(300),
+      body: z.string().max(5000).optional(),
+      dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    });
+    const parsed = Body.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Validation failed', issues: parsed.error.issues });
+    }
+    const { email, title, body, dueDate } = parsed.data;
+    const { graphGet, graphPost } = await import('../lib/microsoft-graph');
+    try {
+      // Resolve the default ('Tasks') list id once. Graph requires
+      // a list id even for the default list.
+      interface TaskListsResp { value: Array<{ id: string; displayName: string; wellknownListName?: string }>; }
+      const lists = await graphGet<TaskListsResp>(email, '/me/todo/lists?$top=20');
+      const defaultList = lists.value.find((l) => l.wellknownListName === 'defaultList') ?? lists.value[0];
+      if (!defaultList) {
+        return res.status(502).json({ error: 'No To-Do list found for user' });
+      }
+      interface TaskOut { id: string; title?: string; }
+      const task = await graphPost<TaskOut>(email, `/me/todo/lists/${defaultList.id}/tasks`, {
+        title,
+        body: body ? { content: body, contentType: 'text' } : undefined,
+        dueDateTime: dueDate
+          ? { dateTime: dueDate + 'T08:00:00', timeZone: 'America/Los_Angeles' }
+          : undefined,
+      });
+      return res.json({ id: task.id });
+    } catch (err) {
+      if (err instanceof Error && /forbidden|insufficient|consent|scope/i.test(err.message)) {
+        return res.status(403).json({
+          error: 'Tasks scope not granted. Disconnect + reconnect Microsoft 365 on /files.',
+          needsReconsent: true,
+        });
+      }
+      throw err;
+    }
+  } catch (err) {
+    next(err);
+  }
+});
+
