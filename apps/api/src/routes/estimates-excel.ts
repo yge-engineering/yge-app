@@ -93,6 +93,26 @@ estimatesExcelRouter.post('/:id/excel/save-to-onedrive', async (req, res, next) 
       buf,
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     );
+    // Record the sync timestamps so live-mode can tell when push/pull
+    // is needed.
+    const row = await prisma.estimate.findFirst({
+      where: { id: req.params.id ?? '', deletedAt: null },
+    });
+    if (row) {
+      const dataObj = (row.data ?? {}) as Record<string, unknown>;
+      const updatedData = JSON.parse(
+        JSON.stringify({
+          ...dataObj,
+          lastExcelSyncAt: new Date().toISOString(),
+          lastSyncExcelModified: item.lastModifiedDateTime ?? null,
+        }),
+      );
+      await prisma.estimate.update({
+        where: { id: row.id },
+        data: { data: updatedData },
+      });
+    }
+
     res.json({
       webUrl: item.webUrl ?? null,
       itemId: item.id,
@@ -185,6 +205,12 @@ estimatesExcelRouter.post('/:id/excel/pull', async (req, res, next) => {
       }),
     );
 
+    // Stamp sync timestamps so the sync-status endpoint can compute
+    // state. lastSyncExcelModified records THIS file revision so a
+    // later push doesn't see itself as a new change.
+    (estimateData as Record<string, unknown>).lastExcelSyncAt = new Date().toISOString();
+    (estimateData as Record<string, unknown>).lastSyncExcelModified = item.lastModifiedDateTime ?? null;
+
     await prisma.estimate.update({
       where: { id: row.id },
       data: {
@@ -206,3 +232,69 @@ estimatesExcelRouter.post('/:id/excel/pull', async (req, res, next) => {
     next(err);
   }
 });
+
+
+// GET /api/estimates/:id/excel/sync-status?email= — compute the
+// current state between the app's estimate and the OneDrive workbook.
+estimatesExcelRouter.get('/:id/excel/sync-status', async (req, res, next) => {
+  try {
+    const email = typeof req.query.email === 'string' ? req.query.email : '';
+    if (!email) {
+      return res.status(400).json({ error: 'Missing email query param' });
+    }
+    const id = req.params.id ?? '';
+    const row = await prisma.estimate.findFirst({
+      where: { id, deletedAt: null },
+      include: { job: true },
+    });
+    if (!row) return res.status(404).json({ error: 'Estimate not found' });
+    const stored = (row.data ?? {}) as {
+      jobNumber?: string;
+      projectName?: string;
+      lastExcelSyncAt?: string;
+      lastSyncExcelModified?: string | null;
+    };
+    const jobNumber = stored.jobNumber ?? row.job.jobNumber;
+    const projectName = stored.projectName ?? row.job.name;
+    const { findByPath, jobFolderPath } = await import('../lib/onedrive');
+    const path = `${jobFolderPath(jobNumber, projectName)}/Est_${jobNumber}.xlsx`;
+    const item = await findByPath(email, path);
+    if (!item) {
+      return res.json({ state: 'no-file', path });
+    }
+
+    const fileModMs = item.lastModifiedDateTime
+      ? Date.parse(item.lastModifiedDateTime)
+      : 0;
+    const lastSyncMs = stored.lastExcelSyncAt
+      ? Date.parse(stored.lastExcelSyncAt)
+      : 0;
+    const lastSyncFileMs = stored.lastSyncExcelModified
+      ? Date.parse(stored.lastSyncExcelModified)
+      : 0;
+    const estUpdatedMs = row.updatedAt.getTime();
+
+    // Excel newer = file modified after the recorded last-sync-file-mod.
+    const excelNewer = fileModMs > lastSyncFileMs;
+    // App newer = estimate updatedAt is later than the last sync timestamp.
+    // Allow a small slop window for clock drift / writes within the same second.
+    const appNewer = estUpdatedMs - lastSyncMs > 2000;
+
+    let state: 'in-sync' | 'excel-newer' | 'app-newer' | 'conflict' = 'in-sync';
+    if (excelNewer && appNewer) state = 'conflict';
+    else if (excelNewer) state = 'excel-newer';
+    else if (appNewer) state = 'app-newer';
+
+    res.json({
+      state,
+      path,
+      fileLastModified: item.lastModifiedDateTime ?? null,
+      estimateUpdatedAt: row.updatedAt.toISOString(),
+      lastExcelSyncAt: stored.lastExcelSyncAt ?? null,
+      lastSyncExcelModified: stored.lastSyncExcelModified ?? null,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
