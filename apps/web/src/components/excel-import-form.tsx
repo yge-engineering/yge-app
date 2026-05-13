@@ -15,6 +15,37 @@ export function ExcelImportForm() {
   const [pjBusy, setPjBusy] = useState(false);
   const [pjResult, setPjResult] = useState<unknown>(null);
   const [pjError, setPjError] = useState<string | null>(null);
+  const [estFile, setEstFile] = useState<File | null>(null);
+  const [estBusy, setEstBusy] = useState(false);
+  const [estResult, setEstResult] = useState<unknown>(null);
+  const [estError, setEstError] = useState<string | null>(null);
+
+  async function submitEstimates(dryRun: boolean) {
+    if (!estFile) {
+      setEstError('Pick a file first');
+      return;
+    }
+    setEstBusy(true);
+    setEstError(null);
+    setEstResult(null);
+    try {
+      const fd = new FormData();
+      fd.append('file', estFile);
+      const url = `${apiBaseUrl()}/api/admin/excel-import/estimates${dryRun ? '?dryRun=1' : ''}`;
+      const res = await fetch(url, { method: 'POST', body: fd });
+      const body = (await res.json()) as unknown;
+      if (!res.ok) {
+        setEstError((body as { error?: string }).error ?? `Failed (${res.status})`);
+        return;
+      }
+      setEstResult(body);
+    } catch (err) {
+      setEstError((err as Error).message);
+    } finally {
+      setEstBusy(false);
+    }
+  }
+
 
   async function submitPeopleJobs(dryRun: boolean) {
     if (!peopleJobsFile) {
@@ -162,6 +193,51 @@ export function ExcelImportForm() {
       {pjResult ? (
         <pre className="mt-3 max-h-96 overflow-auto rounded-md border border-gray-200 bg-gray-50 p-2 text-[11px]">
           {JSON.stringify(pjResult, null, 2)}
+        </pre>
+      ) : null}
+    </section>
+
+    <section className="rounded-md border border-gray-200 bg-white p-4">
+      <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-700">
+        Estimates (Wave A3)
+      </h2>
+      <p className="mb-3 text-xs text-gray-600">
+        Reads every <code>Est_xx</code> sheet (Est_26-001, etc.).
+        Section headers become bid items; cost lines under each are
+        stored in the estimate's data blob. Dedupe by job number.
+      </p>
+      <input
+        type="file"
+        accept=".xlsx,.xlsm"
+        onChange={(e) => setEstFile(e.target.files?.[0] ?? null)}
+        className="mb-3 block text-sm"
+      />
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => void submitEstimates(true)}
+          disabled={estBusy || !estFile}
+          className="rounded-md border border-yge-blue-600 bg-white px-3 py-1.5 text-xs font-semibold text-yge-blue-700 hover:bg-yge-blue-100 disabled:opacity-50"
+        >
+          {estBusy ? 'Working…' : 'Dry-run (preview only)'}
+        </button>
+        <button
+          type="button"
+          onClick={() => void submitEstimates(false)}
+          disabled={estBusy || !estFile}
+          className="rounded-md bg-yge-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50"
+        >
+          {estBusy ? 'Working…' : 'Import (writes to DB)'}
+        </button>
+      </div>
+      {estError ? (
+        <p className="mt-3 rounded-md border border-red-300 bg-red-50 p-2 text-xs text-red-800">
+          {estError}
+        </p>
+      ) : null}
+      {estResult ? (
+        <pre className="mt-3 max-h-96 overflow-auto rounded-md border border-gray-200 bg-gray-50 p-2 text-[11px]">
+          {JSON.stringify(estResult, null, 2)}
         </pre>
       ) : null}
     </section>

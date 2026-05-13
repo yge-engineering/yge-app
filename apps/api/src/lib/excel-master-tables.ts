@@ -405,3 +405,168 @@ export function parsePeopleJobs(bytes: Buffer): ParsePeopleJobsResult {
 
   return { subcontractors, employees, jobs, warnings };
 }
+
+// -----------------------------------------------------------------
+// A3: Estimates (Est_xx sheets)
+// -----------------------------------------------------------------
+
+export interface ParsedCostLine {
+  category: string | null;
+  costCode: string | null;
+  description: string;
+  quantity: number;
+  unit: string;
+  otMult: number;
+  unitCostCents: number;
+  totalCostCents: number;
+  oppMarkupCents: number;
+  bidPriceCents: number;
+  notes: string | null;
+}
+
+export interface ParsedBidItem {
+  itemNumber: string;
+  description: string;
+  costLines: ParsedCostLine[];
+  subtotalDirectCents: number;
+  subtotalOppCents: number;
+  subtotalBidCents: number;
+}
+
+export interface ParsedEstimate {
+  sheetName: string;
+  jobNumber: string | null;
+  projectName: string | null;
+  rateType: string | null;
+  oppPercent: number | null;
+  directCostCents: number;
+  oppMarkupCents: number;
+  bidPriceCents: number;
+  bidItems: ParsedBidItem[];
+}
+
+export function parseEstimates(bytes: Buffer): { estimates: ParsedEstimate[]; warnings: string[] } {
+  const wb = XLSX.read(bytes, { cellDates: true });
+  const warnings: string[] = [];
+  const estimates: ParsedEstimate[] = [];
+
+  for (const sheetName of wb.SheetNames) {
+    if (!/^Est_/.test(sheetName)) continue;
+    const ws = wb.Sheets[sheetName];
+    if (!ws) continue;
+    const rows = XLSX.utils.sheet_to_json<unknown[]>(ws, {
+      header: 1,
+      defval: '',
+      blankrows: true,
+    });
+
+    // Row 3: Job # in col B (idx 1), project name in col F (idx 5),
+    // rate type in col H (idx 7), O&P % in col J (idx 9).
+    const header = rows[2] ?? [];
+    const jobNumber = maybeStr(header[1]) ?? maybeStr(header[4]) ?? sheetName.replace(/^Est_/, '');
+    const projectName = maybeStr(header[5]);
+    const rateType = maybeStr(header[7]);
+    const oppPercent = typeof header[9] === 'number' ? header[9] as number : Number(header[9]) || 0.2;
+
+    // Row 6: Direct Cost (E=4), O&P Markup (I=8), BID PRICE (L=11).
+    const totalsRow = rows[5] ?? [];
+    const directCostCents = toCents(totalsRow[4]) ?? 0;
+    const oppMarkupCents = toCents(totalsRow[8]) ?? 0;
+    const bidPriceCents = toCents(totalsRow[11]) ?? 0;
+
+    // Row 7 is headers. Data starts at row 8 (idx 7).
+    const bidItems: ParsedBidItem[] = [];
+    let currentItem: ParsedBidItem | null = null;
+    let itemNumberCounter = 0;
+
+    for (let i = 7; i < rows.length; i++) {
+      const r = rows[i] ?? [];
+      const colA = toStr(r[0]);
+      const colF = toStr(r[5]);
+
+      // Section header detection: column A starts with non-digit text
+      // (like "BID ITEM 1 — [Description]" or "MOBILIZATION..."), and
+      // it has no numeric quantity in col G (idx 6).
+      const isSectionHeader = colA.length > 4 && !/^\d+$/.test(colA) &&
+        (colA.includes('BID ITEM') || /^[A-Z][A-Z\s,.\-]+/.test(colA));
+      // Subtotal row: col F starts with 'Subtotal'.
+      const isSubtotal = colF.toLowerCase().startsWith('subtotal');
+
+      if (isSectionHeader) {
+        if (currentItem) bidItems.push(currentItem);
+        itemNumberCounter++;
+        currentItem = {
+          itemNumber: String(itemNumberCounter),
+          description: colA.slice(0, 500),
+          costLines: [],
+          subtotalDirectCents: 0,
+          subtotalOppCents: 0,
+          subtotalBidCents: 0,
+        };
+        continue;
+      }
+
+      if (isSubtotal && currentItem) {
+        currentItem.subtotalDirectCents = toCents(r[10]) ?? currentItem.subtotalDirectCents;
+        currentItem.subtotalOppCents = toCents(r[11]) ?? currentItem.subtotalOppCents;
+        currentItem.subtotalBidCents = toCents(r[12]) ?? currentItem.subtotalBidCents;
+        continue;
+      }
+
+      // Otherwise it's a cost line. Skip if no description.
+      const description = toStr(r[5]);
+      if (!description || description === 'Description') continue;
+      const qty = typeof r[6] === 'number' ? r[6] as number : Number(r[6]) || 0;
+      if (qty === 0 && !toCents(r[9])) continue; // empty row
+
+      const line: ParsedCostLine = {
+        category: maybeStr(r[3]),
+        costCode: maybeStr(r[4]),
+        description,
+        quantity: qty,
+        unit: toStr(r[7]) || 'LS',
+        otMult: typeof r[8] === 'number' ? r[8] as number : Number(r[8]) || 1,
+        unitCostCents: toCents(r[9]) ?? 0,
+        totalCostCents: toCents(r[10]) ?? 0,
+        oppMarkupCents: toCents(r[11]) ?? 0,
+        bidPriceCents: toCents(r[12]) ?? 0,
+        notes: maybeStr(r[13]),
+      };
+
+      if (!currentItem) {
+        // Cost line without a preceding section header — create a
+        // synthetic catch-all section.
+        itemNumberCounter++;
+        currentItem = {
+          itemNumber: String(itemNumberCounter),
+          description: 'Uncategorized',
+          costLines: [],
+          subtotalDirectCents: 0,
+          subtotalOppCents: 0,
+          subtotalBidCents: 0,
+        };
+      }
+      currentItem.costLines.push(line);
+    }
+    if (currentItem) bidItems.push(currentItem);
+
+    if (bidItems.length === 0) {
+      warnings.push(`${sheetName}: no bid items detected`);
+      continue;
+    }
+
+    estimates.push({
+      sheetName,
+      jobNumber,
+      projectName,
+      rateType,
+      oppPercent,
+      directCostCents,
+      oppMarkupCents,
+      bidPriceCents,
+      bidItems,
+    });
+  }
+
+  return { estimates, warnings };
+}

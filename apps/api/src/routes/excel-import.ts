@@ -418,3 +418,129 @@ excelImportRouter.post(
     }
   },
 );
+
+// -----------------------------------------------------------------
+// A3: estimates import
+// -----------------------------------------------------------------
+
+import { parseEstimates } from '../lib/excel-master-tables';
+
+excelImportRouter.post(
+  '/estimates',
+  upload.single('file'),
+  async (req, res, next) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
+      const dryRun = String(req.query.dryRun ?? '') === '1';
+      const parsed = parseEstimates(req.file.buffer);
+
+      const summary = {
+        estimates: { parsed: parsed.estimates.length, written: 0, skipped: 0 },
+        bidItems: 0,
+        costLines: 0,
+        warnings: parsed.warnings,
+        dryRun,
+      };
+
+      for (const e of parsed.estimates) {
+        summary.bidItems += e.bidItems.length;
+        summary.costLines += e.bidItems.reduce((s, b) => s + b.costLines.length, 0);
+      }
+
+      if (dryRun) {
+        return res.json({
+          summary,
+          sample: parsed.estimates[0]
+            ? {
+                sheetName: parsed.estimates[0].sheetName,
+                jobNumber: parsed.estimates[0].jobNumber,
+                projectName: parsed.estimates[0].projectName,
+                bidPriceCents: parsed.estimates[0].bidPriceCents,
+                bidItemCount: parsed.estimates[0].bidItems.length,
+                firstBidItem: {
+                  description: parsed.estimates[0].bidItems[0]?.description,
+                  costLineCount: parsed.estimates[0].bidItems[0]?.costLines.length,
+                  firstCostLine: parsed.estimates[0].bidItems[0]?.costLines[0],
+                },
+              }
+            : null,
+        });
+      }
+
+      const co = companyId();
+
+      for (const e of parsed.estimates) {
+        if (!e.jobNumber) {
+          summary.estimates.skipped++;
+          continue;
+        }
+        // Find or create the corresponding Job (A2 may have already
+        // run; if not, create a stub Job).
+        let job = await prisma.job.findFirst({
+          where: { companyId: co, jobNumber: e.jobNumber, deletedAt: null },
+        });
+        if (!job) {
+          job = await prisma.job.create({
+            data: {
+              companyId: co,
+              jobNumber: e.jobNumber,
+              name: e.projectName ?? `Job ${e.jobNumber}`,
+              rateType: (e.rateType ?? '').toLowerCase().includes('priv') ? 'PRIVATE' : 'PW',
+              status: 'BIDDING',
+              data: { importedFromEstimateSheet: e.sheetName },
+            },
+          });
+        }
+
+        // Idempotent: find existing Estimate for this job + sheet, or create.
+        const existing = await prisma.estimate.findFirst({
+          where: { companyId: co, jobId: job.id, deletedAt: null },
+        });
+        // Round-trip through JSON.stringify to coerce the strongly-
+        // typed ParsedBidItem objects into plain JSON Prisma accepts.
+        const estimateData = JSON.parse(
+          JSON.stringify({
+            sheetName: e.sheetName,
+            jobNumber: e.jobNumber,
+            projectName: e.projectName,
+            rateType: e.rateType,
+            oppPercent: e.oppPercent,
+            directCostCents: e.directCostCents,
+            oppMarkupCents: e.oppMarkupCents,
+            bidPriceCents: e.bidPriceCents,
+            bidItems: e.bidItems,
+            importedFromExcel: true,
+            importedAt: new Date().toISOString(),
+          }),
+        );
+        if (existing) {
+          await prisma.estimate.update({
+            where: { id: existing.id },
+            data: {
+              oppAmountCents: BigInt(e.oppMarkupCents),
+              data: estimateData,
+            },
+          });
+        } else {
+          await prisma.estimate.create({
+            data: {
+              companyId: co,
+              jobId: job.id,
+              status: 'DRAFT',
+              oppAmountCents: BigInt(e.oppMarkupCents),
+              oppPercent: e.oppPercent ?? 0.2,
+              data: estimateData,
+            },
+          });
+        }
+        summary.estimates.written++;
+      }
+
+      res.json({ summary });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
