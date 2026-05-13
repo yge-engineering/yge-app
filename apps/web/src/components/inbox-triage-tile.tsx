@@ -81,6 +81,8 @@ export function InboxTriageTile({
   const [filed, setFiled] = useState<Set<string>>(new Set());
   const [filing, setFiling] = useState<Set<string>>(new Set());
   const [fileError, setFileError] = useState<string | null>(null);
+  const [drafting, setDrafting] = useState<Set<string>>(new Set());
+  const [draftError, setDraftError] = useState<string | null>(null);
 
   async function run() {
     setBusy(true);
@@ -141,6 +143,38 @@ export function InboxTriageTile({
         })
         .slice(0, 5)
     : [];
+
+  async function draftApFromEmail(messageId: string) {
+    setDraftError(null);
+    setDrafting((prev) => new Set(prev).add(messageId));
+    try {
+      const res = await fetch(`${apiBaseUrl()}/api/ap-invoices/draft-from-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, messageId }),
+      });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        setDraftError(body.error ?? `Draft failed (${res.status})`);
+        setDrafting((prev) => {
+          const next = new Set(prev);
+          next.delete(messageId);
+          return next;
+        });
+        return;
+      }
+      const body = (await res.json()) as { invoice: { id: string }; aiExtracted?: boolean };
+      // Redirect to the new invoice for review.
+      window.location.href = `/ap-invoices/${body.invoice.id}`;
+    } catch (err) {
+      setDraftError((err as Error).message);
+      setDrafting((prev) => {
+        const next = new Set(prev);
+        next.delete(messageId);
+        return next;
+      });
+    }
+  }
 
   async function fileToJob(
     items: Array<{ messageId: string; jobId: string }>,
@@ -243,6 +277,11 @@ export function InboxTriageTile({
           File error: {fileError}
         </p>
       ) : null}
+      {draftError ? (
+        <p className="mt-3 rounded-md border border-red-300 bg-red-50 p-2 text-xs text-red-800">
+          AP draft error: {draftError}
+        </p>
+      ) : null}
 
       {messages ? (
         <>
@@ -314,6 +353,21 @@ export function InboxTriageTile({
                         </div>
                       ) : null}
                     </div>
+                    {m.category === 'VENDOR_BILL' ? (
+                      <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px]">
+                        <button
+                          type="button"
+                          disabled={drafting.has(m.id)}
+                          onClick={() => void draftApFromEmail(m.id)}
+                          className="rounded border border-amber-300 bg-amber-50 px-2 py-0.5 font-semibold text-amber-900 hover:bg-amber-100 disabled:opacity-50"
+                        >
+                          {drafting.has(m.id) ? 'Drafting…' : '→ Draft AP invoice'}
+                        </button>
+                        <span className="text-gray-500">
+                          AI reads the PDF, creates a DRAFT for review
+                        </span>
+                      </div>
+                    ) : null}
                     <span
                       className={`shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-semibold ${
                         m.confidence === 'HIGH'
