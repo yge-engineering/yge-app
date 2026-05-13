@@ -148,3 +148,70 @@ adminHealthRouter.get('/health/data-counts', async (_req, res, next) => {
   }
 });
 
+// /api/admin/health/debug/probe — run the failing queries and surface
+// whatever they throw. Diagnostic only; remove once the bug is fixed.
+adminHealthRouter.get('/health/debug/probe', async (_req, res, next) => {
+  const results: Record<string, { ok: boolean; error?: string; stack?: string; sample?: unknown }> = {};
+
+  // Probe 1: listEstimates query (mimics /api/priced-estimates)
+  try {
+    const rows = await prisma.estimate.findMany({
+      where: { companyId: process.env.DEFAULT_COMPANY_ID ?? 'yge-root', deletedAt: null },
+      orderBy: { createdAt: 'desc' },
+      take: 1,
+    });
+    results.estimateFindMany = { ok: true, sample: { count: rows.length } };
+  } catch (err) {
+    results.estimateFindMany = {
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack?.split('\n').slice(0, 6).join('\n') : undefined,
+    };
+  }
+
+  // Probe 2: estimate findMany with join (mimics /api/estimates)
+  try {
+    const rows = await prisma.estimate.findMany({
+      where: { companyId: process.env.DEFAULT_COMPANY_ID ?? 'yge-root', deletedAt: null },
+      include: {
+        job: { include: { customer: true } },
+        bidItems: { include: { costLines: true } },
+      },
+      take: 1,
+    });
+    results.estimateFindManyWithJoins = { ok: true, sample: { count: rows.length } };
+  } catch (err) {
+    results.estimateFindManyWithJoins = {
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack?.split('\n').slice(0, 6).join('\n') : undefined,
+    };
+  }
+
+  // Probe 3: apiError findMany (mimics /api/admin/errors)
+  try {
+    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const rows = await prisma.apiError.findMany({
+      where: { occurredAt: { gte: since } },
+      orderBy: { occurredAt: 'desc' },
+      take: 5,
+    });
+    results.apiErrorFindMany = {
+      ok: true,
+      sample: {
+        count: rows.length,
+        recentMessages: rows.slice(0, 3).map((r) => r.message.slice(0, 200)),
+        recentRoutes: rows.slice(0, 3).map((r) => r.route),
+      },
+    };
+  } catch (err) {
+    results.apiErrorFindMany = {
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack?.split('\n').slice(0, 6).join('\n') : undefined,
+    };
+  }
+
+  res.json(results);
+});
+
