@@ -215,3 +215,94 @@ adminHealthRouter.get('/health/debug/probe', async (_req, res, next) => {
   res.json(results);
 });
 
+// POST /api/admin/debug/apply-missing-migrations — apply the two
+// migrations that Render's buildCommand failed to run. Idempotent
+// (each SQL uses IF NOT EXISTS). Diagnostic only; delete after use.
+adminHealthRouter.post('/health/debug/apply-missing-migrations', async (_req, res, next) => {
+  const log: Array<{ step: string; ok: boolean; error?: string }> = [];
+
+  // Migration 20260507050000: add estimates.data JSON column.
+  try {
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE "estimates" ADD COLUMN IF NOT EXISTS "data" JSONB`,
+    );
+    log.push({ step: 'add estimates.data column', ok: true });
+  } catch (err) {
+    log.push({
+      step: 'add estimates.data column',
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+
+  // Migration 20260507060000: create api_errors table + 2 indexes.
+  try {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "api_errors" (
+        "id" TEXT PRIMARY KEY,
+        "companyId" TEXT,
+        "requestId" TEXT,
+        "method" TEXT NOT NULL,
+        "route" TEXT NOT NULL,
+        "statusCode" INTEGER NOT NULL,
+        "message" TEXT NOT NULL,
+        "stack" TEXT,
+        "ipAddress" TEXT,
+        "userAgent" TEXT,
+        "occurredAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    log.push({ step: 'create api_errors table', ok: true });
+  } catch (err) {
+    log.push({
+      step: 'create api_errors table',
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+
+  try {
+    await prisma.$executeRawUnsafe(
+      `CREATE INDEX IF NOT EXISTS "api_errors_companyId_occurredAt_idx" ON "api_errors" ("companyId", "occurredAt")`,
+    );
+    log.push({ step: 'index api_errors companyId+occurredAt', ok: true });
+  } catch (err) {
+    log.push({
+      step: 'index api_errors companyId+occurredAt',
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+
+  try {
+    await prisma.$executeRawUnsafe(
+      `CREATE INDEX IF NOT EXISTS "api_errors_statusCode_occurredAt_idx" ON "api_errors" ("statusCode", "occurredAt")`,
+    );
+    log.push({ step: 'index api_errors statusCode+occurredAt', ok: true });
+  } catch (err) {
+    log.push({
+      step: 'index api_errors statusCode+occurredAt',
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+
+  // Verify by re-running the probes.
+  let estimateProbeOk = false;
+  let apiErrorProbeOk = false;
+  try {
+    await prisma.estimate.findMany({ take: 1 });
+    estimateProbeOk = true;
+  } catch {
+    /* ignore */
+  }
+  try {
+    await prisma.apiError.findMany({ take: 1 });
+    apiErrorProbeOk = true;
+  } catch {
+    /* ignore */
+  }
+
+  res.json({ log, verified: { estimateProbeOk, apiErrorProbeOk } });
+});
+
