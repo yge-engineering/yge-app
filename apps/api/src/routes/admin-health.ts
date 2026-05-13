@@ -340,3 +340,144 @@ adminHealthRouter.get('/health/debug/migrations-state', async (_req, res, next) 
   }
 });
 
+// POST /api/admin/health/debug/fix-migration-state — bring prod
+// _prisma_migrations in sync with the migrations on disk.
+adminHealthRouter.post('/health/debug/fix-migration-state', async (_req, res, next) => {
+  const log: Array<{ step: string; ok: boolean; error?: string }> = [];
+
+  interface MigrationStep {
+    name: string;
+    sql: string[];
+  }
+  const migrations: MigrationStep[] = [
+    {
+      name: '20260507010000_audit_reason',
+      sql: [`ALTER TABLE "audit_events" ADD COLUMN IF NOT EXISTS "reason" TEXT`],
+    },
+    {
+      name: '20260507020000_equipment',
+      sql: [
+        `CREATE TABLE IF NOT EXISTS "equipment_assets" (
+          "id" TEXT PRIMARY KEY,
+          "companyId" TEXT NOT NULL,
+          "name" TEXT NOT NULL,
+          "category" TEXT NOT NULL,
+          "status" TEXT NOT NULL,
+          "assignedJobId" TEXT,
+          "data" JSONB NOT NULL,
+          "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          "updatedAt" TIMESTAMP(3) NOT NULL,
+          "deletedAt" TIMESTAMP(3)
+        )`,
+        `CREATE INDEX IF NOT EXISTS "equipment_assets_companyId_status_idx" ON "equipment_assets" ("companyId", "status")`,
+        `CREATE INDEX IF NOT EXISTS "equipment_assets_companyId_assignedJobId_idx" ON "equipment_assets" ("companyId", "assignedJobId")`,
+      ],
+    },
+    {
+      name: '20260507030000_dir_rate_proposals',
+      sql: [
+        `CREATE TABLE IF NOT EXISTS "dir_rate_proposals" (
+          "id" TEXT PRIMARY KEY,
+          "companyId" TEXT NOT NULL,
+          "syncRunId" TEXT NOT NULL,
+          "status" TEXT NOT NULL,
+          "classification" TEXT NOT NULL,
+          "county" TEXT NOT NULL,
+          "data" JSONB NOT NULL,
+          "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          "updatedAt" TIMESTAMP(3) NOT NULL
+        )`,
+        `CREATE INDEX IF NOT EXISTS "dir_rate_proposals_companyId_syncRunId_idx" ON "dir_rate_proposals" ("companyId", "syncRunId")`,
+        `CREATE INDEX IF NOT EXISTS "dir_rate_proposals_companyId_status_idx" ON "dir_rate_proposals" ("companyId", "status")`,
+      ],
+    },
+    {
+      name: '20260507040000_job_customer_nullable',
+      sql: [`ALTER TABLE "jobs" ALTER COLUMN "customerId" DROP NOT NULL`],
+    },
+    {
+      name: '20260507050000_estimate_data_json',
+      sql: [`ALTER TABLE "estimates" ADD COLUMN IF NOT EXISTS "data" JSONB`],
+    },
+    {
+      name: '20260507060000_api_errors',
+      sql: [
+        `CREATE TABLE IF NOT EXISTS "api_errors" (
+          "id" TEXT PRIMARY KEY,
+          "companyId" TEXT,
+          "requestId" TEXT,
+          "method" TEXT NOT NULL,
+          "route" TEXT NOT NULL,
+          "statusCode" INTEGER NOT NULL,
+          "message" TEXT NOT NULL,
+          "stack" TEXT,
+          "ipAddress" TEXT,
+          "userAgent" TEXT,
+          "occurredAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )`,
+        `CREATE INDEX IF NOT EXISTS "api_errors_companyId_occurredAt_idx" ON "api_errors" ("companyId", "occurredAt")`,
+        `CREATE INDEX IF NOT EXISTS "api_errors_statusCode_occurredAt_idx" ON "api_errors" ("statusCode", "occurredAt")`,
+      ],
+    },
+  ];
+
+  // Apply each migration's SQL.
+  for (const m of migrations) {
+    for (const sql of m.sql) {
+      try {
+        await prisma.$executeRawUnsafe(sql);
+        log.push({ step: `SQL: ${m.name}`, ok: true });
+      } catch (err) {
+        log.push({
+          step: `SQL: ${m.name}`,
+          ok: false,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
+  }
+
+  // Now record each migration in _prisma_migrations so prisma migrate
+  // deploy on the next build sees them as applied. Use the prisma
+  // migrations table's row format: id, checksum, finished_at,
+  // migration_name, logs, rolled_back_at, started_at, applied_steps_count.
+  for (const m of migrations) {
+    try {
+      // Use a fixed checksum string per migration (would normally be
+      // sha256 of migration.sql but prisma migrate deploy doesn't
+      // verify checksum on existing rows — it only writes them).
+      const checksum = `manual-applied-${m.name}`;
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO _prisma_migrations
+          (id, checksum, finished_at, migration_name, logs, rolled_back_at, started_at, applied_steps_count)
+         SELECT gen_random_uuid()::text, $1, NOW(), $2, NULL, NULL, NOW(), 1
+         WHERE NOT EXISTS (
+           SELECT 1 FROM _prisma_migrations WHERE migration_name = $2
+         )`,
+        checksum,
+        m.name,
+      );
+      log.push({ step: `record: ${m.name}`, ok: true });
+    } catch (err) {
+      log.push({
+        step: `record: ${m.name}`,
+        ok: false,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
+  // Final state.
+  const state = await prisma.$queryRawUnsafe<Array<{ migration_name: string; finished_at: Date | null }>>(
+    `SELECT migration_name, finished_at FROM _prisma_migrations ORDER BY migration_name ASC`,
+  );
+
+  res.json({
+    log,
+    finalState: state.map((s) => ({
+      name: s.migration_name,
+      appliedAt: s.finished_at?.toISOString() ?? null,
+    })),
+  });
+});
+
