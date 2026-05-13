@@ -589,3 +589,37 @@ microsoftRouter.post('/onedrive/job-folder', async (req, res, next) => {
   }
 });
 
+// GET /api/microsoft/onedrive/browse?email=&parentItemId= — list
+// children of a folder. Root if parentItemId omitted. Used by the
+// <OneDrivePicker> UI component.
+microsoftRouter.get('/onedrive/browse', async (req, res, next) => {
+  try {
+    if (!isMicrosoftConfigured()) {
+      return res.status(503).json({ error: 'Microsoft Graph not configured' });
+    }
+    const Q = z.object({
+      email: z.string().email(),
+      parentItemId: z.string().min(1).max(200).optional(),
+    });
+    const parsed = Q.safeParse(req.query);
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Validation failed', issues: parsed.error.issues });
+    }
+    const { listChildren } = await import('../lib/onedrive');
+    const items = await listChildren(parsed.data.email, parsed.data.parentItemId, { top: 100 });
+    return res.json({
+      items: items.map((i) => ({
+        id: i.id,
+        name: i.name,
+        webUrl: i.webUrl ?? null,
+        isFolder: Boolean(i.folder),
+        size: i.size ?? 0,
+        mimeType: i.file?.mimeType ?? null,
+        lastModifiedDateTime: i.lastModifiedDateTime ?? null,
+      })),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
