@@ -307,6 +307,7 @@ export default async function JobDetailPage({
           </h1>
         {/* OneDrive folder pill — creates + opens on first click. */}
         <JobOneDriveLinkSlot job={job} />
+        <a href={`/jobs/${params.id}/pwc-100/print`} target="_blank" rel="noopener noreferrer" className="ml-2 inline-flex items-center gap-1 rounded-md border border-yge-blue-600 bg-white px-3 py-1.5 text-xs font-semibold text-yge-blue-700 hover:bg-yge-blue-100">↓ DIR PWC-100</a>
           <p className="mt-1 text-sm uppercase tracking-wide text-gray-500">
             <span className="mr-1">{projectTypeIcon(job.projectType)}</span>
             {contractTypeLabel(job.contractType)} &middot;{' '}
