@@ -119,6 +119,7 @@ const NAV_SPEC: NavGroupSpec[] = [
       { key: 'nav.myToday', href: '/me/today' },
       { key: 'nav.calendar', href: '/calendar' },
       { key: 'nav.morningBriefing', href: '/morning-briefing' },
+      { key: 'nav.inboxTriage', href: '/inbox-triage' },
       { key: 'nav.dispatch', href: '/dispatch' },
       { key: 'nav.dailyReports', href: '/daily-reports' },
       { key: 'nav.timeCards', href: '/time-cards' },
