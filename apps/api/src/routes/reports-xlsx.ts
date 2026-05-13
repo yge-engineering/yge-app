@@ -159,3 +159,108 @@ reportsXlsxRouter.get('/aging.xlsx', async (req, res, next) => {
     next(err);
   }
 });
+
+// GET /api/reports/cpr/:id.xlsx — export a CertifiedPayroll as a
+// WH-347-style Excel workbook.
+reportsXlsxRouter.get('/cpr/:id.xlsx', async (req, res, next) => {
+  try {
+    const Param = z.object({ id: z.string().min(1).max(120) });
+    const parsed = Param.safeParse(req.params);
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Bad id' });
+    }
+    // CertifiedPayroll lives in JSON in CertifiedPayroll.data column.
+    const row = await prisma.certifiedPayroll.findFirst({
+      where: { id: parsed.data.id, deletedAt: null },
+    });
+    if (!row || !row.data) {
+      return res.status(404).json({ error: 'CPR not found' });
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const cpr = row.data as any;
+
+    // Header sheet.
+    const headerRows = [
+      { Field: 'Job ID', Value: cpr.jobId ?? '' },
+      { Field: 'Project number', Value: cpr.projectNumber ?? '' },
+      { Field: 'Awarding agency', Value: cpr.awardingAgency ?? '' },
+      { Field: 'Payroll number', Value: cpr.payrollNumber ?? '' },
+      { Field: 'Final payroll', Value: cpr.isFinalPayroll ? 'YES' : 'No' },
+      { Field: 'Week starting (Mon)', Value: cpr.weekStarting ?? '' },
+      { Field: 'Week ending (Sun)', Value: cpr.weekEnding ?? '' },
+      { Field: 'Status', Value: cpr.status ?? 'DRAFT' },
+      { Field: 'Compliance signed', Value: cpr.complianceStatementSigned ? 'YES' : 'No' },
+      { Field: 'Signed by employee id', Value: cpr.signedByEmployeeId ?? '' },
+      { Field: 'Submitted at', Value: cpr.submittedAt ?? '' },
+      { Field: 'Accepted at', Value: cpr.acceptedAt ?? '' },
+    ];
+    const headerWs = XLSX.utils.json_to_sheet(headerRows);
+
+    // Employee detail sheet.
+    interface CprRow {
+      employeeId?: string;
+      name?: string;
+      classification?: string;
+      classificationOverride?: string;
+      ssnLast4?: string;
+      dailyHours?: number[];
+      straightHours?: number;
+      overtimeHours?: number;
+      hourlyRateCents?: number;
+      fringeRateCents?: number;
+      grossPayCents?: number;
+      deductionsCents?: number;
+      netPayCents?: number;
+      note?: string;
+    }
+    const rows: CprRow[] = Array.isArray(cpr.rows) ? cpr.rows : [];
+    const detailRows = rows.map((r) => ({
+      Name: r.name ?? '',
+      Classification: r.classificationOverride ?? r.classification ?? '',
+      'SSN last-4': r.ssnLast4 ?? '',
+      Mon: (r.dailyHours?.[0] ?? 0).toFixed(2),
+      Tue: (r.dailyHours?.[1] ?? 0).toFixed(2),
+      Wed: (r.dailyHours?.[2] ?? 0).toFixed(2),
+      Thu: (r.dailyHours?.[3] ?? 0).toFixed(2),
+      Fri: (r.dailyHours?.[4] ?? 0).toFixed(2),
+      Sat: (r.dailyHours?.[5] ?? 0).toFixed(2),
+      Sun: (r.dailyHours?.[6] ?? 0).toFixed(2),
+      'Straight hrs': (r.straightHours ?? 0).toFixed(2),
+      'OT hrs': (r.overtimeHours ?? 0).toFixed(2),
+      'Hourly rate ($)': ((r.hourlyRateCents ?? 0) / 100).toFixed(2),
+      'Fringe rate ($/hr)': ((r.fringeRateCents ?? 0) / 100).toFixed(2),
+      'Gross ($)': ((r.grossPayCents ?? 0) / 100).toFixed(2),
+      'Deductions ($)': ((r.deductionsCents ?? 0) / 100).toFixed(2),
+      'Net pay ($)': ((r.netPayCents ?? 0) / 100).toFixed(2),
+      Note: r.note ?? '',
+    }));
+    const detailWs = XLSX.utils.json_to_sheet(detailRows);
+
+    // Statement of compliance.
+    const sosRows = [
+      { Line: 'STATEMENT OF COMPLIANCE' },
+      { Line: '' },
+      { Line: `I, the undersigned, am the authorized representative of Young General Engineering, Inc., and I do hereby state:` },
+      { Line: `` },
+      { Line: `(1) That I pay or supervise the payment of the persons employed by Young General Engineering, Inc. on the project named above; that during the payroll period commencing on ${cpr.weekStarting ?? ''} and ending on ${cpr.weekEnding ?? ''}, all persons employed on said project have been paid the full weekly wages earned;` },
+      { Line: `` },
+      { Line: `(2) That any payrolls otherwise under this contract required to be submitted for the above period are correct and complete;` },
+      { Line: `` },
+      { Line: `(3) That the wage rates paid to each laborer or mechanic are not less than the applicable wage rates contained in any wage determination incorporated into the contract.` },
+      { Line: `` },
+      { Line: `Signed by employee id: ${cpr.signedByEmployeeId ?? '(not signed)'}` },
+      { Line: `Signed: ${cpr.complianceStatementSigned ? 'YES' : 'NO'}` },
+      { Line: cpr.notes ? `Notes: ${cpr.notes}` : '' },
+    ];
+    const sosWs = XLSX.utils.json_to_sheet(sosRows);
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, headerWs, 'Header');
+    XLSX.utils.book_append_sheet(wb, detailWs, 'Employees');
+    XLSX.utils.book_append_sheet(wb, sosWs, 'Statement of Compliance');
+    streamXlsx(res, wb, `CPR-${cpr.payrollNumber ?? 'X'}-week-${cpr.weekEnding ?? 'unknown'}.xlsx`);
+  } catch (err) {
+    next(err);
+  }
+});
+
