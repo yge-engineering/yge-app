@@ -59,7 +59,7 @@ export async function triageEmails(
         subject: m.subject,
         from: m.fromName ? `${m.fromName} <${m.fromAddress}>` : m.fromAddress,
         receivedAt: m.receivedAtIso,
-        preview: m.bodyPreview.slice(0, 1000),
+        preview: m.bodyPreview.slice(0, 500),
       })),
     },
     null,
@@ -68,7 +68,7 @@ export async function triageEmails(
 
   const res = await anthropic.messages.create({
     model: DEFAULT_MODEL,
-    max_tokens: 4096,
+    max_tokens: 8192,
     system: SYSTEM_PROMPT,
     messages: [{ role: 'user', content: userMessage }],
   });
@@ -136,7 +136,7 @@ export async function triageEmailsWithRaw(
         subject: m.subject,
         from: m.fromName ? `${m.fromName} <${m.fromAddress}>` : m.fromAddress,
         receivedAt: m.receivedAtIso,
-        preview: m.bodyPreview.slice(0, 1000),
+        preview: m.bodyPreview.slice(0, 500),
       })),
     },
     null,
@@ -145,7 +145,7 @@ export async function triageEmailsWithRaw(
 
   const res = await anthropic.messages.create({
     model: DEFAULT_MODEL,
-    max_tokens: 4096,
+    max_tokens: 8192,
     system: SYSTEM_PROMPT,
     messages: [{ role: 'user', content: userMessage }],
   });
