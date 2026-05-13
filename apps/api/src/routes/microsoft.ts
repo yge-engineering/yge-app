@@ -27,6 +27,7 @@ import {
 } from '../lib/microsoft-graph';
 import {
   triageEmails,
+  triageEmailsWithRaw,
   type EmailTriageMessage,
 } from '../lib/email-triage';
 import { listJobs } from '../lib/jobs-store';
@@ -360,11 +361,12 @@ microsoftRouter.post('/inbox-triage', async (req, res, next) => {
       receivedAtIso: m.receivedDateTime,
     }));
 
-    const out = await triageEmails(messages);
-    if (!out) {
-      return res
-        .status(502)
-        .json({ error: 'AI returned an unparseable response' });
+    const out = await triageEmailsWithRaw(messages);
+    if (!out.items) {
+      return res.status(502).json({
+        error: out.error ?? 'AI returned an unparseable response',
+        rawHead: out.rawHead,
+      });
     }
 
     // Build the candidate-job list for the email→job matcher.
