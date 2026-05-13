@@ -135,6 +135,24 @@ estimatesExcelRouter.post('/:id/excel/pull', async (req, res, next) => {
         hint: 'Save the estimate to OneDrive first (use the "📁 Save to OneDrive" button).',
       });
     }
+
+    // Smart-poll: skip the download + parse if the OneDrive file
+    // hasn't been touched since this estimate was last updated. The
+    // <LiveExcelSync> UI calls this every 30s; we want it to be cheap.
+    const force = String((req.query.force ?? '')) === '1';
+    if (!force && item.lastModifiedDateTime && row.updatedAt) {
+      const fileMs = Date.parse(item.lastModifiedDateTime);
+      const estMs = row.updatedAt.getTime();
+      if (Number.isFinite(fileMs) && fileMs <= estMs) {
+        return res.json({
+          ok: true,
+          skipped: true,
+          reason: 'OneDrive file unchanged since last sync',
+          oneDriveLastModified: item.lastModifiedDateTime,
+          estimateUpdatedAt: row.updatedAt.toISOString(),
+        });
+      }
+    }
     const { bytes } = await downloadFile(parsed.data.email, item.id);
     const { parseEstimates } = await import('../lib/excel-master-tables');
     const result = parseEstimates(Buffer.from(bytes));

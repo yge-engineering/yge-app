@@ -6,6 +6,7 @@
 import Link from 'next/link';
 
 import { EstimateExcelButtons } from '../../../components/estimate-excel-buttons';
+import { LiveExcelSync } from '../../../components/live-excel-sync';
 import {
   AppShell,
   AuditBinderPanel,
