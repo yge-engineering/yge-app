@@ -306,3 +306,37 @@ adminHealthRouter.post('/health/debug/apply-missing-migrations', async (_req, re
   res.json({ log, verified: { estimateProbeOk, apiErrorProbeOk } });
 });
 
+// GET /api/admin/health/debug/migrations-state — what's in the
+// _prisma_migrations table on prod? Diagnostic only.
+adminHealthRouter.get('/health/debug/migrations-state', async (_req, res, next) => {
+  try {
+    const rows = await prisma.$queryRawUnsafe<
+      Array<{
+        id: string;
+        migration_name: string;
+        finished_at: Date | null;
+        applied_steps_count: number;
+        rolled_back_at: Date | null;
+        logs: string | null;
+      }>
+    >(
+      `SELECT id, migration_name, finished_at, applied_steps_count, rolled_back_at, logs
+       FROM _prisma_migrations
+       ORDER BY started_at DESC`,
+    );
+    res.json({
+      migrationsInDb: rows.map((r) => ({
+        id: r.id,
+        name: r.migration_name,
+        finishedAt: r.finished_at?.toISOString() ?? null,
+        appliedSteps: r.applied_steps_count,
+        rolledBackAt: r.rolled_back_at?.toISOString() ?? null,
+        hasLog: !!r.logs,
+        logHead: r.logs?.slice(0, 500) ?? null,
+      })),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
