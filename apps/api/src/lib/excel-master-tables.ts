@@ -250,3 +250,158 @@ export function parseMasterTables(bytes: Buffer): ParseMasterTablesResult {
     warnings,
   };
 }
+
+// -----------------------------------------------------------------
+// A2: Subcontractors, Employees, Jobs
+// -----------------------------------------------------------------
+
+export interface ParsedSubcontractor {
+  name: string;
+  trade: string | null;
+  contactName: string | null;
+  phone: string | null;
+  email: string | null;
+  license: string | null;
+  rateNotes: string | null;
+  status: string | null;
+}
+
+export interface ParsedEmployee {
+  firstName: string;
+  lastName: string;
+  laborCostCode: string | null;
+  classification: string | null;
+  phone: string | null;
+  email: string | null;
+  active: boolean;
+  notes: string | null;
+}
+
+export interface ParsedJob {
+  jobNumber: string;
+  name: string;
+  client: string | null;
+  address: string | null;
+  startDate: string | null;
+  status: string | null;
+  rateType: string | null;
+  budgetLaborCents: number | null;
+  budgetMaterialsCents: number | null;
+  budgetEquipmentCents: number | null;
+  budgetSubsCents: number | null;
+  budgetOtherCents: number | null;
+  totalBudgetCents: number | null;
+}
+
+export interface ParsePeopleJobsResult {
+  subcontractors: ParsedSubcontractor[];
+  employees: ParsedEmployee[];
+  jobs: ParsedJob[];
+  warnings: string[];
+}
+
+function isoFromCell(value: unknown): string | null {
+  if (!value) return null;
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  const s = String(value).trim();
+  if (!s) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const d = new Date(s);
+  if (Number.isFinite(d.getTime())) return d.toISOString().slice(0, 10);
+  return null;
+}
+
+export function parsePeopleJobs(bytes: Buffer): ParsePeopleJobsResult {
+  const wb = XLSX.read(bytes, { cellDates: true });
+  const warnings: string[] = [];
+  const subcontractors: ParsedSubcontractor[] = [];
+  const employees: ParsedEmployee[] = [];
+  const jobs: ParsedJob[] = [];
+
+  // Subcontractors — header row 2 (1-indexed), data from row 3.
+  if (wb.Sheets['Subcontractors']) {
+    const ws = wb.Sheets['Subcontractors'];
+    const rows = XLSX.utils.sheet_to_json<unknown[]>(ws, {
+      header: 1,
+      defval: '',
+    });
+    for (let i = 2; i < rows.length; i++) {
+      const r = rows[i] ?? [];
+      const name = toStr(r[0]);
+      if (!name || name === 'Sub Name') continue;
+      subcontractors.push({
+        name,
+        trade: maybeStr(r[1]),
+        contactName: maybeStr(r[2]),
+        phone: maybeStr(r[3]),
+        email: maybeStr(r[4]),
+        license: maybeStr(r[5]),
+        rateNotes: maybeStr(r[6]),
+        status: maybeStr(r[7]),
+      });
+    }
+  } else {
+    warnings.push('Subcontractors sheet missing');
+  }
+
+  // Employees — header row 2, data from row 3.
+  if (wb.Sheets['Employees']) {
+    const ws = wb.Sheets['Employees'];
+    const rows = XLSX.utils.sheet_to_json<unknown[]>(ws, {
+      header: 1,
+      defval: '',
+    });
+    for (let i = 2; i < rows.length; i++) {
+      const r = rows[i] ?? [];
+      const name = toStr(r[0]);
+      if (!name || name === 'Employee Name') continue;
+      const parts = name.split(/\s+/);
+      const firstName = parts[0] ?? name;
+      const lastName = parts.slice(1).join(' ') || '—';
+      const activeRaw = toStr(r[5]).toLowerCase();
+      employees.push({
+        firstName,
+        lastName,
+        laborCostCode: maybeStr(r[1]),
+        classification: maybeStr(r[2]),
+        phone: maybeStr(r[3]),
+        email: maybeStr(r[4]),
+        active: activeRaw === 'yes' || activeRaw === 'true' || activeRaw === 'active' || activeRaw === '',
+        notes: maybeStr(r[6]),
+      });
+    }
+  }
+
+  // Jobs — header row 2, data from row 3.
+  if (wb.Sheets['Jobs']) {
+    const ws = wb.Sheets['Jobs'];
+    const rows = XLSX.utils.sheet_to_json<unknown[]>(ws, {
+      header: 1,
+      defval: '',
+    });
+    for (let i = 2; i < rows.length; i++) {
+      const r = rows[i] ?? [];
+      const jobNumber = toStr(r[0]);
+      if (!jobNumber || jobNumber === 'Job #') continue;
+      const name = toStr(r[1]);
+      if (!name) continue;
+      jobs.push({
+        jobNumber,
+        name,
+        client: maybeStr(r[2]),
+        address: maybeStr(r[3]),
+        startDate: isoFromCell(r[4]),
+        status: maybeStr(r[5]),
+        rateType: maybeStr(r[6]),
+        budgetLaborCents: toCents(r[7]),
+        budgetMaterialsCents: toCents(r[8]),
+        budgetEquipmentCents: toCents(r[9]),
+        budgetSubsCents: toCents(r[10]),
+        budgetOtherCents: toCents(r[11]),
+        totalBudgetCents: toCents(r[12]),
+      });
+    }
+  }
+
+  return { subcontractors, employees, jobs, warnings };
+}

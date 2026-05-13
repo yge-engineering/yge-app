@@ -11,6 +11,37 @@ export function ExcelImportForm() {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<unknown>(null);
   const [error, setError] = useState<string | null>(null);
+  const [peopleJobsFile, setPeopleJobsFile] = useState<File | null>(null);
+  const [pjBusy, setPjBusy] = useState(false);
+  const [pjResult, setPjResult] = useState<unknown>(null);
+  const [pjError, setPjError] = useState<string | null>(null);
+
+  async function submitPeopleJobs(dryRun: boolean) {
+    if (!peopleJobsFile) {
+      setPjError('Pick a file first');
+      return;
+    }
+    setPjBusy(true);
+    setPjError(null);
+    setPjResult(null);
+    try {
+      const fd = new FormData();
+      fd.append('file', peopleJobsFile);
+      const url = `${apiBaseUrl()}/api/admin/excel-import/people-jobs${dryRun ? '?dryRun=1' : ''}`;
+      const res = await fetch(url, { method: 'POST', body: fd });
+      const body = (await res.json()) as unknown;
+      if (!res.ok) {
+        setPjError((body as { error?: string }).error ?? `Failed (${res.status})`);
+        return;
+      }
+      setPjResult(body);
+    } catch (err) {
+      setPjError((err as Error).message);
+    } finally {
+      setPjBusy(false);
+    }
+  }
+
 
   async function submit(dryRun: boolean) {
     if (!file) {
@@ -39,6 +70,7 @@ export function ExcelImportForm() {
   }
 
   return (
+    <div className="space-y-4">
     <section className="rounded-md border border-gray-200 bg-white p-4">
       <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-700">
         Master tables (Wave A1)
@@ -88,5 +120,51 @@ export function ExcelImportForm() {
         </pre>
       ) : null}
     </section>
+
+    <section className="rounded-md border border-gray-200 bg-white p-4">
+      <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-700">
+        People &amp; jobs (Wave A2)
+      </h2>
+      <p className="mb-3 text-xs text-gray-600">
+        Reads <code>Subcontractors</code>, <code>Employees</code>,{' '}
+        <code>Jobs</code>. Subs deduped by name; employees by (first,
+        last); jobs by job number. Same xlsx file as above.
+      </p>
+      <input
+        type="file"
+        accept=".xlsx,.xlsm"
+        onChange={(e) => setPeopleJobsFile(e.target.files?.[0] ?? null)}
+        className="mb-3 block text-sm"
+      />
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => void submitPeopleJobs(true)}
+          disabled={pjBusy || !peopleJobsFile}
+          className="rounded-md border border-yge-blue-600 bg-white px-3 py-1.5 text-xs font-semibold text-yge-blue-700 hover:bg-yge-blue-100 disabled:opacity-50"
+        >
+          {pjBusy ? 'Working…' : 'Dry-run (preview only)'}
+        </button>
+        <button
+          type="button"
+          onClick={() => void submitPeopleJobs(false)}
+          disabled={pjBusy || !peopleJobsFile}
+          className="rounded-md bg-yge-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50"
+        >
+          {pjBusy ? 'Working…' : 'Import (writes to DB)'}
+        </button>
+      </div>
+      {pjError ? (
+        <p className="mt-3 rounded-md border border-red-300 bg-red-50 p-2 text-xs text-red-800">
+          {pjError}
+        </p>
+      ) : null}
+      {pjResult ? (
+        <pre className="mt-3 max-h-96 overflow-auto rounded-md border border-gray-200 bg-gray-50 p-2 text-[11px]">
+          {JSON.stringify(pjResult, null, 2)}
+        </pre>
+      ) : null}
+    </section>
+    </div>
   );
 }

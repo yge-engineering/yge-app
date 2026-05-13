@@ -212,3 +212,209 @@ excelImportRouter.post(
     }
   },
 );
+
+// -----------------------------------------------------------------
+// A2: people-jobs import (subs/employees/jobs)
+// -----------------------------------------------------------------
+
+import { parsePeopleJobs } from '../lib/excel-master-tables';
+import { randomUUID } from 'node:crypto';
+
+excelImportRouter.post(
+  '/people-jobs',
+  upload.single('file'),
+  async (req, res, next) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
+      const dryRun = String(req.query.dryRun ?? '') === '1';
+      const parsed = parsePeopleJobs(req.file.buffer);
+
+      const summary = {
+        subcontractors: { parsed: parsed.subcontractors.length, written: 0, skipped: 0 },
+        employees: { parsed: parsed.employees.length, written: 0, skipped: 0 },
+        jobs: { parsed: parsed.jobs.length, written: 0, skipped: 0 },
+        warnings: parsed.warnings,
+        dryRun,
+      };
+
+      if (dryRun) {
+        return res.json({
+          summary,
+          sample: {
+            subcontractor: parsed.subcontractors[0],
+            employee: parsed.employees[0],
+            job: parsed.jobs[0],
+          },
+        });
+      }
+
+      const co = companyId();
+
+      // Subcontractors → Vendor (kind=SUBCONTRACTOR). Dedupe by legalName.
+      for (const s of parsed.subcontractors) {
+        // The Vendor model stores everything in a Json `data` blob.
+        const existing = await prisma.vendor.findFirst({
+          where: { companyId: co, deletedAt: null },
+        });
+        // For dedupe we need to scan data.legalName ourselves.
+        const allVendors = await prisma.vendor.findMany({
+          where: { companyId: co, deletedAt: null },
+        });
+        const match = allVendors.find((v) => {
+          const data = v.data as { legalName?: string } | null;
+          return data?.legalName === s.name;
+        });
+        const data = {
+          legalName: s.name,
+          dbaName: s.name,
+          kind: 'SUBCONTRACTOR',
+          contactName: s.contactName,
+          phone: s.phone,
+          email: s.email,
+          tradeSpecialty: s.trade,
+          licenseNumber: s.license,
+          notes: [s.rateNotes, s.status ? `Status: ${s.status}` : null]
+            .filter(Boolean)
+            .join('\n') || undefined,
+          is1099Reportable: true,
+          paymentTerms: 'NET_30',
+        };
+        if (match) {
+          await prisma.vendor.update({
+            where: { id: match.id },
+            data: { data: { ...(match.data as object), ...data } },
+          });
+        } else {
+          await prisma.vendor.create({
+            data: {
+              id: 'vnd-' + randomUUID().replace(/-/g, '').slice(0, 12),
+              companyId: co,
+              data,
+            },
+          });
+        }
+        summary.subcontractors.written++;
+      }
+
+      // Employees. Dedupe by (firstName, lastName).
+      for (const e of parsed.employees) {
+        const existing = await prisma.employee.findFirst({
+          where: {
+            companyId: co,
+            firstName: e.firstName,
+            lastName: e.lastName,
+            deletedAt: null,
+          },
+        });
+        const data = {
+          laborCostCode: e.laborCostCode,
+          phone: e.phone,
+          email: e.email,
+          notes: e.notes,
+        };
+        if (existing) {
+          await prisma.employee.update({
+            where: { id: existing.id },
+            data: {
+              classification: e.classification ?? existing.classification,
+              status: e.active ? 'ACTIVE' : 'TERMINATED',
+              data,
+            },
+          });
+        } else {
+          await prisma.employee.create({
+            data: {
+              companyId: co,
+              firstName: e.firstName,
+              lastName: e.lastName,
+              hireDate: new Date(),
+              classification: e.classification ?? 'Unknown',
+              status: e.active ? 'ACTIVE' : 'TERMINATED',
+              data,
+            },
+          });
+        }
+        summary.employees.written++;
+      }
+
+      // Jobs. Dedupe by jobNumber.
+      function mapStatus(s: string | null): 'BIDDING' | 'AWARDED' | 'ACTIVE' | 'ON_HOLD' | 'CLOSED' | 'LOST' {
+        switch ((s ?? '').toLowerCase().replace(/\s+/g, '_')) {
+          case 'bidding':
+          case 'pursuing':
+          case 'submitted':
+          case 'bid_submitted':
+            return 'BIDDING';
+          case 'awarded':
+            return 'AWARDED';
+          case 'active':
+          case 'in_progress':
+            return 'ACTIVE';
+          case 'on_hold':
+            return 'ON_HOLD';
+          case 'lost':
+            return 'LOST';
+          case 'archived':
+          case 'closed':
+            return 'CLOSED';
+          default:
+            return 'BIDDING';
+        }
+      }
+      function mapRateType(s: string | null): 'PW' | 'PRIVATE' {
+        const v = (s ?? '').toLowerCase();
+        return v.includes('priv') ? 'PRIVATE' : 'PW';
+      }
+      for (const j of parsed.jobs) {
+        const existing = await prisma.job.findFirst({
+          where: { companyId: co, jobNumber: j.jobNumber, deletedAt: null },
+        });
+        const data = {
+          client: j.client,
+          address: j.address,
+          budgetLaborCents: j.budgetLaborCents,
+          budgetMaterialsCents: j.budgetMaterialsCents,
+          budgetEquipmentCents: j.budgetEquipmentCents,
+          budgetSubsCents: j.budgetSubsCents,
+          budgetOtherCents: j.budgetOtherCents,
+          totalBudgetCents: j.totalBudgetCents,
+          importedFromExcel: true,
+        };
+        const dbStatus = mapStatus(j.status);
+        const rateType = mapRateType(j.rateType);
+        const estStart = j.startDate ? new Date(j.startDate) : null;
+        if (existing) {
+          await prisma.job.update({
+            where: { id: existing.id },
+            data: {
+              name: j.name,
+              status: dbStatus,
+              rateType,
+              estStart,
+              data: { ...(existing.data as object), ...data },
+            },
+          });
+        } else {
+          await prisma.job.create({
+            data: {
+              companyId: co,
+              jobNumber: j.jobNumber,
+              name: j.name,
+              status: dbStatus,
+              rateType,
+              estStart,
+              data,
+            },
+          });
+        }
+        summary.jobs.written++;
+      }
+
+      res.json({ summary });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
