@@ -1,3 +1,4 @@
+import { isNextInternalError } from '../lib/next-control-flow';
 import * as React from 'react';
 // Dashboard tile — customer revenue concentration for the current year.
 //
@@ -135,6 +136,7 @@ export async function CustomerConcentrationTile(): Promise<React.ReactElement | 
   try {
     return await CustomerConcentrationTileInner();
   } catch (err) {
+    if (isNextInternalError(err)) throw err;
     console.error('[CustomerConcentrationTile] render failed:', err);
     return null;
   }

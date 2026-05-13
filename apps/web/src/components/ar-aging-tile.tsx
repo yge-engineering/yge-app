@@ -1,3 +1,4 @@
+import { isNextInternalError } from '../lib/next-control-flow';
 import * as React from 'react';
 // AR aging snapshot tile — at-a-glance "what's overdue."
 //
@@ -106,6 +107,7 @@ export async function ArAgingTile(): Promise<React.ReactElement | null> {
   try {
     return await ArAgingTileInner();
   } catch (err) {
+    if (isNextInternalError(err)) throw err;
     console.error('[ArAgingTile] render failed:', err);
     return null;
   }

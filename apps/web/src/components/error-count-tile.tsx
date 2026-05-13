@@ -1,3 +1,4 @@
+import { isNextInternalError } from '../lib/next-control-flow';
 import * as React from 'react';
 // Dashboard error-count tile.
 //
@@ -83,6 +84,7 @@ export async function ErrorCountTile(): Promise<React.ReactElement | null> {
   try {
     return await ErrorCountTileInner();
   } catch (err) {
+    if (isNextInternalError(err)) throw err;
     console.error('[ErrorCountTile] render failed:', err);
     return null;
   }

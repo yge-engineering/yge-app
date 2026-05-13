@@ -1,3 +1,4 @@
+import { isNextInternalError } from '../lib/next-control-flow';
 import * as React from 'react';
 // Dashboard tile — 1099-NEC readiness for the current calendar year.
 //
@@ -105,6 +106,7 @@ export async function Tax1099ReadinessTile(): Promise<React.ReactElement | null>
   try {
     return await Tax1099ReadinessTileInner();
   } catch (err) {
+    if (isNextInternalError(err)) throw err;
     console.error('[Tax1099ReadinessTile] render failed:', err);
     return null;
   }

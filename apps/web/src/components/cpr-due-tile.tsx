@@ -1,3 +1,4 @@
+import { isNextInternalError } from '../lib/next-control-flow';
 import * as React from 'react';
 // Dashboard tile — which prevailing-wage jobs need a CPR filed.
 //
@@ -153,6 +154,7 @@ export async function CprDueTile(): Promise<React.ReactElement | null> {
   try {
     return await CprDueTileInner();
   } catch (err) {
+    if (isNextInternalError(err)) throw err;
     console.error('[CprDueTile] render failed:', err);
     return null;
   }

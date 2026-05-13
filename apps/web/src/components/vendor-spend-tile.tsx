@@ -1,3 +1,4 @@
+import { isNextInternalError } from '../lib/next-control-flow';
 import * as React from 'react';
 // Dashboard tile — vendor spend snapshot for the current calendar year.
 //
@@ -128,6 +129,7 @@ export async function VendorSpendTile(): Promise<React.ReactElement | null> {
   try {
     return await VendorSpendTileInner();
   } catch (err) {
+    if (isNextInternalError(err)) throw err;
     console.error('[VendorSpendTile] render failed:', err);
     return null;
   }

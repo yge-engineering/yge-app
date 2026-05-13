@@ -1,3 +1,4 @@
+import { isNextInternalError } from '../lib/next-control-flow';
 import * as React from 'react';
 // Dashboard tile — count of external portal users by role.
 
@@ -90,6 +91,7 @@ export async function ExternalPortalTile(): Promise<React.ReactElement | null> {
   try {
     return await ExternalPortalTileInner();
   } catch (err) {
+    if (isNextInternalError(err)) throw err;
     console.error('[ExternalPortalTile] render failed:', err);
     return null;
   }

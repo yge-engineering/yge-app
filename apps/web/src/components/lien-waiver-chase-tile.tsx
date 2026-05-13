@@ -1,3 +1,4 @@
+import { isNextInternalError } from '../lib/next-control-flow';
 import * as React from 'react';
 // Dashboard tile — lien-waiver chase summary.
 //
@@ -113,6 +114,7 @@ export async function LienWaiverChaseTile(): Promise<React.ReactElement | null> 
   try {
     return await LienWaiverChaseTileInner();
   } catch (err) {
+    if (isNextInternalError(err)) throw err;
     console.error('[LienWaiverChaseTile] render failed:', err);
     return null;
   }

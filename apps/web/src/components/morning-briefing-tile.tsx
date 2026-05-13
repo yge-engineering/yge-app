@@ -1,3 +1,4 @@
+import { isNextInternalError } from '../lib/next-control-flow';
 import * as React from 'react';
 // Dashboard tile — morning-briefing headlines preview.
 //
@@ -101,6 +102,7 @@ export async function MorningBriefingTile(): Promise<React.ReactElement | null> 
   try {
     return await MorningBriefingTileInner();
   } catch (err) {
+    if (isNextInternalError(err)) throw err;
     console.error('[MorningBriefingTile] render failed:', err);
     return null;
   }

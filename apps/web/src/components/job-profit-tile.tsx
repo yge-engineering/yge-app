@@ -1,3 +1,4 @@
+import { isNextInternalError } from '../lib/next-control-flow';
 import * as React from 'react';
 // Dashboard tile — job profitability watch.
 
@@ -129,6 +130,7 @@ export async function JobProfitTile(): Promise<React.ReactElement | null> {
   try {
     return await JobProfitTileInner();
   } catch (err) {
+    if (isNextInternalError(err)) throw err;
     console.error('[JobProfitTile] render failed:', err);
     return null;
   }

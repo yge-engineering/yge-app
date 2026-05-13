@@ -1,3 +1,4 @@
+import { isNextInternalError } from '../lib/next-control-flow';
 import * as React from 'react';
 // Dashboard tile — month-end close progress at a glance.
 
@@ -144,6 +145,7 @@ export async function CloseProgressTile(): Promise<React.ReactElement | null> {
   try {
     return await CloseProgressTileInner();
   } catch (err) {
+    if (isNextInternalError(err)) throw err;
     console.error('[CloseProgressTile] render failed:', err);
     return null;
   }

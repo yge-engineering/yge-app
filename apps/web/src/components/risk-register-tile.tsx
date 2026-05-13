@@ -1,3 +1,4 @@
+import { isNextInternalError } from '../lib/next-control-flow';
 import * as React from 'react';
 // Dashboard tile — overall risk-register summary.
 //
@@ -158,6 +159,7 @@ export async function RiskRegisterTile(): Promise<React.ReactElement | null> {
   try {
     return await RiskRegisterTileInner();
   } catch (err) {
+    if (isNextInternalError(err)) throw err;
     console.error('[RiskRegisterTile] render failed:', err);
     return null;
   }
