@@ -36,6 +36,11 @@ const GROUPS: ReportGroup[] = [
         blurb: 'Yard-meet brief — headlines + reports + dispatches + safety + AR.',
       },
       {
+        href: '/inbox-triage',
+        label: 'Inbox triage',
+        blurb: 'AI classifies your last 25 Outlook emails into 10 categories. One-click Draft AP on vendor bills.',
+      },
+      {
         href: '/risk-register',
         label: 'Risk register',
         blurb: 'One page rolling up concentration / tax / COI / AR / cash.',
