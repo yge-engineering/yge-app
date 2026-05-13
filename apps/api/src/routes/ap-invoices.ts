@@ -1,3 +1,4 @@
+import { z } from 'zod';
 // AP invoice routes — vendor bills.
 
 import { Router } from 'express';
@@ -20,6 +21,8 @@ import {
   updateApInvoice,
 } from '../lib/ap-invoices-store';
 import { maybeCsv } from '../lib/csv-response';
+import { graphGet, graphGetBinary, isMicrosoftConfigured } from '../lib/microsoft-graph';
+import { extractInvoiceFromPdf } from '../lib/ap-invoice-extractor';
 
 export const apInvoicesRouter = Router();
 
@@ -262,3 +265,147 @@ apInvoicesRouter.post('/:id/reject', async (req, res, next) => {
     next(err);
   }
 });
+
+// POST /api/ap-invoices/draft-from-email — one-click convert an
+// inbox-triage VENDOR_BILL email into a DRAFT AP invoice. Pulls
+// the email body + PDF attachments via Microsoft Graph, runs the
+// existing AI extractor on the PDF (if present), creates the draft.
+//
+// Request body: { email, messageId }
+// Response: { invoice }
+apInvoicesRouter.post('/draft-from-email', async (req, res, next) => {
+  try {
+    if (!isMicrosoftConfigured()) {
+      return res.status(503).json({ error: 'Microsoft Graph not configured' });
+    }
+    const Body = z.object({
+      email: z.string().email(),
+      messageId: z.string().min(1).max(500),
+    });
+    const parsed = Body.safeParse(req.body);
+    if (!parsed.success) {
+      return res
+        .status(400)
+        .json({ error: 'Validation failed', issues: parsed.error.issues });
+    }
+    const { email, messageId } = parsed.data;
+
+    // Fetch the message metadata.
+    interface GraphMsg {
+      id: string;
+      subject?: string;
+      bodyPreview?: string;
+      receivedDateTime?: string;
+      hasAttachments?: boolean;
+      webLink?: string;
+      from?: { emailAddress?: { name?: string; address?: string } };
+    }
+    const msg = await graphGet<GraphMsg>(
+      email,
+      `/me/messages/${encodeURIComponent(messageId)}?$select=id,subject,bodyPreview,receivedDateTime,hasAttachments,webLink,from`,
+    );
+
+    // Fetch + scan attachments for the first PDF.
+    interface GraphAttachment {
+      id: string;
+      name: string;
+      contentType: string;
+      size: number;
+      '@odata.type': string;
+    }
+    let pdfBytes: Buffer | null = null;
+    let pdfName: string | null = null;
+    if (msg.hasAttachments) {
+      try {
+        const list = await graphGet<{ value: GraphAttachment[] }>(
+          email,
+          `/me/messages/${encodeURIComponent(messageId)}/attachments?$select=id,name,contentType,size`,
+        );
+        const pdf = list.value.find(
+          (a) =>
+            a.contentType?.toLowerCase().includes('pdf') ||
+            a.name?.toLowerCase().endsWith('.pdf'),
+        );
+        if (pdf) {
+          const bin = await graphGetBinary(
+            email,
+            `/me/messages/${encodeURIComponent(messageId)}/attachments/${pdf.id}/$value`,
+          );
+          pdfBytes = Buffer.from(bin.bytes);
+          pdfName = pdf.name;
+        }
+      } catch {
+        // Don't let an attachment failure block the draft.
+      }
+    }
+
+    // Run AI extraction on the PDF if we got one.
+    let extracted: Awaited<ReturnType<typeof extractInvoiceFromPdf>> = null;
+    if (pdfBytes) {
+      extracted = await extractInvoiceFromPdf(pdfBytes);
+    }
+
+    const senderVendor =
+      msg.from?.emailAddress?.name ??
+      msg.from?.emailAddress?.address ??
+      'Unknown vendor';
+    const subject = (msg.subject ?? '(no subject)').slice(0, 200);
+    const todayIso = new Date().toISOString().slice(0, 10);
+
+    const noteParts = [
+      extracted
+        ? `AI extraction (${extracted.promptVersion}, confidence ${extracted.confidence})`
+        : pdfBytes
+          ? 'AI extraction failed — review attachment manually.'
+          : 'No PDF attachment found in this email.',
+      extracted?.extractionNotes ? `Reviewer note: ${extracted.extractionNotes}` : null,
+      `From: ${senderVendor}`,
+      msg.receivedDateTime ? `Received: ${msg.receivedDateTime}` : null,
+      msg.subject ? `Subject: ${msg.subject}` : null,
+      pdfName ? `Attachment: ${pdfName}` : null,
+      msg.webLink ? `Open in Outlook: ${msg.webLink}` : null,
+      msg.bodyPreview ? `\nPreview:\n${msg.bodyPreview.slice(0, 500)}` : null,
+    ].filter((x): x is string => x !== null);
+
+    const vendor = extracted?.vendorName ?? senderVendor;
+    const lineItems = (extracted?.lineItems ?? []).map((li) => ({
+      description: li.description,
+      ...(li.unit ? { unit: li.unit } : {}),
+      quantity: li.quantity,
+      unitPriceCents: li.unitPriceCents,
+      lineTotalCents: li.lineTotalCents,
+    }));
+
+    const invoice = await createApInvoice(
+      {
+        vendorName: vendor,
+        ...(extracted?.invoiceNumber ? { invoiceNumber: extracted.invoiceNumber } : {}),
+        invoiceDate: extracted?.invoiceDate ?? todayIso,
+        ...(extracted?.dueDate ? { dueDate: extracted.dueDate } : {}),
+        ...(extracted?.subtotalCents !== undefined
+          ? { subtotalCents: extracted.subtotalCents }
+          : {}),
+        ...(extracted?.taxCents !== undefined ? { taxCents: extracted.taxCents } : {}),
+        ...(extracted?.freightCents !== undefined
+          ? { freightCents: extracted.freightCents }
+          : {}),
+        ...(extracted?.totalCents !== undefined
+          ? { totalCents: extracted.totalCents }
+          : {}),
+        lineItems,
+        status: 'DRAFT',
+        notes: noteParts.join('\n'),
+      },
+      // No audit ctx — the human review will record the eventual approval.
+    );
+
+    res.json({
+      invoice,
+      aiExtracted: extracted !== null,
+      ...(extracted ? { confidence: extracted.confidence } : {}),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
