@@ -1,3 +1,4 @@
+// 1836: notes badge already handles [Submitted ...]. [PINNED] is handled in list cards.
 // Renders notes text with [Submitted ...] markers highlighted as
 // green badges.
 
