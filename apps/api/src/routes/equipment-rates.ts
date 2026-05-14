@@ -1,6 +1,7 @@
 // Equipment rates master routes — owned + rental rate book.
 
 import { Router } from 'express';
+import { prisma } from '@yge/db';
 import {
   EquipmentRateCreateSchema,
   EquipmentRateKindSchema,
@@ -15,6 +16,83 @@ import {
 } from '../lib/equipment-rates-store';
 
 export const equipmentRatesRouter = Router();
+
+equipmentRatesRouter.get('/usage', async (_req, res, next) => {
+  try {
+    const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+
+    interface Row {
+      code: string;
+      description: string;
+      bidHours: number;
+      bidCents: number;
+      actHours: number;
+      actCents: number;
+      varianceCents: number;
+      jobs: Set<string>;
+    }
+    const map = new Map<string, Row>();
+    function ensure(code: string, description: string): Row {
+      const k = code.toUpperCase();
+      let r = map.get(k);
+      if (!r) {
+        r = {
+          code: k,
+          description: description || k,
+          bidHours: 0, bidCents: 0,
+          actHours: 0, actCents: 0,
+          varianceCents: 0,
+          jobs: new Set<string>(),
+        };
+        map.set(k, r);
+      }
+      return r;
+    }
+
+    // Bid side: imported estimate lines with cost codes starting with EQP-.
+    const ies = await prisma.importedEstimate.findMany({ where: { companyId, deletedAt: null } });
+    for (const ie of ies) {
+      const d = ie.data as { jobId?: string; jobNumber?: string; lines?: Array<{ costCode?: string; description?: string; quantity?: number; totalCostCents?: number }> } | null;
+      const job = d?.jobNumber ?? '';
+      for (const ln of d?.lines ?? []) {
+        const code = (ln.costCode ?? '').trim().toUpperCase();
+        if (!code.startsWith('EQP-')) continue;
+        const r = ensure(code, ln.description ?? '');
+        r.bidHours += ln.quantity ?? 0;
+        r.bidCents += ln.totalCostCents ?? 0;
+        if (job) r.jobs.add(job);
+      }
+    }
+
+    // Actual side: daily report lines with EQP- codes.
+    const reports = await prisma.dailyReport.findMany({ where: { companyId, deletedAt: null } });
+    for (const rep of reports) {
+      const d = rep.data as { lines?: Array<{ costCode?: string | null; description?: string | null; qtyHrs?: number | null; totalCostCents?: number | null; jobNumber?: string | null }> } | null;
+      for (const ln of d?.lines ?? []) {
+        const code = (ln.costCode ?? '').trim().toUpperCase();
+        if (!code.startsWith('EQP-')) continue;
+        const r = ensure(code, ln.description ?? '');
+        r.actHours += ln.qtyHrs ?? 0;
+        r.actCents += ln.totalCostCents ?? 0;
+        if (ln.jobNumber) r.jobs.add(ln.jobNumber);
+      }
+    }
+
+    const rows = [...map.values()].map((r) => ({
+      code: r.code,
+      description: r.description,
+      bidHours: r.bidHours,
+      bidCents: r.bidCents,
+      actHours: r.actHours,
+      actCents: r.actCents,
+      varianceCents: r.bidCents - r.actCents,
+      jobs: [...r.jobs],
+    }));
+    rows.sort((a, b) => (b.bidCents + b.actCents) - (a.bidCents + a.actCents));
+
+    res.json({ rows });
+  } catch (err) { next(err); }
+});
 
 equipmentRatesRouter.get('/', async (req, res, next) => {
   try {
