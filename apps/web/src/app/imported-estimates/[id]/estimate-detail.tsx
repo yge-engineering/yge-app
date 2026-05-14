@@ -283,6 +283,30 @@ export function EstimateDetail({ initial, costCodes }: Props) {
   }
 
 
+  const [convertingToJob, setConvertingToJob] = useState(false);
+  const [convertError, setConvertError] = useState<string | null>(null);
+
+  async function createJobFromEstimate() {
+    if (!confirm('Create a new job linked to this estimate?')) return;
+    setConvertingToJob(true);
+    setConvertError(null);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/imported-estimates/${estimate.id}/convert-to-job`, {
+        method: 'POST',
+      });
+      const body = (await res.json()) as { job?: { id: string }; error?: string };
+      if (!res.ok || !body.job) {
+        setConvertError(body.error ?? `Failed (${res.status})`);
+        return;
+      }
+      router.push(`/jobs/${body.job.id}`);
+    } catch (err) {
+      setConvertError((err as Error).message);
+    } finally {
+      setConvertingToJob(false);
+    }
+  }
+
   async function performClone() {
     if (!cloneJobNumber.trim() || !cloneProjectName.trim()) {
       setCloneError('Job # and Project name are required');
@@ -320,10 +344,23 @@ export function EstimateDetail({ initial, costCodes }: Props) {
           <Link href="/imported-estimates" className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50">
             ← All imported estimates
           </Link>
-          {estimate.jobId && (
+          {estimate.jobId ? (
             <Link href={`/jobs/${estimate.jobId}`} className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50">
               View linked Job →
             </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={() => void createJobFromEstimate()}
+              disabled={convertingToJob}
+              className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-700 hover:bg-yge-blue-50 disabled:opacity-50"
+              title="Create a Job linked to this estimate"
+            >
+              {convertingToJob ? 'Creating job…' : 'Create job from estimate'}
+            </button>
+          )}
+          {convertError && (
+            <span className="text-xs text-red-700">{convertError}</span>
           )}
         </div>
         <div className="flex items-center gap-2">

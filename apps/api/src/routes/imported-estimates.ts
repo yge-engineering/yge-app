@@ -12,6 +12,7 @@ import {
   listImportedEstimates,
   updateImportedEstimate,
 } from '../lib/imported-estimates-store';
+import { createJob } from '../lib/jobs-store';
 
 function newSnapshotId(): string {
   const hex = Math.floor(Math.random() * 0x100000000).toString(16);
@@ -135,6 +136,26 @@ importedEstimatesRouter.post('/:id/restore/:snapshotId', async (req, res, next) 
       snapshots: [...(ie.snapshots ?? []), autoSnap],
     });
     res.json({ importedEstimate: updated, restoredFrom: snap.id, autoSnapshot: autoSnap.id });
+  } catch (err) { next(err); }
+});
+
+importedEstimatesRouter.post('/:id/convert-to-job', async (req, res, next) => {
+  try {
+    const ie = await getImportedEstimate(req.params.id);
+    if (!ie) return res.status(404).json({ error: 'Imported estimate not found' });
+    if (ie.jobId) return res.status(409).json({ error: 'Estimate is already linked to a job', jobId: ie.jobId });
+
+    const job = await createJob({
+      projectName: ie.projectName,
+      projectType: 'OTHER',
+      contractType: 'OTHER',
+      status: 'PURSUING',
+      ownerAgency: ie.client,
+      notes: `Created from imported estimate ${ie.jobNumber} — ${ie.projectName}`,
+    });
+
+    const updated = await updateImportedEstimate(ie.id, { jobId: job.id });
+    res.status(201).json({ job, importedEstimate: updated });
   } catch (err) { next(err); }
 });
 
