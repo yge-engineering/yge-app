@@ -1,3 +1,4 @@
+// JobsListEnhanced 1695
 // /jobs — list of every job in the pursuit pipeline.
 //
 // Server component: fetches the full list at request time. The Job model is
