@@ -55,6 +55,51 @@ importedDailyReportsRouter.get('/range', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+importedDailyReportsRouter.get('/export.csv', async (_req, res, next) => {
+  try {
+    const co = companyId();
+    const rows = await prisma.dailyReport.findMany({
+      where: { companyId: co, deletedAt: null },
+      orderBy: { reportDate: 'desc' },
+    });
+    const jobIds = [...new Set(rows.map((r) => r.jobId))];
+    const jobs = await prisma.job.findMany({ where: { id: { in: jobIds } } });
+    const jobByid = new Map(jobs.map((j) => [j.id, j]));
+
+    function esc(v: unknown): string {
+      if (v === null || v === undefined) return '';
+      const x = String(v);
+      if (x.includes(',') || x.includes('"') || x.includes('\n')) return '"' + x.replace(/"/g, '""') + '"';
+      return x;
+    }
+    const lines: string[] = [];
+    lines.push('date,jobNumber,jobName,category,costCode,description,qtyHrs,unit,rate,totalCost,employeeVendor,notes');
+    for (const r of rows) {
+      const job = jobByid.get(r.jobId);
+      const d = r.data as { lines?: Array<{ category?: string | null; costCode?: string | null; description?: string | null; qtyHrs?: number | null; unit?: string | null; rateCents?: number | null; totalCostCents?: number | null; employeeVendor?: string | null; notes?: string | null }> } | null;
+      for (const ln of d?.lines ?? []) {
+        lines.push([
+          esc(r.reportDate),
+          esc(job?.jobNumber ?? ''),
+          esc(job?.name ?? ''),
+          esc(ln.category ?? ''),
+          esc(ln.costCode ?? ''),
+          esc(ln.description ?? ''),
+          esc(ln.qtyHrs ?? ''),
+          esc(ln.unit ?? ''),
+          esc(((ln.rateCents ?? 0) / 100).toFixed(2)),
+          esc(((ln.totalCostCents ?? 0) / 100).toFixed(2)),
+          esc(ln.employeeVendor ?? ''),
+          esc(ln.notes ?? ''),
+        ].join(','));
+      }
+    }
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="daily-reports-all.csv"');
+    res.send(lines.join('\n'));
+  } catch (err) { next(err); }
+});
+
 importedDailyReportsRouter.get('/today', async (_req, res, next) => {
   try {
     const co = companyId();
