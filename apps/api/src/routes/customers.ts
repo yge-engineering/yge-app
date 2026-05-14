@@ -1,6 +1,7 @@
 // Customer master routes.
 
 import { Router } from 'express';
+import { prisma } from '@yge/db';
 import {
   CustomerCreateSchema,
   CustomerPatchSchema,
@@ -41,6 +42,83 @@ customersRouter.get('/', async (req, res, next) => {
   } catch (err) {
     next(err);
   }
+});
+
+customersRouter.get('/:id/rollup', async (req, res, next) => {
+  try {
+    const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+    const cusId = req.params.id;
+
+    const jobs = await prisma.job.findMany({
+      where: { companyId, customerId: cusId, deletedAt: null },
+      orderBy: { createdAt: 'desc' },
+    });
+    const jobIds = jobs.map((j) => j.id);
+
+    const ies = await prisma.importedEstimate.findMany({
+      where: { companyId, deletedAt: null },
+    });
+    const linkedEstimates = ies.filter((ie) => {
+      const d = ie.data as { jobId?: string } | null;
+      return d?.jobId && jobIds.includes(d.jobId);
+    });
+
+    const results = await prisma.bidResult.findMany({ where: { companyId, deletedAt: null } });
+    const myResults = results.filter((r) => {
+      const d = r.data as { jobId?: string } | null;
+      return d?.jobId && jobIds.includes(d.jobId);
+    });
+
+    let won = 0;
+    let lost = 0;
+    let tbd = 0;
+    let noAward = 0;
+    for (const r of myResults) {
+      const d = r.data as { outcome?: string } | null;
+      switch (d?.outcome) {
+        case 'WON_BY_YGE': won += 1; break;
+        case 'WON_BY_OTHER': lost += 1; break;
+        case 'NO_AWARD': noAward += 1; break;
+        default: tbd += 1;
+      }
+    }
+    const total = myResults.length;
+    const winRate = total > 0 ? won / total : 0;
+
+    // Revenue: sum of bidPriceCents on imported estimates linked to AWARDED jobs.
+    let revenueCents = 0;
+    for (const ie of linkedEstimates) {
+      const d = ie.data as { jobId?: string; bidPriceCents?: number } | null;
+      if (!d?.jobId || !d.bidPriceCents) continue;
+      const j = jobs.find((jj) => jj.id === d.jobId);
+      if (j && (j.status === 'AWARDED' || j.status === 'ACTIVE' || j.status === 'CLOSED')) {
+        revenueCents += d.bidPriceCents;
+      }
+    }
+
+    res.json({
+      jobs: jobs.map((j) => ({
+        id: j.id,
+        jobNumber: j.jobNumber,
+        name: j.name,
+        status: j.status,
+        createdAt: j.createdAt.toISOString(),
+      })),
+      importedEstimates: linkedEstimates.map((ie) => {
+        const d = ie.data as { projectName?: string; jobId?: string; bidPriceCents?: number; directCostCents?: number } | null;
+        return {
+          id: ie.id,
+          jobNumber: ie.jobNumber,
+          projectName: d?.projectName ?? '',
+          jobId: d?.jobId ?? null,
+          bidPriceCents: d?.bidPriceCents ?? 0,
+          directCostCents: d?.directCostCents ?? 0,
+        };
+      }),
+      bidStats: { total, won, lost, noAward, tbd, winRate },
+      revenueCents,
+    });
+  } catch (err) { next(err); }
 });
 
 customersRouter.get('/:id', async (req, res, next) => {

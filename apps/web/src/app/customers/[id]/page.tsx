@@ -6,6 +6,7 @@ import { AppShell, AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import { customerDisplayName, type Customer } from '@yge/shared';
 import { CustomerEditor } from '../../../components/customer-editor';
+import { CustomerRollupPanel } from '../../../components/customer-rollup-panel';
 import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
@@ -46,6 +47,11 @@ export default async function CustomerDetailPage({
       <p className="mt-1 text-xs text-gray-500">{t('customerDetail.idLine', { id: customer.id })}</p>
       <div className="mt-6">
         <CustomerEditor mode="edit" customer={customer} />
+      </div>
+
+      <div className="mt-8">
+        <h2 className="mb-3 text-lg font-semibold text-gray-900">Jobs & estimates</h2>
+        <CustomerRollupPanel customerId={customer.id} />
       </div>
 
       <AuditBinderPanel entityType="Customer" entityId={customer.id} />
