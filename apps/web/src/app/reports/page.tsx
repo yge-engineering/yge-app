@@ -22,6 +22,27 @@ interface ReportGroup {
 
 const GROUPS: ReportGroup[] = [
   {
+    title: 'Touchpoints & alerts',
+    caption: 'Where to look first to find risk or untapped opportunity.',
+    links: [
+      {
+        href: '/customers/touchpoints',
+        label: 'Customer dormancy',
+        blurb: 'Customers we haven\'t engaged with in months, sorted dormant-first.',
+      },
+      {
+        href: '/admin/data-health',
+        label: 'Data health',
+        blurb: 'Record counts per entity — quickly spot wiped master tables.',
+      },
+      {
+        href: '/vendors',
+        label: 'Vendor / sub COI aging',
+        blurb: 'Subs with expired or expiring certificates of insurance.',
+      },
+    ],
+  },
+  {
     title: 'Estimating & pipeline',
     caption: 'Pursue, price, win — Excel-backed bids and analytics.',
     links: [
