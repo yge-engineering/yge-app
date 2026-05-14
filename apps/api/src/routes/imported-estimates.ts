@@ -111,6 +111,23 @@ importedEstimatesRouter.get('/export.csv', async (_req, res, next) => {
   } catch (err) { next(err); }
 });
 
+importedEstimatesRouter.get('/pinned-list', async (_req, res, next) => {
+  try {
+    const all = await listImportedEstimates();
+    const pinned = all.filter((ie) => (ie.notes ?? '').startsWith('[PINNED]'));
+    res.json({
+      total: pinned.length,
+      estimates: pinned.map((ie) => ({
+        id: ie.id,
+        jobNumber: ie.jobNumber,
+        projectName: ie.projectName,
+        bidPriceCents: ie.bidPriceCents,
+        client: ie.client,
+      })),
+    });
+  } catch (err) { next(err); }
+});
+
 importedEstimatesRouter.get('/submitted-list', async (_req, res, next) => {
   try {
     const all = await listImportedEstimates();
