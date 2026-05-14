@@ -6,6 +6,9 @@
 // stores in one transaction.
 
 import { Router } from 'express';
+import multer from 'multer';
+
+const bidUpload = multer({ limits: { fileSize: 5 * 1024 * 1024 } });
 import { prisma } from '@yge/db';
 import {
   BidResultCreateSchema,
@@ -38,6 +41,158 @@ async function maybeAdvanceJobStatus(
     await updateJob(jobId, { status: 'LOST' });
   }
 }
+
+bidResultsRouter.post('/import-csv', bidUpload.single('file'), async (req, res, next) => {
+  try {
+    const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+    const dryRun = String(req.query.dryRun ?? '') === '1';
+
+    function parseCsv(s: string): string[][] {
+      const rows: string[][] = [];
+      let row: string[] = [];
+      let cell = '';
+      let inQ = false;
+      for (let i = 0; i < s.length; i++) {
+        const c = s[i];
+        if (inQ) {
+          if (c === '"' && s[i + 1] === '"') { cell += '"'; i += 1; }
+          else if (c === '"') { inQ = false; }
+          else { cell += c; }
+        } else {
+          if (c === '"') { inQ = true; }
+          else if (c === ',') { row.push(cell); cell = ''; }
+          else if (c === '\n' || c === '\r') {
+            if (c === '\r' && s[i + 1] === '\n') i += 1;
+            row.push(cell); cell = '';
+            if (row.some((x) => x.length > 0)) rows.push(row);
+            row = [];
+          } else { cell += c; }
+        }
+      }
+      if (cell.length > 0 || row.length > 0) {
+        row.push(cell);
+        if (row.some((x) => x.length > 0)) rows.push(row);
+      }
+      return rows;
+    }
+
+    const rows = parseCsv(req.file.buffer.toString('utf8'));
+    if (rows.length === 0) return res.status(400).json({ error: 'CSV is empty' });
+    const header = (rows[0] ?? []).map((h) => h.trim());
+    const idx = (col: string) => header.indexOf(col);
+
+    const iJobNumber = idx('jobNumber');
+    const iBidOpenedAt = idx('bidOpenedAt');
+    const iOutcome = idx('outcome');
+    const iBidderName = idx('bidderName');
+    const iBidderAmount = idx('bidderAmount');
+    const iBidderIsYge = idx('bidderIsYge');
+    const iBidderNotes = idx('bidderNotes');
+    if (iJobNumber < 0 || iBidOpenedAt < 0 || iBidderName < 0 || iBidderAmount < 0) {
+      return res.status(400).json({ error: 'CSV must have jobNumber, bidOpenedAt, bidderName, bidderAmount columns' });
+    }
+
+    const jobs = await prisma.job.findMany({ where: { companyId, deletedAt: null } });
+    const jobByNumber = new Map(jobs.map((j) => [j.jobNumber, j]));
+
+    // Group bidders by (jobNumber, bidOpenedAt).
+    interface Group { jobNumber: string; bidOpenedAt: string; outcome: string; bidders: Array<{ name: string; amountCents: number; isYge: boolean; notes?: string }> }
+    const groups = new Map<string, Group>();
+    const errors: Array<{ row: number; reason: string }> = [];
+
+    for (let r = 1; r < rows.length; r++) {
+      const row = rows[r] ?? [];
+      const jobNumber = (row[iJobNumber] ?? '').trim();
+      const bidOpenedAt = (row[iBidOpenedAt] ?? '').trim();
+      const bidderName = (row[iBidderName] ?? '').trim();
+      const amountStr = (row[iBidderAmount] ?? '').trim();
+      const amount = Number(amountStr.replace(/[$,]/g, ''));
+      if (!jobNumber || !bidOpenedAt || !bidderName || !Number.isFinite(amount)) {
+        errors.push({ row: r + 1, reason: 'missing required cell' });
+        continue;
+      }
+      const outcome = iOutcome >= 0 ? (row[iOutcome] ?? '').trim() || 'TBD' : 'TBD';
+      const isYge = iBidderIsYge >= 0 ? (row[iBidderIsYge] ?? '').trim().toLowerCase() === 'true' : bidderName.toLowerCase().includes('young general');
+      const k = jobNumber + '|' + bidOpenedAt;
+      let g = groups.get(k);
+      if (!g) {
+        g = { jobNumber, bidOpenedAt, outcome, bidders: [] };
+        groups.set(k, g);
+      }
+      g.bidders.push({
+        name: bidderName,
+        amountCents: Math.round(amount * 100),
+        isYge,
+        notes: iBidderNotes >= 0 ? (row[iBidderNotes] ?? '').trim() || undefined : undefined,
+      });
+    }
+
+    const summary = {
+      groups: groups.size,
+      bidders: rows.length - 1,
+      created: 0,
+      updated: 0,
+      skipped: 0,
+      errors,
+      dryRun,
+    };
+
+    if (dryRun) {
+      return res.json({ summary });
+    }
+
+    for (const g of groups.values()) {
+      const job = jobByNumber.get(g.jobNumber);
+      if (!job) {
+        summary.errors.push({ row: 0, reason: `Job # ${g.jobNumber} not found` });
+        summary.skipped++;
+        continue;
+      }
+      g.bidders.sort((a, b) => a.amountCents - b.amountCents);
+      const data = {
+        id: '',
+        createdAt: '',
+        updatedAt: '',
+        jobId: job.id,
+        bidOpenedAt: g.bidOpenedAt,
+        outcome: g.outcome,
+        bidders: g.bidders,
+      };
+
+      // Match existing result by jobId + bidOpenedAt.
+      const all = await prisma.bidResult.findMany({ where: { companyId, deletedAt: null } });
+      const existing = all.find((r) => {
+        const rd = r.data as { jobId?: string; bidOpenedAt?: string } | null;
+        return rd?.jobId === job.id && rd?.bidOpenedAt === g.bidOpenedAt;
+      });
+
+      if (existing) {
+        const merged = { ...((existing.data as object) ?? {}), ...data, id: existing.id, createdAt: existing.createdAt.toISOString(), updatedAt: new Date().toISOString() };
+        await prisma.bidResult.update({
+          where: { id: existing.id },
+          data: { data: JSON.parse(JSON.stringify(merged)) },
+        });
+        summary.updated++;
+      } else {
+        const id = 'bid-result-' + Math.floor(Math.random() * 0x100000000).toString(16).padStart(8, '0');
+        const now = new Date().toISOString();
+        await prisma.bidResult.create({
+          data: {
+            id,
+            companyId,
+            jobId: job.id,
+            bidOpenedAt: g.bidOpenedAt,
+            data: JSON.parse(JSON.stringify({ ...data, id, createdAt: now, updatedAt: now })),
+          },
+        });
+        summary.created++;
+      }
+    }
+
+    res.json({ summary });
+  } catch (err) { next(err); }
+});
 
 bidResultsRouter.get('/export.csv', async (_req, res, next) => {
   try {
