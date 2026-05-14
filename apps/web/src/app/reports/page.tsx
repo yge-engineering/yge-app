@@ -129,6 +129,16 @@ const GROUPS: ReportGroup[] = [
         blurb: 'Every estimate imported from Excel, with audit-warning chips and bid-status badges.',
       },
       {
+        href: '/imported-estimates/pinned',
+        label: '📌 Pinned bids',
+        blurb: 'Only the bids you are actively working on.',
+      },
+      {
+        href: '/imported-estimates/submitted',
+        label: 'Submitted bids',
+        blurb: 'Bids marked submitted (timestamps captured).',
+      },
+      {
         href: '/imported-estimates/compare',
         label: 'Compare two bids',
         blurb: 'Side-by-side cost-code diff between any two imported estimates.',
