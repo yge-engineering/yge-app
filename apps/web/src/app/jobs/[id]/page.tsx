@@ -304,6 +304,14 @@ export default async function JobDetailPage({
             </Link>
           )}
           <Link
+            href={`/jobs/${job.id}/overview-print`}
+            className="rounded border border-yge-blue-500 px-3 py-1 text-sm font-medium text-yge-blue-500 hover:bg-yge-blue-50"
+            target="_blank"
+            rel="noopener"
+          >
+            Print job summary
+          </Link>
+          <Link
             href={`/jobs/${job.id}/binder`}
             className="rounded border border-yge-blue-500 px-3 py-1 text-sm font-medium text-yge-blue-500 hover:bg-yge-blue-50"
           >
