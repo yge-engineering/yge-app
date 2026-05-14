@@ -31,6 +31,16 @@ const GROUPS: ReportGroup[] = [
         blurb: 'Customers we haven\'t engaged with in months, sorted dormant-first.',
       },
       {
+        href: '/customers/concentration',
+        label: 'Customer concentration + HHI',
+        blurb: 'Revenue share per customer + Herfindahl-Hirschman index for bonding underwriters.',
+      },
+      {
+        href: '/cost-codes/trends',
+        label: 'Cost code price trends',
+        blurb: 'Codes whose unit cost climbed/fell most vs prior bids.',
+      },
+      {
         href: '/admin/data-health',
         label: 'Data health',
         blurb: 'Record counts per entity — quickly spot wiped master tables.',
@@ -266,6 +276,11 @@ const GROUPS: ReportGroup[] = [
     title: 'Admin / health',
     caption: 'System integrity + integration status.',
     links: [
+      {
+        href: '/help',
+        label: 'Help & keyboard shortcuts',
+        blurb: 'Where things live + how to move around fast.',
+      },
       {
         href: '/admin/health',
         label: 'System health',
