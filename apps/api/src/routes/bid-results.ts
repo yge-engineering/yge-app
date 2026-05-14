@@ -249,6 +249,46 @@ bidResultsRouter.get('/export.csv', async (_req, res, next) => {
   } catch (err) { next(err); }
 });
 
+bidResultsRouter.get('/stats', async (_req, res, next) => {
+  try {
+    const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+    const results = await prisma.bidResult.findMany({ where: { companyId, deletedAt: null } });
+
+    interface YearStat { year: number; total: number; won: number; lost: number; tbd: number; noAward: number; wonCents: number }
+    const yearMap = new Map<number, YearStat>();
+    let lifetime: YearStat = { year: 0, total: 0, won: 0, lost: 0, tbd: 0, noAward: 0, wonCents: 0 };
+
+    for (const r of results) {
+      const d = r.data as { bidOpenedAt?: string; outcome?: string; bidders?: Array<{ isYge?: boolean; amountCents?: number }> } | null;
+      const yr = d?.bidOpenedAt ? new Date(d.bidOpenedAt).getFullYear() : 0;
+      let st = yearMap.get(yr);
+      if (!st) {
+        st = { year: yr, total: 0, won: 0, lost: 0, tbd: 0, noAward: 0, wonCents: 0 };
+        yearMap.set(yr, st);
+      }
+      lifetime.total += 1;
+      st.total += 1;
+      switch (d?.outcome) {
+        case 'WON_BY_YGE': {
+          lifetime.won += 1;
+          st.won += 1;
+          const ygeBid = (d.bidders ?? []).find((b) => b.isYge);
+          const cents = ygeBid?.amountCents ?? 0;
+          lifetime.wonCents += cents;
+          st.wonCents += cents;
+          break;
+        }
+        case 'WON_BY_OTHER': lifetime.lost += 1; st.lost += 1; break;
+        case 'NO_AWARD': lifetime.noAward += 1; st.noAward += 1; break;
+        default: lifetime.tbd += 1; st.tbd += 1;
+      }
+    }
+
+    const years = [...yearMap.values()].sort((a, b) => b.year - a.year);
+    res.json({ lifetime, years });
+  } catch (err) { next(err); }
+});
+
 bidResultsRouter.get('/by-agency', async (_req, res, next) => {
   try {
     const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
