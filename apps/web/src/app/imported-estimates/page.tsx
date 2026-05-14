@@ -120,6 +120,10 @@ export default async function ImportedEstimatesPage() {
                     <span className="sort-arrow" />
                   </th>
                   <th className="px-3 py-2 text-right">Lines</th>
+                  <th data-sort-key="created" className="select-none px-3 py-2 hover:bg-gray-100">
+                    Created
+                    <span className="sort-arrow" />
+                  </th>
                   <th className="px-3 py-2">Status</th>
                 </tr>
               </thead>
@@ -130,6 +134,7 @@ export default async function ImportedEstimatesPage() {
                     data-search={`${e.projectName} ${e.client ?? ''} ${e.jobNumber}`}
                     data-sort-name={e.projectName.toLowerCase()}
                     data-sort-cents={e.bidPriceCents}
+                    data-sort-created={e.createdAt}
                     className="hover:bg-gray-50"
                   >
                     <td className="px-3 py-2 font-mono text-xs">{e.jobNumber}</td>
@@ -165,6 +170,9 @@ export default async function ImportedEstimatesPage() {
                     <td className="px-3 py-2 text-right font-mono text-xs font-semibold"><CopyMoneyButton cents={e.bidPriceCents}>{fmtMoney(e.bidPriceCents)}</CopyMoneyButton></td>
                     <td className="px-3 py-2 text-right text-xs text-gray-500">
                       {e.lines.length}
+                    </td>
+                    <td className="px-3 py-2 text-xs text-gray-600">
+                      {e.createdAt ? new Date(e.createdAt).toLocaleDateString() : '—'}
                     </td>
                     <td className="px-3 py-2 text-xs">
                       {(() => {
