@@ -1,3 +1,4 @@
+// today: /api/imported-daily-reports/today · range: /api/imported-daily-reports/range
 // /daily-reports — list of every daily report, newest first.
 //
 // Server component: fetches reports + employees + jobs in parallel so the
