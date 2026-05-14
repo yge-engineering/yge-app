@@ -4,6 +4,7 @@
 'use client';
 
 import { useState } from 'react';
+import { CostCodePicker } from './cost-code-picker';
 import { useRouter } from 'next/navigation';
 
 function apiBaseUrl(): string {
@@ -107,11 +108,19 @@ export function QuickLogLineForm({ jobId }: { jobId: string }) {
         </label>
         <label className="block">
           <span className="block text-xs font-semibold text-gray-700">Cost code</span>
-          <input
+          <CostCodePicker
             value={costCode}
-            onChange={(e) => setCostCode(e.target.value.toUpperCase())}
-            placeholder="LAB-L-GEN1"
+            rateType="PW"
             className="mt-1 block w-full rounded border border-gray-300 px-2 py-1.5 font-mono text-sm"
+            onPick={(r) => {
+              if (!r.found) return;
+              setCostCode(r.code);
+              if (!description.trim()) setDescription(r.name);
+              if (!unit.trim() || unit === 'hr') setUnit(r.unit);
+              if (!rateDollars.trim() || rateDollars === '0') {
+                setRateDollars((r.unitCostCents / 100).toFixed(2));
+              }
+            }}
           />
         </label>
         <label className="block">
