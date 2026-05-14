@@ -1,254 +1,131 @@
-// /reports — landing page for all analyses + financial reports.
+// /reports — unified index of every analytics page in the app.
 
 import Link from 'next/link';
-
-import {
-  AppShell,
-  PageHeader,
-} from '../../components';
+import { AppShell, PageHeader } from '../../components';
 import { requirePermission } from '../../lib/permissions';
 
-interface ReportLink {
+interface ReportCard {
   href: string;
-  label: string;
+  title: string;
   blurb: string;
 }
 
-interface ReportGroup {
-  title: string;
-  caption: string;
-  links: ReportLink[];
+interface Group {
+  name: string;
+  cards: ReportCard[];
 }
 
-const GROUPS: ReportGroup[] = [
+const GROUPS: Group[] = [
   {
-    title: 'Daily decisions',
-    caption: 'Pull up first thing in the morning.',
-    links: [
+    name: 'Pipeline & pursuit',
+    cards: [
       {
-        href: '/dashboard',
-        label: 'Dashboard',
-        blurb: 'Today’s tiles — close progress, risk register, AR aging, vendor spend.',
+        href: '/bids/calendar',
+        title: 'Bid calendar',
+        blurb: 'Every pursuing job with a bid due date, grouped by week. Overdue bids float to the top.',
       },
       {
-        href: '/morning-briefing',
-        label: 'Morning briefing',
-        blurb: 'Yard-meet brief — headlines + reports + dispatches + safety + AR.',
+        href: '/jobs/board',
+        title: 'Jobs Kanban',
+        blurb: 'Pursuit pipeline as a card board (PROSPECT → PURSUING → SUBMITTED → AWARDED).',
       },
       {
-        href: '/inbox-triage',
-        label: 'Inbox triage',
-        blurb: 'AI classifies your last 25 Outlook emails into 10 categories. One-click Draft AP on vendor bills.',
+        href: '/imported-estimates',
+        title: 'Imported estimates',
+        blurb: 'Every estimate imported from Excel, with audit-warning chips and bid-status badges.',
       },
       {
-        href: '/risk-register',
-        label: 'Risk register',
-        blurb: 'One page rolling up concentration / tax / COI / AR / cash.',
-      },
-      {
-        href: '/executive-snapshot',
-        label: 'Executive snapshot',
-        blurb: 'One-page board / bank / bonding summary — cash + revenue + concentration.',
-      },
-      {
-        href: '/cash-position',
-        label: 'Cash position',
-        blurb: 'Latest reconciled balance per bank account + total cash on hand.',
-      },
-      {
-        href: '/aging',
-        label: 'AR + AP aging',
-        blurb: 'Open invoices bucketed 0–30 / 31–60 / 61–90 / 90+.',
-      },
-      {
-        href: '/ap-check-run',
-        label: 'AP check run',
-        blurb: 'Approved + unpaid AP grouped by vendor, sorted by urgency.',
+        href: '/imported-estimates/compare',
+        title: 'Compare two bids',
+        blurb: 'Side-by-side cost-code diff between any two imported estimates.',
       },
     ],
   },
   {
-    title: 'Money — income, spending, concentration',
-    caption: 'AR + AP analytics, vendor + customer concentration.',
-    links: [
+    name: 'Cost analysis',
+    cards: [
       {
-        href: '/vendor-spend',
-        label: 'Vendor spend',
-        blurb: 'Where the money went, top-5 concentration warning.',
+        href: '/cost-codes',
+        title: 'Cost code master + top 10',
+        blurb: 'Every cost code, with a top-10 by bid$ spend across all estimates.',
       },
       {
-        href: '/customer-concentration',
-        label: 'Customer concentration',
-        blurb: 'Revenue by customer + HHI for bonding underwriters.',
+        href: '/equipment-rates/usage',
+        title: 'Equipment usage',
+        blurb: 'Bid vs Actual hours and $ per piece of equipment across every job.',
       },
       {
-        href: '/balance-sheet',
-        label: 'Balance sheet',
-        blurb: 'Assets, liabilities, equity at a point in time.',
-      },
-      {
-        href: '/income-statement',
-        label: 'Income statement',
-        blurb: 'Revenue − expenses for a date range. Y/Y comparison ready.',
-      },
-      {
-        href: '/cash-flow',
-        label: 'Cash flow',
-        blurb: 'Indirect-method cash flow statement.',
-      },
-      {
-        href: '/trial-balance',
-        label: 'Trial balance',
-        blurb: 'Every account, every debit and credit, balanced.',
-      },
-      {
-        href: '/cash-forecast',
-        label: '13-week cash forecast',
-        blurb: 'Projected inflows vs outflows by week.',
+        href: '/employees/utilization',
+        title: 'Labor utilization',
+        blurb: 'Hours logged per employee per week, from daily report LAB-* lines.',
       },
     ],
   },
   {
-    title: 'Close cycles + tax',
-    caption: 'Monthly + year-end close playbooks, 1099 prep.',
-    links: [
+    name: 'Bids & wins',
+    cards: [
       {
-        href: '/close-checklist',
-        label: 'Close checklist',
-        blurb: 'All the blockers that need to pass before a month closes.',
+        href: '/bid-results',
+        title: 'Bid results — all',
+        blurb: 'Every bid we have outcome data on, plus lifetime win rate.',
       },
       {
-        href: '/period-close',
-        label: 'Monthly close wizard',
-        blurb: '8-step sequenced checklist for month-end.',
-      },
-      {
-        href: '/year-end-close',
-        label: 'Year-end close',
-        blurb: '10-step year-end wizard for the CPA + bank package.',
-      },
-      {
-        href: '/close-package',
-        label: 'Close package',
-        blurb: 'Full close-out PDF set ready to send the CPA.',
-      },
-      {
-        href: '/1099-worksheet',
-        label: '1099-NEC worksheet',
-        blurb: 'Year-end 1099 prep with W-9 / TIN blocker flags.',
-      },
-      {
-        href: '/vendor-w9-chase',
-        label: 'W-9 chase list',
-        blurb: 'Vendors over $600 missing a current W-9. Mailto: chase template per row.',
+        href: '/bid-results/by-agency',
+        title: 'Win rate by agency',
+        blurb: 'How often we win at each owner agency, color-coded.',
       },
     ],
   },
   {
-    title: 'Compliance + records',
-    caption: 'Lien waivers, CPRs, submittals, RFIs, COIs.',
-    links: [
+    name: 'People',
+    cards: [
       {
-        href: '/lien-waivers',
-        label: 'Lien waivers',
-        blurb: 'Conditional + unconditional, preliminary + progress + final.',
+        href: '/customers',
+        title: 'Customers',
+        blurb: 'Customer master with jobsCount, with rollup detail on click.',
       },
       {
-        href: '/certified-payrolls',
-        label: 'Certified payrolls',
-        blurb: 'CPRs for prevailing-wage jobs, weekly.',
+        href: '/vendors/scorecard',
+        title: 'Subcontractor scorecard',
+        blurb: 'Per-sub paid total, open balance, avg days-to-pay, jobs delivered.',
       },
       {
-        href: '/submittals',
-        label: 'Submittals',
-        blurb: 'Spec submittals tracked by status + revision.',
-      },
-      {
-        href: '/rfis',
-        label: 'RFIs',
-        blurb: 'Requests for information across all jobs.',
-      },
-      {
-        href: '/change-orders',
-        label: 'Change orders + PCOs',
-        blurb: 'Pending vs executed change orders.',
-      },
-      {
-        href: '/vendors',
-        label: 'Vendor / sub master',
-        blurb: 'COI, W-9, prequal status. COI aging is built in.',
-      },
-      {
-        href: '/coi-chase',
-        label: 'COI chase list',
-        blurb: 'Subs with expired or expiring COIs. Mailto: COI request per row.',
-      },
-    ],
-  },
-  {
-    title: 'Admin / health',
-    caption: 'System integrity + integration status.',
-    links: [
-      {
-        href: '/admin/health',
-        label: 'System health',
-        blurb: 'Anthropic + Storage + Graph + Gusto + Postgres + errors.',
-      },
-      {
-        href: '/admin/data-health',
-        label: 'Data health',
-        blurb: 'Record counts per entity — red flags wiped master tables.',
-      },
-      {
-        href: '/admin/errors',
-        label: 'Server errors',
-        blurb: 'Last 24h of uncaught errors with stack traces.',
-      },
-      {
-        href: '/admin/gusto',
-        label: 'Gusto integration',
-        blurb: 'Payroll sync status + last-run log.',
+        href: '/employees',
+        title: 'Employees',
+        blurb: 'Staff master list.',
       },
     ],
   },
 ];
 
-export default function ReportsLandingPage() {
-  requirePermission('financials:view');
-
+export default function ReportsIndexPage() {
+  requirePermission('estimates:view');
   return (
     <AppShell>
-      <main className="mx-auto max-w-4xl">
+      <main className="mx-auto max-w-5xl">
         <PageHeader
-          title="Reports"
-          subtitle="Every analysis and financial report in the app, organized by use case."
+          title="Reports & analytics"
+          subtitle="All the pipeline, cost, bid, and people rollups in one place."
         />
 
-        <div className="space-y-6">
+        <div className="space-y-8">
           {GROUPS.map((g) => (
-            <section
-              key={g.title}
-              className="rounded-md border border-gray-200 bg-white p-4"
-            >
-              <header className="mb-3">
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-700">
-                  {g.title}
-                </h2>
-                <p className="text-xs text-gray-600">{g.caption}</p>
-              </header>
-              <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {g.links.map((r) => (
-                  <li
-                    key={r.href}
-                    className="rounded border border-gray-100 bg-gray-50 p-3"
-                  >
+            <section key={g.name}>
+              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">
+                {g.name}
+              </h2>
+              <ul className="grid gap-3 sm:grid-cols-2">
+                {g.cards.map((c) => (
+                  <li key={c.href}>
                     <Link
-                      href={r.href}
-                      className="text-sm font-semibold text-yge-blue-700 hover:underline"
+                      href={c.href}
+                      className="block rounded-lg border border-gray-200 bg-white p-4 shadow-sm hover:border-yge-blue-300 hover:bg-yge-blue-50"
                     >
-                      {r.label}
+                      <div className="text-sm font-semibold text-yge-blue-900">
+                        {c.title}
+                      </div>
+                      <p className="mt-1 text-xs text-gray-600">{c.blurb}</p>
                     </Link>
-                    <p className="mt-1 text-xs text-gray-600">{r.blurb}</p>
                   </li>
                 ))}
               </ul>
