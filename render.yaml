@@ -26,6 +26,8 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: BUILD_SHA
+        fromCommitSha: true
       - key: API_PORT
         value: "10000"
       - key: DEFAULT_COMPANY_ID
