@@ -39,6 +39,61 @@ async function maybeAdvanceJobStatus(
   }
 }
 
+bidResultsRouter.get('/export.csv', async (_req, res, next) => {
+  try {
+    const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+    const results = await prisma.bidResult.findMany({ where: { companyId, deletedAt: null }, orderBy: { createdAt: 'desc' } });
+    const jobs = await prisma.job.findMany({ where: { companyId, deletedAt: null } });
+    const jobById = new Map(jobs.map((j) => [j.id, j]));
+
+    const lines: string[] = [];
+    lines.push('jobNumber,jobName,agency,bidOpenedAt,awardedAt,outcome,bidderRank,bidderName,bidderAmount,bidderIsYge,bidderNotes');
+
+    function esc(v: unknown): string {
+      if (v === null || v === undefined) return '';
+      const s = String(v);
+      if (s.includes(',') || s.includes('"') || s.includes('\n')) return '"' + s.replace(/"/g, '""') + '"';
+      return s;
+    }
+
+    for (const r of results) {
+      const d = r.data as {
+        jobId?: string;
+        bidOpenedAt?: string;
+        awardedAt?: string;
+        outcome?: string;
+        bidders?: Array<{ name?: string; amountCents?: number; isYge?: boolean; notes?: string }>;
+      } | null;
+      const job = d?.jobId ? jobById.get(d.jobId) : undefined;
+      const jd = (job?.data as { ownerAgency?: string; client?: string } | null) ?? null;
+      const agency = jd?.ownerAgency ?? jd?.client ?? '';
+      const bidders = (d?.bidders ?? []).slice().sort((a, b) => (a.amountCents ?? 0) - (b.amountCents ?? 0));
+      if (bidders.length === 0) {
+        lines.push([
+          esc(job?.jobNumber), esc(job?.name), esc(agency),
+          esc(d?.bidOpenedAt), esc(d?.awardedAt), esc(d?.outcome),
+          '', '', '', '', '',
+        ].join(','));
+        continue;
+      }
+      bidders.forEach((b, rank) => {
+        lines.push([
+          esc(job?.jobNumber), esc(job?.name), esc(agency),
+          esc(d?.bidOpenedAt), esc(d?.awardedAt), esc(d?.outcome),
+          String(rank + 1), esc(b.name),
+          esc(((b.amountCents ?? 0) / 100).toFixed(2)),
+          b.isYge ? 'true' : 'false',
+          esc(b.notes),
+        ].join(','));
+      });
+    }
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="bid-results.csv"');
+    res.send(lines.join('\n'));
+  } catch (err) { next(err); }
+});
+
 bidResultsRouter.get('/by-agency', async (_req, res, next) => {
   try {
     const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
