@@ -63,6 +63,11 @@ const GROUPS: ReportGroup[] = [
         blurb: 'All contact emails + BCC string for newsletters/holiday cards.',
       },
       {
+        href: '/vendors/email-list',
+        label: 'Vendor email list',
+        blurb: 'Sub/supplier emails with kind filter + BCC string.',
+      },
+      {
         href: '/daily-reports/imported',
         label: 'Imported daily reports',
         blurb: 'Every Excel-imported daily report across all jobs.',
