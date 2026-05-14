@@ -303,6 +303,28 @@ vendorsRouter.get('/search', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+vendorsRouter.get('/email-list', async (req, res, next) => {
+  try {
+    const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+    const kindFilter = typeof req.query.kind === 'string' ? req.query.kind : null;
+    const vendors = await prisma.vendor.findMany({ where: { companyId, deletedAt: null } });
+    const emails: Array<{ id: string; legalName: string; email: string; contactName: string | null }> = [];
+    for (const v of vendors) {
+      const d = (v.data as Record<string, unknown> | null) ?? {};
+      if (kindFilter && (d.kind as string) !== kindFilter) continue;
+      const e = (d.email as string) ?? '';
+      if (!e.includes('@')) continue;
+      emails.push({
+        id: v.id,
+        legalName: (d.legalName as string) ?? '',
+        email: e,
+        contactName: (d.contactName as string) ?? null,
+      });
+    }
+    res.json({ total: emails.length, kind: kindFilter, emails, bcc: emails.map((e) => e.email).join(', ') });
+  } catch (err) { next(err); }
+});
+
 vendorsRouter.get('/scorecard', async (req, res, next) => {
   try {
     const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
