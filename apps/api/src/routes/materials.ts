@@ -1,6 +1,7 @@
 // Materials routes — parts inventory + stock movement ledger.
 
 import { Router } from 'express';
+import { prisma } from '@yge/db';
 import {
   MaterialCreateSchema,
   MaterialPatchSchema,
@@ -27,6 +28,39 @@ materialsRouter.get('/', async (req, res, next) => {
     next(err);
   }
 });
+
+materialsRouter.get('/export.csv', async (_req, res, next) => {
+  try {
+    const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+    const rows = await prisma.material.findMany({
+      where: { companyId, deletedAt: null },
+      orderBy: { code: 'asc' },
+    });
+    function esc(v: unknown): string {
+      if (v === null || v === undefined) return '';
+      const x = String(v);
+      if (x.includes(',') || x.includes('"') || x.includes('\n')) return '"' + x.replace(/"/g, '""') + '"';
+      return x;
+    }
+    const lines: string[] = [];
+    lines.push('code,name,unit,unitCost,category,notes');
+    for (const m of rows) {
+      const d = (m.data as Record<string, unknown> | null) ?? {};
+      lines.push([
+        esc(m.code),
+        esc(m.name),
+        esc(m.unit),
+        esc((m.unitCostCents / 100).toFixed(2)),
+        esc((d.category as string) ?? ''),
+        esc((d.notes as string) ?? ''),
+      ].join(','));
+    }
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="materials.csv"');
+    res.send(lines.join('\n'));
+  } catch (err) { next(err); }
+});
+
 
 materialsRouter.get('/:id', async (req, res, next) => {
   try {
