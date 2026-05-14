@@ -31,6 +31,7 @@ import { JobInfoEditor } from '@/components/job-info-editor';
 import { BidDueBanner } from '@/components/bid-due-banner';
 import { JobAgencyCompetitors } from '@/components/job-agency-competitors';
 import { JobLinkedBidTabs } from '@/components/job-linked-bid-tabs';
+import { ImportedDailyReportsPanel } from '@/components/imported-daily-reports-panel';
 import { JobProfitabilityTile } from '@/components/job-profitability-tile';
 import { ImportEstimateButton } from '@/components/import-estimate-button';
 import { ForecastStrip } from '@/components/forecast-strip';
@@ -781,6 +782,18 @@ export default async function JobDetailPage({
             ))}
           </ul>
         )}
+      </section>
+
+      <section className="mt-10">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="text-xl font-semibold text-gray-900">
+            Daily reports (imported)
+          </h2>
+          <p className="text-xs text-gray-500">
+            Loaded from the YGE Excel job-cost-system file.
+          </p>
+        </div>
+        <ImportedDailyReportsPanel jobId={job.id} />
       </section>
 
       <section className="mt-10 print:hidden">
