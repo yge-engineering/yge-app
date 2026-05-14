@@ -1,3 +1,4 @@
+// audit: CSV uploads log to request-id middleware; review with /admin/audit-log.
 // Bid results routes — agency-posted bid tabulations.
 //
 // Posting a result with outcome=WON_BY_YGE auto-advances the linked

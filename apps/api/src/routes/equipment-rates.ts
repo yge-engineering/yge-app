@@ -1,3 +1,4 @@
+// audit: CSV uploads log to request-id middleware; review with /admin/audit-log.
 // Equipment rates master routes — owned + rental rate book.
 
 import { Router } from 'express';

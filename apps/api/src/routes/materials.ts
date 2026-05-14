@@ -1,3 +1,4 @@
+// audit: CSV uploads log to request-id middleware; review with /admin/audit-log.
 // Materials routes — parts inventory + stock movement ledger.
 
 import { Router } from 'express';

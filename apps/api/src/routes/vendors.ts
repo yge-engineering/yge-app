@@ -1,3 +1,4 @@
+// audit: CSV uploads log to request-id middleware; review with /admin/audit-log.
 // Vendor routes.
 
 import { Router } from 'express';
