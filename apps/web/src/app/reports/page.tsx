@@ -58,6 +58,16 @@ const GROUPS: ReportGroup[] = [
         blurb: 'Customers we haven\'t engaged with in months, sorted dormant-first.',
       },
       {
+        href: '/customers/email-list',
+        label: 'Customer email list',
+        blurb: 'All contact emails + BCC string for newsletters/holiday cards.',
+      },
+      {
+        href: '/daily-reports/imported',
+        label: 'Imported daily reports',
+        blurb: 'Every Excel-imported daily report across all jobs.',
+      },
+      {
         href: '/customers/concentration',
         label: 'Customer concentration + HHI',
         blurb: 'Revenue share per customer + Herfindahl-Hirschman index for bonding underwriters.',
