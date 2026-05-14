@@ -1,6 +1,7 @@
 // Cost codes master routes — CRUD for the master reference list.
 
 import { Router } from 'express';
+import { prisma } from '@yge/db';
 import { CostCodeCreateSchema, CostCodePatchSchema } from '@yge/shared';
 import {
   createCostCode,
@@ -57,3 +58,107 @@ costCodesRouter.delete('/:id', async (req, res, next) => {
     return res.json({ success: true });
   } catch (err) { next(err); }
 });
+
+// GET /api/cost-codes/:code/resolve?rateType=PW|Private|DB|IBEW
+// — look up the rate row matching this cost code (Labor / Equipment
+// Owned / Equipment Rental / Material) and return the unit cost.
+costCodesRouter.get('/:code/resolve', async (req, res, next) => {
+  try {
+    const code = String(req.params.code ?? '').toUpperCase();
+    if (!code) return res.status(400).json({ error: 'Missing code' });
+    const rateType = String(req.query.rateType ?? 'PW').toUpperCase();
+    const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+
+    const cc = await prisma.costCode.findFirst({
+      where: { companyId, code, deletedAt: null },
+    });
+    if (!cc) {
+      return res.json({ code, found: false });
+    }
+
+    // Determine which rate table to look up based on the code prefix
+    // (matching the YGE workbook conventions).
+    let category = cc.category ?? null;
+    let unit = 'hr';
+    let unitCostCents = 0;
+    let rateSource: string | null = null;
+
+    if (code.startsWith('LAB-')) {
+      const lr = await prisma.laborRate.findFirst({
+        where: { companyId, code, deletedAt: null },
+      });
+      if (lr) {
+        switch (rateType) {
+          case 'PRIVATE':
+            unitCostCents = lr.baseCentsPrivate;
+            break;
+          case 'DB':
+            unitCostCents = lr.baseCentsDB;
+            break;
+          case 'IBEW':
+            unitCostCents = lr.baseCentsIBEW ?? lr.baseCentsPW;
+            break;
+          default:
+            unitCostCents = lr.baseCentsPW;
+        }
+        rateSource = 'Labor_Rates';
+        category = category ?? 'Labor';
+      }
+    } else if (code.startsWith('EQP-R-')) {
+      const er = await prisma.equipmentRental.findFirst({
+        where: { companyId, code, deletedAt: null },
+      });
+      if (er) {
+        // Prefer daily, fall back to hourly. Edit mode user can switch unit.
+        if (er.dailyCents) {
+          unitCostCents = er.dailyCents;
+          unit = 'day';
+        } else if (er.hourlyCents) {
+          unitCostCents = er.hourlyCents;
+          unit = 'hr';
+        } else if (er.weeklyCents) {
+          unitCostCents = er.weeklyCents;
+          unit = 'week';
+        } else if (er.monthlyCents) {
+          unitCostCents = er.monthlyCents;
+          unit = 'month';
+        }
+        rateSource = 'Equipment_Rental';
+        category = category ?? 'Equipment (Rental)';
+      }
+    } else if (code.startsWith('EQP-')) {
+      const eq = await prisma.equipmentRate.findFirst({
+        where: { companyId, code, deletedAt: null },
+      });
+      if (eq) {
+        unitCostCents = eq.hourlyCents;
+        unit = 'hr';
+        rateSource = 'Equipment_Rates';
+        category = category ?? 'Equipment (Owned)';
+      }
+    } else if (code.startsWith('MAT-')) {
+      const m = await prisma.material.findFirst({
+        where: { companyId, code, deletedAt: null },
+      });
+      if (m) {
+        unitCostCents = m.unitCostCents;
+        unit = m.unit;
+        rateSource = 'Materials';
+        category = category ?? 'Material';
+      }
+    }
+
+    res.json({
+      code: cc.code,
+      name: cc.name,
+      category,
+      unit,
+      unitCostCents,
+      rateSource,
+      found: true,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+

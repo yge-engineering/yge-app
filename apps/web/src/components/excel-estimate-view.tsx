@@ -10,6 +10,7 @@
 
 import { useEffect, useState } from 'react';
 import { Money } from './money';
+import { CostCodePicker } from './cost-code-picker';
 
 function apiBaseUrl(): string {
   return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
@@ -486,7 +487,28 @@ export function ExcelEstimateView({ estimateId }: { estimateId: string }) {
                                 )}
                               </td>
                               <td className="px-2 py-1 font-mono text-[11px] text-gray-700">
-                                {line.costCode ?? ''}
+                                {editMode ? (
+                                  <CostCodePicker
+                                    value={line.costCode}
+                                    rateType={view.rateType ?? 'PW'}
+                                    onPick={(r) =>
+                                      r.found
+                                        ? updateLine(biIdx, i, {
+                                            costCode: r.code,
+                                            category: r.category ?? line.category,
+                                            description: line.description || r.name,
+                                            unit: line.unit || r.unit,
+                                            unitCostCents:
+                                              line.unitCostCents > 0
+                                                ? line.unitCostCents
+                                                : r.unitCostCents,
+                                          })
+                                        : updateLine(biIdx, i, { costCode: r.code })
+                                    }
+                                  />
+                                ) : (
+                                  line.costCode ?? ''
+                                )}
                               </td>
                               <td className="px-2 py-1">
                                 {editMode ? (
