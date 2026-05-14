@@ -74,9 +74,12 @@ export default async function BidResultsPage() {
           title={t('bidResults.title')}
           subtitle={t('bidResults.subtitle')}
           actions={
-            <LinkButton href="/bid-results/new" variant="primary" size="md">
-              {t('bidResults.newResult')}
-            </LinkButton>
+            <>
+              <LinkButton href="/bid-results/new" variant="primary" size="md">
+                {t('bidResults.newResult')}
+              </LinkButton>
+              <LinkButton href="/bid-results/by-agency" variant="secondary" size="md">By agency &rarr;</LinkButton>
+            </>
           }
         />
 

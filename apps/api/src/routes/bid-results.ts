@@ -6,6 +6,7 @@
 // stores in one transaction.
 
 import { Router } from 'express';
+import { prisma } from '@yge/db';
 import {
   BidResultCreateSchema,
   BidResultPatchSchema,
@@ -37,6 +38,57 @@ async function maybeAdvanceJobStatus(
     await updateJob(jobId, { status: 'LOST' });
   }
 }
+
+bidResultsRouter.get('/by-agency', async (_req, res, next) => {
+  try {
+    const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+    interface JobRow { id: string; ownerAgency: string }
+    const jobs = await prisma.job.findMany({ where: { companyId, deletedAt: null } });
+    const ownerByJobId = new Map<string, string>();
+    for (const j of jobs) {
+      const d = j.data as { ownerAgency?: string; client?: string } | null;
+      const owner = d?.ownerAgency ?? d?.client ?? '—';
+      ownerByJobId.set(j.id, owner);
+    }
+
+    const results = await prisma.bidResult.findMany({ where: { companyId, deletedAt: null } });
+
+    interface AgencyStat {
+      agency: string;
+      total: number;
+      won: number;
+      lost: number;
+      noAward: number;
+      tbd: number;
+    }
+    const map = new Map<string, AgencyStat>();
+    for (const r of results) {
+      const d = r.data as { jobId?: string; outcome?: string } | null;
+      const agency = (d?.jobId && ownerByJobId.get(d.jobId)) || '—';
+      let st = map.get(agency);
+      if (!st) {
+        st = { agency, total: 0, won: 0, lost: 0, noAward: 0, tbd: 0 };
+        map.set(agency, st);
+      }
+      st.total += 1;
+      switch (d?.outcome) {
+        case 'WON_BY_YGE': st.won += 1; break;
+        case 'WON_BY_OTHER': st.lost += 1; break;
+        case 'NO_AWARD': st.noAward += 1; break;
+        default: st.tbd += 1;
+      }
+    }
+
+    const rows = [...map.values()]
+      .map((s) => ({
+        ...s,
+        winRate: s.total > 0 ? s.won / s.total : 0,
+      }))
+      .sort((a, b) => b.total - a.total);
+
+    res.json({ rows });
+  } catch (err) { next(err); }
+});
 
 bidResultsRouter.get('/', async (req, res, next) => {
   try {
