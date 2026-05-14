@@ -125,3 +125,12 @@ healthRouter.get('/anthropic', async (_req, res) => {
     });
   }
 });
+
+healthRouter.get('/version', (_req, res) => {
+  res.json({
+    sha: process.env.BUILD_SHA ?? 'dev',
+    node: process.version,
+    deployedAt: process.env.BUILD_TIMESTAMP ?? null,
+    at: new Date().toISOString(),
+  });
+});
