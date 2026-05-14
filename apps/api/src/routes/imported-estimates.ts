@@ -53,6 +53,34 @@ importedEstimatesRouter.patch('/:id', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+importedEstimatesRouter.post('/:id/clone', async (req, res, next) => {
+  try {
+    const src = await getImportedEstimate(req.params.id);
+    if (!src) return res.status(404).json({ error: 'Imported estimate not found' });
+    const body = req.body as {
+      jobNumber?: string;
+      projectName?: string;
+      client?: string;
+    };
+    if (!body.jobNumber || !body.projectName) {
+      return res.status(400).json({ error: 'jobNumber and projectName are required' });
+    }
+    const cloned = await createImportedEstimate({
+      jobNumber: body.jobNumber,
+      projectName: body.projectName,
+      client: body.client ?? src.client,
+      rateType: src.rateType,
+      oppPercent: src.oppPercent,
+      directCostCents: src.directCostCents,
+      oppMarkupCents: src.oppMarkupCents,
+      bidPriceCents: src.bidPriceCents,
+      lines: src.lines,
+      notes: src.notes ? `Cloned from ${src.jobNumber} — ${src.projectName}\n\n${src.notes}` : `Cloned from ${src.jobNumber} — ${src.projectName}`,
+    });
+    res.status(201).json({ importedEstimate: cloned });
+  } catch (err) { next(err); }
+});
+
 importedEstimatesRouter.delete('/:id', async (req, res, next) => {
   try {
     const ok = await deleteImportedEstimate(req.params.id);

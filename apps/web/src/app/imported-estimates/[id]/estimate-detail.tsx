@@ -13,6 +13,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   importedEstimateLineCategoryLabel,
   type CostCode,
@@ -117,6 +118,14 @@ export function EstimateDetail({ initial, costCodes }: Props) {
     return map;
   }, [costCodes]);
   const [editingProject, setEditingProject] = useState(false);
+  const [cloning, setCloning] = useState(false);
+  const [cloneJobNumber, setCloneJobNumber] = useState('');
+  const [cloneProjectName, setCloneProjectName] = useState('');
+  const [cloneClient, setCloneClient] = useState('');
+  const [cloneBusy, setCloneBusy] = useState(false);
+  const [cloneError, setCloneError] = useState<string | null>(null);
+  const router = useRouter();
+
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -272,6 +281,37 @@ export function EstimateDetail({ initial, costCodes }: Props) {
     }
   }
 
+
+  async function performClone() {
+    if (!cloneJobNumber.trim() || !cloneProjectName.trim()) {
+      setCloneError('Job # and Project name are required');
+      return;
+    }
+    setCloneBusy(true);
+    setCloneError(null);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/imported-estimates/${estimate.id}/clone`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          jobNumber: cloneJobNumber.trim(),
+          projectName: cloneProjectName.trim(),
+          client: cloneClient.trim() || undefined,
+        }),
+      });
+      const body = (await res.json()) as { importedEstimate?: { id: string }; error?: string };
+      if (!res.ok || !body.importedEstimate) {
+        setCloneError(body.error ?? `Failed (${res.status})`);
+        return;
+      }
+      router.push(`/imported-estimates/${body.importedEstimate.id}`);
+    } catch (err) {
+      setCloneError((err as Error).message);
+    } finally {
+      setCloneBusy(false);
+    }
+  }
+
   return (
     <div>
       <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
@@ -295,6 +335,20 @@ export function EstimateDetail({ initial, costCodes }: Props) {
             className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100"
           >
             Edit project info
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setCloneJobNumber('');
+              setCloneProjectName(`Copy of ${estimate.projectName}`);
+              setCloneClient(estimate.client ?? '');
+              setCloneError(null);
+              setCloning(true);
+            }}
+            className="rounded-md border border-yge-blue-500 bg-white px-3 py-1.5 text-xs font-medium text-yge-blue-700 hover:bg-yge-blue-50"
+            title="Create a new bid pre-filled with these lines"
+          >
+            Clone to new bid
           </button>
         </div>
       </div>
@@ -436,6 +490,78 @@ export function EstimateDetail({ initial, costCodes }: Props) {
           onClose={() => setEditingProject(false)}
           onSave={saveProject}
         />
+      )}
+      {cloning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-2xl">
+            <div className="mb-4 flex items-start justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">Clone to new bid</h2>
+              <button
+                type="button"
+                onClick={() => setCloning(false)}
+                className="text-gray-400 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="mb-3 text-xs text-gray-600">
+              Creates a new imported estimate with all lines copied. Adjust pricing as needed.
+            </p>
+            <div className="space-y-3">
+              <label className="block">
+                <span className="block text-xs font-semibold text-gray-700">New Job #</span>
+                <input
+                  type="text"
+                  value={cloneJobNumber}
+                  onChange={(e) => setCloneJobNumber(e.target.value)}
+                  placeholder="e.g. 27-001"
+                  className="mt-1 block w-full rounded border border-gray-300 px-2 py-1 text-sm"
+                />
+              </label>
+              <label className="block">
+                <span className="block text-xs font-semibold text-gray-700">Project name</span>
+                <input
+                  type="text"
+                  value={cloneProjectName}
+                  onChange={(e) => setCloneProjectName(e.target.value)}
+                  className="mt-1 block w-full rounded border border-gray-300 px-2 py-1 text-sm"
+                />
+              </label>
+              <label className="block">
+                <span className="block text-xs font-semibold text-gray-700">Client (optional)</span>
+                <input
+                  type="text"
+                  value={cloneClient}
+                  onChange={(e) => setCloneClient(e.target.value)}
+                  className="mt-1 block w-full rounded border border-gray-300 px-2 py-1 text-sm"
+                />
+              </label>
+              {cloneError && (
+                <p className="rounded border border-red-300 bg-red-50 p-2 text-xs text-red-800">
+                  {cloneError}
+                </p>
+              )}
+            </div>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setCloning(false)}
+                disabled={cloneBusy}
+                className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void performClone()}
+                disabled={cloneBusy}
+                className="rounded-md bg-yge-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50"
+              >
+                {cloneBusy ? 'Cloning…' : 'Create clone'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
