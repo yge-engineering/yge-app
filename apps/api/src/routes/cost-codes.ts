@@ -22,6 +22,30 @@ costCodesRouter.get('/', async (_req, res, next) => {
 
 // GET /api/cost-codes/stats — usage rollup across estimates + daily reports.
 // MUST come before /:id so the wildcard doesn't swallow it.
+costCodesRouter.get('/export.csv', async (_req, res, next) => {
+  try {
+    const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+    const codes = await prisma.costCode.findMany({
+      where: { companyId, deletedAt: null },
+      orderBy: { code: 'asc' },
+    });
+    function esc(v: unknown): string {
+      if (v === null || v === undefined) return '';
+      const x = String(v);
+      if (x.includes(',') || x.includes('"') || x.includes('\n')) return '"' + x.replace(/"/g, '""') + '"';
+      return x;
+    }
+    const lines: string[] = [];
+    lines.push('code,name,category,notes');
+    for (const c of codes) {
+      lines.push([esc(c.code), esc(c.name), esc(c.category ?? ''), ''].join(','));
+    }
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="cost-codes.csv"');
+    res.send(lines.join('\n'));
+  } catch (err) { next(err); }
+});
+
 costCodesRouter.get('/stats', async (_req, res, next) => {
   try {
     const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
