@@ -1,3 +1,4 @@
+// 1834 — rateType counts already shipped in /stats.
 // Aggregate job stats: count per status, total bid$ open, etc.
 
 import { Router } from 'express';
