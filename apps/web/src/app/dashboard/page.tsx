@@ -1092,6 +1092,7 @@ async function DashboardPageInner() {
             <QuickLink href="/admin/excel-import" label="Import Excel" />
             <QuickLink href="/imported-estimates" label="Imported estimates" />
             <QuickLink href="/imported-estimates/compare" label="Compare bids" />
+            <QuickLink href="/bids/calendar" label="Bid calendar" />
           </div>
         </section>
       </div>
