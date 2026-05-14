@@ -4,6 +4,7 @@
 // AI-drafted PricedEstimate model) so the two coexist.
 
 import { Router } from 'express';
+import { prisma } from '@yge/db';
 import { ImportedEstimateCreateSchema, ImportedEstimatePatchSchema } from '@yge/shared';
 import {
   createImportedEstimate,
@@ -219,6 +220,71 @@ importedEstimatesRouter.get('/:id/excel.xlsx', async (req, res, next) => {
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.send(buf);
+  } catch (err) { next(err); }
+});
+
+importedEstimatesRouter.get('/:id/audit', async (req, res, next) => {
+  try {
+    const ie = await getImportedEstimate(req.params.id);
+    if (!ie) return res.status(404).json({ error: 'Imported estimate not found' });
+    const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+
+    // Pull all master rates that might back a cost code.
+    const [materials, labor, equip, equipRental] = await Promise.all([
+      prisma.material.findMany({ where: { companyId, deletedAt: null } }),
+      prisma.laborRate.findMany({ where: { companyId, deletedAt: null } }),
+      prisma.equipmentRate.findMany({ where: { companyId, deletedAt: null } }),
+      prisma.equipmentRental.findMany({ where: { companyId, deletedAt: null } }),
+    ]);
+
+    interface MasterRow { code: string; unitCostCents: number; source: string }
+    const master = new Map<string, MasterRow>();
+    for (const m of materials) master.set(m.code.toUpperCase(), { code: m.code, unitCostCents: m.unitCostCents, source: 'Materials' });
+    for (const lr of labor) master.set(lr.code.toUpperCase(), { code: lr.code, unitCostCents: lr.baseCentsPW, source: 'Labor_Rates(PW)' });
+    for (const eq of equip) master.set(eq.code.toUpperCase(), { code: eq.code, unitCostCents: eq.hourlyCents, source: 'Equipment_Rates' });
+    for (const er of equipRental) {
+      const c = er.code.toUpperCase();
+      const best = er.dailyCents || er.hourlyCents || er.weeklyCents || er.monthlyCents || 0;
+      master.set(c, { code: er.code, unitCostCents: best, source: 'Equipment_Rental' });
+    }
+
+    interface Finding {
+      lineIdx: number;
+      costCode: string;
+      description: string;
+      lineUnitCostCents: number;
+      masterUnitCostCents: number;
+      deltaPct: number;
+      source: string;
+      severity: 'low' | 'med' | 'high';
+    }
+    const findings: Finding[] = [];
+
+    ie.lines.forEach((ln, idx) => {
+      const code = (ln.costCode ?? '').trim().toUpperCase();
+      if (!code) return;
+      const m = master.get(code);
+      if (!m || m.unitCostCents === 0) return;
+      const delta = (ln.unitCostCents - m.unitCostCents) / m.unitCostCents;
+      const absDelta = Math.abs(delta);
+      if (absDelta < 0.25) return; // tolerance
+      let severity: 'low' | 'med' | 'high' = 'low';
+      if (absDelta >= 1.0) severity = 'high';
+      else if (absDelta >= 0.5) severity = 'med';
+      findings.push({
+        lineIdx: idx,
+        costCode: code,
+        description: ln.description,
+        lineUnitCostCents: ln.unitCostCents,
+        masterUnitCostCents: m.unitCostCents,
+        deltaPct: delta,
+        source: m.source,
+        severity,
+      });
+    });
+
+    findings.sort((a, b) => Math.abs(b.deltaPct) - Math.abs(a.deltaPct));
+    res.json({ findings });
   } catch (err) { next(err); }
 });
 

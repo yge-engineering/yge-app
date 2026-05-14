@@ -14,6 +14,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { EstimateSnapshotsPanel } from '@/components/estimate-snapshots-panel';
+import { EstimatePriceAuditPanel } from '@/components/estimate-price-audit-panel';
 import { useRouter } from 'next/navigation';
 import {
   importedEstimateLineCategoryLabel,
@@ -545,6 +546,10 @@ export function EstimateDetail({ initial, costCodes }: Props) {
         </button>
       </div>
 
+      <div className="mt-6">
+        <h3 className="mb-2 text-sm font-semibold text-gray-900">Price audit</h3>
+        <EstimatePriceAuditPanel estimateId={estimate.id} />
+      </div>
       <div className="mt-6">
         <EstimateSnapshotsPanel
           estimateId={estimate.id}
