@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import type { Job } from '@yge/shared';
 import { AppShell, PageHeader } from '../../../components';
+import { Letterhead } from '../../../components/letterhead';
+import { PrintButton } from '../../../components/print-button';
 import { requirePermission } from '../../../lib/permissions';
 
 function apiBaseUrl(): string {
@@ -97,10 +99,18 @@ export default async function BidsCalendarPage() {
         <PageHeader
           title="Bid calendar"
           subtitle={`${overdue.length} overdue · ${upcoming.length} upcoming`}
+          actions={<PrintButton label="Print / Save as PDF" />}
         />
 
+        <div className="hidden print:block mb-4">
+          <Letterhead variant="full" />
+          <p className="mt-2 text-xs text-gray-700">
+            Bid calendar — generated {new Date().toLocaleString()}
+          </p>
+        </div>
+
         {overdue.length > 0 && (
-          <section className="mb-6 rounded-lg border border-red-300 bg-red-50 p-4">
+          <section className="mb-6 rounded-lg border border-red-300 bg-red-50 p-4 print:break-inside-avoid">
             <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-red-800">
               Past due (still in pursuit)
             </h2>
@@ -120,7 +130,7 @@ export default async function BidsCalendarPage() {
         )}
 
         {weeks.map((w) => (
-          <section key={w.weekStart.getTime()} className="mb-4 rounded-lg border border-gray-200 bg-white shadow-sm">
+          <section key={w.weekStart.getTime()} className="mb-4 rounded-lg border border-gray-200 bg-white shadow-sm print:break-inside-avoid">
             <div className="border-b border-gray-100 bg-gray-50 px-4 py-2">
               <h2 className="text-sm font-bold uppercase tracking-wide text-gray-700">
                 Week of {fmtWeek(w.weekStart)}
