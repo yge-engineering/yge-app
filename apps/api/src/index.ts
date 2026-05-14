@@ -10,6 +10,7 @@ import { logger } from './lib/logger';
 import { healthRouter } from './routes/health';
 import { jobsRouter } from './routes/jobs';
 import { jobsBudgetActualRouter } from './routes/jobs-budget-actual';
+import { jobsCostCodeVarianceRouter } from './routes/jobs-cost-code-variance';
 import { estimatesRouter } from './routes/estimates';
 import { plansToEstimateRouter } from './routes/plans-to-estimate';
 import { pricedEstimatesRouter } from './routes/priced-estimates';
@@ -125,6 +126,7 @@ app.use(tenantMiddleware);
 
 app.use('/health', healthRouter);
 app.use('/api/jobs', jobsBudgetActualRouter);
+app.use('/api/jobs', jobsCostCodeVarianceRouter);
 app.use('/api/jobs', jobsRouter);
 app.use('/api/estimates', estimatesRouter);
 app.use('/api/plans-to-estimate', plansToEstimateRouter);

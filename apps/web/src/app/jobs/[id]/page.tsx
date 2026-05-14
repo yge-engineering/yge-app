@@ -294,6 +294,14 @@ export default async function JobDetailPage({
               {t('jobDetail.costBreakdown')}
             </Link>
           )}
+          {canSeeFinancials && (
+            <Link
+              href={`/jobs/${job.id}/cost-code-variance`}
+              className="rounded border border-yge-blue-500 px-3 py-1 text-sm font-medium text-yge-blue-500 hover:bg-yge-blue-50"
+            >
+              Cost-code variance
+            </Link>
+          )}
           <Link
             href={`/jobs/${job.id}/binder`}
             className="rounded border border-yge-blue-500 px-3 py-1 text-sm font-medium text-yge-blue-500 hover:bg-yge-blue-50"
