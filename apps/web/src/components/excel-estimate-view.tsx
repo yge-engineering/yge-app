@@ -233,6 +233,38 @@ export function ExcelEstimateView({ estimateId }: { estimateId: string }) {
     });
   }
 
+  function moveLine(biIdx: number, lineIdx: number, dir: -1 | 1) {
+    setDraft((prev) => {
+      if (!prev) return prev;
+      const items = (prev.bidItems ?? []).map((bi, i) => {
+        if (i !== biIdx) return bi;
+        const next = [...bi.costLines];
+        const target = lineIdx + dir;
+        if (target < 0 || target >= next.length) return bi;
+        const tmp = next[lineIdx]!;
+        next[lineIdx] = next[target]!;
+        next[target] = tmp;
+        return { ...bi, costLines: next };
+      });
+      const { bidItems: rec, direct, opp, bid } = recompute(items, prev.oppPercent ?? 0.2);
+      return { ...prev, bidItems: rec, directCostCents: direct, oppMarkupCents: opp, bidPriceCents: bid };
+    });
+  }
+
+  function moveBidItem(biIdx: number, dir: -1 | 1) {
+    setDraft((prev) => {
+      if (!prev) return prev;
+      const items = [...(prev.bidItems ?? [])];
+      const target = biIdx + dir;
+      if (target < 0 || target >= items.length) return prev;
+      const tmp = items[biIdx]!;
+      items[biIdx] = items[target]!;
+      items[target] = tmp;
+      const { bidItems: rec, direct, opp, bid } = recompute(items, prev.oppPercent ?? 0.2);
+      return { ...prev, bidItems: rec, directCostCents: direct, oppMarkupCents: opp, bidPriceCents: bid };
+    });
+  }
+
   function deleteCostLine(biIdx: number, lineIdx: number) {
     setDraft((prev) => {
       if (!prev) return prev;
@@ -439,14 +471,34 @@ export function ExcelEstimateView({ estimateId }: { estimateId: string }) {
                       </span>
                     </span>
                     {editMode ? (
-                      <button
-                        type="button"
-                        onClick={() => deleteBidItem(biIdx)}
-                        className="rounded border border-red-300 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-red-700 hover:bg-red-50"
-                        title="Delete this bid item and all its cost lines"
-                      >
-                        🗑 Delete item
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => moveBidItem(biIdx, -1)}
+                          disabled={biIdx === 0}
+                          className="rounded border border-yge-blue-300 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-yge-blue-700 hover:bg-yge-blue-50 disabled:opacity-40"
+                          title="Move bid item up"
+                        >
+                          ▲
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveBidItem(biIdx, 1)}
+                          disabled={biIdx === bidItems.length - 1}
+                          className="rounded border border-yge-blue-300 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-yge-blue-700 hover:bg-yge-blue-50 disabled:opacity-40"
+                          title="Move bid item down"
+                        >
+                          ▼
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => deleteBidItem(biIdx)}
+                          className="rounded border border-red-300 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-red-700 hover:bg-red-50"
+                          title="Delete this bid item and all its cost lines"
+                        >
+                          🗑 Delete item
+                        </button>
+                      </>
                     ) : null}
                   </span>
                 </div>
@@ -615,14 +667,34 @@ export function ExcelEstimateView({ estimateId }: { estimateId: string }) {
                               </td>
                               {editMode ? (
                                 <td className="px-2 py-1 text-right">
-                                  <button
-                                    type="button"
-                                    onClick={() => deleteCostLine(biIdx, i)}
-                                    className="rounded border border-red-300 bg-white px-1 py-0.5 text-[10px] font-semibold text-red-700 hover:bg-red-50"
-                                    title="Delete this cost line"
-                                  >
-                                    ✕
-                                  </button>
+                                  <div className="flex items-center justify-end gap-0.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => moveLine(biIdx, i, -1)}
+                                      disabled={i === 0}
+                                      className="rounded border border-yge-blue-300 bg-white px-1 py-0.5 text-[10px] font-semibold text-yge-blue-700 hover:bg-yge-blue-50 disabled:opacity-40"
+                                      title="Move up"
+                                    >
+                                      ▲
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => moveLine(biIdx, i, 1)}
+                                      disabled={i === bi.costLines.length - 1}
+                                      className="rounded border border-yge-blue-300 bg-white px-1 py-0.5 text-[10px] font-semibold text-yge-blue-700 hover:bg-yge-blue-50 disabled:opacity-40"
+                                      title="Move down"
+                                    >
+                                      ▼
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => deleteCostLine(biIdx, i)}
+                                      className="rounded border border-red-300 bg-white px-1 py-0.5 text-[10px] font-semibold text-red-700 hover:bg-red-50"
+                                      title="Delete this cost line"
+                                    >
+                                      ✕
+                                    </button>
+                                  </div>
                                 </td>
                               ) : null}
                             </tr>
