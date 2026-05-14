@@ -342,6 +342,24 @@ customersRouter.get('/search', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+customersRouter.get('/email-list', async (_req, res, next) => {
+  try {
+    const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+    const customers = await prisma.customer.findMany({
+      where: { companyId, deletedAt: null, contactEmail: { not: null } },
+      orderBy: { name: 'asc' },
+    });
+    const emails = customers
+      .map((c) => ({ name: c.name, email: c.contactEmail!, contactName: c.contactName }))
+      .filter((c) => c.email && c.email.includes('@'));
+    res.json({
+      total: emails.length,
+      emails,
+      bcc: emails.map((e) => e.email).join(', '),
+    });
+  } catch (err) { next(err); }
+});
+
 customersRouter.get('/touchpoints', async (_req, res, next) => {
   try {
     const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
