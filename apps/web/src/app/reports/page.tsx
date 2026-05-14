@@ -323,6 +323,11 @@ const GROUPS: ReportGroup[] = [
         blurb: '7-step new-instance setup walkthrough.',
       },
       {
+        href: '/admin/api-tour',
+        label: 'API tour',
+        blurb: 'All 50+ endpoints shipped this session, grouped by domain.',
+      },
+      {
         href: '/admin/health',
         label: 'System health',
         blurb: 'Anthropic + Storage + Graph + Gusto + Postgres + errors.',
