@@ -103,6 +103,11 @@ const GROUPS: ReportGroup[] = [
         blurb: 'Total / awarded / lost / hit-rate per year.',
       },
       {
+        href: '/jobs/awarded-revenue',
+        label: 'Awarded revenue YoY',
+        blurb: 'Trailing revenue view by award year — bonding-friendly.',
+      },
+      {
         href: '/imported-estimates',
         label: 'Imported estimates',
         blurb: 'Every estimate imported from Excel, with audit-warning chips and bid-status badges.',
