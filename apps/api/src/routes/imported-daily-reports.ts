@@ -11,6 +11,50 @@ function companyId(): string {
   return process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
 }
 
+importedDailyReportsRouter.get('/range', async (req, res, next) => {
+  try {
+    const co = companyId();
+    const from = typeof req.query.from === 'string' ? req.query.from : '';
+    const to = typeof req.query.to === 'string' ? req.query.to : '';
+    const jobId = typeof req.query.jobId === 'string' ? req.query.jobId : undefined;
+
+    const where: { companyId: string; deletedAt: null; reportDate?: { gte?: string; lte?: string }; jobId?: string } = {
+      companyId: co,
+      deletedAt: null,
+    };
+    if (from || to) {
+      where.reportDate = {};
+      if (from) where.reportDate.gte = from;
+      if (to) where.reportDate.lte = to;
+    }
+    if (jobId) where.jobId = jobId;
+
+    const reports = await prisma.dailyReport.findMany({ where, orderBy: { reportDate: 'desc' } });
+    const totalLines = reports.reduce((sum, r) => {
+      const d = r.data as { lines?: unknown[] } | null;
+      return sum + (d?.lines?.length ?? 0);
+    }, 0);
+    const totalCents = reports.reduce((sum, r) => {
+      const d = r.data as { lines?: Array<{ totalCostCents?: number | null }> } | null;
+      for (const ln of d?.lines ?? []) sum += ln.totalCostCents ?? 0;
+      return sum;
+    }, 0);
+
+    res.json({
+      from, to, jobId: jobId ?? null,
+      reports: reports.map((r) => ({
+        id: r.id,
+        jobId: r.jobId,
+        reportDate: r.reportDate,
+        lineCount: (r.data as { lines?: unknown[] } | null)?.lines?.length ?? 0,
+      })),
+      totalReports: reports.length,
+      totalLines,
+      totalCents,
+    });
+  } catch (err) { next(err); }
+});
+
 importedDailyReportsRouter.get('/today', async (_req, res, next) => {
   try {
     const co = companyId();
