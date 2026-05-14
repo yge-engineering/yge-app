@@ -440,6 +440,45 @@ importedEstimatesRouter.get('/:id/excel.xlsx', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+importedEstimatesRouter.get('/:id/sections-summary.csv', async (req, res, next) => {
+  try {
+    const ie = await getImportedEstimate(req.params.id);
+    if (!ie) return res.status(404).json({ error: 'Imported estimate not found' });
+
+    interface Section { name: string; lines: number; directCents: number; bidCents: number }
+    const map = new Map<string, Section>();
+    for (const ln of ie.lines) {
+      const k = ln.sectionName ?? '(Uncategorized)';
+      let st = map.get(k);
+      if (!st) { st = { name: k, lines: 0, directCents: 0, bidCents: 0 }; map.set(k, st); }
+      st.lines += 1;
+      st.directCents += ln.totalCostCents;
+      st.bidCents += ln.bidPriceCents;
+    }
+    const sections = [...map.values()].sort((a, b) => b.bidCents - a.bidCents);
+
+    function esc(v: unknown): string {
+      if (v === null || v === undefined) return '';
+      const x = String(v);
+      if (x.includes(',') || x.includes('"') || x.includes('\n')) return '"' + x.replace(/"/g, '""') + '"';
+      return x;
+    }
+    const lines: string[] = [];
+    lines.push('section,lines,direct,bid');
+    for (const s of sections) {
+      lines.push([
+        esc(s.name),
+        esc(s.lines),
+        esc((s.directCents / 100).toFixed(2)),
+        esc((s.bidCents / 100).toFixed(2)),
+      ].join(','));
+    }
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="${ie.jobNumber}-sections.csv"`);
+    res.send(lines.join('\n'));
+  } catch (err) { next(err); }
+});
+
 importedEstimatesRouter.get('/:id/sections-summary', async (req, res, next) => {
   try {
     const ie = await getImportedEstimate(req.params.id);
