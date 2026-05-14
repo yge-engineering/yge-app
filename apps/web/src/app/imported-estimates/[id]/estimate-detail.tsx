@@ -411,6 +411,17 @@ export function EstimateDetail({ initial, costCodes }: Props) {
           >
             Reset all prices
           </button>
+          <button
+            type="button"
+            onClick={async () => {
+              if (!confirm('Mark this bid as submitted? Adds a timestamped note.')) return;
+              const res = await fetch(`${API_BASE_URL}/api/imported-estimates/${estimate.id}/mark-submitted`, { method: 'POST' });
+              if (res.ok) router.refresh();
+            }}
+            className="rounded-md border border-green-400 bg-green-50 px-3 py-1.5 text-xs font-medium text-green-800 hover:bg-green-100"
+          >
+            Mark submitted
+          </button>
           <a
             href={`${API_BASE_URL}/api/imported-estimates/${estimate.id}/excel.xlsx`}
             className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100"
