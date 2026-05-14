@@ -112,7 +112,10 @@ export default async function ImportedEstimatesPage() {
                     Project
                     <span className="sort-arrow" />
                   </th>
-                  <th className="px-3 py-2">Client</th>
+                  <th data-sort-key="client" className="select-none px-3 py-2 hover:bg-gray-100">
+                    Client
+                    <span className="sort-arrow" />
+                  </th>
                   <th className="px-3 py-2">Rate</th>
                   <th className="px-3 py-2 text-right">Direct</th>
                   <th className="px-3 py-2 text-right">O&amp;P</th>
@@ -136,6 +139,7 @@ export default async function ImportedEstimatesPage() {
                     data-sort-name={e.projectName.toLowerCase()}
                     data-sort-cents={e.bidPriceCents}
                     data-sort-created={e.createdAt}
+                    data-sort-client={(e.client ?? '').toLowerCase()}
                     className="hover:bg-gray-50"
                   >
                     <td className="px-3 py-2 font-mono text-xs">{e.jobNumber}</td>
