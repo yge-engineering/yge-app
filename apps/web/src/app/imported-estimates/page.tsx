@@ -97,7 +97,7 @@ export default async function ImportedEstimatesPage() {
                   className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-semibold text-yge-blue-700 hover:bg-yge-blue-50"
                 >
                   Search bids →
-                </Link>
+                </Link> <span className="ml-1 text-[10px] text-gray-500">(slash key)</span>
               </div>
               <EstimatesSortHeaders targetId="imported-list-table" />
             </div>
