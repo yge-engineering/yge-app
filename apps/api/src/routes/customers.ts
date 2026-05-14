@@ -287,6 +287,110 @@ customersRouter.post('/import-csv', upload.single('file'), async (req, res, next
   } catch (err) { next(err); }
 });
 
+customersRouter.get('/revenue-concentration', async (_req, res, next) => {
+  try {
+    const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+    const customers = await prisma.customer.findMany({ where: { companyId, deletedAt: null } });
+    const jobs = await prisma.job.findMany({ where: { companyId, deletedAt: null } });
+    const ies = await prisma.importedEstimate.findMany({ where: { companyId, deletedAt: null } });
+
+    const bidPriceByJobId = new Map<string, number>();
+    for (const ie of ies) {
+      const d = ie.data as { jobId?: string; bidPriceCents?: number } | null;
+      if (!d?.jobId || !d.bidPriceCents) continue;
+      const prev = bidPriceByJobId.get(d.jobId) ?? 0;
+      bidPriceByJobId.set(d.jobId, Math.max(prev, d.bidPriceCents));
+    }
+
+    let totalRev = 0;
+    interface Row { id: string; name: string; revenueCents: number; jobsCount: number; sharePct: number }
+    const rows: Row[] = customers.map((c) => {
+      const myJobs = jobs.filter((j) =>
+        j.customerId === c.id && (j.status === 'AWARDED' || j.status === 'ACTIVE' || j.status === 'CLOSED'),
+      );
+      const rev = myJobs.reduce((sum, j) => sum + (bidPriceByJobId.get(j.id) ?? 0), 0);
+      totalRev += rev;
+      return { id: c.id, name: c.name, revenueCents: rev, jobsCount: myJobs.length, sharePct: 0 };
+    });
+    for (const r of rows) r.sharePct = totalRev > 0 ? r.revenueCents / totalRev : 0;
+    rows.sort((a, b) => b.revenueCents - a.revenueCents);
+
+    // HHI: sum of squared market shares ×10,000.
+    const hhi = Math.round(rows.reduce((acc, r) => acc + Math.pow(r.sharePct * 100, 2), 0));
+
+    res.json({
+      rows: rows.filter((r) => r.revenueCents > 0),
+      totalRevenueCents: totalRev,
+      hhi,
+      hhiClass: hhi > 2500 ? 'concentrated' : hhi > 1500 ? 'moderate' : 'competitive',
+    });
+  } catch (err) { next(err); }
+});
+
+customersRouter.get('/touchpoints', async (_req, res, next) => {
+  try {
+    const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+    const customers = await prisma.customer.findMany({ where: { companyId, deletedAt: null } });
+    const jobs = await prisma.job.findMany({ where: { companyId, deletedAt: null } });
+    const ies = await prisma.importedEstimate.findMany({ where: { companyId, deletedAt: null } });
+    const results = await prisma.bidResult.findMany({ where: { companyId, deletedAt: null } });
+
+    const ownerByJobId = new Map<string, string | null>();
+    for (const j of jobs) ownerByJobId.set(j.id, j.customerId ?? null);
+
+    const now = Date.now();
+    interface Row {
+      id: string;
+      name: string;
+      jobsCount: number;
+      lastJobAt: string | null;
+      lastEstimateAt: string | null;
+      lastBidAt: string | null;
+      daysSinceContact: number | null;
+    }
+    const rows: Row[] = [];
+
+    for (const c of customers) {
+      const myJobs = jobs.filter((j) => j.customerId === c.id);
+      const jobIds = new Set(myJobs.map((j) => j.id));
+      const myEsts = ies.filter((e) => {
+        const d = e.data as { jobId?: string } | null;
+        return d?.jobId && jobIds.has(d.jobId);
+      });
+      const myResults = results.filter((r) => {
+        const d = r.data as { jobId?: string } | null;
+        return d?.jobId && jobIds.has(d.jobId);
+      });
+      const lastJobAt = myJobs.length > 0
+        ? myJobs.map((j) => j.updatedAt.getTime()).sort((a, b) => b - a)[0] ?? null
+        : null;
+      const lastEstimateAt = myEsts.length > 0
+        ? myEsts.map((e) => e.updatedAt.getTime()).sort((a, b) => b - a)[0] ?? null
+        : null;
+      const lastBidAt = myResults.length > 0
+        ? myResults.map((r) => r.updatedAt.getTime()).sort((a, b) => b - a)[0] ?? null
+        : null;
+      const lastContact = Math.max(lastJobAt ?? 0, lastEstimateAt ?? 0, lastBidAt ?? 0);
+      rows.push({
+        id: c.id,
+        name: c.name,
+        jobsCount: myJobs.length,
+        lastJobAt: lastJobAt ? new Date(lastJobAt).toISOString() : null,
+        lastEstimateAt: lastEstimateAt ? new Date(lastEstimateAt).toISOString() : null,
+        lastBidAt: lastBidAt ? new Date(lastBidAt).toISOString() : null,
+        daysSinceContact: lastContact > 0 ? Math.floor((now - lastContact) / 86400000) : null,
+      });
+    }
+
+    rows.sort((a, b) => {
+      const ad = a.daysSinceContact ?? Number.MAX_SAFE_INTEGER;
+      const bd = b.daysSinceContact ?? Number.MAX_SAFE_INTEGER;
+      return bd - ad;
+    });
+    res.json({ rows });
+  } catch (err) { next(err); }
+});
+
 customersRouter.get('/:id/rollup', async (req, res, next) => {
   try {
     const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
