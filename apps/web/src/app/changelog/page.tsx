@@ -1,134 +1,52 @@
-// /changelog — what's new in YGE.
-//
-// Plain English: a hand-curated list of recent meaningful changes,
-// written in plain English (not git commit messages). When you ship
-// something users should know about, add a row to RELEASE_NOTES below.
+import { AppShell, PageHeader } from '../../components';
 
-import { AppShell, Card, PageHeader } from '../../components';
-import { getTranslator } from '../../lib/locale';
+interface Entry { date: string; bullets: string[] }
 
-interface ReleaseNote {
-  date: string; // yyyy-mm-dd
-  title: string;
-  body: string;
-}
-
-const RELEASE_NOTES: ReleaseNote[] = [
+const ENTRIES: Entry[] = [
   {
-    date: '2026-05-06',
-    title: 'Print-ready everywhere',
-    body: 'Every page now prints clean: the YGE app sidebar, header, footer, and other on-screen helpers automatically hide. Tables avoid breaking rows mid-record, KPI cards stay intact, and a half-inch page margin matches standard letter paper.',
+    date: '2026-05',
+    bullets: [
+      'New: /quick-tools global landing page indexes every analytic + utility view.',
+      'New: /admin/csv-imports and /admin/csv-exports hubs link every bulk-data tool.',
+      'New: /customers/newsletter and /vendors/newsletter mailto:-BCC composers.',
+      'New: dozens of group-by analytic pages — by-status, by-state, by-kind, by-year, by-month.',
+      'New: data-quality views (missing email, missing classification, missing owner agency, etc.).',
+      'New: data-summary tile dashboard at /admin/data-summary.',
+      'New: bid-results biggest wins / closest misses / apparent lows / top competitors leaderboards.',
+    ],
   },
   {
-    date: '2026-05-06',
-    title: 'Active sidebar link',
-    body: 'The sidebar (and the mobile drawer) now highlights the page you are on, so it is easier to see where you are in the app.',
-  },
-  {
-    date: '2026-05-06',
-    title: 'Keyboard nav on every list',
-    body: 'Press j and k to move down and up through rows on /jobs, /estimates, /drafts, /imported-estimates, and /bid-results. Press Enter to open the focused row. The shortcut chip in the page header lists every key.',
-  },
-  {
-    date: '2026-05-06',
-    title: 'Tooltip the full dollars',
-    body: 'Compact dollar displays like "$1.2M" now show the exact "$1,234,567" when you hover, so a roll-up never hides the underlying precision.',
-  },
-  {
-    date: '2026-05-06',
-    title: 'Trophy icon on YGE wins',
-    body: 'On /bid-results, jobs YGE won are flagged with a 🏆 next to the outcome pill so wins stand out at a glance.',
-  },
-  {
-    date: '2026-05-01',
-    title: 'Search box in the header',
-    body: 'Type from any page to find a job, customer, vendor, or employee by name. Results group by entity type.',
-  },
-  {
-    date: '2026-05-01',
-    title: 'Recent activity feed on the dashboard',
-    body: 'See the most-recently created or updated jobs, AR invoices, AP invoices, RFIs, and dispatches in one card. Relative timestamps, click any row to jump to the record.',
-  },
-  {
-    date: '2026-05-01',
-    title: 'Quick actions on the dashboard',
-    body: 'Four shortcut cards above the tile board for the things you do most: New job, New daily report, New AR invoice, New time card.',
-  },
-  {
-    date: '2026-05-01',
-    title: 'Help page',
-    body: 'Plain-English how-tos for starting a bid, logging a daily report, sending an AR invoice, and running weekly certified payroll. Plus a 5-question FAQ. In the sidebar under More.',
-  },
-  {
-    date: '2026-05-01',
-    title: 'Profile page',
-    body: 'Click your name in the upper-right to see your account info and the YGE company info that prints on every document.',
-  },
-  {
-    date: '2026-05-01',
-    title: 'All-modules directory',
-    body: 'Linked from the sidebar (More → All modules). Every page in the app, grouped by what hat you\'re wearing. Use it as a cheat-sheet for finding things not in the daily nav.',
-  },
-  {
-    date: '2026-05-01',
-    title: '404 page',
-    body: 'Dead links now land on a friendly "page not found" with quick links back to the dashboard or the all-modules directory.',
-  },
-  {
-    date: '2026-05-01',
-    title: 'API not reachable banner',
-    body: 'When the API server isn\'t responding, the dashboard shows a friendly amber banner explaining what\'s wrong and how to fix it, instead of silently showing zeros.',
-  },
-  {
-    date: '2026-05-01',
-    title: 'Vercel deployment ready',
-    body: 'Repository now contains a Vercel config and a plain-English DEPLOY.md guide. ~10 minutes to get a live URL at app.youngge.com.',
-  },
-  {
-    date: '2026-04-30',
-    title: 'Sign-in works',
-    body: 'Type your work email at /login, hit Sign in, you\'re on the dashboard. Email allowlist for now (Brook + Ryan); Supabase Auth lands later.',
-  },
-  {
-    date: '2026-04-30',
-    title: 'Consistent app chrome on every page',
-    body: 'Every page wears the same branded header (YGE logo, license/DIR numbers) + sidebar nav + account chip. Click around — it stays consistent.',
-  },
-  {
-    date: '2026-04-30',
-    title: 'Punch list + employees pages',
-    body: 'Two pages that the sidebar previously linked but didn\'t actually exist. Now they do. Punch list shows open items oldest-first with red rows for overdue.',
-  },
-  {
-    date: '2026-04-29',
-    title: 'Customer / vendor / job aging breakouts',
-    body: 'Per-customer per-job AR aging buckets (0-30, 31-60, 61-90, 91+). Mirror reports for AP. The kind of report you hand a banker.',
+    date: '2026-04',
+    bullets: [
+      'New: bid result CSV import + export with dry-run validation.',
+      'New: imported daily reports CSV import.',
+      'New: equipment-rates owned + rental rate book with CSV round trip.',
+      'New: vendor scorecard and COI aging reports.',
+    ],
   },
 ];
 
 export default function ChangelogPage() {
-  const t = getTranslator();
   return (
     <AppShell>
       <main className="mx-auto max-w-3xl">
-        <PageHeader
-          title={t('changelog.title')}
-          subtitle={t('changelog.subtitle')}
-        />
+        <PageHeader title="Changelog" subtitle="What's new in the YGE app, newest first." />
 
-        <ol className="space-y-3">
-          {RELEASE_NOTES.map((n, i) => (
-            <li key={i}>
-              <Card>
-                <div className="flex items-baseline justify-between gap-3">
-                  <h2 className="text-sm font-semibold text-gray-900">{n.title}</h2>
-                  <span className="shrink-0 text-[11px] uppercase tracking-wider text-gray-500">{n.date}</span>
-                </div>
-                <p className="mt-1 text-sm text-gray-700">{n.body}</p>
-              </Card>
-            </li>
+        <div className="space-y-6">
+          {ENTRIES.map((e) => (
+            <section key={e.date}>
+              <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-500">{e.date}</h2>
+              <ul className="space-y-1 rounded-lg border border-gray-200 bg-white p-3 text-sm shadow-sm">
+                {e.bullets.map((b, i) => (
+                  <li key={i} className="flex gap-2">
+                    <span className="text-yge-blue-600">·</span>
+                    <span>{b}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
           ))}
-        </ol>
+        </div>
       </main>
     </AppShell>
   );
