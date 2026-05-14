@@ -1,3 +1,4 @@
+// 1780: createJobFromEstimate already wired from bundle 1638.
 'use client';
 
 // Estimate detail — Excel-style inline editor.
