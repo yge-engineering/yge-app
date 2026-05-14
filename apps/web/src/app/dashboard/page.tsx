@@ -1116,6 +1116,8 @@ async function DashboardPageInner() {
             <QuickLink href="/reports" label="Reports & analytics" />
             <QuickLink href="/help" label="Help & shortcuts" />
             <QuickLink href="/admin/data-status" label="Data status" />
+            <QuickLink href="/admin/api-tour" label="API tour" />
+            <QuickLink href="/admin/onboarding" label="Onboarding" />
           </div>
         </section>
       </div>
