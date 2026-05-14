@@ -570,3 +570,81 @@ export function parseEstimates(bytes: Buffer): { estimates: ParsedEstimate[]; wa
 
   return { estimates, warnings };
 }
+
+
+// =====================================================================
+// E3a: Daily Reports parser.
+// "Daily Report" sheet: row 2 is the header, data rows from row 3.
+// Columns (0-indexed):
+//   0 Date · 1 Day · 2 Job # · 3 Job Name · 4 Category · 5 Cost Code
+//   6 Description · 7 Qty/Hrs · 8 Unit · 9 OT Mult · 10 Rate
+//   11 Total Cost · 12 Employee/Vendor · 13 Notes
+// =====================================================================
+
+export interface ParsedDailyReportLine {
+  date: string;        // ISO yyyy-mm-dd
+  jobNumber: string;
+  jobName: string | null;
+  category: string | null;
+  costCode: string | null;
+  description: string | null;
+  qtyHrs: number | null;
+  unit: string | null;
+  otMult: number | null;
+  rateCents: number | null;
+  totalCostCents: number | null;
+  employeeVendor: string | null;
+  notes: string | null;
+}
+
+export interface ParseDailyReportsResult {
+  lines: ParsedDailyReportLine[];
+  warnings: string[];
+}
+
+export function parseDailyReports(bytes: Buffer): ParseDailyReportsResult {
+  const wb = XLSX.read(bytes, { cellDates: true });
+  const lines: ParsedDailyReportLine[] = [];
+  const warnings: string[] = [];
+
+  const ws = wb.Sheets['Daily Report'];
+  if (!ws) {
+    warnings.push('Daily Report sheet missing');
+    return { lines, warnings };
+  }
+  const rows = XLSX.utils.sheet_to_json<unknown[]>(ws, {
+    header: 1,
+    defval: '',
+  });
+
+  for (let i = 3; i < rows.length; i++) {
+    const r = rows[i] ?? [];
+    const jobNumber = toStr(r[2]);
+    if (!jobNumber) continue;
+    const date = isoFromCell(r[0]);
+    if (!date) continue;
+    const qtyRaw = toStr(r[7]);
+    const qtyHrs = qtyRaw ? Number(qtyRaw) : null;
+    const otMultRaw = toStr(r[9]);
+    const otMult = otMultRaw ? Number(otMultRaw) : null;
+
+    lines.push({
+      date,
+      jobNumber,
+      jobName: maybeStr(r[3]),
+      category: maybeStr(r[4]),
+      costCode: maybeStr(r[5]),
+      description: maybeStr(r[6]),
+      qtyHrs: Number.isFinite(qtyHrs ?? NaN) ? qtyHrs : null,
+      unit: maybeStr(r[8]),
+      otMult: Number.isFinite(otMult ?? NaN) ? otMult : null,
+      rateCents: toCents(r[10]),
+      totalCostCents: toCents(r[11]),
+      employeeVendor: maybeStr(r[12]),
+      notes: maybeStr(r[13]),
+    });
+  }
+
+  return { lines, warnings };
+}
+

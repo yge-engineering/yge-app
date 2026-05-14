@@ -478,7 +478,7 @@ excelImportRouter.post(
 // A3: estimates import
 // -----------------------------------------------------------------
 
-import { parseEstimates } from '../lib/excel-master-tables';
+import { parseEstimates, parseDailyReports } from '../lib/excel-master-tables';
 
 excelImportRouter.post(
   '/estimates',
@@ -599,3 +599,108 @@ excelImportRouter.post(
     }
   },
 );
+
+
+// -----------------------------------------------------------------
+// E3a: Daily Reports import
+// -----------------------------------------------------------------
+
+excelImportRouter.post(
+  '/daily-reports',
+  upload.single('file'),
+  async (req, res, next) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
+      const dryRun = String(req.query.dryRun ?? '') === '1';
+      const parsed = parseDailyReports(req.file.buffer);
+
+      // Group by (jobNumber, date).
+      type Key = string; // `${jobNumber}|${date}`
+      const groups = new Map<Key, ParsedLineLite[]>();
+      for (const l of parsed.lines) {
+        const k = `${l.jobNumber}|${l.date}`;
+        const arr = groups.get(k) ?? [];
+        arr.push(l);
+        groups.set(k, arr);
+      }
+
+      const summary = {
+        lineItems: parsed.lines.length,
+        reports: groups.size,
+        written: 0,
+        skipped: 0,
+        unknownJobs: [] as string[],
+        warnings: parsed.warnings,
+        dryRun,
+      };
+
+      if (dryRun) {
+        return res.json({
+          summary,
+          sample: parsed.lines.slice(0, 5),
+        });
+      }
+
+      const co = companyId();
+
+      for (const [key, lines] of groups) {
+        const [jobNumber, reportDate] = key.split('|') as [string, string];
+        const job = await prisma.job.findFirst({
+          where: { companyId: co, jobNumber, deletedAt: null },
+        });
+        if (!job) {
+          if (!summary.unknownJobs.includes(jobNumber)) {
+            summary.unknownJobs.push(jobNumber);
+          }
+          summary.skipped++;
+          continue;
+        }
+
+        const existing = await prisma.dailyReport.findFirst({
+          where: { companyId: co, jobId: job.id, reportDate, deletedAt: null },
+        });
+        const data = { lines, importedFromExcel: true };
+        if (existing) {
+          await prisma.dailyReport.update({
+            where: { id: existing.id },
+            data: { data: JSON.parse(JSON.stringify(data)) },
+          });
+        } else {
+          await prisma.dailyReport.create({
+            data: {
+              id: 'dr-' + randomUUID().replace(/-/g, '').slice(0, 12),
+              companyId: co,
+              jobId: job.id,
+              reportDate,
+              data: JSON.parse(JSON.stringify(data)),
+            },
+          });
+        }
+        summary.written++;
+      }
+
+      res.json({ summary });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+type ParsedLineLite = {
+  date: string;
+  jobNumber: string;
+  jobName: string | null;
+  category: string | null;
+  costCode: string | null;
+  description: string | null;
+  qtyHrs: number | null;
+  unit: string | null;
+  otMult: number | null;
+  rateCents: number | null;
+  totalCostCents: number | null;
+  employeeVendor: string | null;
+  notes: string | null;
+};
+
