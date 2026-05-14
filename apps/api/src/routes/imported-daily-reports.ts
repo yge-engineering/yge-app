@@ -11,6 +11,58 @@ function companyId(): string {
   return process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
 }
 
+importedDailyReportsRouter.get('/today', async (_req, res, next) => {
+  try {
+    const co = companyId();
+    const today = new Date().toISOString().slice(0, 10);
+    const rows = await prisma.dailyReport.findMany({
+      where: { companyId: co, reportDate: today, deletedAt: null },
+    });
+    const jobIds = [...new Set(rows.map((r) => r.jobId))];
+    const jobs = await prisma.job.findMany({ where: { id: { in: jobIds } } });
+    const jobName = new Map(jobs.map((j) => [j.id, { jobNumber: j.jobNumber, name: j.name }]));
+
+    interface Line {
+      reportId: string;
+      jobId: string;
+      jobNumber: string;
+      jobName: string;
+      category: string | null;
+      costCode: string | null;
+      description: string | null;
+      qtyHrs: number | null;
+      unit: string | null;
+      totalCostCents: number | null;
+      employeeVendor: string | null;
+      createdAt: string;
+    }
+    const lines: Line[] = [];
+    for (const r of rows) {
+      const d = r.data as { lines?: Array<Record<string, unknown>> } | null;
+      const j = jobName.get(r.jobId) ?? { jobNumber: '—', name: '—' };
+      for (const ln of d?.lines ?? []) {
+        lines.push({
+          reportId: r.id,
+          jobId: r.jobId,
+          jobNumber: j.jobNumber,
+          jobName: j.name,
+          category: (ln.category as string | null) ?? null,
+          costCode: (ln.costCode as string | null) ?? null,
+          description: (ln.description as string | null) ?? null,
+          qtyHrs: typeof ln.qtyHrs === 'number' ? ln.qtyHrs : null,
+          unit: (ln.unit as string | null) ?? null,
+          totalCostCents: typeof ln.totalCostCents === 'number' ? ln.totalCostCents : null,
+          employeeVendor: (ln.employeeVendor as string | null) ?? null,
+          createdAt: r.updatedAt.toISOString(),
+        });
+      }
+    }
+    // Recent first.
+    lines.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    res.json({ date: today, lines });
+  } catch (err) { next(err); }
+});
+
 importedDailyReportsRouter.post('/quick-log', async (req, res, next) => {
   try {
     const co = companyId();

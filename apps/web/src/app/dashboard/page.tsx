@@ -16,6 +16,7 @@ import { LicenseRenewalBanner } from '../../components/license-renewal-banner';
 import { Money } from '../../components/money';
 import { RecentActivity } from '../../components/recent-activity';
 import { ExcelImportStatusTile } from '../../components/excel-import-status-tile';
+import { TodaysLinesTile } from '../../components/todays-lines-tile';
 import { getCurrentUser } from '../../lib/auth';
 import { getTranslator } from '../../lib/locale';
 import { bidDueCountdown } from '@yge/shared';
@@ -1063,6 +1064,7 @@ async function DashboardPageInner() {
 
         {/* EXCEL IMPORTS */}
         <ExcelImportStatusTile />
+        <TodaysLinesTile />
 
         {/* RECENT ACTIVITY */}
         <div className="lg:col-span-2">
