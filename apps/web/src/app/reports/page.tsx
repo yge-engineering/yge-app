@@ -313,6 +313,11 @@ const GROUPS: ReportGroup[] = [
         blurb: 'Where things live + how to move around fast.',
       },
       {
+        href: '/admin/onboarding',
+        label: 'Onboarding checklist',
+        blurb: '7-step new-instance setup walkthrough.',
+      },
+      {
         href: '/admin/health',
         label: 'System health',
         blurb: 'Anthropic + Storage + Graph + Gusto + Postgres + errors.',
