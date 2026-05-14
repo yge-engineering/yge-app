@@ -98,6 +98,18 @@ export default async function ImportedEstimatesPage() {
                   className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-semibold text-yge-blue-700 hover:bg-yge-blue-50"
                 >
                   Search bids →
+                </Link>
+                <Link
+                  href="/imported-estimates/pinned"
+                  className="rounded border border-yellow-500 px-3 py-1 text-xs font-semibold text-yellow-700 hover:bg-yellow-50"
+                >
+                  📌 Pinned →
+                </Link>
+                <Link
+                  href="/imported-estimates/submitted"
+                  className="rounded border border-green-500 px-3 py-1 text-xs font-semibold text-green-700 hover:bg-green-50"
+                >
+                  Submitted →
                 </Link> <span className="ml-1 text-[10px] text-gray-500">(slash key)</span>
               </div>
               <EstimatesSortHeaders targetId="imported-list-table" />
