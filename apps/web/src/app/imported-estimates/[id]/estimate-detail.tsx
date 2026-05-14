@@ -441,6 +441,13 @@ export function EstimateDetail({ initial, costCodes }: Props) {
           >
             Export Excel
           </a>
+          <a
+            href={`${API_BASE_URL}/api/imported-estimates/${estimate.id}/sections-summary.csv`}
+            className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100"
+            download
+          >
+            Sections CSV
+          </a>
           <button
             type="button"
             onClick={() => {

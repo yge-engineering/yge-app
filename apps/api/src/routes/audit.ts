@@ -1,3 +1,4 @@
+// 1833 — audit log surface check.
 // Audit-event routes — read-only.
 //
 // The audit log is append-only by design (the recordAudit helper

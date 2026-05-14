@@ -1,3 +1,4 @@
+// 1711 — master profile surface check — endpoints exist + healthy.
 // Master business profile route. Single-row endpoint.
 //
 // GET  /api/master-profile        read the row (seeds on first read)
