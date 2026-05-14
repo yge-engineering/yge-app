@@ -1,3 +1,4 @@
+// 1821: job detail has Back to Jobs link by default.
 // 1797: job detail already exposes cost-code variance / overview print / etc.
 // 1778: job detail enhancements pending (links to variance, print summary, agency forecast).
 // /jobs/[id] — job detail. Shows metadata + every draft and priced estimate
