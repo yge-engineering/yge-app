@@ -1,3 +1,4 @@
+// 1779 — dashboard rev: overnight session ~110 bundles.
 // /dashboard — morning glance.
 //
 // Replaces the placeholder card grid with a live tile board: today's
