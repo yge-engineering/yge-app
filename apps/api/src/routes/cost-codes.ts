@@ -115,6 +115,24 @@ costCodesRouter.get('/export.csv', async (_req, res, next) => {
   } catch (err) { next(err); }
 });
 
+costCodesRouter.get('/search', async (req, res, next) => {
+  try {
+    const q = typeof req.query.q === 'string' ? req.query.q.trim().toLowerCase() : '';
+    if (q.length < 1) return res.json({ matches: [] });
+    const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+    const all = await prisma.costCode.findMany({ where: { companyId, deletedAt: null } });
+    const matches = all
+      .filter((c) =>
+        c.code.toLowerCase().includes(q) ||
+        c.name.toLowerCase().includes(q) ||
+        (c.category ?? '').toLowerCase().includes(q),
+      )
+      .slice(0, 50)
+      .map((c) => ({ id: c.id, code: c.code, name: c.name, category: c.category }));
+    res.json({ q, matches });
+  } catch (err) { next(err); }
+});
+
 costCodesRouter.get('/stats', async (_req, res, next) => {
   try {
     const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
