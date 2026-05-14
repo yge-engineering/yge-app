@@ -1,0 +1,77 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+
+function apiBaseUrl(): string {
+  return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+}
+
+interface Result { path: string; ms: number; ok: boolean; note?: string }
+
+const ENDPOINTS = [
+  '/api/admin/health',
+  '/api/admin/data-status',
+  '/api/jobs/stats',
+  '/api/bid-results/stats',
+  '/api/customers',
+  '/api/vendors',
+  '/api/employees',
+  '/api/materials',
+  '/api/equipment-rates',
+  '/api/labor-rates',
+  '/api/cost-codes',
+  '/api/imported-estimates',
+];
+
+export function HealthExtendedPanel() {
+  const [results, setResults] = useState<Result[] | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const out: Result[] = [];
+      for (const p of ENDPOINTS) {
+        const t0 = performance.now();
+        try {
+          const r = await fetch(`${apiBaseUrl()}${p}`, { cache: 'no-store' });
+          const ms = Math.round(performance.now() - t0);
+          out.push({ path: p, ms, ok: r.ok, note: r.ok ? '' : `HTTP ${r.status}` });
+        } catch (err) {
+          const ms = Math.round(performance.now() - t0);
+          out.push({ path: p, ms, ok: false, note: err instanceof Error ? err.message : 'fetch failed' });
+        }
+      }
+      setResults(out);
+    })();
+  }, []);
+
+  if (!results) return <p className="text-sm text-gray-500">Pinging…</p>;
+  const okCount = results.filter((r) => r.ok).length;
+
+  return (
+    <div className="space-y-4">
+      <div className={`rounded-lg border p-3 text-sm ${okCount === results.length ? 'border-green-200 bg-green-50' : 'border-amber-200 bg-amber-50'}`}>
+        {okCount} / {results.length} endpoints responding OK.
+      </div>
+      <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-xs text-gray-500">
+              <th className="px-3 py-2">Endpoint</th>
+              <th className="px-3 py-2 text-right">ms</th>
+              <th className="px-3 py-2">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {results.map((r) => (
+              <tr key={r.path} className={`border-t border-gray-100 ${r.ok ? '' : 'bg-red-50'}`}>
+                <td className="px-3 py-2 font-mono text-xs">{r.path}</td>
+                <td className="px-3 py-2 text-right font-mono">{r.ms}</td>
+                <td className={`px-3 py-2 font-semibold ${r.ok ? 'text-green-700' : 'text-red-700'}`}>{r.ok ? 'OK' : (r.note ?? 'failed')}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
