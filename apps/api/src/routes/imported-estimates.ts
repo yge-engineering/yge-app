@@ -83,6 +83,34 @@ importedEstimatesRouter.get('/search', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+importedEstimatesRouter.get('/export.csv', async (_req, res, next) => {
+  try {
+    const all = await listImportedEstimates();
+    function esc(v: unknown): string {
+      if (v === null || v === undefined) return '';
+      const x = String(v);
+      if (x.includes(',') || x.includes('"') || x.includes('\n')) return '"' + x.replace(/"/g, '""') + '"';
+      return x;
+    }
+    const lines: string[] = [];
+    lines.push('id,jobNumber,projectName,client,rateType,oppPercent,directCost,oppMarkup,bidPrice,lineCount,jobId,createdAt');
+    for (const ie of all) {
+      lines.push([
+        esc(ie.id), esc(ie.jobNumber), esc(ie.projectName), esc(ie.client ?? ''),
+        esc(ie.rateType), esc((ie.oppPercent * 100).toFixed(1) + '%'),
+        esc((ie.directCostCents / 100).toFixed(2)),
+        esc((ie.oppMarkupCents / 100).toFixed(2)),
+        esc((ie.bidPriceCents / 100).toFixed(2)),
+        esc(ie.lines.length), esc(ie.jobId ?? ''),
+        esc(ie.createdAt),
+      ].join(','));
+    }
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="imported-estimates.csv"');
+    res.send(lines.join('\n'));
+  } catch (err) { next(err); }
+});
+
 importedEstimatesRouter.get('/audits-summary', async (_req, res, next) => {
   try {
     const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
