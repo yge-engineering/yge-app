@@ -1,6 +1,10 @@
 // Vendor routes.
 
 import { Router } from 'express';
+import multer from 'multer';
+
+const vendorUpload = multer({ limits: { fileSize: 5 * 1024 * 1024 } });
+import { randomUUID } from 'crypto';
 import { prisma } from '@yge/db';
 import {
   VendorCreateSchema,
@@ -51,6 +55,175 @@ vendorsRouter.get('/', async (req, res, next) => {
   } catch (err) {
     next(err);
   }
+});
+
+vendorsRouter.get('/export.csv', async (_req, res, next) => {
+  try {
+    const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+    const vendors = await prisma.vendor.findMany({ where: { companyId, deletedAt: null }, orderBy: { createdAt: 'desc' } });
+
+    function esc(v: unknown): string {
+      if (v === null || v === undefined) return '';
+      const x = String(v);
+      if (x.includes(',') || x.includes('"') || x.includes('\n')) return '"' + x.replace(/"/g, '""') + '"';
+      return x;
+    }
+
+    const lines: string[] = [];
+    lines.push('id,legalName,dbaName,kind,contactName,phone,email,tradeSpecialty,licenseNumber,paymentTerms,is1099Reportable,notes');
+    for (const v of vendors) {
+      const d = (v.data as Record<string, unknown> | null) ?? {};
+      lines.push([
+        esc(v.id),
+        esc((d.legalName as string) ?? ''),
+        esc((d.dbaName as string) ?? ''),
+        esc((d.kind as string) ?? ''),
+        esc((d.contactName as string) ?? ''),
+        esc((d.phone as string) ?? ''),
+        esc((d.email as string) ?? ''),
+        esc((d.tradeSpecialty as string) ?? ''),
+        esc((d.licenseNumber as string) ?? ''),
+        esc((d.paymentTerms as string) ?? ''),
+        esc(d.is1099Reportable ? 'true' : 'false'),
+        esc((d.notes as string) ?? ''),
+      ].join(','));
+    }
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="vendors.csv"');
+    res.send(lines.join('\n'));
+  } catch (err) { next(err); }
+});
+
+vendorsRouter.post('/import-csv', vendorUpload.single('file'), async (req, res, next) => {
+  try {
+    const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+    const dryRun = String(req.query.dryRun ?? '') === '1';
+
+    function parseCsv(s: string): string[][] {
+      const rows: string[][] = [];
+      let row: string[] = [];
+      let cell = '';
+      let inQ = false;
+      for (let i = 0; i < s.length; i++) {
+        const c = s[i];
+        if (inQ) {
+          if (c === '"' && s[i + 1] === '"') { cell += '"'; i += 1; }
+          else if (c === '"') { inQ = false; }
+          else { cell += c; }
+        } else {
+          if (c === '"') { inQ = true; }
+          else if (c === ',') { row.push(cell); cell = ''; }
+          else if (c === '\n' || c === '\r') {
+            if (c === '\r' && s[i + 1] === '\n') i += 1;
+            row.push(cell); cell = '';
+            if (row.some((x) => x.length > 0)) rows.push(row);
+            row = [];
+          } else { cell += c; }
+        }
+      }
+      if (cell.length > 0 || row.length > 0) {
+        row.push(cell);
+        if (row.some((x) => x.length > 0)) rows.push(row);
+      }
+      return rows;
+    }
+
+    const rows = parseCsv(req.file.buffer.toString('utf8'));
+    if (rows.length === 0) return res.status(400).json({ error: 'CSV is empty' });
+    const header = (rows[0] ?? []).map((h) => h.trim());
+    const idx = (col: string) => header.indexOf(col);
+
+    const iLegalName = idx('legalName');
+    const iKind = idx('kind');
+    if (iLegalName < 0 || iKind < 0) {
+      return res.status(400).json({ error: 'CSV must have legalName + kind columns' });
+    }
+    const iDbaName = idx('dbaName');
+    const iContactName = idx('contactName');
+    const iPhone = idx('phone');
+    const iEmail = idx('email');
+    const iTrade = idx('tradeSpecialty');
+    const iLicense = idx('licenseNumber');
+    const iTerms = idx('paymentTerms');
+    const i1099 = idx('is1099Reportable');
+    const iNotes = idx('notes');
+
+    const validKinds = new Set(['SUBCONTRACTOR', 'SUPPLIER', 'RENTAL', 'LABOR', 'SERVICE', 'OTHER']);
+    const summary = {
+      total: rows.length - 1,
+      created: 0,
+      updated: 0,
+      skipped: 0,
+      errors: [] as Array<{ row: number; reason: string }>,
+      dryRun,
+    };
+
+    const allVendors = await prisma.vendor.findMany({ where: { companyId, deletedAt: null } });
+
+    function cell(row: string[], i: number): string | undefined {
+      if (i < 0) return undefined;
+      const v = (row[i] ?? '').trim();
+      return v.length > 0 ? v : undefined;
+    }
+
+    for (let r = 1; r < rows.length; r++) {
+      const row = rows[r] ?? [];
+      const legalName = (row[iLegalName] ?? '').trim();
+      const kind = (row[iKind] ?? '').trim().toUpperCase();
+      if (!legalName) {
+        summary.errors.push({ row: r + 1, reason: 'legalName is empty' });
+        summary.skipped++;
+        continue;
+      }
+      if (!validKinds.has(kind)) {
+        summary.errors.push({ row: r + 1, reason: `invalid kind "${kind}"` });
+        summary.skipped++;
+        continue;
+      }
+      const data = {
+        legalName,
+        dbaName: cell(row, iDbaName) ?? legalName,
+        kind,
+        contactName: cell(row, iContactName),
+        phone: cell(row, iPhone),
+        email: cell(row, iEmail),
+        tradeSpecialty: cell(row, iTrade),
+        licenseNumber: cell(row, iLicense),
+        paymentTerms: cell(row, iTerms) ?? 'NET_30',
+        is1099Reportable: cell(row, i1099)?.toLowerCase() !== 'false',
+        notes: cell(row, iNotes),
+      };
+      const match = allVendors.find((v) => {
+        const vd = v.data as { legalName?: string } | null;
+        return (vd?.legalName ?? '').toLowerCase() === legalName.toLowerCase();
+      });
+
+      if (dryRun) {
+        if (match) summary.updated++;
+        else summary.created++;
+        continue;
+      }
+
+      if (match) {
+        const merged = { ...((match.data as object) ?? {}), ...data };
+        await prisma.vendor.update({
+          where: { id: match.id },
+          data: { data: JSON.parse(JSON.stringify(merged)) },
+        });
+        summary.updated++;
+      } else {
+        const id = 'vnd-' + randomUUID().replace(/-/g, '').slice(0, 12);
+        await prisma.vendor.create({
+          data: { id, companyId, data: JSON.parse(JSON.stringify(data)) },
+        });
+        summary.created++;
+      }
+    }
+
+    res.json({ summary });
+  } catch (err) { next(err); }
 });
 
 vendorsRouter.get('/scorecard', async (req, res, next) => {
