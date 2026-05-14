@@ -1,133 +1,96 @@
-// /help — first-day help page.
-//
-// Plain English: the cheat-sheet for the most common workflows.
-// Aimed at someone who just logged in and doesn't know where to
-// start. Will grow as we land more features.
+// /help — keyboard shortcuts + 'what's where' feature index.
 
-import { AppShell, Card, LinkButton, PageHeader } from '../../components';
-import { getTranslator } from '../../lib/locale';
+import Link from 'next/link';
+import { AppShell, PageHeader } from '../../components';
 
-interface HowTo {
-  title: string;
-  steps: string[];
-  done: { label: string; href: string };
+interface Shortcut {
+  keys: string;
+  description: string;
 }
 
-const HOW_TOS: HowTo[] = [
-  {
-    title: 'Start a new bid',
-    steps: [
-      'Go to Jobs (sidebar) and click "+ New job". Fill in the project name, agency, and contract type.',
-      'Open the job, scroll to "Estimates", click "Plans-to-Estimate (AI)" to upload the plan PDF.',
-      'AI drafts a take-off + quantities. Review, edit, click "Promote to estimate".',
-      'Open the estimate, set unit prices, hit "Print bid envelope" — that gives you the cover letter, sub list, addenda acks, and last-mile manifest.',
-    ],
-    done: { label: 'Open Jobs', href: '/jobs' },
-  },
-  {
-    title: 'Log a daily report',
-    steps: [
-      'Open Daily reports (sidebar). Click "+ New daily report".',
-      'Pick the job and date. The system pulls today\'s dispatch as the starting crew list.',
-      'Add start / end / lunch times for each crew member. CA meal-break violations highlight in red — fix them or note the waiver.',
-      'Fill in scope-completed, issues, visitors. Submit.',
-    ],
-    done: { label: 'Open Daily reports', href: '/daily-reports' },
-  },
-  {
-    title: 'Send an AR invoice',
-    steps: [
-      'Open AR invoices. Click "+ New invoice".',
-      'Pick the customer + job. Add line items.',
-      'Save → Print. You get a PDF on YGE letterhead with the right CSLB number printed.',
-      'Email or mail the PDF. Mark "Sent" in the app once it goes out.',
-    ],
-    done: { label: 'Open AR invoices', href: '/ar-invoices' },
-  },
-  {
-    title: 'Run weekly certified payroll',
-    steps: [
-      'Open Time cards. Confirm every employee\'s week is submitted + approved.',
-      'Open Certified payrolls → "+ New". Pick the week + the public-works job.',
-      'System pulls hours from time cards, applies DIR rates from /dir-rates, generates the A-1-131 form.',
-      'Review, sign electronically, file with DIR or download for paper filing.',
-    ],
-    done: { label: 'Open Certified payrolls', href: '/certified-payrolls' },
-  },
+const SHORTCUTS: Shortcut[] = [
+  { keys: '/', description: 'Open search on the imported-estimates list' },
+  { keys: 'g d', description: 'Go to dashboard' },
+  { keys: 'g j', description: 'Go to jobs' },
+  { keys: 'g e', description: 'Go to imported estimates' },
+  { keys: 'g r', description: 'Go to reports' },
+  { keys: 'g c', description: 'Go to customers' },
+  { keys: 'Tab / Shift+Tab', description: 'Move between cells in the estimate editor' },
+  { keys: 'Enter', description: 'Save the current cell and stay' },
 ];
 
-const FAQS = [
-  {
-    q: 'Where do I change company info (logo, address, license number)?',
-    a: 'Brand kit page (sidebar → All modules → Records → Brand kit). Anything you change there flows into every printed document.',
-  },
-  {
-    q: 'How do I add a new employee?',
-    a: 'Employees (sidebar) → "+ New employee". Fill in name, role, classification (used for prevailing wage), hire date.',
-  },
-  {
-    q: 'What\'s the difference between Drafts and Estimates?',
-    a: 'A draft is a take-off in progress — quantities only, no prices. An estimate is the priced version, ready to bid. Drafts get promoted to estimates once you set unit prices.',
-  },
-  {
-    q: 'Why does the dashboard show 0s for everything?',
-    a: 'The API server probably isn\'t running locally. Once we deploy the API to a real server (or you start it with `pnpm dev` in apps/api), the tiles will fill in.',
-  },
-  {
-    q: 'How do I get back to the dashboard?',
-    a: 'Click the YGE logo in the upper left. Or click "Dashboard" in the sidebar.',
-  },
+interface FeatureCard {
+  href: string;
+  title: string;
+  blurb: string;
+}
+
+const QUICK_FEATURES: FeatureCard[] = [
+  { href: '/bids/calendar', title: 'Bid calendar', blurb: 'Upcoming bid deadlines by week.' },
+  { href: '/imported-estimates', title: 'Imported estimates', blurb: 'Every estimate from Excel.' },
+  { href: '/imported-estimates/search', title: 'Search bids', blurb: 'Full-text search across estimates.' },
+  { href: '/imported-estimates/compare', title: 'Compare two bids', blurb: 'Side-by-side cost-code diff.' },
+  { href: '/customers/touchpoints', title: 'Customer dormancy', blurb: 'Who haven\'t we talked to recently.' },
+  { href: '/cost-codes', title: 'Cost code master', blurb: 'Codes + top-10 spend.' },
+  { href: '/cost-codes/trends', title: 'Cost code trends', blurb: 'Climbing / falling unit costs.' },
+  { href: '/vendors/scorecard', title: 'Sub scorecard', blurb: 'Paid, open, days-to-pay per sub.' },
+  { href: '/equipment-rates/usage', title: 'Equipment usage', blurb: 'Bid vs actual per piece.' },
+  { href: '/employees/utilization', title: 'Labor utilization', blurb: 'Weekly hours per employee.' },
+  { href: '/bid-results/by-agency', title: 'Win rate by agency', blurb: 'Color-coded win rates.' },
+  { href: '/reports', title: 'Reports hub', blurb: 'All 50+ analyses on one page.' },
 ];
 
 export default function HelpPage() {
-  const t = getTranslator();
   return (
     <AppShell>
-      <main className="mx-auto max-w-3xl">
+      <main className="mx-auto max-w-4xl">
         <PageHeader
-          title={t('help.title')}
-          subtitle={t('help.subtitle')}
+          title="Help & shortcuts"
+          subtitle="Where things live + how to move around fast."
         />
 
-        <section className="mb-10">
-          <h2 className="mb-4 text-base font-semibold text-gray-900">{t('help.h.howTos')}</h2>
-          <div className="space-y-4">
-            {HOW_TOS.map((h) => (
-              <Card key={h.title}>
-                <h3 className="text-sm font-semibold text-gray-900">{h.title}</h3>
-                <ol className="mt-3 space-y-2 text-sm text-gray-700">
-                  {h.steps.map((s, i) => (
-                    <li key={i} className="flex gap-2">
-                      <span className="font-mono text-xs text-gray-400">{i + 1}.</span>
-                      <span>{s}</span>
-                    </li>
-                  ))}
-                </ol>
-                <div className="mt-4">
-                  <LinkButton href={h.done.href} variant="primary" size="sm">
-                    {h.done.label}
-                  </LinkButton>
-                </div>
-              </Card>
-            ))}
-          </div>
+        <section className="mb-8 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+          <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-gray-700">
+            Keyboard shortcuts
+          </h2>
+          <table className="w-full text-sm">
+            <tbody>
+              {SHORTCUTS.map((s) => (
+                <tr key={s.keys} className="border-t border-gray-100">
+                  <td className="py-1 pr-4">
+                    <kbd className="rounded border border-gray-300 bg-gray-50 px-2 py-0.5 font-mono text-xs">
+                      {s.keys}
+                    </kbd>
+                  </td>
+                  <td className="py-1 text-gray-700">{s.description}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="mt-3 text-xs text-gray-500">
+            (Shortcuts marked g-prefix not yet wired — placeholder. The /
+            search keystroke is wired in the keyboard-nav helper.)
+          </p>
         </section>
 
         <section>
-          <h2 className="mb-4 text-base font-semibold text-gray-900">{t('help.h.faq')}</h2>
-          <dl className="space-y-3">
-            {FAQS.map((f) => (
-              <Card key={f.q}>
-                <dt className="text-sm font-medium text-gray-900">{f.q}</dt>
-                <dd className="mt-1 text-sm text-gray-700">{f.a}</dd>
-              </Card>
+          <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-gray-700">
+            Quick features
+          </h2>
+          <ul className="grid gap-3 sm:grid-cols-2">
+            {QUICK_FEATURES.map((f) => (
+              <li key={f.href}>
+                <Link
+                  href={f.href}
+                  className="block rounded-lg border border-gray-200 bg-white p-3 shadow-sm hover:border-yge-blue-300 hover:bg-yge-blue-50"
+                >
+                  <div className="text-sm font-semibold text-yge-blue-900">{f.title}</div>
+                  <p className="text-xs text-gray-600">{f.blurb}</p>
+                </Link>
+              </li>
             ))}
-          </dl>
+          </ul>
         </section>
-
-        <p className="mt-10 text-center text-xs text-gray-400">
-          {t('help.footer')}
-        </p>
       </main>
     </AppShell>
   );
