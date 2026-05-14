@@ -43,3 +43,31 @@ jobsStatsRouter.get('/stats/by-year', async (_req, res, next) => {
   } catch (err) { next(err); }
 });
 
+jobsStatsRouter.get('/stats/awarded-revenue', async (_req, res, next) => {
+  try {
+    const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+    const jobs = await prisma.job.findMany({ where: { companyId, deletedAt: null } });
+    const ies = await prisma.importedEstimate.findMany({ where: { companyId, deletedAt: null } });
+    const bidByJobId = new Map<string, number>();
+    for (const ie of ies) {
+      const d = ie.data as { jobId?: string; bidPriceCents?: number } | null;
+      if (!d?.jobId || !d.bidPriceCents) continue;
+      const prev = bidByJobId.get(d.jobId) ?? 0;
+      if (d.bidPriceCents > prev) bidByJobId.set(d.jobId, d.bidPriceCents);
+    }
+
+    interface Year { year: number; jobs: number; revenueCents: number }
+    const byYear = new Map<number, Year>();
+    for (const j of jobs) {
+      if (j.status !== 'AWARDED' && j.status !== 'ACTIVE' && j.status !== 'CLOSED') continue;
+      const yr = j.createdAt.getFullYear();
+      let st = byYear.get(yr);
+      if (!st) { st = { year: yr, jobs: 0, revenueCents: 0 }; byYear.set(yr, st); }
+      st.jobs += 1;
+      st.revenueCents += bidByJobId.get(j.id) ?? 0;
+    }
+    const years = [...byYear.values()].sort((a, b) => b.year - a.year);
+    res.json({ years });
+  } catch (err) { next(err); }
+});
+
