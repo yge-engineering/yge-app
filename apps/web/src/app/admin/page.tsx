@@ -1,3 +1,4 @@
+// 1796: admin index already has all 9 cards.
 // /admin — quick-jump index of admin tools.
 
 import Link from 'next/link';
