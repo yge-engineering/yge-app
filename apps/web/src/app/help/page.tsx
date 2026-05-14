@@ -1,3 +1,4 @@
+// 1802 — help page; shortcut wiring is partial (marked in page body).
 // /help — keyboard shortcuts + 'what's where' feature index.
 
 import Link from 'next/link';
