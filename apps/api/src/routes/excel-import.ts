@@ -341,26 +341,59 @@ excelImportRouter.post(
       }
 
       // E2: Customer master auto-import from Jobs.client.
-      function inferCustomerType(name: string): 'PUBLIC_AGENCY' | 'UTILITY' | 'PRIVATE' | 'OTHER' {
+      type ZodKind =
+        | 'STATE_AGENCY' | 'FEDERAL_AGENCY' | 'COUNTY' | 'CITY'
+        | 'SPECIAL_DISTRICT' | 'PRIVATE_OWNER' | 'PRIME_CONTRACTOR' | 'OTHER';
+      function inferCustomerKind(name: string): ZodKind {
         const n = name.toLowerCase();
-        const publicHints = [
-          'city of', 'county of', 'state of', 'united states',
-          'caltrans', 'cal fire', 'cal-fire', 'usda', 'usfs', 'blm',
-          'army corps', 'corps of engineers', 'school district',
-          'unified school', 'authority', 'department of',
-          'bureau of', 'agency', 'csu', 'university of california',
-          ' uc ', ' cc ', 'community college', 'transportation',
-          'public works', 'water district', 'irrigation district',
-          'sanitation district', 'fire protection district',
-        ];
-        const utilityHints = [
-          'pg&e', 'pacific gas', 'southern california edison', 'sce ',
-          'at&t', 'att inc', 'frontier', 'comcast', 'verizon',
-          't-mobile', 'sprint', 'liberty utilities',
-        ];
-        if (publicHints.some((h) => n.includes(h))) return 'PUBLIC_AGENCY';
-        if (utilityHints.some((h) => n.includes(h))) return 'UTILITY';
-        return 'PRIVATE';
+        if (/\bcity of\b/.test(n)) return 'CITY';
+        if (/\bcounty of\b|\bcounty\s*$/.test(n)) return 'COUNTY';
+        if (n.includes('caltrans') || n.includes('cal fire') || n.includes('cal-fire') ||
+            n.includes('state of') || n.includes('dgs ') || n.includes('csu') ||
+            n.includes('university of california') || n.includes('community college'))
+          return 'STATE_AGENCY';
+        if (n.includes('usfs') || n.includes('blm') || n.includes('army corps') ||
+            n.includes('corps of engineers') || n.includes('bureau of') ||
+            n.includes('usda') || n.includes('united states') || n.includes('forest service'))
+          return 'FEDERAL_AGENCY';
+        if (n.includes('school district') || n.includes('unified school') ||
+            n.includes('water district') || n.includes('irrigation district') ||
+            n.includes('fire protection district') || n.includes('sanitation district') ||
+            n.includes('authority'))
+          return 'SPECIAL_DISTRICT';
+        return 'PRIVATE_OWNER';
+      }
+      function kindToPrismaType(k: ZodKind): 'PUBLIC_AGENCY' | 'UTILITY' | 'PRIVATE' | 'OTHER' {
+        switch (k) {
+          case 'STATE_AGENCY':
+          case 'FEDERAL_AGENCY':
+          case 'COUNTY':
+          case 'CITY':
+          case 'SPECIAL_DISTRICT':
+            return 'PUBLIC_AGENCY';
+          case 'PRIVATE_OWNER':
+          case 'PRIME_CONTRACTOR':
+            return 'PRIVATE';
+          default:
+            return 'OTHER';
+        }
+      }
+      function newCustomerIdFromHex(): string {
+        const hex = Math.floor(Math.random() * 0x100000000).toString(16);
+        return 'cus-' + hex.padStart(8, '0');
+      }
+      function buildCustomerData(legalName: string, kind: ZodKind, idHint?: string) {
+        const id = idHint ?? newCustomerIdFromHex();
+        const now = new Date().toISOString();
+        return {
+          id,
+          createdAt: now,
+          updatedAt: now,
+          legalName,
+          kind,
+          taxExempt: false,
+          onHold: false,
+        };
       }
 
       // First pass: build a map of distinct client names → Customer id.
@@ -377,11 +410,16 @@ excelImportRouter.post(
           distinctClients.set(key, existing.id);
           continue;
         }
+        const kind = inferCustomerKind(c);
+        const cusId = newCustomerIdFromHex();
+        const cusData = buildCustomerData(c, kind, cusId);
         const created = await prisma.customer.create({
           data: {
+            id: cusId,
             companyId: co,
             name: c,
-            type: inferCustomerType(c),
+            type: kindToPrismaType(kind),
+            data: JSON.parse(JSON.stringify(cusData)),
           },
         });
         distinctClients.set(key, created.id);
@@ -704,3 +742,72 @@ type ParsedLineLite = {
   notes: string | null;
 };
 
+// -----------------------------------------------------------------
+// Q0 backfill: walk Customer rows where data is missing or fails
+// CustomerSchema.parse, and write a valid Customer JSON.
+// -----------------------------------------------------------------
+
+excelImportRouter.post('/backfill-customers', async (_req, res, next) => {
+  try {
+    const co = companyId();
+    const rows = await prisma.customer.findMany({ where: { companyId: co, deletedAt: null } });
+
+    type ZodKind =
+      | 'STATE_AGENCY' | 'FEDERAL_AGENCY' | 'COUNTY' | 'CITY'
+      | 'SPECIAL_DISTRICT' | 'PRIVATE_OWNER' | 'PRIME_CONTRACTOR' | 'OTHER';
+    function inferCustomerKind(name: string): ZodKind {
+      const n = name.toLowerCase();
+      if (/\bcity of\b/.test(n)) return 'CITY';
+      if (/\bcounty of\b|\bcounty\s*$/.test(n)) return 'COUNTY';
+      if (n.includes('caltrans') || n.includes('cal fire') || n.includes('cal-fire') ||
+          n.includes('state of') || n.includes('csu') || n.includes('university of california') ||
+          n.includes('community college'))
+        return 'STATE_AGENCY';
+      if (n.includes('usfs') || n.includes('blm') || n.includes('army corps') ||
+          n.includes('corps of engineers') || n.includes('bureau of') ||
+          n.includes('usda') || n.includes('united states') || n.includes('forest service'))
+        return 'FEDERAL_AGENCY';
+      if (n.includes('school district') || n.includes('unified school') ||
+          n.includes('water district') || n.includes('irrigation district') ||
+          n.includes('fire protection district') || n.includes('sanitation district') ||
+          n.includes('authority'))
+        return 'SPECIAL_DISTRICT';
+      return 'PRIVATE_OWNER';
+    }
+
+    let written = 0;
+    let skipped = 0;
+    for (const r of rows) {
+      const d = r.data as Record<string, unknown> | null;
+      // Already valid if data has legalName + kind.
+      if (d && typeof d === 'object' && typeof (d as { legalName?: unknown }).legalName === 'string') {
+        skipped += 1;
+        continue;
+      }
+      const kind = inferCustomerKind(r.name);
+      const nowIso = new Date().toISOString();
+      const cusData = {
+        id: r.id,
+        createdAt: r.createdAt.toISOString(),
+        updatedAt: nowIso,
+        legalName: r.name,
+        kind,
+        contactName: r.contactName ?? undefined,
+        email: r.contactEmail ?? undefined,
+        phone: r.contactPhone ?? undefined,
+        billingAddressLine: r.addressLine ?? undefined,
+        city: r.city ?? undefined,
+        state: r.state ?? undefined,
+        zip: r.zip ?? undefined,
+        taxExempt: false,
+        onHold: false,
+      };
+      await prisma.customer.update({
+        where: { id: r.id },
+        data: { data: JSON.parse(JSON.stringify(cusData)) },
+      });
+      written += 1;
+    }
+    res.json({ written, skipped, totalRows: rows.length });
+  } catch (err) { next(err); }
+});
