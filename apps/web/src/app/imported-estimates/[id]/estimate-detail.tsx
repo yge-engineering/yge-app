@@ -15,6 +15,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { EstimateSnapshotsPanel } from '@/components/estimate-snapshots-panel';
+import { EstimateSectionsSummary } from '@/components/estimate-sections-summary';
 import { EstimatePriceAuditPanel } from '@/components/estimate-price-audit-panel';
 import { useRouter } from 'next/navigation';
 import {
@@ -588,6 +589,10 @@ export function EstimateDetail({ initial, costCodes }: Props) {
         </button>
       </div>
 
+      <div className="mt-6">
+        <h3 className="mb-2 text-sm font-semibold text-gray-900">Bid breakdown</h3>
+        <EstimateSectionsSummary estimateId={estimate.id} />
+      </div>
       <div className="mt-6">
         <h3 className="mb-2 text-sm font-semibold text-gray-900">Price audit</h3>
         <EstimatePriceAuditPanel estimateId={estimate.id} />
