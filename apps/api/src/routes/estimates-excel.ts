@@ -329,3 +329,126 @@ estimatesExcelRouter.get('/:id/excel-data', async (req, res, next) => {
   }
 });
 
+
+// PATCH /api/estimates/:id/excel-data — save edits made in the
+// in-app editor. Recomputes totals server-side so the client can't
+// drift. Touches updatedAt so Live Sync flips to 'app-newer'.
+const ExcelCostLineSchema = z.object({
+  category: z.string().nullable(),
+  costCode: z.string().nullable(),
+  description: z.string(),
+  quantity: z.number(),
+  unit: z.string(),
+  otMult: z.number(),
+  unitCostCents: z.number().int(),
+  totalCostCents: z.number().int().optional(),
+  oppMarkupCents: z.number().int().optional(),
+  bidPriceCents: z.number().int().optional(),
+  notes: z.string().nullable(),
+});
+const ExcelBidItemSchema = z.object({
+  itemNumber: z.string(),
+  description: z.string(),
+  costLines: z.array(ExcelCostLineSchema),
+  subtotalDirectCents: z.number().int().optional(),
+  subtotalOppCents: z.number().int().optional(),
+  subtotalBidCents: z.number().int().optional(),
+});
+const ExcelDataPatchSchema = z.object({
+  jobNumber: z.string().optional(),
+  projectName: z.string().optional(),
+  rateType: z.string().optional(),
+  oppPercent: z.number().optional(),
+  bidItems: z.array(ExcelBidItemSchema),
+});
+
+estimatesExcelRouter.patch('/:id/excel-data', async (req, res, next) => {
+  try {
+    const id = req.params.id ?? '';
+    const row = await prisma.estimate.findFirst({
+      where: { id, deletedAt: null },
+    });
+    if (!row) return res.status(404).json({ error: 'Estimate not found' });
+    const stored = (row.data ?? {}) as Record<string, unknown> & {
+      importedFromExcel?: boolean;
+    };
+    if (!stored.importedFromExcel) {
+      return res.status(400).json({ error: 'Not an Excel-imported estimate' });
+    }
+    const parsed = ExcelDataPatchSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Validation failed', issues: parsed.error.issues });
+    }
+    const oppPct = parsed.data.oppPercent ?? (stored.oppPercent as number) ?? 0.2;
+
+    // Server-side recompute so the totals can never drift from the
+    // line-level numbers.
+    let grandDirect = 0;
+    let grandOpp = 0;
+    let grandBid = 0;
+    const bidItems = parsed.data.bidItems.map((bi) => {
+      let direct = 0;
+      let opp = 0;
+      let bid = 0;
+      const lines = bi.costLines.map((line) => {
+        const total = Math.round(line.quantity * line.otMult * line.unitCostCents);
+        const markup = Math.round(total * oppPct);
+        const bidPrice = total + markup;
+        direct += total;
+        opp += markup;
+        bid += bidPrice;
+        return {
+          ...line,
+          totalCostCents: total,
+          oppMarkupCents: markup,
+          bidPriceCents: bidPrice,
+        };
+      });
+      grandDirect += direct;
+      grandOpp += opp;
+      grandBid += bid;
+      return {
+        ...bi,
+        costLines: lines,
+        subtotalDirectCents: direct,
+        subtotalOppCents: opp,
+        subtotalBidCents: bid,
+      };
+    });
+
+    const data = JSON.parse(
+      JSON.stringify({
+        ...stored,
+        jobNumber: parsed.data.jobNumber ?? stored.jobNumber,
+        projectName: parsed.data.projectName ?? stored.projectName,
+        rateType: parsed.data.rateType ?? stored.rateType,
+        oppPercent: oppPct,
+        bidItems,
+        directCostCents: grandDirect,
+        oppMarkupCents: grandOpp,
+        bidPriceCents: grandBid,
+        lastEditedAt: new Date().toISOString(),
+      }),
+    );
+
+    await prisma.estimate.update({
+      where: { id: row.id },
+      data: {
+        oppAmountCents: BigInt(grandOpp),
+        oppPercent: oppPct,
+        data,
+      },
+    });
+
+    res.json({
+      ok: true,
+      directCostCents: grandDirect,
+      oppMarkupCents: grandOpp,
+      bidPriceCents: grandBid,
+      bidItemCount: bidItems.length,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
