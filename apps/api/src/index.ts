@@ -8,6 +8,7 @@ import { requestIdMiddleware } from './middleware/request-id';
 import pinoHttp from 'pino-http';
 import { logger } from './lib/logger';
 import { healthRouter } from './routes/health';
+import { adminDataStatusRouter } from './routes/admin-data-status';
 import { companyInfoRouter } from './routes/company-info';
 import { jobsRouter } from './routes/jobs';
 import { jobsBudgetActualRouter } from './routes/jobs-budget-actual';
@@ -127,6 +128,7 @@ app.use(pinoHttp({ logger }));
 app.use(tenantMiddleware);
 
 app.use('/health', healthRouter);
+app.use('/api/admin/data-status', adminDataStatusRouter);
 app.use('/api/company-info', companyInfoRouter);
 app.use('/api/jobs', jobsBudgetActualRouter);
 app.use('/api/jobs', jobsCostCodeVarianceRouter);
