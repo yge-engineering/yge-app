@@ -9,6 +9,7 @@ import pinoHttp from 'pino-http';
 import { logger } from './lib/logger';
 import { healthRouter } from './routes/health';
 import { adminDataStatusRouter } from './routes/admin-data-status';
+import { adminAuditSummaryRouter } from './routes/admin-audit-summary';
 import { dashboardSummaryRouter } from './routes/dashboard-summary';
 import { companyInfoRouter } from './routes/company-info';
 import { jobsRouter } from './routes/jobs';
@@ -131,6 +132,7 @@ app.use(tenantMiddleware);
 
 app.use('/health', healthRouter);
 app.use('/api/admin/data-status', adminDataStatusRouter);
+app.use('/api/admin/audit-summary', adminAuditSummaryRouter);
 app.use('/api/dashboard', dashboardSummaryRouter);
 app.use('/api/company-info', companyInfoRouter);
 app.use('/api/jobs', jobsBudgetActualRouter);
