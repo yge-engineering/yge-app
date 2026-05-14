@@ -46,6 +46,7 @@ export function TouchpointsTable() {
             <th className="px-3 py-2">Last estimate</th>
             <th className="px-3 py-2">Last bid result</th>
             <th className="px-3 py-2 text-right">Days dormant</th>
+            <th className="px-3 py-2">Outreach</th>
           </tr>
         </thead>
         <tbody>
@@ -74,6 +75,18 @@ export function TouchpointsTable() {
                 </td>
                 <td className={`px-3 py-2 text-right font-mono ${tone}`}>
                   {r.daysSinceContact ?? '—'}
+                </td>
+                <td className="px-3 py-2 text-xs">
+                  {(r.daysSinceContact ?? 0) > 180 ? (
+                    <a
+                      href={`mailto:?subject=${encodeURIComponent('Touching base — Young General Engineering')}&body=${encodeURIComponent(`Hi,\n\nI noticed we haven't connected in a while. Wanted to reach out to see if there's anything coming up your way we might be a good fit on.\n\nRyan Young\nYoung General Engineering, Inc.\n707-599-9921`)}`}
+                      className="rounded border border-yge-blue-500 px-2 py-0.5 text-[11px] font-medium text-yge-blue-700 hover:bg-yge-blue-50"
+                    >
+                      Compose email
+                    </a>
+                  ) : (
+                    <span className="text-gray-400">—</span>
+                  )}
                 </td>
               </tr>
             );
