@@ -110,6 +110,54 @@ costCodesRouter.delete('/:id', async (req, res, next) => {
 // GET /api/cost-codes/:code/resolve?rateType=PW|Private|DB|IBEW
 // — look up the rate row matching this cost code (Labor / Equipment
 // Owned / Equipment Rental / Material) and return the unit cost.
+costCodesRouter.get('/:code/history', async (req, res, next) => {
+  try {
+    const code = String(req.params.code ?? '').toUpperCase();
+    const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+    const limit = Math.max(1, Math.min(50, Number(req.query.limit ?? 10)));
+
+    const ies = await prisma.importedEstimate.findMany({
+      where: { companyId, deletedAt: null },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    interface Row {
+      estimateId: string;
+      jobNumber: string;
+      projectName: string;
+      createdAt: string;
+      quantity: number;
+      unitCostCents: number;
+      totalCostCents: number;
+      bidPriceCents: number;
+      description: string;
+    }
+    const rows: Row[] = [];
+    for (const ie of ies) {
+      const d = ie.data as { projectName?: string; lines?: Array<{ costCode?: string; quantity?: number; unitCostCents?: number; totalCostCents?: number; bidPriceCents?: number; description?: string }> } | null;
+      for (const ln of d?.lines ?? []) {
+        const c = (ln.costCode ?? '').trim().toUpperCase();
+        if (c !== code) continue;
+        rows.push({
+          estimateId: ie.id,
+          jobNumber: ie.jobNumber,
+          projectName: d?.projectName ?? '',
+          createdAt: ie.createdAt.toISOString(),
+          quantity: ln.quantity ?? 0,
+          unitCostCents: ln.unitCostCents ?? 0,
+          totalCostCents: ln.totalCostCents ?? 0,
+          bidPriceCents: ln.bidPriceCents ?? 0,
+          description: ln.description ?? '',
+        });
+        if (rows.length >= limit) break;
+      }
+      if (rows.length >= limit) break;
+    }
+
+    res.json({ code, rows });
+  } catch (err) { next(err); }
+});
+
 costCodesRouter.get('/:code/resolve', async (req, res, next) => {
   try {
     const code = String(req.params.code ?? '').toUpperCase();
