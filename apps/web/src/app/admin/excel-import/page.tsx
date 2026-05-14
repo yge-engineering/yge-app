@@ -15,15 +15,7 @@ export default function ExcelImportPage() {
           subtitle="Import the master rate tables, cost codes, subs, employees, jobs, and estimates from the YGE Job Cost System workbook."
         />
         <ExcelImportForm />
-      
-        <section className="mt-6 rounded-lg border border-gray-200 bg-white p-4">
-          <h2 className="mb-2 text-lg font-semibold">4 · Daily Reports</h2>
-          <p className="mb-3 text-sm text-gray-600">
-            Imports the "Daily Report" sheet — one row per line item, grouped by job + date into DailyReport records.
-          </p>
-          <UploadForm endpoint="/api/admin/excel-import/daily-reports" label="Import Daily Reports" />
-        </section>
-      </main>
+            </main>
     </AppShell>
   );
 }
