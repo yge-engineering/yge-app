@@ -1,3 +1,4 @@
+// 1728: CSV export available at /api/vendors/export.csv
 // /vendors — vendor master list with compliance flags.
 //
 // Plain English: suppliers, subcontractors, and service providers.
