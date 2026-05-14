@@ -1,3 +1,4 @@
+// 1835: CSV export + usage rollup links already on quick-action bar.
 // /equipment-rates — master rate book for owned + rental equipment.
 
 import type { EquipmentRate } from '@yge/shared';
