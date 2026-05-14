@@ -9261,6 +9261,7 @@ export const SEED_DICTIONARY: DictionaryByLocale = {
     'nav.help': 'Ayuda',
     'nav.changelog': 'Novedades',
     'nav.feedback': 'Comentarios',
+    'nav.inboxTriage': 'Clasificación de bandeja',
   },
 };
 
