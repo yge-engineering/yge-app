@@ -223,6 +223,46 @@ importedEstimatesRouter.get('/:id/excel.xlsx', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+importedEstimatesRouter.get('/audits-summary', async (_req, res, next) => {
+  try {
+    const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+    const [materials, labor, equip, equipRental] = await Promise.all([
+      prisma.material.findMany({ where: { companyId, deletedAt: null } }),
+      prisma.laborRate.findMany({ where: { companyId, deletedAt: null } }),
+      prisma.equipmentRate.findMany({ where: { companyId, deletedAt: null } }),
+      prisma.equipmentRental.findMany({ where: { companyId, deletedAt: null } }),
+    ]);
+    const master = new Map<string, number>();
+    for (const m of materials) master.set(m.code.toUpperCase(), m.unitCostCents);
+    for (const lr of labor) master.set(lr.code.toUpperCase(), lr.baseCentsPW);
+    for (const eq of equip) master.set(eq.code.toUpperCase(), eq.hourlyCents);
+    for (const er of equipRental) {
+      master.set(er.code.toUpperCase(), er.dailyCents || er.hourlyCents || er.weeklyCents || er.monthlyCents || 0);
+    }
+
+    const all = await listImportedEstimates();
+    interface SummaryRow { id: string; low: number; med: number; high: number; total: number }
+    const out: SummaryRow[] = [];
+    for (const ie of all) {
+      let low = 0, med = 0, high = 0;
+      for (const ln of ie.lines) {
+        const code = (ln.costCode ?? '').trim().toUpperCase();
+        if (!code) continue;
+        const m = master.get(code);
+        if (!m || m === 0) continue;
+        const delta = (ln.unitCostCents - m) / m;
+        const absDelta = Math.abs(delta);
+        if (absDelta < 0.25) continue;
+        if (absDelta >= 1.0) high += 1;
+        else if (absDelta >= 0.5) med += 1;
+        else low += 1;
+      }
+      out.push({ id: ie.id, low, med, high, total: low + med + high });
+    }
+    res.json({ summary: out });
+  } catch (err) { next(err); }
+});
+
 importedEstimatesRouter.get('/:id/audit', async (req, res, next) => {
   try {
     const ie = await getImportedEstimate(req.params.id);

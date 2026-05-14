@@ -17,6 +17,17 @@ function apiBaseUrl(): string {
   );
 }
 
+async function fetchAudits() {
+  try {
+    const res = await fetch(`${apiBaseUrl()}/api/imported-estimates/audits-summary`, { cache: 'no-store' });
+    if (!res.ok) return [] as Array<{ id: string; low: number; med: number; high: number; total: number }>;
+    const body = (await res.json()) as { summary?: Array<{ id: string; low: number; med: number; high: number; total: number }> };
+    return body.summary ?? [];
+  } catch {
+    return [] as Array<{ id: string; low: number; med: number; high: number; total: number }>;
+  }
+}
+
 async function fetchBidResults() {
   try {
     const res = await fetch(`${apiBaseUrl()}/api/bid-results`, { cache: 'no-store' });
@@ -45,7 +56,9 @@ function fmtMoney(cents: number): string {
 
 export default async function ImportedEstimatesPage() {
   requirePermission('estimates:view');
-  const [estimates, bidResults] = await Promise.all([fetchEstimates(), fetchBidResults()]);
+  const [estimates, bidResults, audits] = await Promise.all([fetchEstimates(), fetchBidResults(), fetchAudits()]);
+  const auditByEstimateId = new Map<string, { low: number; med: number; high: number; total: number }>();
+  for (const a of audits) auditByEstimateId.set(a.id, a);
   const outcomeByJobId = new Map<string, string>();
   for (const r of bidResults) outcomeByJobId.set(r.jobId, r.outcome);
   return (
@@ -115,12 +128,29 @@ export default async function ImportedEstimatesPage() {
                   >
                     <td className="px-3 py-2 font-mono text-xs">{e.jobNumber}</td>
                     <td className="px-3 py-2">
-                      <Link
-                        href={`/imported-estimates/${e.id}`}
-                        className="font-medium text-gray-900 hover:text-yge-blue-700 hover:underline"
-                      >
-                        {e.projectName}
-                      </Link>
+                      <div className="flex items-center gap-2">
+                        <Link
+                          href={`/imported-estimates/${e.id}`}
+                          className="font-medium text-gray-900 hover:text-yge-blue-700 hover:underline"
+                        >
+                          {e.projectName}
+                        </Link>
+                        {(() => {
+                          const a = auditByEstimateId.get(e.id);
+                          if (!a) return null;
+                          const score = a.high * 3 + a.med;
+                          if (score === 0) return null;
+                          const tone = a.high > 0 ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800';
+                          return (
+                            <span
+                              className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${tone}`}
+                              title={`Price audit: ${a.high} high, ${a.med} medium, ${a.low} low`}
+                            >
+                              ⚠ {a.total}
+                            </span>
+                          );
+                        })()}
+                      </div>
                     </td>
                     <td className="px-3 py-2 text-xs text-gray-600">{e.client ?? '—'}</td>
                     <td className="px-3 py-2 text-xs">{e.rateType}</td>
