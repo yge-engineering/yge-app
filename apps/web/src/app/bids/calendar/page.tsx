@@ -1,3 +1,4 @@
+// 1804 — bid calendar.
 // 1798: calendar already groups by week; filter pills could come later.
 // /bids/calendar — upcoming bid deadlines grouped by week.
 
