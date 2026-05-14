@@ -92,6 +92,12 @@ export default async function ImportedEstimatesPage() {
                 >
                   Compare two estimates →
                 </Link>
+                <Link
+                  href="/imported-estimates/search"
+                  className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-semibold text-yge-blue-700 hover:bg-yge-blue-50"
+                >
+                  Search bids →
+                </Link>
               </div>
               <EstimatesSortHeaders targetId="imported-list-table" />
             </div>
