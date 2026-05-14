@@ -94,6 +94,45 @@ equipmentRatesRouter.get('/usage', async (_req, res, next) => {
   } catch (err) { next(err); }
 });
 
+equipmentRatesRouter.get('/export.csv', async (_req, res, next) => {
+  try {
+    const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+    const owned = await prisma.equipmentRate.findMany({ where: { companyId, deletedAt: null }, orderBy: { code: 'asc' } });
+    const rentals = await prisma.equipmentRental.findMany({ where: { companyId, deletedAt: null }, orderBy: { code: 'asc' } });
+
+    function esc(v: unknown): string {
+      if (v === null || v === undefined) return '';
+      const x = String(v);
+      if (x.includes(',') || x.includes('"') || x.includes('\n')) return '"' + x.replace(/"/g, '""') + '"';
+      return x;
+    }
+    const lines: string[] = [];
+    lines.push('code,name,kind,hourlyRate,dailyRate,weeklyRate,monthlyRate,vendor');
+    for (const r of owned) {
+      lines.push([
+        esc(r.code), esc(r.name), 'OWNED',
+        esc((r.hourlyCents / 100).toFixed(2)),
+        '', '', '',
+        '',
+      ].join(','));
+    }
+    for (const r of rentals) {
+      lines.push([
+        esc(r.code), esc(r.name), 'RENTAL',
+        esc(((r.hourlyCents ?? 0) / 100).toFixed(2)),
+        esc(((r.dailyCents ?? 0) / 100).toFixed(2)),
+        esc(((r.weeklyCents ?? 0) / 100).toFixed(2)),
+        esc(((r.monthlyCents ?? 0) / 100).toFixed(2)),
+        esc(r.vendor ?? ''),
+      ].join(','));
+    }
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="equipment-rates.csv"');
+    res.send(lines.join('\n'));
+  } catch (err) { next(err); }
+});
+
+
 equipmentRatesRouter.get('/', async (req, res, next) => {
   try {
     const kindRaw = typeof req.query.kind === 'string' ? req.query.kind : undefined;
