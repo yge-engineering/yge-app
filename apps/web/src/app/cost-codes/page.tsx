@@ -10,6 +10,7 @@ import type { CostCode } from '@yge/shared';
 
 import { AppShell, PageHeader } from '../../components';
 import { CostCodesTable } from './cost-codes-table';
+import { CostCodesQuickSearch } from '../../components/cost-codes-quick-search';
 import { CostCodeStatsPanel } from '../../components/cost-code-stats-panel';
 
 function apiBaseUrl(): string {
@@ -39,6 +40,7 @@ export default async function CostCodesPage() {
           subtitle={`${codes.length} master code${codes.length === 1 ? '' : 's'} — imported from YGE Excel master`}
         />
         <CostCodeStatsPanel />
+        <CostCodesQuickSearch />
         <CostCodesTable codes={codes} />
       </main>
     </AppShell>
