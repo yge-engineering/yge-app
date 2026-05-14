@@ -16,6 +16,7 @@ import { LicenseRenewalBanner } from '../../components/license-renewal-banner';
 import { Money } from '../../components/money';
 import { RecentActivity } from '../../components/recent-activity';
 import { ExcelImportStatusTile } from '../../components/excel-import-status-tile';
+import { DataStatusBanner } from '../../components/data-status-banner';
 import { TodaysLinesTile } from '../../components/todays-lines-tile';
 import { PipelineForecastTile } from '../../components/pipeline-forecast-tile';
 import { CostCodeTrendsTile } from '../../components/cost-code-trends-tile';
@@ -478,6 +479,7 @@ async function DashboardPageInner() {
   return (
     <AppShell>
     <main className="mx-auto max-w-7xl p-6">
+      <DataStatusBanner />
       <header className="mb-6 flex flex-wrap items-baseline justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-yge-blue-500">
