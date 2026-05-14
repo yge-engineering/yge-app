@@ -50,12 +50,20 @@ export function DataStatusBanner() {
             {emptyTables.length > 6 ? ` + ${emptyTables.length - 6} more` : ''}
           </p>
         </div>
-        <Link
-          href="/admin/excel-import"
+        <div className="flex gap-2">
+          <Link
+            href="/admin/onboarding"
+            className="rounded border border-amber-700 bg-amber-100 px-3 py-1.5 text-xs font-semibold text-amber-900 hover:bg-amber-200"
+          >
+            Onboarding checklist →
+          </Link>
+          <Link
+            href="/admin/excel-import"
           className="rounded border border-amber-700 bg-white px-3 py-1.5 text-xs font-semibold text-amber-800 hover:bg-amber-100"
         >
           Run Excel import →
-        </Link>
+          </Link>
+        </div>
       </div>
     </section>
   );
