@@ -83,6 +83,11 @@ const GROUPS: ReportGroup[] = [
     caption: 'Pursue, price, win — Excel-backed bids and analytics.',
     links: [
       {
+        href: '/bids',
+        label: 'Bids hub',
+        blurb: 'Landing page for everything bid-related (calendar, pipeline, Kanban, results).',
+      },
+      {
         href: '/bids/calendar',
         label: 'Bid calendar',
         blurb: 'Every pursuing job with a bid due date, grouped by week. Overdue bids float to the top.',
