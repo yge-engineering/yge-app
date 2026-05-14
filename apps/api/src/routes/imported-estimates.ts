@@ -298,6 +298,19 @@ importedEstimatesRouter.post('/:id/reset-prices', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+importedEstimatesRouter.post('/:id/toggle-pin', async (req, res, next) => {
+  try {
+    const ie = await getImportedEstimate(req.params.id);
+    if (!ie) return res.status(404).json({ error: 'Imported estimate not found' });
+    const pinned = (ie.notes ?? '').startsWith('[PINNED]');
+    const newNotes = pinned
+      ? (ie.notes ?? '').replace(/^\[PINNED\]\s*/, '')
+      : '[PINNED] ' + (ie.notes ?? '');
+    const updated = await updateImportedEstimate(ie.id, { notes: newNotes });
+    res.json({ importedEstimate: updated, pinned: !pinned });
+  } catch (err) { next(err); }
+});
+
 importedEstimatesRouter.post('/:id/mark-submitted', async (req, res, next) => {
   try {
     const ie = await getImportedEstimate(req.params.id);
