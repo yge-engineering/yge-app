@@ -26,6 +26,34 @@ employeesRouter.get('/', async (_req, res, next) => {
 });
 
 // GET /api/employees/:id — full employee record.
+employeesRouter.get('/export.csv', async (_req, res, next) => {
+  try {
+    const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+    const rows = await prisma.employee.findMany({ where: { companyId, deletedAt: null }, orderBy: { lastName: 'asc' } });
+    function esc(v: unknown): string {
+      if (v === null || v === undefined) return '';
+      const x = String(v);
+      if (x.includes(',') || x.includes('"') || x.includes('\n')) return '"' + x.replace(/"/g, '""') + '"';
+      return x;
+    }
+    const lines: string[] = [];
+    lines.push('id,firstName,lastName,classification,status,hireDate,laborCostCode,phone,email');
+    for (const e of rows) {
+      const d = (e.data as Record<string, unknown> | null) ?? {};
+      lines.push([
+        esc(e.id), esc(e.firstName), esc(e.lastName), esc(e.classification), esc(e.status),
+        esc(e.hireDate.toISOString().slice(0, 10)),
+        esc((d.laborCostCode as string) ?? ''),
+        esc((d.phone as string) ?? ''),
+        esc((d.email as string) ?? ''),
+      ].join(','));
+    }
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="employees.csv"');
+    res.send(lines.join('\n'));
+  } catch (err) { next(err); }
+});
+
 employeesRouter.get('/utilization', async (req, res, next) => {
   try {
     const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
