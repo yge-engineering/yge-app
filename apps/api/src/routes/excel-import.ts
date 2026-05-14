@@ -235,6 +235,7 @@ excelImportRouter.post(
         subcontractors: { parsed: parsed.subcontractors.length, written: 0, skipped: 0 },
         employees: { parsed: parsed.employees.length, written: 0, skipped: 0 },
         jobs: { parsed: parsed.jobs.length, written: 0, skipped: 0 },
+        customers: { parsed: new Set(parsed.jobs.map((j) => (j.client ?? '').trim().toLowerCase()).filter(Boolean)).size, written: 0 },
         warnings: parsed.warnings,
         dryRun,
       };
@@ -339,6 +340,54 @@ excelImportRouter.post(
         summary.employees.written++;
       }
 
+      // E2: Customer master auto-import from Jobs.client.
+      function inferCustomerType(name: string): 'PUBLIC_AGENCY' | 'UTILITY' | 'PRIVATE' | 'OTHER' {
+        const n = name.toLowerCase();
+        const publicHints = [
+          'city of', 'county of', 'state of', 'united states',
+          'caltrans', 'cal fire', 'cal-fire', 'usda', 'usfs', 'blm',
+          'army corps', 'corps of engineers', 'school district',
+          'unified school', 'authority', 'department of',
+          'bureau of', 'agency', 'csu', 'university of california',
+          ' uc ', ' cc ', 'community college', 'transportation',
+          'public works', 'water district', 'irrigation district',
+          'sanitation district', 'fire protection district',
+        ];
+        const utilityHints = [
+          'pg&e', 'pacific gas', 'southern california edison', 'sce ',
+          'at&t', 'att inc', 'frontier', 'comcast', 'verizon',
+          't-mobile', 'sprint', 'liberty utilities',
+        ];
+        if (publicHints.some((h) => n.includes(h))) return 'PUBLIC_AGENCY';
+        if (utilityHints.some((h) => n.includes(h))) return 'UTILITY';
+        return 'PRIVATE';
+      }
+
+      // First pass: build a map of distinct client names → Customer id.
+      const distinctClients = new Map<string, string>();
+      for (const j of parsed.jobs) {
+        const c = (j.client ?? '').trim();
+        if (!c) continue;
+        const key = c.toLowerCase();
+        if (distinctClients.has(key)) continue;
+        const existing = await prisma.customer.findFirst({
+          where: { companyId: co, name: { equals: c, mode: 'insensitive' }, deletedAt: null },
+        });
+        if (existing) {
+          distinctClients.set(key, existing.id);
+          continue;
+        }
+        const created = await prisma.customer.create({
+          data: {
+            companyId: co,
+            name: c,
+            type: inferCustomerType(c),
+          },
+        });
+        distinctClients.set(key, created.id);
+        summary.customers.written++;
+      }
+
       // Jobs. Dedupe by jobNumber.
       function mapStatus(s: string | null): 'BIDDING' | 'AWARDED' | 'ACTIVE' | 'ON_HOLD' | 'CLOSED' | 'LOST' {
         switch ((s ?? '').toLowerCase().replace(/\s+/g, '_')) {
@@ -386,6 +435,8 @@ excelImportRouter.post(
         const rateType = mapRateType(j.rateType);
         const estStart = j.startDate ? new Date(j.startDate) : null;
         if (existing) {
+          const customerKey = (j.client ?? '').trim().toLowerCase();
+          const customerId = customerKey ? distinctClients.get(customerKey) ?? null : null;
           await prisma.job.update({
             where: { id: existing.id },
             data: {
@@ -393,10 +444,13 @@ excelImportRouter.post(
               status: dbStatus,
               rateType,
               estStart,
+              customerId: customerId ?? existing.customerId ?? null,
               data: { ...(existing.data as object), ...data },
             },
           });
         } else {
+          const customerKey2 = (j.client ?? '').trim().toLowerCase();
+          const customerId2 = customerKey2 ? distinctClients.get(customerKey2) ?? null : null;
           await prisma.job.create({
             data: {
               companyId: co,
@@ -405,6 +459,7 @@ excelImportRouter.post(
               status: dbStatus,
               rateType,
               estStart,
+              customerId: customerId2,
               data,
             },
           });
