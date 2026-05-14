@@ -59,6 +59,53 @@ costCodesRouter.delete('/:id', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// GET /api/cost-codes/stats — usage rollup across estimates + daily reports.
+costCodesRouter.get('/stats', async (_req, res, next) => {
+  try {
+    const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+    type Stat = { code: string; bidUses: number; bidCents: number; actUses: number; actCents: number };
+    const map = new Map<string, Stat>();
+    function ensure(code: string): Stat {
+      const k = code.toUpperCase();
+      let st = map.get(k);
+      if (!st) {
+        st = { code: k, bidUses: 0, bidCents: 0, actUses: 0, actCents: 0 };
+        map.set(k, st);
+      }
+      return st;
+    }
+
+    const ies = await prisma.importedEstimate.findMany({ where: { companyId, deletedAt: null } });
+    for (const ie of ies) {
+      const d = ie.data as { lines?: Array<{ costCode?: string; bidPriceCents?: number }> } | null;
+      for (const ln of d?.lines ?? []) {
+        const c = (ln.costCode ?? '').trim();
+        if (!c) continue;
+        const st = ensure(c);
+        st.bidUses += 1;
+        st.bidCents += ln.bidPriceCents ?? 0;
+      }
+    }
+
+    const reports = await prisma.dailyReport.findMany({ where: { companyId, deletedAt: null } });
+    for (const r of reports) {
+      const d = r.data as { lines?: Array<{ costCode?: string | null; totalCostCents?: number | null }> } | null;
+      for (const ln of d?.lines ?? []) {
+        const c = (ln.costCode ?? '').trim();
+        if (!c) continue;
+        const st = ensure(c);
+        st.actUses += 1;
+        st.actCents += ln.totalCostCents ?? 0;
+      }
+    }
+
+    const stats = [...map.values()].sort((a, b) => b.bidCents - a.bidCents);
+    res.json({ stats });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /api/cost-codes/:code/resolve?rateType=PW|Private|DB|IBEW
 // — look up the rate row matching this cost code (Labor / Equipment
 // Owned / Equipment Rental / Material) and return the unit cost.
