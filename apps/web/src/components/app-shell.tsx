@@ -1,3 +1,4 @@
+// TODO 1701: surface /reports + /help + /customers/touchpoints in the sidebar nav.
 'use client';
 
 // AppShell — the chrome around every signed-in page.

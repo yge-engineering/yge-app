@@ -68,6 +68,59 @@ costCodesRouter.get('/stats', async (_req, res, next) => {
   }
 });
 
+costCodesRouter.get('/trends', async (_req, res, next) => {
+  try {
+    const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+    const ies = await prisma.importedEstimate.findMany({
+      where: { companyId, deletedAt: null },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // For each code: list of {unitCostCents, createdAt} sorted newest first.
+    interface History { unitCostCents: number; createdAt: string }
+    const map = new Map<string, History[]>();
+    for (const ie of ies) {
+      const d = ie.data as { lines?: Array<{ costCode?: string; unitCostCents?: number }> } | null;
+      const seen = new Set<string>();
+      for (const ln of d?.lines ?? []) {
+        const c = (ln.costCode ?? '').trim().toUpperCase();
+        if (!c || seen.has(c)) continue;
+        seen.add(c);
+        if (!ln.unitCostCents) continue;
+        const arr = map.get(c) ?? [];
+        arr.push({ unitCostCents: ln.unitCostCents, createdAt: ie.createdAt.toISOString() });
+        map.set(c, arr);
+      }
+    }
+
+    interface Trend {
+      code: string;
+      latestCents: number;
+      previousCents: number;
+      deltaPct: number;
+      samples: number;
+      direction: 'up' | 'down' | 'flat';
+    }
+    const trends: Trend[] = [];
+    for (const [code, hist] of map.entries()) {
+      if (hist.length < 2) continue;
+      const latest = hist[0]!.unitCostCents;
+      const prev = hist[1]!.unitCostCents;
+      if (!prev || !latest) continue;
+      const delta = (latest - prev) / prev;
+      const direction = delta > 0.05 ? 'up' : delta < -0.05 ? 'down' : 'flat';
+      trends.push({ code, latestCents: latest, previousCents: prev, deltaPct: delta, samples: hist.length, direction });
+    }
+    trends.sort((a, b) => b.deltaPct - a.deltaPct);
+
+    res.json({
+      trends,
+      climbing: trends.filter((t) => t.deltaPct > 0.2),
+      falling: trends.filter((t) => t.deltaPct < -0.2),
+    });
+  } catch (err) { next(err); }
+});
+
 costCodesRouter.get('/:id', async (req, res, next) => {
   try {
     const cc = await getCostCode(req.params.id);
