@@ -101,6 +101,7 @@ export default async function CustomersPage({
               <LinkButton href="/customers/new" variant="primary" size="md">
                 {t('customers.add')}
               </LinkButton>
+              <a href={`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'}/api/customers/export.csv`} className="inline-flex items-center justify-center gap-1 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100" download>Export CSV</a>
             </span>
           }
         />

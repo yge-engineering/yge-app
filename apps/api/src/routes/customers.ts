@@ -44,6 +44,58 @@ customersRouter.get('/', async (req, res, next) => {
   }
 });
 
+customersRouter.get('/export.csv', async (_req, res, next) => {
+  try {
+    const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+    const rows = await prisma.customer.findMany({
+      where: { companyId, deletedAt: null },
+      orderBy: { name: 'asc' },
+    });
+
+    // Count jobs per customer.
+    const jobs = await prisma.job.findMany({ where: { companyId, deletedAt: null } });
+    const jobsByCustomer = new Map<string, number>();
+    for (const j of jobs) {
+      if (!j.customerId) continue;
+      jobsByCustomer.set(j.customerId, (jobsByCustomer.get(j.customerId) ?? 0) + 1);
+    }
+
+    function esc(v: unknown): string {
+      if (v === null || v === undefined) return '';
+      const s = String(v);
+      if (s.includes(',') || s.includes('"') || s.includes('\n')) return '"' + s.replace(/"/g, '""') + '"';
+      return s;
+    }
+
+    const lines: string[] = [];
+    lines.push('id,legalName,dbaName,kind,contactName,email,phone,billingAddressLine,city,state,zip,paymentTerms,taxExempt,onHold,jobsCount');
+    for (const r of rows) {
+      const d = (r.data as Record<string, unknown> | null) ?? {};
+      lines.push([
+        esc(r.id),
+        esc(d.legalName ?? r.name),
+        esc(d.dbaName ?? ''),
+        esc(d.kind ?? r.type),
+        esc(d.contactName ?? r.contactName ?? ''),
+        esc(d.email ?? r.contactEmail ?? ''),
+        esc(d.phone ?? r.contactPhone ?? ''),
+        esc(d.billingAddressLine ?? r.addressLine ?? ''),
+        esc(d.city ?? r.city ?? ''),
+        esc(d.state ?? r.state ?? ''),
+        esc(d.zip ?? r.zip ?? ''),
+        esc(d.paymentTerms ?? ''),
+        esc(d.taxExempt ?? false),
+        esc(d.onHold ?? false),
+        String(jobsByCustomer.get(r.id) ?? 0),
+      ].join(','));
+    }
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="customers.csv"');
+    res.send(lines.join('\n'));
+  } catch (err) { next(err); }
+});
+
 customersRouter.get('/:id/rollup', async (req, res, next) => {
   try {
     const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
