@@ -13,6 +13,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { EstimateSnapshotsPanel } from '@/components/estimate-snapshots-panel';
 import { useRouter } from 'next/navigation';
 import {
   importedEstimateLineCategoryLabel,
@@ -482,6 +483,19 @@ export function EstimateDetail({ initial, costCodes }: Props) {
         >
           + Add line
         </button>
+      </div>
+
+      <div className="mt-6">
+        <EstimateSnapshotsPanel
+          estimateId={estimate.id}
+          initialSnapshots={(estimate.snapshots ?? []).map((sn) => ({
+            id: sn.id,
+            createdAt: sn.createdAt,
+            label: sn.label,
+            directCostCents: sn.directCostCents,
+            bidPriceCents: sn.bidPriceCents,
+          }))}
+        />
       </div>
 
       {editingProject && (

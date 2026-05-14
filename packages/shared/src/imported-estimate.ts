@@ -52,6 +52,18 @@ export type ImportedEstimateLine = z.infer<typeof ImportedEstimateLineSchema>;
 export const ImportedEstimateRateTypeSchema = z.enum(['PW', 'Private']);
 export type ImportedEstimateRateType = z.infer<typeof ImportedEstimateRateTypeSchema>;
 
+export const ImportedEstimateSnapshotSchema = z.object({
+  id: z.string().min(1),
+  createdAt: z.string(),
+  label: z.string().max(200),
+  oppPercent: z.number().min(0).max(2),
+  directCostCents: z.number().int().nonnegative(),
+  oppMarkupCents: z.number().int().nonnegative(),
+  bidPriceCents: z.number().int().nonnegative(),
+  lines: z.array(ImportedEstimateLineSchema),
+});
+export type ImportedEstimateSnapshot = z.infer<typeof ImportedEstimateSnapshotSchema>;
+
 export const ImportedEstimateSchema = z.object({
   id: z.string().min(1),
   createdAt: z.string(),
@@ -82,6 +94,7 @@ export const ImportedEstimateSchema = z.object({
   lines: z.array(ImportedEstimateLineSchema).default([]),
 
   notes: z.string().max(8_000).optional(),
+  snapshots: z.array(ImportedEstimateSnapshotSchema).default([]),
 });
 export type ImportedEstimate = z.infer<typeof ImportedEstimateSchema>;
 

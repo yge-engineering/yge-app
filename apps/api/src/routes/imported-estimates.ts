@@ -13,6 +13,11 @@ import {
   updateImportedEstimate,
 } from '../lib/imported-estimates-store';
 
+function newSnapshotId(): string {
+  const hex = Math.floor(Math.random() * 0x100000000).toString(16);
+  return 'snap-' + hex.padStart(8, '0');
+}
+
 export const importedEstimatesRouter = Router();
 
 importedEstimatesRouter.get('/', async (_req, res, next) => {
@@ -75,9 +80,61 @@ importedEstimatesRouter.post('/:id/clone', async (req, res, next) => {
       oppMarkupCents: src.oppMarkupCents,
       bidPriceCents: src.bidPriceCents,
       lines: src.lines,
+      snapshots: [],
       notes: src.notes ? `Cloned from ${src.jobNumber} — ${src.projectName}\n\n${src.notes}` : `Cloned from ${src.jobNumber} — ${src.projectName}`,
     });
     res.status(201).json({ importedEstimate: cloned });
+  } catch (err) { next(err); }
+});
+
+importedEstimatesRouter.post('/:id/snapshot', async (req, res, next) => {
+  try {
+    const ie = await getImportedEstimate(req.params.id);
+    if (!ie) return res.status(404).json({ error: 'Imported estimate not found' });
+    const label = (req.body?.label as string | undefined)?.slice(0, 200) || `Snapshot ${new Date().toISOString().slice(0, 16)}`;
+    const snap = {
+      id: newSnapshotId(),
+      createdAt: new Date().toISOString(),
+      label,
+      oppPercent: ie.oppPercent,
+      directCostCents: ie.directCostCents,
+      oppMarkupCents: ie.oppMarkupCents,
+      bidPriceCents: ie.bidPriceCents,
+      lines: ie.lines,
+    };
+    const updated = await updateImportedEstimate(ie.id, {
+      snapshots: [...(ie.snapshots ?? []), snap],
+    });
+    res.status(201).json({ snapshot: snap, importedEstimate: updated });
+  } catch (err) { next(err); }
+});
+
+importedEstimatesRouter.post('/:id/restore/:snapshotId', async (req, res, next) => {
+  try {
+    const ie = await getImportedEstimate(req.params.id);
+    if (!ie) return res.status(404).json({ error: 'Imported estimate not found' });
+    const snap = (ie.snapshots ?? []).find((s) => s.id === req.params.snapshotId);
+    if (!snap) return res.status(404).json({ error: 'Snapshot not found' });
+    // Auto-snapshot the current state before restoring.
+    const autoSnap = {
+      id: newSnapshotId(),
+      createdAt: new Date().toISOString(),
+      label: `Auto-snapshot before restore of "${snap.label}"`,
+      oppPercent: ie.oppPercent,
+      directCostCents: ie.directCostCents,
+      oppMarkupCents: ie.oppMarkupCents,
+      bidPriceCents: ie.bidPriceCents,
+      lines: ie.lines,
+    };
+    const updated = await updateImportedEstimate(ie.id, {
+      oppPercent: snap.oppPercent,
+      directCostCents: snap.directCostCents,
+      oppMarkupCents: snap.oppMarkupCents,
+      bidPriceCents: snap.bidPriceCents,
+      lines: snap.lines,
+      snapshots: [...(ie.snapshots ?? []), autoSnap],
+    });
+    res.json({ importedEstimate: updated, restoredFrom: snap.id, autoSnapshot: autoSnap.id });
   } catch (err) { next(err); }
 });
 
