@@ -140,6 +140,7 @@ export default async function ImportedEstimatesPage() {
                     data-sort-cents={e.bidPriceCents}
                     data-sort-created={e.createdAt}
                     data-sort-client={(e.client ?? '').toLowerCase()}
+                    data-unlinked={e.jobId ? 'no' : 'yes'}
                     className="hover:bg-gray-50"
                   >
                     <td className="px-3 py-2 font-mono text-xs">{e.jobNumber}</td>
