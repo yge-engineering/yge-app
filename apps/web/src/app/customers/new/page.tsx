@@ -1,5 +1,6 @@
 // /customers/new — create a new customer.
 
+import { CustomerCsvImportForm } from '../../../components/customer-csv-import-form';
 import Link from 'next/link';
 
 import { AppShell } from '../../../components/app-shell';
@@ -21,7 +22,18 @@ export default function NewCustomerPage() {
       <div className="mt-6">
         <CustomerEditor mode="create" />
       </div>
-    </main>
+          <section className="mt-8 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+        <h2 className="mb-2 text-sm font-semibold text-gray-900">Bulk import (CSV)</h2>
+        <p className="mb-3 text-xs text-gray-600">
+          Upload a CSV with columns <code>legalName</code> and{' '}
+          <code>kind</code> (and optionally dbaName / contactName / email
+          / phone / billingAddressLine / city / state / zip /
+          paymentTerms). Existing customers are matched by legalName
+          (case-insensitive) and updated; new ones are created.
+        </p>
+        <CustomerCsvImportForm />
+      </section>
+      </main>
     </AppShell>
   );
 }

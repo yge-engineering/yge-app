@@ -1,6 +1,9 @@
 // Customer master routes.
 
 import { Router } from 'express';
+import multer from 'multer';
+
+const upload = multer({ limits: { fileSize: 5 * 1024 * 1024 } });
 import { prisma } from '@yge/db';
 import {
   CustomerCreateSchema,
@@ -93,6 +96,194 @@ customersRouter.get('/export.csv', async (_req, res, next) => {
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', 'attachment; filename="customers.csv"');
     res.send(lines.join('\n'));
+  } catch (err) { next(err); }
+});
+
+customersRouter.post('/import-csv', upload.single('file'), async (req, res, next) => {
+  try {
+    const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+    const dryRun = String(req.query.dryRun ?? '') === '1';
+
+    const text = req.file.buffer.toString('utf8');
+    // Simple CSV parser (handles quoted fields containing commas).
+    function parseCsv(s: string): string[][] {
+      const rows: string[][] = [];
+      let row: string[] = [];
+      let cell = '';
+      let inQ = false;
+      for (let i = 0; i < s.length; i++) {
+        const c = s[i];
+        if (inQ) {
+          if (c === '"' && s[i + 1] === '"') { cell += '"'; i += 1; }
+          else if (c === '"') { inQ = false; }
+          else { cell += c; }
+        } else {
+          if (c === '"') { inQ = true; }
+          else if (c === ',') { row.push(cell); cell = ''; }
+          else if (c === '\n' || c === '\r') {
+            if (c === '\r' && s[i + 1] === '\n') i += 1;
+            row.push(cell); cell = '';
+            if (row.some((x) => x.length > 0)) rows.push(row);
+            row = [];
+          } else { cell += c; }
+        }
+      }
+      if (cell.length > 0 || row.length > 0) {
+        row.push(cell);
+        if (row.some((x) => x.length > 0)) rows.push(row);
+      }
+      return rows;
+    }
+
+    const rows = parseCsv(text);
+    if (rows.length === 0) return res.status(400).json({ error: 'CSV is empty' });
+
+    const header = (rows[0] ?? []).map((h) => h.trim());
+    const idx = (col: string) => header.indexOf(col);
+    const iLegalName = idx('legalName');
+    const iKind = idx('kind');
+    if (iLegalName < 0 || iKind < 0) {
+      return res.status(400).json({ error: 'CSV must have legalName + kind columns' });
+    }
+    const iDbaName = idx('dbaName');
+    const iContactName = idx('contactName');
+    const iEmail = idx('email');
+    const iPhone = idx('phone');
+    const iAddr = idx('billingAddressLine');
+    const iCity = idx('city');
+    const iState = idx('state');
+    const iZip = idx('zip');
+    const iPaymentTerms = idx('paymentTerms');
+
+    const valid = new Set([
+      'STATE_AGENCY', 'FEDERAL_AGENCY', 'COUNTY', 'CITY',
+      'SPECIAL_DISTRICT', 'PRIVATE_OWNER', 'PRIME_CONTRACTOR', 'OTHER',
+    ]);
+    const kindToType = (k: string) => {
+      switch (k) {
+        case 'STATE_AGENCY':
+        case 'FEDERAL_AGENCY':
+        case 'COUNTY':
+        case 'CITY':
+        case 'SPECIAL_DISTRICT':
+          return 'PUBLIC_AGENCY';
+        case 'PRIVATE_OWNER':
+        case 'PRIME_CONTRACTOR':
+          return 'PRIVATE';
+        default:
+          return 'OTHER';
+      }
+    };
+
+    const summary = {
+      total: rows.length - 1,
+      created: 0,
+      updated: 0,
+      skipped: 0,
+      errors: [] as Array<{ row: number; reason: string }>,
+      dryRun,
+    };
+
+    for (let r = 1; r < rows.length; r++) {
+      const row = rows[r] ?? [];
+      const legalName = (row[iLegalName] ?? '').trim();
+      const kind = (row[iKind] ?? '').trim().toUpperCase();
+      if (!legalName) {
+        summary.errors.push({ row: r + 1, reason: 'legalName is empty' });
+        summary.skipped++;
+        continue;
+      }
+      if (!valid.has(kind)) {
+        summary.errors.push({ row: r + 1, reason: `kind "${kind}" not in [${[...valid].join(',')}]` });
+        summary.skipped++;
+        continue;
+      }
+      const existing = await prisma.customer.findFirst({
+        where: { companyId, name: { equals: legalName, mode: 'insensitive' }, deletedAt: null },
+      });
+
+      function cell(i: number): string | undefined {
+        if (i < 0) return undefined;
+        const v = (row[i] ?? '').trim();
+        return v.length > 0 ? v : undefined;
+      }
+
+      const data = {
+        legalName,
+        kind,
+        dbaName: cell(iDbaName),
+        contactName: cell(iContactName),
+        email: cell(iEmail),
+        phone: cell(iPhone),
+        billingAddressLine: cell(iAddr),
+        city: cell(iCity),
+        state: cell(iState),
+        zip: cell(iZip),
+        paymentTerms: cell(iPaymentTerms),
+        taxExempt: false,
+        onHold: false,
+      };
+      const prismaType = kindToType(kind) as 'PUBLIC_AGENCY' | 'UTILITY' | 'PRIVATE' | 'OTHER';
+
+      if (dryRun) {
+        if (existing) summary.updated++;
+        else summary.created++;
+        continue;
+      }
+
+      if (existing) {
+        const merged = { ...((existing.data as object) ?? {}), ...data };
+        await prisma.customer.update({
+          where: { id: existing.id },
+          data: {
+            name: legalName,
+            type: prismaType,
+            contactName: data.contactName ?? null,
+            contactEmail: data.email ?? null,
+            contactPhone: data.phone ?? null,
+            addressLine: data.billingAddressLine ?? null,
+            city: data.city ?? null,
+            state: data.state ?? null,
+            zip: data.zip ?? null,
+            data: JSON.parse(JSON.stringify({
+              ...merged,
+              id: existing.id,
+              createdAt: existing.createdAt.toISOString(),
+              updatedAt: new Date().toISOString(),
+            })),
+          },
+        });
+        summary.updated++;
+      } else {
+        const id = 'cus-' + Math.floor(Math.random() * 0x100000000).toString(16).padStart(8, '0');
+        const now = new Date().toISOString();
+        await prisma.customer.create({
+          data: {
+            id,
+            companyId,
+            name: legalName,
+            type: prismaType,
+            contactName: data.contactName ?? null,
+            contactEmail: data.email ?? null,
+            contactPhone: data.phone ?? null,
+            addressLine: data.billingAddressLine ?? null,
+            city: data.city ?? null,
+            state: data.state ?? null,
+            zip: data.zip ?? null,
+            data: JSON.parse(JSON.stringify({
+              ...data,
+              id,
+              createdAt: now,
+              updatedAt: now,
+            })),
+          },
+        });
+        summary.created++;
+      }
+    }
+
+    res.json({ summary });
   } catch (err) { next(err); }
 });
 
