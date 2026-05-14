@@ -406,6 +406,7 @@ customersRouter.get('/touchpoints', async (_req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// 1738: rollup is comprehensive (jobs, estimates, bid stats, revenue).
 customersRouter.get('/:id/rollup', async (req, res, next) => {
   try {
     const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
