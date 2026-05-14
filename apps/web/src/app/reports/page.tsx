@@ -41,7 +41,7 @@ const GROUPS: ReportGroup[] = [
         blurb: 'Codes whose unit cost climbed/fell most vs prior bids.',
       },
       {
-        href: '/admin/data-health',
+        href: '/admin/data-status',
         label: 'Data health',
         blurb: 'Record counts per entity — quickly spot wiped master tables.',
       },
@@ -292,7 +292,7 @@ const GROUPS: ReportGroup[] = [
         blurb: 'Anthropic + Storage + Graph + Gusto + Postgres + errors.',
       },
       {
-        href: '/admin/data-health',
+        href: '/admin/data-status',
         label: 'Data health',
         blurb: 'Record counts per entity — red flags wiped master tables.',
       },
