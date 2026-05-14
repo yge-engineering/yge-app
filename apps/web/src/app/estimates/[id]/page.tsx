@@ -75,7 +75,30 @@ export default async function EstimateDetailPage({
 }) {
   const t = getTranslator();
   const data = await fetchEstimate(params.id);
-  if (!data) notFound();
+
+  // Excel-imported estimates fail PricedEstimateSchema parsing (they
+  // use the section/cost-line shape instead). Fall back to the
+  // read-only Excel view + the Excel buttons.
+  if (!data) {
+    return (
+      <AppShell>
+        <main className="mx-auto max-w-7xl p-6">
+          <Link
+            href="/estimates"
+            className="mb-3 inline-block text-xs text-yge-blue-700 hover:underline"
+          >
+            ← Back to estimates
+          </Link>
+          <h1 className="mb-4 text-xl font-bold text-yge-blue-900">
+            Estimate
+          </h1>
+          <EstimateExcelButtons estimateId={params.id} />
+          <LiveExcelSync estimateId={params.id} />
+          <ExcelEstimateView estimateId={params.id} />
+        </main>
+      </AppShell>
+    );
+  }
   const job = await fetchJob(data.estimate.jobId);
 
   return (
