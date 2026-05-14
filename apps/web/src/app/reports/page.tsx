@@ -22,6 +22,32 @@ interface ReportGroup {
 
 const GROUPS: ReportGroup[] = [
   {
+    title: 'Search',
+    caption: 'Find anything fast.',
+    links: [
+      {
+        href: '/imported-estimates/search',
+        label: 'Search bids',
+        blurb: 'Full-text search across imported estimates (project, client, notes, line descriptions).',
+      },
+      {
+        href: '/customers/search',
+        label: 'Search customers',
+        blurb: 'By name, contact, or email.',
+      },
+      {
+        href: '/vendors/search',
+        label: 'Search vendors',
+        blurb: 'By name, trade specialty, or email.',
+      },
+      {
+        href: '/cost-codes/search',
+        label: 'Search cost codes',
+        blurb: 'By code prefix, name, or category.',
+      },
+    ],
+  },
+  {
     title: 'Touchpoints & alerts',
     caption: 'Where to look first to find risk or untapped opportunity.',
     links: [
