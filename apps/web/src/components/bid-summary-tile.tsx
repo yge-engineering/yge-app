@@ -42,6 +42,13 @@ export function BidSummaryTile() {
   const decided = won + lost;
   const winRate = decided > 0 ? won / decided : 0;
   const currentYear = new Date().getFullYear();
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const thisMonthWon = results.filter((r) =>
+    r.outcome === 'WON_BY_YGE' &&
+    new Date(r.bidOpenedAt).getMonth() === currentMonth &&
+    new Date(r.bidOpenedAt).getFullYear() === now.getFullYear(),
+  ).length;
   const thisYearWon = results.filter((r) =>
     r.outcome === 'WON_BY_YGE' &&
     new Date(r.bidOpenedAt).getFullYear() === currentYear,
