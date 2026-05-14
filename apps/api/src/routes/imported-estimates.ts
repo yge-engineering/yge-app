@@ -298,6 +298,19 @@ importedEstimatesRouter.post('/:id/reset-prices', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+importedEstimatesRouter.post('/:id/mark-submitted', async (req, res, next) => {
+  try {
+    const ie = await getImportedEstimate(req.params.id);
+    if (!ie) return res.status(404).json({ error: 'Imported estimate not found' });
+    const submittedAt = (req.body?.submittedAt as string | undefined) ?? new Date().toISOString();
+    const newNotes = ie.notes
+      ? `${ie.notes}\n\n[Submitted ${submittedAt}]`
+      : `[Submitted ${submittedAt}]`;
+    const updated = await updateImportedEstimate(ie.id, { notes: newNotes });
+    res.json({ importedEstimate: updated, submittedAt });
+  } catch (err) { next(err); }
+});
+
 importedEstimatesRouter.post('/:id/convert-to-job', async (req, res, next) => {
   try {
     const ie = await getImportedEstimate(req.params.id);
