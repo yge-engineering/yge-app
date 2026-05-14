@@ -17,6 +17,17 @@ function apiBaseUrl(): string {
   );
 }
 
+async function fetchBidResults() {
+  try {
+    const res = await fetch(`${apiBaseUrl()}/api/bid-results`, { cache: 'no-store' });
+    if (!res.ok) return [] as Array<{ jobId: string; outcome: string }>;
+    const body = (await res.json()) as { results?: Array<{ jobId: string; outcome: string }> };
+    return body.results ?? [];
+  } catch {
+    return [] as Array<{ jobId: string; outcome: string }>;
+  }
+}
+
 async function fetchEstimates(): Promise<ImportedEstimate[]> {
   try {
     const res = await fetch(`${apiBaseUrl()}/api/imported-estimates`, { cache: 'no-store' });
@@ -34,7 +45,9 @@ function fmtMoney(cents: number): string {
 
 export default async function ImportedEstimatesPage() {
   requirePermission('estimates:view');
-  const estimates = await fetchEstimates();
+  const [estimates, bidResults] = await Promise.all([fetchEstimates(), fetchBidResults()]);
+  const outcomeByJobId = new Map<string, string>();
+  for (const r of bidResults) outcomeByJobId.set(r.jobId, r.outcome);
   return (
     <AppShell>
       <main className="mx-auto max-w-6xl">
@@ -88,6 +101,7 @@ export default async function ImportedEstimatesPage() {
                     <span className="sort-arrow" />
                   </th>
                   <th className="px-3 py-2 text-right">Lines</th>
+                  <th className="px-3 py-2">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -115,6 +129,17 @@ export default async function ImportedEstimatesPage() {
                     <td className="px-3 py-2 text-right font-mono text-xs font-semibold"><CopyMoneyButton cents={e.bidPriceCents}>{fmtMoney(e.bidPriceCents)}</CopyMoneyButton></td>
                     <td className="px-3 py-2 text-right text-xs text-gray-500">
                       {e.lines.length}
+                    </td>
+                    <td className="px-3 py-2 text-xs">
+                      {(() => {
+                        if (!e.jobId) return <span className="rounded-full bg-gray-100 px-2 py-0.5 text-gray-700">Pending</span>;
+                        const o = outcomeByJobId.get(e.jobId);
+                        if (!o) return <span className="rounded-full bg-yge-blue-100 px-2 py-0.5 text-yge-blue-800">Active job</span>;
+                        if (o === 'WON_BY_YGE') return <span className="rounded-full bg-green-100 px-2 py-0.5 text-green-800 font-semibold">Won</span>;
+                        if (o === 'WON_BY_OTHER') return <span className="rounded-full bg-red-100 px-2 py-0.5 text-red-800">Lost</span>;
+                        if (o === 'NO_AWARD') return <span className="rounded-full bg-amber-100 px-2 py-0.5 text-amber-800">No award</span>;
+                        return <span className="rounded-full bg-gray-100 px-2 py-0.5 text-gray-700">TBD</span>;
+                      })()}
                     </td>
                   </tr>
                 ))}
