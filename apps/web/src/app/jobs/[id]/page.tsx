@@ -32,6 +32,7 @@ import { BidDueBanner } from '@/components/bid-due-banner';
 import { JobAgencyCompetitors } from '@/components/job-agency-competitors';
 import { JobLinkedBidTabs } from '@/components/job-linked-bid-tabs';
 import { ImportedDailyReportsPanel } from '@/components/imported-daily-reports-panel';
+import { JobBudgetActualTile } from '@/components/job-budget-actual-tile';
 import { JobProfitabilityTile } from '@/components/job-profitability-tile';
 import { ImportEstimateButton } from '@/components/import-estimate-button';
 import { ForecastStrip } from '@/components/forecast-strip';
@@ -782,6 +783,13 @@ export default async function JobDetailPage({
             ))}
           </ul>
         )}
+      </section>
+
+      <section className="mt-10">
+        <h2 className="mb-3 text-xl font-semibold text-gray-900">
+          Budget vs actual
+        </h2>
+        <JobBudgetActualTile jobId={job.id} />
       </section>
 
       <section className="mt-10">
