@@ -19,6 +19,7 @@ import { ExcelImportStatusTile } from '../../components/excel-import-status-tile
 import { TodaysLinesTile } from '../../components/todays-lines-tile';
 import { PipelineForecastTile } from '../../components/pipeline-forecast-tile';
 import { CostCodeTrendsTile } from '../../components/cost-code-trends-tile';
+import { BidSummaryTile } from '../../components/bid-summary-tile';
 import { getCurrentUser } from '../../lib/auth';
 import { getTranslator } from '../../lib/locale';
 import { bidDueCountdown } from '@yge/shared';
@@ -1068,6 +1069,7 @@ async function DashboardPageInner() {
         <ExcelImportStatusTile />
         <PipelineForecastTile />
         <CostCodeTrendsTile />
+        <BidSummaryTile />
         <TodaysLinesTile />
 
         {/* RECENT ACTIVITY */}
