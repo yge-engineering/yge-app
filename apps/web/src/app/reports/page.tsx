@@ -98,6 +98,11 @@ const GROUPS: ReportGroup[] = [
         blurb: 'Pursuit pipeline as a card board (PROSPECT → PURSUING → SUBMITTED → AWARDED).',
       },
       {
+        href: '/jobs/by-year',
+        label: 'Jobs by year',
+        blurb: 'Total / awarded / lost / hit-rate per year.',
+      },
+      {
         href: '/imported-estimates',
         label: 'Imported estimates',
         blurb: 'Every estimate imported from Excel, with audit-warning chips and bid-status badges.',
