@@ -34,6 +34,8 @@ export default async function CustomerDetailPage({
     <AppShell>
     <main className="mx-auto max-w-3xl p-8">
       <div className="mb-6">
+        <Link href="/customers/touchpoints" className="ml-2 text-sm text-yge-blue-500 hover:underline">Touchpoints →</Link>
+        <Link href="/customers/concentration" className="ml-2 text-sm text-yge-blue-500 hover:underline">Concentration →</Link>
         <Link href="/customers" className="text-sm text-yge-blue-500 hover:underline">
           {t('customerDetail.backLink')}
         </Link>
