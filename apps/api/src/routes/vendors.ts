@@ -226,6 +226,53 @@ vendorsRouter.post('/import-csv', vendorUpload.single('file'), async (req, res, 
   } catch (err) { next(err); }
 });
 
+vendorsRouter.get('/coi-aging', async (_req, res, next) => {
+  try {
+    const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+    const vendors = await prisma.vendor.findMany({ where: { companyId, deletedAt: null } });
+    const now = Date.now();
+
+    interface Row {
+      id: string;
+      legalName: string;
+      kind: string;
+      coiExpiresAt: string | null;
+      daysUntilExpiry: number | null;
+      severity: 'expired' | 'expiring' | 'current' | 'unknown';
+      email: string | null;
+    }
+    const rows: Row[] = vendors.map((v) => {
+      const d = (v.data as Record<string, unknown> | null) ?? {};
+      const certs = (d.certificates as Array<{ kind?: string; expiresAt?: string }> | undefined) ?? [];
+      const coi = certs.find((c) => c?.kind === 'INSURANCE_CERT' || c?.kind === 'COI');
+      const expiresStr = coi?.expiresAt ?? null;
+      const expires = expiresStr ? new Date(expiresStr).getTime() : NaN;
+      const days = Number.isFinite(expires) ? Math.floor((expires - now) / 86400000) : null;
+      let severity: 'expired' | 'expiring' | 'current' | 'unknown' = 'unknown';
+      if (days === null) severity = 'unknown';
+      else if (days < 0) severity = 'expired';
+      else if (days <= 30) severity = 'expiring';
+      else severity = 'current';
+      return {
+        id: v.id,
+        legalName: (d.legalName as string) ?? '',
+        kind: (d.kind as string) ?? '',
+        coiExpiresAt: expiresStr,
+        daysUntilExpiry: days,
+        severity,
+        email: (d.email as string) ?? null,
+      };
+    });
+    rows.sort((a, b) => (a.daysUntilExpiry ?? 99999) - (b.daysUntilExpiry ?? 99999));
+    res.json({
+      rows,
+      expired: rows.filter((r) => r.severity === 'expired').length,
+      expiring: rows.filter((r) => r.severity === 'expiring').length,
+      unknown: rows.filter((r) => r.severity === 'unknown').length,
+    });
+  } catch (err) { next(err); }
+});
+
 vendorsRouter.get('/scorecard', async (req, res, next) => {
   try {
     const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
