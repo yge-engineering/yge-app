@@ -1,3 +1,4 @@
+// pipeline forecast tile — last updated 1722 (added overnight-batch marker).
 // Dashboard tile: risk-adjusted pipeline forecast (S1').
 
 'use client';
