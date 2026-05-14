@@ -390,6 +390,13 @@ export function EstimateDetail({ initial, costCodes }: Props) {
           >
             Print / Save as PDF
           </Link>
+          <a
+            href={`${API_BASE_URL}/api/imported-estimates/${estimate.id}/excel.xlsx`}
+            className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100"
+            download
+          >
+            Export Excel
+          </a>
           <button
             type="button"
             onClick={() => {

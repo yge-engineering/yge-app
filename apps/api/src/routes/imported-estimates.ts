@@ -13,6 +13,7 @@ import {
   updateImportedEstimate,
 } from '../lib/imported-estimates-store';
 import { createJob } from '../lib/jobs-store';
+import { buildEstimateWorkbook, type EstimateBidItemData } from '../lib/excel-estimate-generator';
 
 function newSnapshotId(): string {
   const hex = Math.floor(Math.random() * 0x100000000).toString(16);
@@ -156,6 +157,68 @@ importedEstimatesRouter.post('/:id/convert-to-job', async (req, res, next) => {
 
     const updated = await updateImportedEstimate(ie.id, { jobId: job.id });
     res.status(201).json({ job, importedEstimate: updated });
+  } catch (err) { next(err); }
+});
+
+importedEstimatesRouter.get('/:id/excel.xlsx', async (req, res, next) => {
+  try {
+    const ie = await getImportedEstimate(req.params.id);
+    if (!ie) return res.status(404).json({ error: 'Imported estimate not found' });
+
+    // Group flat lines[] by sectionName into bidItems for the generator.
+    const groups = new Map<string, EstimateBidItemData>();
+    let order = 0;
+    const ordering: string[] = [];
+    for (const ln of ie.lines) {
+      const section = ln.sectionName ?? '(Uncategorized)';
+      let group = groups.get(section);
+      if (!group) {
+        order += 1;
+        group = {
+          itemNumber: String(order),
+          description: section,
+          costLines: [],
+          subtotalDirectCents: 0,
+          subtotalOppCents: 0,
+          subtotalBidCents: 0,
+        };
+        groups.set(section, group);
+        ordering.push(section);
+      }
+      group.costLines.push({
+        category: ln.category ?? null,
+        costCode: ln.costCode ?? null,
+        description: ln.description,
+        quantity: ln.quantity,
+        unit: ln.unit ?? '',
+        otMult: ln.otMultiplier,
+        unitCostCents: ln.unitCostCents,
+        totalCostCents: ln.totalCostCents,
+        oppMarkupCents: ln.oppMarkupCents,
+        bidPriceCents: ln.bidPriceCents,
+        notes: ln.notes ?? null,
+      });
+      group.subtotalDirectCents += ln.totalCostCents;
+      group.subtotalOppCents += ln.oppMarkupCents;
+      group.subtotalBidCents += ln.bidPriceCents;
+    }
+    const bidItems = ordering.map((s) => groups.get(s)!);
+
+    const buf = buildEstimateWorkbook({
+      jobNumber: ie.jobNumber,
+      projectName: ie.projectName,
+      rateType: ie.rateType,
+      oppPercent: ie.oppPercent,
+      directCostCents: ie.directCostCents,
+      oppMarkupCents: ie.oppMarkupCents,
+      bidPriceCents: ie.bidPriceCents,
+      bidItems,
+    });
+
+    const filename = `Est_${ie.jobNumber}.xlsx`;
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(buf);
   } catch (err) { next(err); }
 });
 
