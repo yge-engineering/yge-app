@@ -399,6 +399,18 @@ export function EstimateDetail({ initial, costCodes }: Props) {
           >
             Bid cover letter
           </Link>
+          <button
+            type="button"
+            onClick={async () => {
+              if (!confirm('Zero every line\'s unit cost? Current state will be auto-snapshotted first.')) return;
+              const res = await fetch(`${API_BASE_URL}/api/imported-estimates/${estimate.id}/reset-prices`, { method: 'POST' });
+              if (res.ok) router.refresh();
+              else alert('Reset failed: ' + (await res.text()));
+            }}
+            className="rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-800 hover:bg-amber-100"
+          >
+            Reset all prices
+          </button>
           <a
             href={`${API_BASE_URL}/api/imported-estimates/${estimate.id}/excel.xlsx`}
             className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100"
