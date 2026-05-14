@@ -328,6 +328,20 @@ customersRouter.get('/revenue-concentration', async (_req, res, next) => {
   } catch (err) { next(err); }
 });
 
+customersRouter.get('/search', async (req, res, next) => {
+  try {
+    const q = typeof req.query.q === 'string' ? req.query.q.trim().toLowerCase() : '';
+    if (q.length < 1) return res.json({ matches: [] });
+    const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+    const all = await prisma.customer.findMany({ where: { companyId, deletedAt: null } });
+    const matches = all
+      .filter((c) => c.name.toLowerCase().includes(q) || (c.contactName ?? '').toLowerCase().includes(q) || (c.contactEmail ?? '').toLowerCase().includes(q))
+      .slice(0, 50)
+      .map((c) => ({ id: c.id, name: c.name, type: c.type, contactName: c.contactName, contactEmail: c.contactEmail }));
+    res.json({ q, matches });
+  } catch (err) { next(err); }
+});
+
 customersRouter.get('/touchpoints', async (_req, res, next) => {
   try {
     const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
