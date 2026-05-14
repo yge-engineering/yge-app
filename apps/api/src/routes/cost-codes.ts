@@ -1,6 +1,9 @@
 // Cost codes master routes — CRUD for the master reference list.
 
 import { Router } from 'express';
+import multer from 'multer';
+
+const ccUpload = multer({ limits: { fileSize: 5 * 1024 * 1024 } });
 import { prisma } from '@yge/db';
 import { CostCodeCreateSchema, CostCodePatchSchema } from '@yge/shared';
 import {
@@ -22,6 +25,72 @@ costCodesRouter.get('/', async (_req, res, next) => {
 
 // GET /api/cost-codes/stats — usage rollup across estimates + daily reports.
 // MUST come before /:id so the wildcard doesn't swallow it.
+costCodesRouter.post('/import-csv', ccUpload.single('file'), async (req, res, next) => {
+  try {
+    const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+    const dryRun = String(req.query.dryRun ?? '') === '1';
+
+    function parseCsv(s: string): string[][] {
+      const rows: string[][] = [];
+      let row: string[] = []; let cell = ''; let inQ = false;
+      for (let i = 0; i < s.length; i++) {
+        const c = s[i];
+        if (inQ) {
+          if (c === '"' && s[i + 1] === '"') { cell += '"'; i += 1; }
+          else if (c === '"') { inQ = false; }
+          else { cell += c; }
+        } else {
+          if (c === '"') { inQ = true; }
+          else if (c === ',') { row.push(cell); cell = ''; }
+          else if (c === '\n' || c === '\r') {
+            if (c === '\r' && s[i + 1] === '\n') i += 1;
+            row.push(cell); cell = '';
+            if (row.some((x) => x.length > 0)) rows.push(row);
+            row = [];
+          } else { cell += c; }
+        }
+      }
+      if (cell.length > 0 || row.length > 0) { row.push(cell); if (row.some((x) => x.length > 0)) rows.push(row); }
+      return rows;
+    }
+    const rows = parseCsv(req.file.buffer.toString('utf8'));
+    if (rows.length === 0) return res.status(400).json({ error: 'CSV is empty' });
+    const header = (rows[0] ?? []).map((h) => h.trim());
+    const idx = (col: string) => header.indexOf(col);
+    const iCode = idx('code'), iName = idx('name'), iCategory = idx('category');
+    if (iCode < 0 || iName < 0) {
+      return res.status(400).json({ error: 'CSV must have code, name columns' });
+    }
+
+    const summary = { total: rows.length - 1, created: 0, updated: 0, skipped: 0, errors: [] as Array<{ row: number; reason: string }>, dryRun };
+    const all = await prisma.costCode.findMany({ where: { companyId, deletedAt: null } });
+
+    for (let r = 1; r < rows.length; r++) {
+      const row = rows[r] ?? [];
+      const code = (row[iCode] ?? '').trim();
+      const name = (row[iName] ?? '').trim();
+      const category = iCategory >= 0 ? ((row[iCategory] ?? '').trim() || null) : null;
+      if (!code || !name) {
+        summary.errors.push({ row: r + 1, reason: 'missing code/name' });
+        summary.skipped++;
+        continue;
+      }
+      const existing = all.find((c) => c.code.toUpperCase() === code.toUpperCase());
+      if (dryRun) { if (existing) summary.updated++; else summary.created++; continue; }
+      if (existing) {
+        await prisma.costCode.update({ where: { id: existing.id }, data: { name, category } });
+        summary.updated++;
+      } else {
+        await prisma.costCode.create({ data: { companyId, code, name, category } });
+        summary.created++;
+      }
+    }
+
+    res.json({ summary });
+  } catch (err) { next(err); }
+});
+
 costCodesRouter.get('/export.csv', async (_req, res, next) => {
   try {
     const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
