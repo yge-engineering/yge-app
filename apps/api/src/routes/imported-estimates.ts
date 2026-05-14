@@ -31,6 +31,58 @@ importedEstimatesRouter.get('/', async (_req, res, next) => {
 });
 
 // MUST come before /:id so Express doesn't treat "audits-summary" as an id.
+importedEstimatesRouter.get('/search', async (req, res, next) => {
+  try {
+    const q = typeof req.query.q === 'string' ? req.query.q.trim().toLowerCase() : '';
+    if (q.length < 2) return res.json({ matches: [] });
+
+    const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+    const all = await listImportedEstimates();
+
+    interface Match {
+      id: string;
+      jobNumber: string;
+      projectName: string;
+      client: string | null;
+      notesExcerpt: string | null;
+      lineMatches: Array<{ description: string; costCode: string | null }>;
+    }
+    const matches: Match[] = [];
+    for (const ie of all) {
+      const notesHit = (ie.notes ?? '').toLowerCase().includes(q);
+      const nameHit = ie.projectName.toLowerCase().includes(q);
+      const clientHit = (ie.client ?? '').toLowerCase().includes(q);
+      const jobHit = ie.jobNumber.toLowerCase().includes(q);
+      const lineHits: Array<{ description: string; costCode: string | null }> = [];
+      for (const ln of ie.lines) {
+        if (ln.description.toLowerCase().includes(q) || (ln.costCode ?? '').toLowerCase().includes(q) || (ln.notes ?? '').toLowerCase().includes(q)) {
+          lineHits.push({ description: ln.description, costCode: ln.costCode ?? null });
+          if (lineHits.length >= 5) break;
+        }
+      }
+      if (notesHit || nameHit || clientHit || jobHit || lineHits.length > 0) {
+        let excerpt: string | null = null;
+        if (notesHit && ie.notes) {
+          const idx = ie.notes.toLowerCase().indexOf(q);
+          const start = Math.max(0, idx - 40);
+          const end = Math.min(ie.notes.length, idx + q.length + 40);
+          excerpt = (start > 0 ? '…' : '') + ie.notes.slice(start, end) + (end < ie.notes.length ? '…' : '');
+        }
+        matches.push({
+          id: ie.id,
+          jobNumber: ie.jobNumber,
+          projectName: ie.projectName,
+          client: ie.client ?? null,
+          notesExcerpt: excerpt,
+          lineMatches: lineHits,
+        });
+      }
+    }
+
+    res.json({ q, matches: matches.slice(0, 50) });
+  } catch (err) { next(err); }
+});
+
 importedEstimatesRouter.get('/audits-summary', async (_req, res, next) => {
   try {
     const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
@@ -179,6 +231,42 @@ importedEstimatesRouter.post('/:id/restore/:snapshotId', async (req, res, next) 
       snapshots: [...(ie.snapshots ?? []), autoSnap],
     });
     res.json({ importedEstimate: updated, restoredFrom: snap.id, autoSnapshot: autoSnap.id });
+  } catch (err) { next(err); }
+});
+
+importedEstimatesRouter.post('/:id/reset-prices', async (req, res, next) => {
+  try {
+    const ie = await getImportedEstimate(req.params.id);
+    if (!ie) return res.status(404).json({ error: 'Imported estimate not found' });
+
+    // Auto-snapshot the current state before zeroing.
+    const autoSnap = {
+      id: newSnapshotId(),
+      createdAt: new Date().toISOString(),
+      label: 'Auto-snapshot before reset-prices',
+      oppPercent: ie.oppPercent,
+      directCostCents: ie.directCostCents,
+      oppMarkupCents: ie.oppMarkupCents,
+      bidPriceCents: ie.bidPriceCents,
+      lines: ie.lines,
+    };
+
+    const zeroedLines = ie.lines.map((ln) => ({
+      ...ln,
+      unitCostCents: 0,
+      totalCostCents: 0,
+      oppMarkupCents: 0,
+      bidPriceCents: 0,
+    }));
+
+    const updated = await updateImportedEstimate(ie.id, {
+      directCostCents: 0,
+      oppMarkupCents: 0,
+      bidPriceCents: 0,
+      lines: zeroedLines,
+      snapshots: [...(ie.snapshots ?? []), autoSnap],
+    });
+    res.json({ importedEstimate: updated, snapshotId: autoSnap.id });
   } catch (err) { next(err); }
 });
 
