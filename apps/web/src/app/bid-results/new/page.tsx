@@ -8,14 +8,15 @@ import Link from 'next/link';
 import { useTranslator } from '../../../lib/use-translator';
 
 import { Alert, AppShell } from '../../../components';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import type { BidResult, Job } from '@yge/shared';
 import { ApiError, postJson } from '@/lib/api';
 
 export default function NewBidResultPage() {
   const router = useRouter();
   const t = useTranslator();
-  const [jobId, setJobId] = useState('');
+  const search = useSearchParams();
+  const [jobId, setJobId] = useState(search?.get('jobId') ?? '');
   const [bidOpenedAt, setBidOpenedAt] = useState(
     new Date().toISOString().slice(0, 10),
   );

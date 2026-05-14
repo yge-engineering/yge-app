@@ -345,9 +345,17 @@ export function EstimateDetail({ initial, costCodes }: Props) {
             ← All imported estimates
           </Link>
           {estimate.jobId ? (
-            <Link href={`/jobs/${estimate.jobId}`} className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50">
-              View linked Job →
-            </Link>
+            <>
+              <Link href={`/jobs/${estimate.jobId}`} className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50">
+                View linked Job →
+              </Link>
+              <Link
+                href={`/bid-results/new?jobId=${encodeURIComponent(estimate.jobId)}`}
+                className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-700 hover:bg-yge-blue-50"
+              >
+                Record bid result
+              </Link>
+            </>
           ) : (
             <button
               type="button"
