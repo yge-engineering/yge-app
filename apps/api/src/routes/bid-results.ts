@@ -250,6 +250,33 @@ bidResultsRouter.get('/export.csv', async (_req, res, next) => {
   } catch (err) { next(err); }
 });
 
+bidResultsRouter.get('/stats/sparkline', async (_req, res, next) => {
+  try {
+    const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+    const results = await prisma.bidResult.findMany({ where: { companyId, deletedAt: null } });
+    const buckets = new Map<string, { month: string; wins: number; losses: number; winsCents: number }>();
+    for (const r of results) {
+      const d = r.data as { bidOpenedAt?: string; outcome?: string; bidders?: Array<{ isYge?: boolean; amountCents?: number }> } | null;
+      const month = (d?.bidOpenedAt ?? '').slice(0, 7); // yyyy-mm
+      if (!month) continue;
+      let st = buckets.get(month);
+      if (!st) {
+        st = { month, wins: 0, losses: 0, winsCents: 0 };
+        buckets.set(month, st);
+      }
+      if (d?.outcome === 'WON_BY_YGE') {
+        st.wins += 1;
+        const ygeBid = (d.bidders ?? []).find((b) => b.isYge);
+        st.winsCents += ygeBid?.amountCents ?? 0;
+      } else if (d?.outcome === 'WON_BY_OTHER') {
+        st.losses += 1;
+      }
+    }
+    const months = [...buckets.values()].sort((a, b) => a.month.localeCompare(b.month));
+    res.json({ months });
+  } catch (err) { next(err); }
+});
+
 bidResultsRouter.get('/stats', async (_req, res, next) => {
   try {
     const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
