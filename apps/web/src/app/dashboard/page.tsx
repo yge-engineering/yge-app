@@ -15,6 +15,7 @@ import { GettingStartedBanner } from '../../components/getting-started-banner';
 import { LicenseRenewalBanner } from '../../components/license-renewal-banner';
 import { Money } from '../../components/money';
 import { RecentActivity } from '../../components/recent-activity';
+import { ExcelImportStatusTile } from '../../components/excel-import-status-tile';
 import { getCurrentUser } from '../../lib/auth';
 import { getTranslator } from '../../lib/locale';
 import { bidDueCountdown } from '@yge/shared';
@@ -1060,6 +1061,9 @@ async function DashboardPageInner() {
           <KvRow label={t('dashboard.kv.equipmentOut')} value={dispatchRollup.todayEquipmentCount} />
         </section>
 
+        {/* EXCEL IMPORTS */}
+        <ExcelImportStatusTile />
+
         {/* RECENT ACTIVITY */}
         <div className="lg:col-span-2">
           <RecentActivity
@@ -1085,6 +1089,9 @@ async function DashboardPageInner() {
             <QuickLink href="/ar-payments/new" label={t('dashboard.quickLink.recordPayment')} />
             <QuickLink href="/pcos/new" label={t('dashboard.quickLink.newPco')} />
             <QuickLink href="/rfis/new" label={t('dashboard.quickLink.newRfi')} />
+            <QuickLink href="/admin/excel-import" label="Import Excel" />
+            <QuickLink href="/imported-estimates" label="Imported estimates" />
+            <QuickLink href="/imported-estimates/compare" label="Compare bids" />
           </div>
         </section>
       </div>
