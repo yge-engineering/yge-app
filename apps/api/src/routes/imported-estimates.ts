@@ -111,6 +111,23 @@ importedEstimatesRouter.get('/export.csv', async (_req, res, next) => {
   } catch (err) { next(err); }
 });
 
+importedEstimatesRouter.get('/submitted-list', async (_req, res, next) => {
+  try {
+    const all = await listImportedEstimates();
+    const submitted = all.filter((ie) => /\[Submitted /.test(ie.notes ?? ''));
+    res.json({
+      total: submitted.length,
+      estimates: submitted.map((ie) => ({
+        id: ie.id,
+        jobNumber: ie.jobNumber,
+        projectName: ie.projectName,
+        bidPriceCents: ie.bidPriceCents,
+        notes: ie.notes,
+      })),
+    });
+  } catch (err) { next(err); }
+});
+
 importedEstimatesRouter.get('/audits-summary', async (_req, res, next) => {
   try {
     const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
