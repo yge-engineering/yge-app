@@ -1,3 +1,4 @@
+// 1823: company-info endpoint shipped, expansion TBD.
 // Static YGE company facts — surfaced as JSON so any client (web,
 // mobile, future portals) can render letterheads / signatures without
 // hardcoding values.
