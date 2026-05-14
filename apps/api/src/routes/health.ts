@@ -5,6 +5,7 @@ import { isMicrosoftConfigured } from '../lib/microsoft-graph';
 import { listMicrosoftTokens } from '../lib/microsoft-tokens-store';
 import { getApInboxLastRun } from '../lib/ap-inbox-scheduler';
 
+// build kick 2026-05-14T06:13:10.084Z
 export const healthRouter = Router();
 
 healthRouter.get('/', async (_req, res) => {
