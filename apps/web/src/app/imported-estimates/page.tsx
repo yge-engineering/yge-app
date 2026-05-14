@@ -59,6 +59,14 @@ export default async function ImportedEstimatesPage() {
                 <JobsShortcutsChip />
               </div>
               <EstimatesSearchInput targetId="imported-list-table" totalCount={estimates.length} />
+              <div className="mb-2 flex justify-end">
+                <Link
+                  href="/imported-estimates/compare"
+                  className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-semibold text-yge-blue-700 hover:bg-yge-blue-50"
+                >
+                  Compare two estimates →
+                </Link>
+              </div>
               <EstimatesSortHeaders targetId="imported-list-table" />
             </div>
             <EstimatesKeyboardNav targetId="imported-list-table" />
