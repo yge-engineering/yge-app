@@ -24,6 +24,7 @@ import { CostCodeTrendsTile } from '../../components/cost-code-trends-tile';
 import { BidSummaryTile } from '../../components/bid-summary-tile';
 import { BidSparklineTile } from '../../components/bid-sparkline-tile';
 import { JobsStatsTile } from '../../components/jobs-stats-tile';
+import { DashboardSummaryTile } from '../../components/dashboard-summary-tile';
 import { getCurrentUser } from '../../lib/auth';
 import { getTranslator } from '../../lib/locale';
 import { bidDueCountdown } from '@yge/shared';
@@ -1078,6 +1079,7 @@ async function DashboardPageInner() {
         <BidSummaryTile />
         <BidSparklineTile />
         <JobsStatsTile />
+        <DashboardSummaryTile />
         <TodaysLinesTile />
 
         {/* RECENT ACTIVITY */}
