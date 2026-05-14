@@ -102,6 +102,11 @@ const GROUPS: ReportGroup[] = [
         blurb: 'How often we win at each owner agency, color-coded.',
       },
       {
+        href: '/bid-results/by-year',
+        label: 'Bid history by year',
+        blurb: 'YoY bid count, win rate, won \$ — for trend talks with bank/bonding.',
+      },
+      {
         href: '/vendors/scorecard',
         label: 'Subcontractor scorecard',
         blurb: 'Per-sub paid total, open balance, avg days-to-pay, jobs delivered.',
