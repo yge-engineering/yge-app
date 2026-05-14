@@ -205,6 +205,76 @@ export function ExcelEstimateView({ estimateId }: { estimateId: string }) {
     });
   }
 
+  function blankCostLine(): CostLine {
+    return {
+      category: 'Other',
+      costCode: null,
+      description: '',
+      quantity: 1,
+      unit: 'LS',
+      otMult: 1,
+      unitCostCents: 0,
+      totalCostCents: 0,
+      oppMarkupCents: 0,
+      bidPriceCents: 0,
+      notes: null,
+    };
+  }
+
+  function addCostLine(biIdx: number) {
+    setDraft((prev) => {
+      if (!prev) return prev;
+      const items = (prev.bidItems ?? []).map((bi, i) =>
+        i !== biIdx ? bi : { ...bi, costLines: [...bi.costLines, blankCostLine()] },
+      );
+      const { bidItems: rec, direct, opp, bid } = recompute(items, prev.oppPercent ?? 0.2);
+      return { ...prev, bidItems: rec, directCostCents: direct, oppMarkupCents: opp, bidPriceCents: bid };
+    });
+  }
+
+  function deleteCostLine(biIdx: number, lineIdx: number) {
+    setDraft((prev) => {
+      if (!prev) return prev;
+      const items = (prev.bidItems ?? []).map((bi, i) =>
+        i !== biIdx
+          ? bi
+          : { ...bi, costLines: bi.costLines.filter((_, j) => j !== lineIdx) },
+      );
+      const { bidItems: rec, direct, opp, bid } = recompute(items, prev.oppPercent ?? 0.2);
+      return { ...prev, bidItems: rec, directCostCents: direct, oppMarkupCents: opp, bidPriceCents: bid };
+    });
+  }
+
+  function addBidItem() {
+    setDraft((prev) => {
+      if (!prev) return prev;
+      const existing = prev.bidItems ?? [];
+      const nextNum = String(existing.length + 1);
+      const newItem: BidItem = {
+        itemNumber: nextNum,
+        description: 'New bid item',
+        costLines: [],
+        subtotalDirectCents: 0,
+        subtotalOppCents: 0,
+        subtotalBidCents: 0,
+      };
+      const items = [...existing, newItem];
+      // Auto-expand the new section so the user sees it.
+      setExpanded((e) => ({ ...e, [nextNum]: true }));
+      return { ...prev, bidItems: items };
+    });
+  }
+
+  function deleteBidItem(biIdx: number) {
+    if (!confirm('Delete this bid item and all its cost lines?')) return;
+    setDraft((prev) => {
+      if (!prev) return prev;
+      const items = (prev.bidItems ?? []).filter((_, i) => i !== biIdx);
+      const { bidItems: rec, direct, opp, bid } = recompute(items, prev.oppPercent ?? 0.2);
+      return { ...prev, bidItems: rec, directCostCents: direct, oppMarkupCents: opp, bidPriceCents: bid };
+    });
+  }
+
   async function save() {
     if (!draft) return;
     setSaving(true);
@@ -359,12 +429,24 @@ export function ExcelEstimateView({ estimateId }: { estimateId: string }) {
                       </span>
                     )}
                   </div>
-                  <span className="text-xs text-yge-blue-800">
-                    {bi.costLines.length} line
-                    {bi.costLines.length === 1 ? '' : 's'} · subtotal{' '}
-                    <span className="font-mono font-semibold">
-                      <Money cents={bi.subtotalBidCents} />
+                  <span className="flex items-center gap-2 text-xs text-yge-blue-800">
+                    <span>
+                      {bi.costLines.length} line
+                      {bi.costLines.length === 1 ? '' : 's'} · subtotal{' '}
+                      <span className="font-mono font-semibold">
+                        <Money cents={bi.subtotalBidCents} />
+                      </span>
                     </span>
+                    {editMode ? (
+                      <button
+                        type="button"
+                        onClick={() => deleteBidItem(biIdx)}
+                        className="rounded border border-red-300 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-red-700 hover:bg-red-50"
+                        title="Delete this bid item and all its cost lines"
+                      >
+                        🗑 Delete item
+                      </button>
+                    ) : null}
                   </span>
                 </div>
                 {isOpen ? (
@@ -383,6 +465,7 @@ export function ExcelEstimateView({ estimateId }: { estimateId: string }) {
                           <th className="px-2 py-1 text-right">Markup</th>
                           <th className="px-2 py-1 text-right">Bid price</th>
                           <th className="px-2 py-1">Notes</th>
+                          {editMode ? <th className="px-2 py-1" /> : null}
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100">
@@ -508,9 +591,34 @@ export function ExcelEstimateView({ estimateId }: { estimateId: string }) {
                                   line.notes ?? ''
                                 )}
                               </td>
+                              {editMode ? (
+                                <td className="px-2 py-1 text-right">
+                                  <button
+                                    type="button"
+                                    onClick={() => deleteCostLine(biIdx, i)}
+                                    className="rounded border border-red-300 bg-white px-1 py-0.5 text-[10px] font-semibold text-red-700 hover:bg-red-50"
+                                    title="Delete this cost line"
+                                  >
+                                    ✕
+                                  </button>
+                                </td>
+                              ) : null}
                             </tr>
                           );
                         })}
+                        {editMode ? (
+                          <tr>
+                            <td colSpan={12} className="px-2 py-1">
+                              <button
+                                type="button"
+                                onClick={() => addCostLine(biIdx)}
+                                className="rounded-md border border-yge-blue-300 bg-white px-2 py-0.5 text-[11px] font-semibold text-yge-blue-700 hover:bg-yge-blue-50"
+                              >
+                                + Add cost line
+                              </button>
+                            </td>
+                          </tr>
+                        ) : null}
                       </tbody>
                       <tfoot>
                         <tr className="bg-gray-50 font-semibold">
@@ -527,6 +635,7 @@ export function ExcelEstimateView({ estimateId }: { estimateId: string }) {
                             <Money cents={bi.subtotalBidCents} />
                           </td>
                           <td />
+                          {editMode ? <td /> : null}
                         </tr>
                       </tfoot>
                     </table>
@@ -535,13 +644,22 @@ export function ExcelEstimateView({ estimateId }: { estimateId: string }) {
               </section>
             );
           })}
+          {editMode ? (
+            <button
+              type="button"
+              onClick={addBidItem}
+              className="w-full rounded-md border-2 border-dashed border-yge-blue-300 bg-white px-3 py-3 text-sm font-semibold text-yge-blue-700 hover:bg-yge-blue-50"
+            >
+              + Add bid item
+            </button>
+          ) : null}
         </div>
       )}
 
       <p className="mt-4 text-[11px] text-gray-500">
-        Edit description / qty / unit / OT mult / unit cost / notes inline.
-        Total cost, markup, and bid price recompute live. Add/remove rows
-        ships in the next bundle.
+        Inline editing: description, qty, unit, OT mult, unit cost, notes.
+        Add cost lines per section; add/delete bid items at any level.
+        All totals recompute live; click Save to commit.
       </p>
     </div>
   );
