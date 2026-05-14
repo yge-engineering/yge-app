@@ -274,6 +274,35 @@ vendorsRouter.get('/coi-aging', async (_req, res, next) => {
   } catch (err) { next(err); }
 });
 
+vendorsRouter.get('/search', async (req, res, next) => {
+  try {
+    const q = typeof req.query.q === 'string' ? req.query.q.trim().toLowerCase() : '';
+    if (q.length < 1) return res.json({ matches: [] });
+    const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
+    const all = await prisma.vendor.findMany({ where: { companyId, deletedAt: null } });
+    const matches = all
+      .map((v) => {
+        const d = (v.data as Record<string, unknown> | null) ?? {};
+        return {
+          id: v.id,
+          legalName: (d.legalName as string) ?? '',
+          dbaName: (d.dbaName as string) ?? null,
+          kind: (d.kind as string) ?? '',
+          email: (d.email as string) ?? null,
+          tradeSpecialty: (d.tradeSpecialty as string) ?? null,
+        };
+      })
+      .filter((m) =>
+        m.legalName.toLowerCase().includes(q) ||
+        (m.dbaName ?? '').toLowerCase().includes(q) ||
+        (m.tradeSpecialty ?? '').toLowerCase().includes(q) ||
+        (m.email ?? '').toLowerCase().includes(q),
+      )
+      .slice(0, 50);
+    res.json({ q, matches });
+  } catch (err) { next(err); }
+});
+
 vendorsRouter.get('/scorecard', async (req, res, next) => {
   try {
     const companyId = process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
