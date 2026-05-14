@@ -298,3 +298,34 @@ estimatesExcelRouter.get('/:id/excel/sync-status', async (req, res, next) => {
   }
 });
 
+
+// GET /api/estimates/:id/excel-data — return the raw Excel-format
+// data blob for an Excel-imported estimate. Used by the in-app
+// viewer/editor when the standard PricedEstimate shape doesn't fit.
+estimatesExcelRouter.get('/:id/excel-data', async (req, res, next) => {
+  try {
+    const id = req.params.id ?? '';
+    const row = await prisma.estimate.findFirst({
+      where: { id, deletedAt: null },
+      include: { job: true },
+    });
+    if (!row) return res.status(404).json({ error: 'Estimate not found' });
+    const data = (row.data ?? {}) as Record<string, unknown> & {
+      importedFromExcel?: boolean;
+      bidItems?: unknown[];
+    };
+    if (!data.importedFromExcel) {
+      return res.status(404).json({ error: 'Not an Excel-imported estimate' });
+    }
+    res.json({
+      id: row.id,
+      jobId: row.jobId,
+      job: { id: row.job.id, jobNumber: row.job.jobNumber, name: row.job.name },
+      updatedAt: row.updatedAt.toISOString(),
+      data,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
