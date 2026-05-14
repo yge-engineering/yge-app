@@ -1,3 +1,4 @@
+// 1822: bid result detail.
 // 1758: TODO — link to matching imported-estimate by jobId.
 // /bid-results/[id] — edit a bid result; bidder list editor + outcome.
 
