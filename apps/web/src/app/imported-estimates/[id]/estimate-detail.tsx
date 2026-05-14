@@ -423,6 +423,16 @@ export function EstimateDetail({ initial, costCodes }: Props) {
           >
             Mark submitted
           </button>
+          <button
+            type="button"
+            onClick={async () => {
+              const res = await fetch(`${API_BASE_URL}/api/imported-estimates/${estimate.id}/toggle-pin`, { method: 'POST' });
+              if (res.ok) router.refresh();
+            }}
+            className="rounded-md border border-yellow-400 bg-yellow-50 px-3 py-1.5 text-xs font-medium text-yellow-800 hover:bg-yellow-100"
+          >
+            {(estimate.notes ?? '').startsWith('[PINNED]') ? 'Unpin' : 'Pin'}
+          </button>
           <a
             href={`${API_BASE_URL}/api/imported-estimates/${estimate.id}/excel.xlsx`}
             className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100"
