@@ -16,7 +16,10 @@ export function QuickLogLineForm({ jobId }: { jobId: string }) {
   const today = new Date().toISOString().slice(0, 10);
   const [reportDate, setReportDate] = useState(today);
   const [category, setCategory] = useState('Labor');
-  const [costCode, setCostCode] = useState('');
+  const [costCode, setCostCode] = useState(() => {
+    if (typeof window !== 'undefined') return localStorage.getItem('yge-quick-log-cost-code') ?? '';
+    return '';
+  });
   const [description, setDescription] = useState('');
   const [qtyHrs, setQtyHrs] = useState('');
   const [unit, setUnit] = useState('hr');
@@ -115,6 +118,7 @@ export function QuickLogLineForm({ jobId }: { jobId: string }) {
             onPick={(r) => {
               if (!r.found) return;
               setCostCode(r.code);
+              try { localStorage.setItem('yge-quick-log-cost-code', r.code); } catch {}
               if (!description.trim()) setDescription(r.name);
               if (!unit.trim() || unit === 'hr') setUnit(r.unit);
               if (!rateDollars.trim() || rateDollars === '0') {
