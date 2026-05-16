@@ -1,11 +1,18 @@
 import { AppShell, PageHeader } from '../../../components';
 
+export const dynamic = 'force-dynamic';
+
 export default function ServerTimePage() {
   const now = new Date();
   const intlFormatter = new Intl.DateTimeFormat('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    second: '2-digit',
     timeZoneName: 'long',
-    dateStyle: 'full',
-    timeStyle: 'long',
   });
   const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
