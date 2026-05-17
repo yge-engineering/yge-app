@@ -1,0 +1,68 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+
+function apiBaseUrl(): string {
+  return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+}
+
+interface Customer {
+  id: string;
+  name?: string | null;
+  phone?: string | null;
+}
+
+function areaCode(phone?: string | null): string {
+  if (!phone) return 'unknown';
+  const digits = phone.replace(/\D+/g, '');
+  if (digits.length >= 10) return digits.slice(-10, -7);
+  if (digits.length >= 3) return digits.slice(0, 3);
+  return 'unknown';
+}
+
+export function PrintAreaCodeDetailPanel() {
+  const [customers, setCustomers] = useState<Customer[] | null>(null);
+
+  useEffect(() => {
+    fetch(`${apiBaseUrl()}/api/customers`, { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : { customers: [] }))
+      .then((j: { customers?: Customer[] }) => setCustomers(j.customers ?? []));
+  }, []);
+
+  if (!customers) {
+    return <div className="text-sm text-gray-500">Loading…</div>;
+  }
+
+  const grouped = new Map<string, Customer[]>();
+  for (const c of customers) {
+    const k = areaCode(c.phone);
+    const list = grouped.get(k);
+    if (list) list.push(c);
+    else grouped.set(k, [c]);
+  }
+  const sections = Array.from(grouped.entries()).sort((a, b) => b[1].length - a[1].length);
+
+  if (sections.length === 0) {
+    return <p className="text-xs text-gray-500">No customers yet.</p>;
+  }
+
+  return (
+    <div className="space-y-4">
+      {sections.map(([code, list]) => (
+        <section key={code} className="break-inside-avoid">
+          <h2 className="border-b border-gray-300 pb-1 font-mono text-sm font-semibold text-gray-900">
+            {code} <span className="text-xs text-gray-500">({list.length})</span>
+          </h2>
+          <ul className="mt-1 space-y-0.5 text-xs">
+            {list.map((c) => (
+              <li key={c.id} className="flex items-center justify-between">
+                <span className="text-gray-900">{c.name ?? '— unnamed —'}</span>
+                <span className="font-mono text-gray-500">{c.phone ?? ''}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
+  );
+}
