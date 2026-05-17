@@ -29,6 +29,8 @@ import {
   setLineUnitPrice,
   updateEstimate,
 } from '../lib/estimates-store';
+import { generateBidPdf } from '../lib/bid-pdf-generator';
+import { getMasterProfile } from '../lib/master-profile-store';
 
 export const pricedEstimatesRouter = Router();
 
@@ -327,6 +329,35 @@ pricedEstimatesRouter.get('/:id/export.csv', async (req, res, next) => {
       `attachment; filename="${slug}-priced-estimate.csv"`,
     );
     return res.send('\uFEFF' + csv);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/priced-estimates/:id/export.pdf \u2014 agency-bid-ready PDF.
+// Renders the priced estimate as a multi-page PDF with the company
+// block from the master profile, the bid item table, totals
+// breakdown, and a signature line. Inline content disposition so the
+// browser previews it; the operator hits "Save" to keep a copy.
+pricedEstimatesRouter.get('/:id/export.pdf', async (req, res, next) => {
+  try {
+    const estimate = await getEstimate(req.params.id);
+    if (!estimate) return res.status(404).json({ error: 'Estimate not found' });
+    const master = await getMasterProfile();
+    const bytes = await generateBidPdf({ estimate, master });
+    const slug =
+      estimate.projectName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 60) || 'priced-estimate';
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `inline; filename="${slug}-bid.pdf"`,
+    );
+    res.setHeader('Cache-Control', 'no-store');
+    return res.end(Buffer.from(bytes));
   } catch (err) {
     next(err);
   }

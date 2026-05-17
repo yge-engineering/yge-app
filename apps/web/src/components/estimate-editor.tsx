@@ -786,6 +786,15 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
               {t('estEditor.csvDirect')}
             </a>
             <a
+              href={`${apiBaseUrl}/api/priced-estimates/${estimate.id}/export.pdf`}
+              className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-700 hover:bg-yge-blue-50"
+              title="Open the bid PDF in a new tab — agency-bid-ready, with company block + signature line."
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Bid PDF
+            </a>
+            <a
               href={`/estimates/${estimate.id}/print`}
               className="rounded border border-yge-blue-500 bg-yge-blue-500 px-3 py-1 text-xs font-medium text-white hover:bg-yge-blue-700"
               title={t('estEditor.printSummaryTip')}
