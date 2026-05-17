@@ -3,6 +3,7 @@ export * from './calendar-event';
 export * from './folder';
 export * from './cost-code';
 export * from './equipment-rate';
+export * from './labor-rate';
 export * from './imported-estimate';
 export * from './cost-variance';
 export * from './bid-coach';
