@@ -18,6 +18,8 @@ import {
   formatUSD,
   pricedEstimateToCsv,
   type CostBuildup,
+  type LaborRate,
+  type LaborRateType,
   type PricedEstimate,
   type PricedEstimateTotals,
   type PtoEItemConfidence,
@@ -535,6 +537,7 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
     patch: Partial<{
       perUnitPrice: PricedEstimate['perUnitPrice'] | null;
       notes: string;
+      rateType: PricedEstimate['rateType'];
     }>,
   ) {
     const next = {
@@ -543,6 +546,7 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
         ? { perUnitPrice: patch.perUnitPrice ?? undefined }
         : {}),
       ...(patch.notes !== undefined ? { notes: patch.notes || undefined } : {}),
+      ...(patch.rateType !== undefined ? { rateType: patch.rateType } : {}),
     } as PricedEstimate;
     setEstimate(next);
     recomputeLocal(next);
@@ -830,6 +834,15 @@ export function EstimateEditor({ initialEstimate, initialTotals, apiBaseUrl }: P
           onCommit={(next) =>
             void applyEstimatePatch({ perUnitPrice: next ?? null })
           }
+        />
+        <RateTypeCard
+          rateType={estimate.rateType ?? 'PRIVATE'}
+          onCommit={(next) => void applyEstimatePatch({ rateType: next })}
+        />
+        <LaborRateLookupCard
+          apiBaseUrl={apiBaseUrl}
+          rateType={estimate.rateType ?? 'PRIVATE'}
+          bidDueDate={estimate.bidDueDate}
         />
       </header>
 
@@ -2606,6 +2619,169 @@ function BidRiskBanner({
             </li>
           ))}
         </ul>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Rate-type selector — picks which labor-rate column the lookup
+// widget pulls from. Defaults to PRIVATE so older estimates parse
+// fine; flipping to PW is the standard move on a CA public works
+// job. Stored at the estimate level so every line shares the same
+// default (you can still hand-edit a single line's price).
+// ─────────────────────────────────────────────────────────────
+function RateTypeCard({
+  rateType,
+  onCommit,
+}: {
+  rateType: LaborRateType;
+  onCommit: (next: LaborRateType) => void;
+}) {
+  const opts: Array<{ value: LaborRateType; label: string; help: string }> = [
+    { value: 'PRIVATE', label: 'Private', help: 'Non-prevailing-wage commercial' },
+    { value: 'PW', label: 'PW (CA)', help: 'CA DIR state prevailing wage' },
+    { value: 'DB', label: 'DB (federal)', help: 'Davis-Bacon federal prevailing wage' },
+    { value: 'IBEW', label: 'IBEW', help: 'IBEW union scale' },
+  ];
+  return (
+    <div className="rounded-md border border-gray-200 bg-white p-3 shadow-sm">
+      <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+        Labor rate type
+      </div>
+      <div className="flex flex-wrap gap-1">
+        {opts.map((o) => {
+          const selected = o.value === rateType;
+          return (
+            <button
+              key={o.value}
+              type="button"
+              onClick={() => onCommit(o.value)}
+              title={o.help}
+              className={
+                'rounded border px-2 py-1 text-xs font-semibold ' +
+                (selected
+                  ? 'border-yge-blue-500 bg-yge-blue-500 text-white'
+                  : 'border-gray-300 bg-white text-gray-700 hover:border-yge-blue-300')
+              }
+            >
+              {o.label}
+            </button>
+          );
+        })}
+      </div>
+      <p className="mt-2 text-[11px] text-gray-500">
+        Drives the labor-rate lookup tool below. Switch to PW for any CA public works job.
+      </p>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Labor-rate lookup widget — paste a labor cost code, get the
+// burdened cents from the rate book for the estimate's rateType.
+// Operator then copies into a line by hand. Future bundle wires
+// a per-line "Apply" button so the value flows in automatically.
+// ─────────────────────────────────────────────────────────────
+function LaborRateLookupCard({
+  apiBaseUrl,
+  rateType,
+  bidDueDate,
+}: {
+  apiBaseUrl: string;
+  rateType: LaborRateType;
+  bidDueDate?: string;
+}) {
+  const [code, setCode] = useState('LAB-OE-EXC4');
+  const [result, setResult] = useState<{
+    rate: LaborRate;
+    baseCents: number;
+    burdenedCents: number;
+    type: LaborRateType;
+  } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function lookup(): Promise<void> {
+    setBusy(true);
+    setError(null);
+    setResult(null);
+    try {
+      const params = new URLSearchParams({ code: code.trim(), type: rateType });
+      if (bidDueDate) params.set('activeOn', bidDueDate);
+      const res = await fetch(`${apiBaseUrl}/api/labor-rates/lookup?${params.toString()}`, {
+        cache: 'no-store',
+      });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        setError(body.error ?? `Lookup failed (${res.status}).`);
+        return;
+      }
+      const json = (await res.json()) as {
+        laborRate: LaborRate;
+        baseCents: number;
+        burdenedCents: number;
+        type: LaborRateType;
+      };
+      setResult({
+        rate: json.laborRate,
+        baseCents: json.baseCents,
+        burdenedCents: json.burdenedCents,
+        type: json.type,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="rounded-md border border-gray-200 bg-white p-3 shadow-sm">
+      <div className="mb-2 flex items-baseline justify-between">
+        <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+          Labor rate lookup
+        </div>
+        <span className="text-[10px] text-gray-500">type: <strong>{rateType}</strong></span>
+      </div>
+      <div className="flex gap-1">
+        <input
+          type="text"
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') void lookup();
+          }}
+          placeholder="LAB-OE-EXC4"
+          className="flex-1 rounded border border-gray-300 px-2 py-1 font-mono text-xs"
+        />
+        <button
+          type="button"
+          onClick={() => void lookup()}
+          disabled={busy || code.trim().length === 0}
+          className="rounded bg-yge-blue-500 px-2 py-1 text-xs font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50"
+        >
+          {busy ? '…' : 'Look up'}
+        </button>
+      </div>
+      {error && (
+        <div className="mt-2 rounded border border-red-300 bg-red-50 p-1.5 text-[11px] text-red-800">
+          {error}
+        </div>
+      )}
+      {result && (
+        <div className="mt-2 space-y-0.5 border-t border-gray-100 pt-2 text-xs">
+          <div className="font-semibold text-gray-900">{result.rate.classification}</div>
+          <div className="text-[11px] text-gray-500">
+            Base: {formatUSD(result.baseCents)}/hr · burden {(result.rate.burdenPct * 100).toFixed(1)}%
+          </div>
+          <div className="text-sm font-bold text-yge-blue-900">
+            {formatUSD(result.burdenedCents)}/hr <span className="text-[11px] font-normal text-gray-500">burdened</span>
+          </div>
+          {result.rate.source && (
+            <div className="text-[10px] text-gray-400">{result.rate.source}</div>
+          )}
+        </div>
       )}
     </div>
   );

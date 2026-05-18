@@ -15,6 +15,9 @@ import { Router } from 'express';
 import {
   LaborRateCreateSchema,
   LaborRatePatchSchema,
+  LaborRateTypeSchema,
+  laborRateBurdened,
+  laborRateForType,
 } from '@yge/shared';
 import {
   createLaborRate,
@@ -33,6 +36,50 @@ laborRatesRouter.get('/', async (req, res, next) => {
     const includeDeleted = req.query.includeDeleted === '1';
     const rates = await listLaborRates({ activeOn, includeDeleted });
     return res.json({ laborRates: rates });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/labor-rates/lookup?code=LAB-OE-EXC4&type=PW[&activeOn=YYYY-MM-DD]
+// Find the rate active on the given date for the given code, then
+// return both base cents and burdened cents for the requested type.
+// The estimate editor uses this to pre-fill a labor line.
+laborRatesRouter.get('/lookup', async (req, res, next) => {
+  try {
+    const code =
+      typeof req.query.code === 'string' ? req.query.code.trim() : '';
+    if (!code) {
+      return res.status(400).json({ error: 'code query param required' });
+    }
+    const typeParse = LaborRateTypeSchema.safeParse(
+      typeof req.query.type === 'string' ? req.query.type : 'PRIVATE',
+    );
+    if (!typeParse.success) {
+      return res.status(400).json({ error: 'invalid type (PRIVATE/PW/DB/IBEW)' });
+    }
+    const type = typeParse.data;
+    const activeOn =
+      typeof req.query.activeOn === 'string'
+        ? req.query.activeOn
+        : new Date().toISOString().slice(0, 10);
+
+    const rates = await listLaborRates({ activeOn });
+    const match = rates.find((r) => r.code.toUpperCase() === code.toUpperCase());
+    if (!match) {
+      return res.status(404).json({
+        error: 'No active rate found for code',
+        code,
+        activeOn,
+      });
+    }
+    return res.json({
+      laborRate: match,
+      type,
+      baseCents: laborRateForType(match, type),
+      burdenedCents: laborRateBurdened(match, type),
+      activeOn,
+    });
   } catch (err) {
     next(err);
   }

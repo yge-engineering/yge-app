@@ -15,6 +15,7 @@ import { z } from 'zod';
 import type { Cents } from './money';
 import { markupAmount } from './money';
 import { PtoEBidItemSchema, PtoEProjectTypeSchema } from './plans-to-estimate-output';
+import { LaborRateTypeSchema } from './labor-rate';
 import type { PtoEBidItem } from './plans-to-estimate-output';
 import { SubBidSchema } from './sub-bid';
 import { BidSecuritySchema } from './bid-security';
@@ -136,6 +137,17 @@ export const PricedEstimateSchema = z.object({
    *  are separate so the estimator can break out burden, bonds,
    *  insurance, and contingency. */
   oppPercent: z.number().min(0).max(2),
+
+  /** Default labor-rate type for new labor lines.
+   *   - PRIVATE  — non-prevailing-wage commercial / private work
+   *   - PW       — CA DIR state prevailing wage (default for any
+   *                public works job in California)
+   *   - DB       — Davis-Bacon, federal prevailing wage
+   *   - IBEW     — IBEW union scale, used on a small subset of jobs
+   *  Optional + defaults to PRIVATE on read so older estimate files
+   *  parse fine. The estimate editor's labor-rate lookup tool uses
+   *  this to pick the right column from labor-rates. */
+  rateType: LaborRateTypeSchema.optional(),
   /** Free-form estimator notes — not the same as draft assumptions. */
   notes: z.string().max(5_000).optional(),
 
