@@ -11,6 +11,14 @@
 
 import { cookies } from 'next/headers';
 import type { PortalRole } from '@yge/shared';
+import { signSession, verifySession } from './session-cookie';
+
+function sessionSecret(): string {
+  // Production should set this. Empty string falls back to the
+  // legacy unsigned cookie format (logs a one-line warning on the
+  // API side too).
+  return process.env.YGE_SESSION_SECRET ?? '';
+}
 
 export interface YgeUser {
   email: string;
@@ -73,17 +81,17 @@ export function findSeededUser(email: string): YgeUser | null {
   return null;
 }
 
-/** Read the current user from the session cookie, if any. */
+/** Read the current user from the session cookie, if any. Accepts
+ *  both signed (HMAC-SHA256) and legacy unsigned cookies — the
+ *  latter so existing sessions keep working through the rollout. */
 export function getCurrentUser(): YgeUser | null {
   const raw = cookies().get(COOKIE_NAME)?.value;
   if (!raw) return null;
-  try {
-    const parsed = JSON.parse(decodeURIComponent(raw)) as YgeUser;
-    if (typeof parsed.email !== 'string' || typeof parsed.name !== 'string') return null;
-    return parsed;
-  } catch {
-    return null;
-  }
+  const verified = verifySession<YgeUser>(raw, sessionSecret());
+  if (!verified.valid || !verified.payload) return null;
+  const parsed = verified.payload;
+  if (typeof parsed.email !== 'string' || typeof parsed.name !== 'string') return null;
+  return parsed;
 }
 
 /** Server-side helper that throws if there is no logged-in user.
@@ -96,9 +104,11 @@ export function requireUser(): YgeUser {
   return user;
 }
 
-/** Set the session cookie. Called from the sign-in server action. */
+/** Set the session cookie. Called from the sign-in server action.
+ *  When YGE_SESSION_SECRET is set the cookie is HMAC-SHA256 signed
+ *  so it can't be hand-forged from the browser. */
 export function setSessionCookie(user: YgeUser): void {
-  cookies().set(COOKIE_NAME, encodeURIComponent(JSON.stringify(user)), {
+  cookies().set(COOKIE_NAME, signSession(user, sessionSecret()), {
     httpOnly: true,
     sameSite: 'lax',
     path: '/',

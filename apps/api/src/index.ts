@@ -4,6 +4,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { tenantMiddleware } from './middleware/tenant';
+import { sessionAuthMiddleware } from './middleware/session';
 import { requestIdMiddleware } from './middleware/request-id';
 import pinoHttp from 'pino-http';
 import { logger } from './lib/logger';
@@ -130,6 +131,9 @@ app.use(pinoHttp({ logger }));
 
 // Tenant resolution — every downstream handler reads its companyId
 // from the per-request AsyncLocalStorage seeded here.
+// Session auth runs BEFORE tenant so tenant can read req.ygeUser as
+// the trusted actor when present.
+app.use(sessionAuthMiddleware);
 app.use(tenantMiddleware);
 
 app.use('/health', healthRouter);
