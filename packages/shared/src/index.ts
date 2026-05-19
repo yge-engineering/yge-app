@@ -118,6 +118,7 @@ export * from './customer-concentration';
 export * from './sub-list-audit';
 export * from './sub-award-notice';
 export * from './sub-substitution-notice';
+export * from './sub-notice-to-proceed';
 export * from './retention-projection';
 export * from './equipment-idle';
 export * from './bid-pipeline';
