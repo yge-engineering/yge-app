@@ -5,6 +5,7 @@ import { AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { Job, Submittal } from '@yge/shared';
 import { SubmittalEditor } from '@/components/submittal-editor';
+import { SubmittalStatusBar } from '@/components/submittal-status-bar';
 import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
@@ -47,6 +48,12 @@ export default async function SubmittalDetailPage({
         </Link>
       </div>
 
+      <SubmittalStatusBar
+        id={submittal.id}
+        initialStatus={submittal.status}
+        submittedAt={submittal.submittedAt}
+        returnedAt={submittal.returnedAt}
+      />
       <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <SubmittalEditor initial={submittal} jobs={jobs} apiBaseUrl={publicApiBaseUrl()} />
       </div>
