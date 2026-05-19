@@ -5,6 +5,7 @@ import { AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { SwpppInspection } from '@yge/shared';
 import { SwpppInspectionEditor } from '../../../components/swppp-inspection-editor';
+import { SwpppFinalizeBar } from '../../../components/swppp-finalize-bar';
 import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
@@ -41,6 +42,7 @@ export default async function SwpppInspectionDetailPage({
       <p className="mt-1 text-sm text-gray-600">{inspection.jobId}</p>
       <p className="mt-1 text-xs text-gray-500">{t('photoPg.idLabel', { id: inspection.id })}</p>
       <div className="mt-6">
+        <SwpppFinalizeBar id={inspection.id} initialFinalizedOn={inspection.finalizedOn} />
         <SwpppInspectionEditor mode="edit" inspection={inspection} />
       </div>
 
