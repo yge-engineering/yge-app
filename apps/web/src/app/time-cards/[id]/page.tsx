@@ -6,6 +6,7 @@ import { AppShell, AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { Employee, Job, TimeCard } from '@yge/shared';
 import { TimeCardEditor } from '@/components/time-card-editor';
+import { TimeCardStatusBar } from '@/components/time-card-status-bar';
 import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
@@ -58,6 +59,12 @@ export default async function TimeCardDetailPage({
         </Link>
       </div>
 
+      <TimeCardStatusBar
+        id={card.id}
+        initialStatus={card.status}
+        submittedAt={card.submittedAt}
+        approvedAt={card.approvedAt}
+      />
       <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <TimeCardEditor
           initial={card}
