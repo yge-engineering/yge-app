@@ -6,6 +6,7 @@ import { AppShell, AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { CertifiedPayroll, Employee, Job } from '@yge/shared';
 import { CertifiedPayrollEditor } from '@/components/certified-payroll-editor';
+import { CprStatusBar } from '@/components/cpr-status-bar';
 import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
@@ -54,6 +55,11 @@ export default async function CprDetailPage({ params }: { params: { id: string }
         </Link>
       </div>
 
+      <CprStatusBar
+        id={cpr.id}
+        initialStatus={cpr.status}
+        submittedAt={cpr.submittedAt}
+      />
       <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <CertifiedPayrollEditor
           initial={cpr}
