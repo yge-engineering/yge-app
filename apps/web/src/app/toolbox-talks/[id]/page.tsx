@@ -5,6 +5,7 @@ import { AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { ToolboxTalk } from '@yge/shared';
 import { ToolboxTalkEditor } from '../../../components/toolbox-talk-editor';
+import { ToolboxTalkStatusBar } from '../../../components/toolbox-talk-status-bar';
 import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
@@ -47,6 +48,11 @@ export default async function ToolboxTalkDetailPage({
       </p>
       <p className="mt-1 text-xs text-gray-500">{t('photoPg.idLabel', { id: talk.id })}</p>
       <div className="mt-6">
+        <ToolboxTalkStatusBar
+          id={talk.id}
+          initialStatus={talk.status}
+          submittedOn={talk.submittedOn}
+        />
         <ToolboxTalkEditor mode="edit" talk={talk} />
       </div>
 
