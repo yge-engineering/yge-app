@@ -1,18 +1,9 @@
 'use client';
 
-// One-tap status transitions for a bank reconciliation.
-//
-// DRAFT       → RECONCILED   (Mark reconciled — stamps reconciledOn)
-// RECONCILED  → DRAFT        (Reopen — usually because a late match arrived)
-// any         → VOIDED       (rare; statement was wrong)
+// DRAFT → RECONCILED → DRAFT (reopen on late match); any → VOIDED off-ramp.
 
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 import type { BankRecStatus } from '@yge/shared';
-
-function apiBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
-}
+import { todayDate, useStatusTransition } from '../lib/use-status-transition';
 
 const STATUS_TONE: Record<BankRecStatus, string> = {
   DRAFT: 'bg-amber-100 text-amber-800',
@@ -29,35 +20,16 @@ export function BankRecStatusBar({
   initialStatus: BankRecStatus;
   reconciledOn?: string;
 }) {
-  const router = useRouter();
-  const [status, setStatus] = useState<BankRecStatus>(initialStatus);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { status, busy, error, transition } = useStatusTransition<BankRecStatus>({
+    route: 'bank-recs',
+    id,
+    initial: initialStatus,
+  });
 
-  async function transition(next: BankRecStatus): Promise<void> {
-    setBusy(true);
-    setError(null);
-    try {
-      const today = new Date().toISOString().slice(0, 10);
-      const patch: Record<string, unknown> = { status: next };
-      if (next === 'RECONCILED' && !reconciledOn) patch.reconciledOn = today;
-      const res = await fetch(`${apiBaseUrl()}/api/bank-recs/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(patch),
-      });
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? `Transition failed (${res.status}).`);
-        return;
-      }
-      setStatus(next);
-      router.refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
-    }
+  async function go(next: BankRecStatus): Promise<void> {
+    const extras: Record<string, unknown> = {};
+    if (next === 'RECONCILED' && !reconciledOn) extras.reconciledOn = todayDate();
+    await transition(next, extras);
   }
 
   return (
@@ -71,13 +43,13 @@ export function BankRecStatusBar({
       </div>
       <div className="flex flex-wrap items-center gap-2">
         {status === 'DRAFT' && (
-          <button type="button" disabled={busy} onClick={() => transition('RECONCILED')}
+          <button type="button" disabled={busy} onClick={() => void go('RECONCILED')}
             className="rounded bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50">
             Mark reconciled
           </button>
         )}
         {status === 'RECONCILED' && (
-          <button type="button" disabled={busy} onClick={() => transition('DRAFT')}
+          <button type="button" disabled={busy} onClick={() => void go('DRAFT')}
             className="rounded border border-amber-300 px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-50 disabled:opacity-50">
             Reopen (late match)
           </button>
@@ -86,7 +58,7 @@ export function BankRecStatusBar({
           <button type="button" disabled={busy}
             onClick={() => {
               if (!confirm("Void this reconciliation? Use only if the bank statement itself was wrong.")) return;
-              void transition('VOIDED');
+              void go('VOIDED');
             }}
             className="rounded border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50">
             Void

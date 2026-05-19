@@ -1,17 +1,9 @@
 'use client';
 
-// One-tap status transitions for a toolbox talk.
-//
-// DRAFT → HELD       (Mark held — talk happened; heldOn is already set)
-// HELD  → SUBMITTED  (file to safety binder / agency — stamps submittedOn)
+// DRAFT → HELD → SUBMITTED.
 
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 import type { ToolboxTalkStatus } from '@yge/shared';
-
-function apiBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
-}
+import { todayDate, useStatusTransition } from '../lib/use-status-transition';
 
 const STATUS_TONE: Record<ToolboxTalkStatus, string> = {
   DRAFT: 'bg-gray-100 text-gray-700',
@@ -28,35 +20,16 @@ export function ToolboxTalkStatusBar({
   initialStatus: ToolboxTalkStatus;
   submittedOn?: string;
 }) {
-  const router = useRouter();
-  const [status, setStatus] = useState<ToolboxTalkStatus>(initialStatus);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { status, busy, error, transition } = useStatusTransition<ToolboxTalkStatus>({
+    route: 'toolbox-talks',
+    id,
+    initial: initialStatus,
+  });
 
-  async function transition(next: ToolboxTalkStatus): Promise<void> {
-    setBusy(true);
-    setError(null);
-    try {
-      const today = new Date().toISOString().slice(0, 10);
-      const patch: Record<string, unknown> = { status: next };
-      if (next === 'SUBMITTED' && !submittedOn) patch.submittedOn = today;
-      const res = await fetch(`${apiBaseUrl()}/api/toolbox-talks/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(patch),
-      });
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? `Transition failed (${res.status}).`);
-        return;
-      }
-      setStatus(next);
-      router.refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
-    }
+  async function go(next: ToolboxTalkStatus): Promise<void> {
+    const extras: Record<string, unknown> = {};
+    if (next === 'SUBMITTED' && !submittedOn) extras.submittedOn = todayDate();
+    await transition(next, extras);
   }
 
   return (
@@ -70,19 +43,19 @@ export function ToolboxTalkStatusBar({
       </div>
       <div className="flex flex-wrap items-center gap-2">
         {status === 'DRAFT' && (
-          <button type="button" disabled={busy} onClick={() => transition('HELD')}
+          <button type="button" disabled={busy} onClick={() => void go('HELD')}
             className="rounded bg-yge-blue-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50">
             Mark held
           </button>
         )}
         {status === 'HELD' && (
-          <button type="button" disabled={busy} onClick={() => transition('SUBMITTED')}
+          <button type="button" disabled={busy} onClick={() => void go('SUBMITTED')}
             className="rounded bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50">
             File to safety binder
           </button>
         )}
         {status !== 'DRAFT' && (
-          <button type="button" disabled={busy} onClick={() => transition('DRAFT')}
+          <button type="button" disabled={busy} onClick={() => void go('DRAFT')}
             className="rounded border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50">
             Reopen
           </button>

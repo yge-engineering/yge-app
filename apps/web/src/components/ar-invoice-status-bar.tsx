@@ -1,20 +1,9 @@
 'use client';
 
-// One-tap status transitions for an AR invoice.
-//
-// DRAFT          → SENT             (mail / email to the owner — stamps sentAt)
-// SENT           → PARTIALLY_PAID   (first payment received)
-// SENT / PART    → PAID             (paid in full)
-// SENT           → DISPUTED         (owner pushed back)
-// any → WRITTEN_OFF                 (uncollectible — flagged for accounting)
+// DRAFT → SENT → PARTIALLY_PAID / PAID; with DISPUTED + WRITTEN_OFF off-ramps.
 
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 import type { ArInvoiceStatus } from '@yge/shared';
-
-function apiBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
-}
+import { nowIso, useStatusTransition } from '../lib/use-status-transition';
 
 const STATUS_TONE: Record<ArInvoiceStatus, string> = {
   DRAFT: 'bg-gray-100 text-gray-700',
@@ -34,34 +23,16 @@ export function ArInvoiceStatusBar({
   initialStatus: ArInvoiceStatus;
   sentAt?: string;
 }) {
-  const router = useRouter();
-  const [status, setStatus] = useState<ArInvoiceStatus>(initialStatus);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { status, busy, error, transition } = useStatusTransition<ArInvoiceStatus>({
+    route: 'ar-invoices',
+    id,
+    initial: initialStatus,
+  });
 
-  async function transition(next: ArInvoiceStatus): Promise<void> {
-    setBusy(true);
-    setError(null);
-    try {
-      const patch: Record<string, unknown> = { status: next };
-      if (next === 'SENT' && !sentAt) patch.sentAt = new Date().toISOString();
-      const res = await fetch(`${apiBaseUrl()}/api/ar-invoices/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(patch),
-      });
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? `Transition failed (${res.status}).`);
-        return;
-      }
-      setStatus(next);
-      router.refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
-    }
+  async function go(next: ArInvoiceStatus): Promise<void> {
+    const extras: Record<string, unknown> = {};
+    if (next === 'SENT' && !sentAt) extras.sentAt = nowIso();
+    await transition(next, extras);
   }
 
   return (
@@ -75,25 +46,25 @@ export function ArInvoiceStatusBar({
       </div>
       <div className="flex flex-wrap items-center gap-2">
         {status === 'DRAFT' && (
-          <button type="button" disabled={busy} onClick={() => transition('SENT')}
+          <button type="button" disabled={busy} onClick={() => void go('SENT')}
             className="rounded bg-yge-blue-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50">
             Send to owner
           </button>
         )}
         {(status === 'SENT' || status === 'PARTIALLY_PAID') && (
-          <button type="button" disabled={busy} onClick={() => transition('PAID')}
+          <button type="button" disabled={busy} onClick={() => void go('PAID')}
             className="rounded bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50">
             Mark paid in full
           </button>
         )}
         {status === 'SENT' && (
-          <button type="button" disabled={busy} onClick={() => transition('PARTIALLY_PAID')}
+          <button type="button" disabled={busy} onClick={() => void go('PARTIALLY_PAID')}
             className="rounded border border-yge-blue-300 px-3 py-1.5 text-xs font-semibold text-yge-blue-700 hover:bg-yge-blue-50 disabled:opacity-50">
             First payment received
           </button>
         )}
         {(status === 'SENT' || status === 'PARTIALLY_PAID') && (
-          <button type="button" disabled={busy} onClick={() => transition('DISPUTED')}
+          <button type="button" disabled={busy} onClick={() => void go('DISPUTED')}
             className="rounded border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50">
             Dispute
           </button>
@@ -102,14 +73,14 @@ export function ArInvoiceStatusBar({
           <button type="button" disabled={busy}
             onClick={() => {
               if (!confirm("Write this invoice off as uncollectible? It moves into the bad-debt bucket on the trial balance.")) return;
-              void transition('WRITTEN_OFF');
+              void go('WRITTEN_OFF');
             }}
             className="rounded border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50">
             Write off
           </button>
         )}
         {status !== 'DRAFT' && status !== 'PAID' && status !== 'WRITTEN_OFF' && (
-          <button type="button" disabled={busy} onClick={() => transition('DRAFT')}
+          <button type="button" disabled={busy} onClick={() => void go('DRAFT')}
             className="rounded border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50">
             Reopen as draft
           </button>

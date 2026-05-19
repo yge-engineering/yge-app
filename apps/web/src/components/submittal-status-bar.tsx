@@ -1,21 +1,10 @@
 'use client';
 
-// One-tap status transitions for a submittal.
-//
-// DRAFT     → SUBMITTED   (Submit, stamps submittedAt today)
-// SUBMITTED → APPROVED                    (Approved — stamps returnedAt)
-// SUBMITTED → APPROVED_AS_NOTED           (Approved as noted)
-// SUBMITTED → REVISE_RESUBMIT             (Revise + resubmit)
-// SUBMITTED → REJECTED                    (Rejected)
-// DRAFT/SUBMITTED → WITHDRAWN             (We pulled it back)
+// DRAFT → SUBMITTED → APPROVED / APPROVED_AS_NOTED / REVISE_RESUBMIT / REJECTED;
+// DRAFT/SUBMITTED → WITHDRAWN.
 
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 import type { SubmittalStatus } from '@yge/shared';
-
-function apiBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
-}
+import { todayDate, useStatusTransition } from '../lib/use-status-transition';
 
 const STATUS_TONE: Record<SubmittalStatus, string> = {
   DRAFT: 'bg-gray-100 text-gray-700',
@@ -45,36 +34,17 @@ export function SubmittalStatusBar({
   submittedAt?: string;
   returnedAt?: string;
 }) {
-  const router = useRouter();
-  const [status, setStatus] = useState<SubmittalStatus>(initialStatus);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { status, busy, error, transition } = useStatusTransition<SubmittalStatus>({
+    route: 'submittals',
+    id,
+    initial: initialStatus,
+  });
 
-  async function transition(next: SubmittalStatus): Promise<void> {
-    setBusy(true);
-    setError(null);
-    try {
-      const today = new Date().toISOString().slice(0, 10);
-      const patch: Record<string, unknown> = { status: next };
-      if (next === 'SUBMITTED' && !submittedAt) patch.submittedAt = today;
-      if (RETURN_STATUSES.has(next) && !returnedAt) patch.returnedAt = today;
-      const res = await fetch(`${apiBaseUrl()}/api/submittals/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(patch),
-      });
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? `Transition failed (${res.status}).`);
-        return;
-      }
-      setStatus(next);
-      router.refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
-    }
+  async function go(next: SubmittalStatus): Promise<void> {
+    const extras: Record<string, unknown> = {};
+    if (next === 'SUBMITTED' && !submittedAt) extras.submittedAt = todayDate();
+    if (RETURN_STATUSES.has(next) && !returnedAt) extras.returnedAt = todayDate();
+    await transition(next, extras);
   }
 
   return (
@@ -89,33 +59,33 @@ export function SubmittalStatusBar({
       </div>
       <div className="flex flex-wrap items-center gap-2">
         {status === 'DRAFT' && (
-          <button type="button" disabled={busy} onClick={() => transition('SUBMITTED')}
+          <button type="button" disabled={busy} onClick={() => void go('SUBMITTED')}
             className="rounded bg-yge-blue-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50">
             Submit
           </button>
         )}
         {status === 'SUBMITTED' && (
           <>
-            <button type="button" disabled={busy} onClick={() => transition('APPROVED')}
+            <button type="button" disabled={busy} onClick={() => void go('APPROVED')}
               className="rounded bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50">
               Mark approved
             </button>
-            <button type="button" disabled={busy} onClick={() => transition('APPROVED_AS_NOTED')}
+            <button type="button" disabled={busy} onClick={() => void go('APPROVED_AS_NOTED')}
               className="rounded border border-green-300 px-3 py-1.5 text-xs font-semibold text-green-700 hover:bg-green-50 disabled:opacity-50">
               Approved as noted
             </button>
-            <button type="button" disabled={busy} onClick={() => transition('REVISE_RESUBMIT')}
+            <button type="button" disabled={busy} onClick={() => void go('REVISE_RESUBMIT')}
               className="rounded border border-amber-300 px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-50 disabled:opacity-50">
               Revise + resubmit
             </button>
-            <button type="button" disabled={busy} onClick={() => transition('REJECTED')}
+            <button type="button" disabled={busy} onClick={() => void go('REJECTED')}
               className="rounded border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50">
               Reject
             </button>
           </>
         )}
         {(status === 'DRAFT' || status === 'SUBMITTED') && (
-          <button type="button" disabled={busy} onClick={() => transition('WITHDRAWN')}
+          <button type="button" disabled={busy} onClick={() => void go('WITHDRAWN')}
             className="rounded border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50">
             Withdraw
           </button>

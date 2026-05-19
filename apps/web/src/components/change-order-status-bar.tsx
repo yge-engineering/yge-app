@@ -1,20 +1,9 @@
 'use client';
 
-// One-tap status transitions for a change order (CO).
-//
-// PROPOSED       → AGENCY_REVIEW   (Send to agency)
-// AGENCY_REVIEW  → APPROVED        (Agency approved — stamps approvedAt)
-// AGENCY_REVIEW  → REJECTED        (Agency said no)
-// APPROVED       → EXECUTED        (Owner + contractor signed — stamps executedAt)
-// PROPOSED/REVIEW → WITHDRAWN      (We pulled it back)
+// PROPOSED → AGENCY_REVIEW → APPROVED → EXECUTED; with REJECTED + WITHDRAWN.
 
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 import type { ChangeOrderStatus } from '@yge/shared';
-
-function apiBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
-}
+import { todayDate, useStatusTransition } from '../lib/use-status-transition';
 
 const STATUS_TONE: Record<ChangeOrderStatus, string> = {
   PROPOSED: 'bg-gray-100 text-gray-700',
@@ -38,37 +27,18 @@ export function ChangeOrderStatusBar({
   approvedAt?: string;
   executedAt?: string;
 }) {
-  const router = useRouter();
-  const [status, setStatus] = useState<ChangeOrderStatus>(initialStatus);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { status, busy, error, transition } = useStatusTransition<ChangeOrderStatus>({
+    route: 'change-orders',
+    id,
+    initial: initialStatus,
+  });
 
-  async function transition(next: ChangeOrderStatus): Promise<void> {
-    setBusy(true);
-    setError(null);
-    try {
-      const today = new Date().toISOString().slice(0, 10);
-      const patch: Record<string, unknown> = { status: next };
-      if (next === 'AGENCY_REVIEW' && !proposedAt) patch.proposedAt = today;
-      if (next === 'APPROVED' && !approvedAt) patch.approvedAt = today;
-      if (next === 'EXECUTED' && !executedAt) patch.executedAt = today;
-      const res = await fetch(`${apiBaseUrl()}/api/change-orders/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(patch),
-      });
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? `Transition failed (${res.status}).`);
-        return;
-      }
-      setStatus(next);
-      router.refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
-    }
+  async function go(next: ChangeOrderStatus): Promise<void> {
+    const extras: Record<string, unknown> = {};
+    if (next === 'AGENCY_REVIEW' && !proposedAt) extras.proposedAt = todayDate();
+    if (next === 'APPROVED' && !approvedAt) extras.approvedAt = todayDate();
+    if (next === 'EXECUTED' && !executedAt) extras.executedAt = todayDate();
+    await transition(next, extras);
   }
 
   return (
@@ -84,31 +54,31 @@ export function ChangeOrderStatusBar({
       </div>
       <div className="flex flex-wrap items-center gap-2">
         {status === 'PROPOSED' && (
-          <button type="button" disabled={busy} onClick={() => transition('AGENCY_REVIEW')}
+          <button type="button" disabled={busy} onClick={() => void go('AGENCY_REVIEW')}
             className="rounded bg-yge-blue-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50">
             Send to agency
           </button>
         )}
         {status === 'AGENCY_REVIEW' && (
           <>
-            <button type="button" disabled={busy} onClick={() => transition('APPROVED')}
+            <button type="button" disabled={busy} onClick={() => void go('APPROVED')}
               className="rounded bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50">
               Agency approved
             </button>
-            <button type="button" disabled={busy} onClick={() => transition('REJECTED')}
+            <button type="button" disabled={busy} onClick={() => void go('REJECTED')}
               className="rounded border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50">
               Agency rejected
             </button>
           </>
         )}
         {status === 'APPROVED' && (
-          <button type="button" disabled={busy} onClick={() => transition('EXECUTED')}
+          <button type="button" disabled={busy} onClick={() => void go('EXECUTED')}
             className="rounded bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50">
             Mark executed
           </button>
         )}
         {(status === 'PROPOSED' || status === 'AGENCY_REVIEW') && (
-          <button type="button" disabled={busy} onClick={() => transition('WITHDRAWN')}
+          <button type="button" disabled={busy} onClick={() => void go('WITHDRAWN')}
             className="rounded border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50">
             Withdraw
           </button>

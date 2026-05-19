@@ -1,20 +1,9 @@
 'use client';
 
-// One-tap status transitions for a certified payroll report (CPR).
-//
-// DRAFT            → SUBMITTED       (filed to DIR — stamps submittedAt)
-// SUBMITTED        → ACCEPTED        (DIR accepted; clean filing)
-// SUBMITTED        → AMENDED         (filed a correction)
-// SUBMITTED        → NON_PERFORMANCE (the standard "no work this week" filing)
-// any → DRAFT      (Reopen)
+// DRAFT → SUBMITTED → ACCEPTED / AMENDED; DRAFT → NON_PERFORMANCE.
 
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 import type { CprStatus } from '@yge/shared';
-
-function apiBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
-}
+import { nowIso, useStatusTransition } from '../lib/use-status-transition';
 
 const STATUS_TONE: Record<CprStatus, string> = {
   DRAFT: 'bg-gray-100 text-gray-700',
@@ -33,34 +22,16 @@ export function CprStatusBar({
   initialStatus: CprStatus;
   submittedAt?: string;
 }) {
-  const router = useRouter();
-  const [status, setStatus] = useState<CprStatus>(initialStatus);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { status, busy, error, transition } = useStatusTransition<CprStatus>({
+    route: 'certified-payrolls',
+    id,
+    initial: initialStatus,
+  });
 
-  async function transition(next: CprStatus): Promise<void> {
-    setBusy(true);
-    setError(null);
-    try {
-      const patch: Record<string, unknown> = { status: next };
-      if (next === 'SUBMITTED' && !submittedAt) patch.submittedAt = new Date().toISOString();
-      const res = await fetch(`${apiBaseUrl()}/api/certified-payrolls/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(patch),
-      });
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? `Transition failed (${res.status}).`);
-        return;
-      }
-      setStatus(next);
-      router.refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
-    }
+  async function go(next: CprStatus): Promise<void> {
+    const extras: Record<string, unknown> = {};
+    if (next === 'SUBMITTED' && !submittedAt) extras.submittedAt = nowIso();
+    await transition(next, extras);
   }
 
   return (
@@ -75,11 +46,11 @@ export function CprStatusBar({
       <div className="flex flex-wrap items-center gap-2">
         {status === 'DRAFT' && (
           <>
-            <button type="button" disabled={busy} onClick={() => transition('SUBMITTED')}
+            <button type="button" disabled={busy} onClick={() => void go('SUBMITTED')}
               className="rounded bg-yge-blue-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50">
               Submit to DIR
             </button>
-            <button type="button" disabled={busy} onClick={() => transition('NON_PERFORMANCE')}
+            <button type="button" disabled={busy} onClick={() => void go('NON_PERFORMANCE')}
               className="rounded border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50">
               File 'no work performed'
             </button>
@@ -87,18 +58,18 @@ export function CprStatusBar({
         )}
         {status === 'SUBMITTED' && (
           <>
-            <button type="button" disabled={busy} onClick={() => transition('ACCEPTED')}
+            <button type="button" disabled={busy} onClick={() => void go('ACCEPTED')}
               className="rounded bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50">
               DIR accepted
             </button>
-            <button type="button" disabled={busy} onClick={() => transition('AMENDED')}
+            <button type="button" disabled={busy} onClick={() => void go('AMENDED')}
               className="rounded border border-yge-blue-300 px-3 py-1.5 text-xs font-semibold text-yge-blue-700 hover:bg-yge-blue-50 disabled:opacity-50">
               Filed amendment
             </button>
           </>
         )}
         {status !== 'DRAFT' && (
-          <button type="button" disabled={busy} onClick={() => transition('DRAFT')}
+          <button type="button" disabled={busy} onClick={() => void go('DRAFT')}
             className="rounded border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50">
             Reopen as draft
           </button>

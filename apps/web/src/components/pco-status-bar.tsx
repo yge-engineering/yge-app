@@ -1,21 +1,10 @@
 'use client';
 
-// One-tap status transitions for a PCO (potential change order).
-//
-// DRAFT                 → SUBMITTED              (Submit, stamps submittedOn)
-// SUBMITTED             → UNDER_REVIEW           (agency asked questions)
-// SUBMITTED/REVIEW      → APPROVED_PENDING_CO    (verbal yes, CO not executed yet)
-// SUBMITTED/REVIEW      → REJECTED               (red)
-// APPROVED_PENDING_CO   → CONVERTED_TO_CO        (executed CO replaces this PCO)
-// DRAFT/SUBM/REVIEW     → WITHDRAWN              (we pulled it back)
+// DRAFT → SUBMITTED → UNDER_REVIEW → APPROVED_PENDING_CO → CONVERTED_TO_CO;
+// with REJECTED / WITHDRAWN off-ramps.
 
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 import type { PcoStatus } from '@yge/shared';
-
-function apiBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
-}
+import { todayDate, useStatusTransition } from '../lib/use-status-transition';
 
 const STATUS_TONE: Record<PcoStatus, string> = {
   DRAFT: 'bg-gray-100 text-gray-700',
@@ -26,6 +15,12 @@ const STATUS_TONE: Record<PcoStatus, string> = {
   WITHDRAWN: 'bg-gray-100 text-gray-600',
   CONVERTED_TO_CO: 'bg-green-100 text-green-700',
 };
+
+const RESPONSE_STATUSES = new Set<PcoStatus>([
+  'UNDER_REVIEW',
+  'APPROVED_PENDING_CO',
+  'REJECTED',
+]);
 
 export function PcoStatusBar({
   id,
@@ -38,38 +33,18 @@ export function PcoStatusBar({
   submittedOn?: string;
   lastResponseOn?: string;
 }) {
-  const router = useRouter();
-  const [status, setStatus] = useState<PcoStatus>(initialStatus);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { status, busy, error, transition } = useStatusTransition<PcoStatus>({
+    route: 'pcos',
+    id,
+    initial: initialStatus,
+  });
 
-  async function transition(next: PcoStatus): Promise<void> {
-    setBusy(true);
-    setError(null);
-    try {
-      const today = new Date().toISOString().slice(0, 10);
-      const patch: Record<string, unknown> = { status: next };
-      if (next === 'SUBMITTED' && !submittedOn) patch.submittedOn = today;
-      if (['UNDER_REVIEW', 'APPROVED_PENDING_CO', 'REJECTED'].includes(next)) {
-        patch.lastResponseOn = today;
-      }
-      const res = await fetch(`${apiBaseUrl()}/api/pcos/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(patch),
-      });
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? `Transition failed (${res.status}).`);
-        return;
-      }
-      setStatus(next);
-      router.refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
-    }
+  async function go(next: PcoStatus): Promise<void> {
+    const extras: Record<string, unknown> = {};
+    const today = todayDate();
+    if (next === 'SUBMITTED' && !submittedOn) extras.submittedOn = today;
+    if (RESPONSE_STATUSES.has(next)) extras.lastResponseOn = today;
+    await transition(next, extras);
   }
 
   return (
@@ -84,37 +59,37 @@ export function PcoStatusBar({
       </div>
       <div className="flex flex-wrap items-center gap-2">
         {status === 'DRAFT' && (
-          <button type="button" disabled={busy} onClick={() => transition('SUBMITTED')}
+          <button type="button" disabled={busy} onClick={() => void go('SUBMITTED')}
             className="rounded bg-yge-blue-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50">
             Submit to agency
           </button>
         )}
         {status === 'SUBMITTED' && (
-          <button type="button" disabled={busy} onClick={() => transition('UNDER_REVIEW')}
+          <button type="button" disabled={busy} onClick={() => void go('UNDER_REVIEW')}
             className="rounded border border-amber-300 px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-50 disabled:opacity-50">
             Agency reviewing
           </button>
         )}
         {(status === 'SUBMITTED' || status === 'UNDER_REVIEW') && (
           <>
-            <button type="button" disabled={busy} onClick={() => transition('APPROVED_PENDING_CO')}
+            <button type="button" disabled={busy} onClick={() => void go('APPROVED_PENDING_CO')}
               className="rounded bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50">
               Approved (CO pending)
             </button>
-            <button type="button" disabled={busy} onClick={() => transition('REJECTED')}
+            <button type="button" disabled={busy} onClick={() => void go('REJECTED')}
               className="rounded border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50">
               Rejected
             </button>
           </>
         )}
         {status === 'APPROVED_PENDING_CO' && (
-          <button type="button" disabled={busy} onClick={() => transition('CONVERTED_TO_CO')}
+          <button type="button" disabled={busy} onClick={() => void go('CONVERTED_TO_CO')}
             className="rounded bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50">
             CO executed (close PCO)
           </button>
         )}
         {(status === 'DRAFT' || status === 'SUBMITTED' || status === 'UNDER_REVIEW') && (
-          <button type="button" disabled={busy} onClick={() => transition('WITHDRAWN')}
+          <button type="button" disabled={busy} onClick={() => void go('WITHDRAWN')}
             className="rounded border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50">
             Withdraw
           </button>

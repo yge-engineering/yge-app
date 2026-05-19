@@ -1,20 +1,9 @@
 'use client';
 
-// One-tap status transitions for an AP invoice.
-//
-// DRAFT     → PENDING    (route for approval)
-// PENDING   → APPROVED   (Brook / Ryan sign off — stamps approvedAt)
-// APPROVED  → PAID       (check cut / ACH sent — stamps paidAt)
-// PENDING   → REJECTED   (dispute the bill back to the vendor)
-// any non-paid → DRAFT   (Reopen)
+// DRAFT → PENDING → APPROVED → PAID; with REJECTED off-ramp.
 
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 import type { ApInvoiceStatus } from '@yge/shared';
-
-function apiBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
-}
+import { nowIso, useStatusTransition } from '../lib/use-status-transition';
 
 const STATUS_TONE: Record<ApInvoiceStatus, string> = {
   DRAFT: 'bg-gray-100 text-gray-700',
@@ -35,36 +24,17 @@ export function ApInvoiceStatusBar({
   approvedAt?: string;
   paidAt?: string;
 }) {
-  const router = useRouter();
-  const [status, setStatus] = useState<ApInvoiceStatus>(initialStatus);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { status, busy, error, transition } = useStatusTransition<ApInvoiceStatus>({
+    route: 'ap-invoices',
+    id,
+    initial: initialStatus,
+  });
 
-  async function transition(next: ApInvoiceStatus): Promise<void> {
-    setBusy(true);
-    setError(null);
-    try {
-      const now = new Date().toISOString();
-      const patch: Record<string, unknown> = { status: next };
-      if (next === 'APPROVED' && !approvedAt) patch.approvedAt = now;
-      if (next === 'PAID' && !paidAt) patch.paidAt = now;
-      const res = await fetch(`${apiBaseUrl()}/api/ap-invoices/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(patch),
-      });
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? `Transition failed (${res.status}).`);
-        return;
-      }
-      setStatus(next);
-      router.refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
-    }
+  async function go(next: ApInvoiceStatus): Promise<void> {
+    const extras: Record<string, unknown> = {};
+    if (next === 'APPROVED' && !approvedAt) extras.approvedAt = nowIso();
+    if (next === 'PAID' && !paidAt) extras.paidAt = nowIso();
+    await transition(next, extras);
   }
 
   return (
@@ -79,31 +49,31 @@ export function ApInvoiceStatusBar({
       </div>
       <div className="flex flex-wrap items-center gap-2">
         {status === 'DRAFT' && (
-          <button type="button" disabled={busy} onClick={() => transition('PENDING')}
+          <button type="button" disabled={busy} onClick={() => void go('PENDING')}
             className="rounded bg-yge-blue-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50">
             Route for approval
           </button>
         )}
         {status === 'PENDING' && (
           <>
-            <button type="button" disabled={busy} onClick={() => transition('APPROVED')}
+            <button type="button" disabled={busy} onClick={() => void go('APPROVED')}
               className="rounded bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50">
               Approve
             </button>
-            <button type="button" disabled={busy} onClick={() => transition('REJECTED')}
+            <button type="button" disabled={busy} onClick={() => void go('REJECTED')}
               className="rounded border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50">
               Reject (dispute)
             </button>
           </>
         )}
         {status === 'APPROVED' && (
-          <button type="button" disabled={busy} onClick={() => transition('PAID')}
+          <button type="button" disabled={busy} onClick={() => void go('PAID')}
             className="rounded bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50">
             Mark paid
           </button>
         )}
         {status !== 'DRAFT' && status !== 'PAID' && (
-          <button type="button" disabled={busy} onClick={() => transition('DRAFT')}
+          <button type="button" disabled={busy} onClick={() => void go('DRAFT')}
             className="rounded border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50">
             Reopen as draft
           </button>

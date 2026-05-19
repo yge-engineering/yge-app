@@ -1,20 +1,9 @@
 'use client';
 
-// One-tap status transitions for an employee time card.
-//
-// DRAFT      → SUBMITTED   (employee submits — stamps submittedAt)
-// SUBMITTED  → APPROVED    (foreman approves — stamps approvedAt)
-// APPROVED   → POSTED      (payroll posted — terminal; on Gusto sync)
-// SUBMITTED  → REJECTED    (foreman pushes back to employee)
-// DRAFT/SUBM → REJECTED off-ramp
+// DRAFT → SUBMITTED → APPROVED → POSTED; with REJECTED off-ramp.
 
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 import type { TimeCardStatus } from '@yge/shared';
-
-function apiBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
-}
+import { nowIso, useStatusTransition } from '../lib/use-status-transition';
 
 const STATUS_TONE: Record<TimeCardStatus, string> = {
   DRAFT: 'bg-gray-100 text-gray-700',
@@ -35,36 +24,17 @@ export function TimeCardStatusBar({
   submittedAt?: string;
   approvedAt?: string;
 }) {
-  const router = useRouter();
-  const [status, setStatus] = useState<TimeCardStatus>(initialStatus);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { status, busy, error, transition } = useStatusTransition<TimeCardStatus>({
+    route: 'time-cards',
+    id,
+    initial: initialStatus,
+  });
 
-  async function transition(next: TimeCardStatus): Promise<void> {
-    setBusy(true);
-    setError(null);
-    try {
-      const now = new Date().toISOString();
-      const patch: Record<string, unknown> = { status: next };
-      if (next === 'SUBMITTED' && !submittedAt) patch.submittedAt = now;
-      if (next === 'APPROVED' && !approvedAt) patch.approvedAt = now;
-      const res = await fetch(`${apiBaseUrl()}/api/time-cards/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(patch),
-      });
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? `Transition failed (${res.status}).`);
-        return;
-      }
-      setStatus(next);
-      router.refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
-    }
+  async function go(next: TimeCardStatus): Promise<void> {
+    const extras: Record<string, unknown> = {};
+    if (next === 'SUBMITTED' && !submittedAt) extras.submittedAt = nowIso();
+    if (next === 'APPROVED' && !approvedAt) extras.approvedAt = nowIso();
+    await transition(next, extras);
   }
 
   return (
@@ -79,31 +49,31 @@ export function TimeCardStatusBar({
       </div>
       <div className="flex flex-wrap items-center gap-2">
         {status === 'DRAFT' && (
-          <button type="button" disabled={busy} onClick={() => transition('SUBMITTED')}
+          <button type="button" disabled={busy} onClick={() => void go('SUBMITTED')}
             className="rounded bg-yge-blue-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50">
             Submit
           </button>
         )}
         {status === 'SUBMITTED' && (
           <>
-            <button type="button" disabled={busy} onClick={() => transition('APPROVED')}
+            <button type="button" disabled={busy} onClick={() => void go('APPROVED')}
               className="rounded bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50">
               Approve
             </button>
-            <button type="button" disabled={busy} onClick={() => transition('REJECTED')}
+            <button type="button" disabled={busy} onClick={() => void go('REJECTED')}
               className="rounded border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50">
               Reject (back to employee)
             </button>
           </>
         )}
         {status === 'APPROVED' && (
-          <button type="button" disabled={busy} onClick={() => transition('POSTED')}
+          <button type="button" disabled={busy} onClick={() => void go('POSTED')}
             className="rounded bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50">
             Mark posted to payroll
           </button>
         )}
         {status !== 'DRAFT' && status !== 'POSTED' && (
-          <button type="button" disabled={busy} onClick={() => transition('DRAFT')}
+          <button type="button" disabled={busy} onClick={() => void go('DRAFT')}
             className="rounded border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50">
             Reopen as draft
           </button>

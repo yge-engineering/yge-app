@@ -1,11 +1,11 @@
 'use client';
 
-// One-tap bid-status transitions for an estimate.
+// pursuing → submitted → awarded / lost; reopen from terminal.
 //
-// pursuing  → submitted   (bid sent — stamps bidSubmittedAt now)
-// submitted → awarded     (YGE won — visible in bid analytics)
-// submitted → lost        (someone else got it)
-// awarded/lost → submitted (mis-marked; reopen for re-decision)
+// Note: this bar uses the priced-estimates route + a `bidStatus` field
+// (not `status`). The shared hook still works because it just stuffs
+// whatever you put in `extras` into the JSON body — we use that to send
+// the bidStatus key instead.
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -39,9 +39,10 @@ export function BidStatusBar({
   const [status, setStatus] = useState<BidStatus>(initialStatus);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
   const base = apiBaseUrlProp ?? apiBaseUrl();
 
+  // Inlined PATCH because priced-estimates uses bidStatus (not status)
+  // and a different route shape (priced-estimates not the entity name).
   async function transition(next: BidStatus): Promise<void> {
     setBusy(true);
     setError(null);
@@ -77,9 +78,7 @@ export function BidStatusBar({
           {status}
         </span>
         {bidSubmittedAt && status !== 'pursuing' && (
-          <span className="text-[11px] text-gray-500">
-            submitted {bidSubmittedAt.slice(0, 16).replace('T', ' ')}
-          </span>
+          <span className="text-[11px] text-gray-500">submitted {bidSubmittedAt.slice(0, 16).replace('T', ' ')}</span>
         )}
       </div>
       <div className="flex flex-wrap items-center gap-2">
