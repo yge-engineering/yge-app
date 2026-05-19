@@ -5,6 +5,7 @@ import { AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { Pco } from '@yge/shared';
 import { PcoEditor } from '../../../components/pco-editor';
+import { PcoStatusBar } from '../../../components/pco-status-bar';
 import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
@@ -41,6 +42,12 @@ export default async function PcoDetailPage({
       </p>
       <p className="mt-1 text-xs text-gray-500">{t('photoPg.idLabel', { id: pco.id })}</p>
       <div className="mt-6">
+        <PcoStatusBar
+          id={pco.id}
+          initialStatus={pco.status}
+          submittedOn={pco.submittedOn}
+          lastResponseOn={pco.lastResponseOn}
+        />
         <PcoEditor mode="edit" pco={pco} />
       </div>
 
