@@ -135,6 +135,34 @@ export default async function SubListPage({
         )}
 
         {estimate.bidStatus === 'awarded' && printRows.length > 0 && (
+          <section className="no-print mt-6 rounded border border-green-400 bg-green-50 p-3 text-xs">
+            <h2 className="text-[10px] font-semibold uppercase tracking-wide text-green-900">
+              Notice to Proceed (routine)
+            </h2>
+            <p className="mt-1 text-[11px] text-green-900">
+              Once a listed sub countersigns the award notice and the subcontract is
+              executed, print a Notice to Proceed so the sub knows when and where to
+              mobilize. Each link opens a draft for that sub.
+            </p>
+            <ul className="mt-2 divide-y divide-green-200">
+              {printRows.map((s) => (
+                <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 py-1">
+                  <span className="text-green-900">
+                    <span className="font-semibold">{s.contractorName}</span> — {s.portionOfWork}
+                  </span>
+                  <Link
+                    href={`/estimates/${estimate.id}/notice-to-proceed?subId=${encodeURIComponent(s.id)}`}
+                    className="rounded border border-green-500 bg-white px-2 py-0.5 text-[11px] font-semibold text-green-800 hover:bg-green-100"
+                  >
+                    Draft NTP →
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {estimate.bidStatus === 'awarded' && printRows.length > 0 && (
           <section className="no-print mt-6 rounded border border-amber-300 bg-amber-50 p-3 text-xs">
             <h2 className="text-[10px] font-semibold uppercase tracking-wide text-amber-900">
               Post-award substitutions (PCC §4107)
