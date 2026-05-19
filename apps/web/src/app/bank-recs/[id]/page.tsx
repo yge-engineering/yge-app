@@ -6,6 +6,7 @@ import { notFound } from 'next/navigation';
 import type { BankRec } from '@yge/shared';
 import { BankRecEditor } from '../../../components/bank-rec-editor';
 import { BankRecMatchPanel } from '../../../components/bank-rec-match-panel';
+import { BankRecStatusBar } from '../../../components/bank-rec-status-bar';
 import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
@@ -42,6 +43,11 @@ export default async function BankRecDetailPage({
       <p className="mt-1 text-sm text-gray-600">{t('bankRecDetail.statementLine', { date: rec.statementDate })}</p>
       <p className="mt-1 text-xs text-gray-500">{t('bankRecDetail.idLine', { id: rec.id })}</p>
       <div className="mt-6">
+        <BankRecStatusBar
+          id={rec.id}
+          initialStatus={rec.status}
+          reconciledOn={rec.reconciledOn}
+        />
         <BankRecEditor mode="edit" rec={rec} />
       </div>
 
