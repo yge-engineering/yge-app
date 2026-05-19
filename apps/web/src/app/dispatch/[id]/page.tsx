@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Dispatch } from '@yge/shared';
 import { DispatchEditor } from '../../../components/dispatch-editor';
+import { DispatchStatusBar } from '../../../components/dispatch-status-bar';
 import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
@@ -48,6 +49,12 @@ export default async function DispatchDetailPage({
       </p>
       <p className="mt-1 text-xs text-gray-500">{t('dispatchDetail.idLine', { id: dispatch.id })}</p>
       <div className="mt-6">
+        <DispatchStatusBar
+          id={dispatch.id}
+          initialStatus={dispatch.status}
+          postedAt={dispatch.postedAt}
+          completedAt={dispatch.completedAt}
+        />
         <DispatchEditor mode="edit" dispatch={dispatch} />
       </div>
     </main>
