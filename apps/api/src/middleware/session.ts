@@ -12,6 +12,7 @@
 // works. A future commit flips strict mode on.
 
 import type { Request, RequestHandler } from 'express';
+import { prisma } from '@yge/db';
 import { verifySession } from '../lib/session-cookie';
 import { logger } from '../lib/logger';
 
@@ -30,6 +31,10 @@ export interface YgeSessionUser {
 interface YgeRequestExtras {
   ygeUser?: YgeSessionUser | null;
   ygeUserSigned?: boolean;
+  /** Multi-tenant: derived from the signed-in user's PortalUser row
+   *  by sessionAuthMiddleware. When set, tenant middleware prefers
+   *  it over the legacy X-YGE-Company header. */
+  ygeUserCompanyId?: string | null;
 }
 
 function sessionSecret(): string {
@@ -62,12 +67,13 @@ function warnOnce(): void {
   );
 }
 
-export const sessionAuthMiddleware: RequestHandler = (req, _res, next) => {
+export const sessionAuthMiddleware: RequestHandler = async (req, _res, next) => {
   const extras = req as unknown as YgeRequestExtras;
   const raw = readCookie(req, COOKIE_NAME);
   if (!raw) {
     extras.ygeUser = null;
     extras.ygeUserSigned = false;
+    extras.ygeUserCompanyId = null;
     return next();
   }
   const secret = sessionSecret();
@@ -83,13 +89,28 @@ export const sessionAuthMiddleware: RequestHandler = (req, _res, next) => {
     ) {
       extras.ygeUser = p;
       extras.ygeUserSigned = verified.signed;
+      // Multi-tenant derivation: look up the PortalUser row by
+      // email *across all tenants* (companyId not yet known) to
+      // get their tenant. We tolerate a miss → null → fallback to
+      // X-YGE-Company header or DEFAULT_COMPANY_ID downstream.
+      try {
+        const row = await prisma.portalUser.findFirst({
+          where: { email: p.email.trim().toLowerCase(), deletedAt: null },
+          select: { companyId: true },
+        });
+        extras.ygeUserCompanyId = row?.companyId ?? null;
+      } catch {
+        extras.ygeUserCompanyId = null;
+      }
     } else {
       extras.ygeUser = null;
       extras.ygeUserSigned = false;
+      extras.ygeUserCompanyId = null;
     }
   } else {
     extras.ygeUser = null;
     extras.ygeUserSigned = false;
+    extras.ygeUserCompanyId = null;
   }
   return next();
 };
