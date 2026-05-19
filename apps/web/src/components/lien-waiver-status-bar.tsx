@@ -1,18 +1,10 @@
 'use client';
 
 // One-tap status transitions for a lien waiver.
-//
-// DRAFT     → SIGNED      (notarized — stamps signedOn)
-// SIGNED    → DELIVERED   (handed to owner — stamps deliveredOn)
-// any → VOIDED            (rare; in case of typo / wrong amount)
+// DRAFT → SIGNED → DELIVERED; with VOIDED off-ramp.
 
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 import type { LienWaiverStatus } from '@yge/shared';
-
-function apiBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
-}
+import { todayDate, useStatusTransition } from '../lib/use-status-transition';
 
 const STATUS_TONE: Record<LienWaiverStatus, string> = {
   DRAFT: 'bg-gray-100 text-gray-700',
@@ -32,36 +24,17 @@ export function LienWaiverStatusBar({
   signedOn?: string;
   deliveredOn?: string;
 }) {
-  const router = useRouter();
-  const [status, setStatus] = useState<LienWaiverStatus>(initialStatus);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { status, busy, error, transition } = useStatusTransition<LienWaiverStatus>({
+    route: 'lien-waivers',
+    id,
+    initial: initialStatus,
+  });
 
-  async function transition(next: LienWaiverStatus): Promise<void> {
-    setBusy(true);
-    setError(null);
-    try {
-      const today = new Date().toISOString().slice(0, 10);
-      const patch: Record<string, unknown> = { status: next };
-      if (next === 'SIGNED' && !signedOn) patch.signedOn = today;
-      if (next === 'DELIVERED' && !deliveredOn) patch.deliveredOn = today;
-      const res = await fetch(`${apiBaseUrl()}/api/lien-waivers/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(patch),
-      });
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? `Transition failed (${res.status}).`);
-        return;
-      }
-      setStatus(next);
-      router.refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
-    }
+  async function go(next: LienWaiverStatus): Promise<void> {
+    const extras: Record<string, unknown> = {};
+    if (next === 'SIGNED' && !signedOn) extras.signedOn = todayDate();
+    if (next === 'DELIVERED' && !deliveredOn) extras.deliveredOn = todayDate();
+    await transition(next, extras);
   }
 
   return (
@@ -76,13 +49,13 @@ export function LienWaiverStatusBar({
       </div>
       <div className="flex flex-wrap items-center gap-2">
         {status === 'DRAFT' && (
-          <button type="button" disabled={busy} onClick={() => transition('SIGNED')}
+          <button type="button" disabled={busy} onClick={() => void go('SIGNED')}
             className="rounded bg-yge-blue-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50">
             Mark signed
           </button>
         )}
         {status === 'SIGNED' && (
-          <button type="button" disabled={busy} onClick={() => transition('DELIVERED')}
+          <button type="button" disabled={busy} onClick={() => void go('DELIVERED')}
             className="rounded bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50">
             Mark delivered
           </button>
@@ -91,7 +64,7 @@ export function LienWaiverStatusBar({
           <button type="button" disabled={busy}
             onClick={() => {
               if (!confirm("Void this waiver? Use only for typos / wrong amount before delivery.")) return;
-              void transition('VOIDED');
+              void go('VOIDED');
             }}
             className="rounded border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50">
             Void

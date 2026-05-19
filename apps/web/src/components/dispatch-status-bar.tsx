@@ -2,21 +2,12 @@
 
 // One-tap status transitions for a dispatch.
 //
-// Plain English: the dropdown in the DispatchEditor below works, but
-// it's three clicks. This bar is one click per transition and stamps
-// the right ISO timestamp server-side.
-//
-//   DRAFT  → POSTED   (Post to foremen)
-//   POSTED → COMPLETED (Mark complete)
-//   any active → CANCELLED (Cancel day, red-treatment)
+// DRAFT  → POSTED      (Post to foremen, stamps postedAt)
+// POSTED → COMPLETED   (Mark complete, stamps completedAt)
+// active → CANCELLED   (Cancel day, red destructive)
 
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 import type { DispatchStatus } from '@yge/shared';
-
-function apiBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
-}
+import { nowIso, useStatusTransition } from '../lib/use-status-transition';
 
 const STATUS_TONE: Record<DispatchStatus, string> = {
   DRAFT: 'bg-gray-100 text-gray-700',
@@ -36,37 +27,17 @@ export function DispatchStatusBar({
   postedAt?: string;
   completedAt?: string;
 }) {
-  const router = useRouter();
-  const [status, setStatus] = useState<DispatchStatus>(initialStatus);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { status, busy, error, transition } = useStatusTransition<DispatchStatus>({
+    route: 'dispatches',
+    id,
+    initial: initialStatus,
+  });
 
-  async function transition(next: DispatchStatus): Promise<void> {
-    setBusy(true);
-    setError(null);
-    try {
-      const patch: { status: DispatchStatus; postedAt?: string; completedAt?: string } = {
-        status: next,
-      };
-      if (next === 'POSTED' && !postedAt) patch.postedAt = new Date().toISOString();
-      if (next === 'COMPLETED' && !completedAt) patch.completedAt = new Date().toISOString();
-      const res = await fetch(`${apiBaseUrl()}/api/dispatches/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(patch),
-      });
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? `Transition failed (${res.status}).`);
-        return;
-      }
-      setStatus(next);
-      router.refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
-    }
+  async function go(next: DispatchStatus): Promise<void> {
+    const extras: Record<string, unknown> = {};
+    if (next === 'POSTED' && !postedAt) extras.postedAt = nowIso();
+    if (next === 'COMPLETED' && !completedAt) extras.completedAt = nowIso();
+    await transition(next, extras);
   }
 
   return (
@@ -85,19 +56,19 @@ export function DispatchStatusBar({
       </div>
       <div className="flex flex-wrap items-center gap-2">
         {status === 'DRAFT' && (
-          <button type="button" disabled={busy} onClick={() => transition('POSTED')}
+          <button type="button" disabled={busy} onClick={() => void go('POSTED')}
             className="rounded bg-yge-blue-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-yge-blue-700 disabled:opacity-50">
             Post to foremen
           </button>
         )}
         {status === 'POSTED' && (
-          <button type="button" disabled={busy} onClick={() => transition('COMPLETED')}
+          <button type="button" disabled={busy} onClick={() => void go('COMPLETED')}
             className="rounded bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50">
             Mark complete
           </button>
         )}
         {(status === 'DRAFT' || status === 'POSTED') && (
-          <button type="button" disabled={busy} onClick={() => transition('CANCELLED')}
+          <button type="button" disabled={busy} onClick={() => void go('CANCELLED')}
             className="rounded border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50">
             Cancel day
           </button>

@@ -1,17 +1,12 @@
 'use client';
 
 // One-tap status transitions for a punch item.
-// OPEN → IN_PROGRESS → CLOSED (with optional initials field).
-// OPEN → DISPUTED / WAIVED for the side-channel resolutions.
-// Reopen from any closed-ish state back to OPEN.
+// OPEN → IN_PROGRESS → CLOSED (with optional initials field);
+// OPEN → DISPUTED / WAIVED; non-OPEN → OPEN (Reopen).
 
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import type { PunchItemStatus } from '@yge/shared';
-
-function apiBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
-}
+import { todayDate, useStatusTransition } from '../lib/use-status-transition';
 
 const STATUS_TONE: Record<PunchItemStatus, string> = {
   OPEN: 'bg-red-100 text-red-800',
@@ -30,38 +25,20 @@ export function PunchItemStatusBar({
   initialStatus: PunchItemStatus;
   closedOn?: string;
 }) {
-  const router = useRouter();
-  const [status, setStatus] = useState<PunchItemStatus>(initialStatus);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { status, busy, error, transition } = useStatusTransition<PunchItemStatus>({
+    route: 'punch-items',
+    id,
+    initial: initialStatus,
+  });
   const [initials, setInitials] = useState('');
 
-  async function transition(next: PunchItemStatus): Promise<void> {
-    setBusy(true);
-    setError(null);
-    try {
-      const patch: Record<string, unknown> = { status: next };
-      if (next === 'CLOSED') {
-        if (!closedOn) patch.closedOn = new Date().toISOString().slice(0, 10);
-        if (initials.trim()) patch.closedByInitials = initials.trim().toUpperCase();
-      }
-      const res = await fetch(`${apiBaseUrl()}/api/punch-items/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(patch),
-      });
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? `Transition failed (${res.status}).`);
-        return;
-      }
-      setStatus(next);
-      router.refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
+  async function go(next: PunchItemStatus): Promise<void> {
+    const extras: Record<string, unknown> = {};
+    if (next === 'CLOSED') {
+      if (!closedOn) extras.closedOn = todayDate();
+      if (initials.trim()) extras.closedByInitials = initials.trim().toUpperCase();
     }
+    await transition(next, extras);
   }
 
   return (
@@ -77,7 +54,7 @@ export function PunchItemStatusBar({
       </div>
       <div className="flex flex-wrap items-center gap-2">
         {status === 'OPEN' && (
-          <button type="button" disabled={busy} onClick={() => transition('IN_PROGRESS')}
+          <button type="button" disabled={busy} onClick={() => void go('IN_PROGRESS')}
             className="rounded bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600 disabled:opacity-50">
             Start work
           </button>
@@ -87,7 +64,7 @@ export function PunchItemStatusBar({
             <input type="text" placeholder="initials" maxLength={5}
               value={initials} onChange={(e) => setInitials(e.target.value)}
               className="w-20 rounded border border-gray-300 px-2 py-1 text-xs font-mono uppercase" />
-            <button type="button" disabled={busy} onClick={() => transition('CLOSED')}
+            <button type="button" disabled={busy} onClick={() => void go('CLOSED')}
               className="rounded bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50">
               Close
             </button>
@@ -95,18 +72,18 @@ export function PunchItemStatusBar({
         )}
         {status === 'OPEN' && (
           <>
-            <button type="button" disabled={busy} onClick={() => transition('DISPUTED')}
+            <button type="button" disabled={busy} onClick={() => void go('DISPUTED')}
               className="rounded border border-yge-blue-300 px-3 py-1.5 text-xs font-semibold text-yge-blue-700 hover:bg-yge-blue-50 disabled:opacity-50">
               Dispute
             </button>
-            <button type="button" disabled={busy} onClick={() => transition('WAIVED')}
+            <button type="button" disabled={busy} onClick={() => void go('WAIVED')}
               className="rounded border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50">
               Waive
             </button>
           </>
         )}
         {status !== 'OPEN' && status !== 'CLOSED' && (
-          <button type="button" disabled={busy} onClick={() => transition('OPEN')}
+          <button type="button" disabled={busy} onClick={() => void go('OPEN')}
             className="rounded border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50">
             Reopen
           </button>
