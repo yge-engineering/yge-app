@@ -5,6 +5,7 @@ import { AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { PunchItem } from '@yge/shared';
 import { PunchItemEditor } from '../../../components/punch-item-editor';
+import { PunchItemStatusBar } from '../../../components/punch-item-status-bar';
 import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
@@ -39,6 +40,11 @@ export default async function PunchItemDetailPage({
       <p className="mt-1 text-sm text-gray-600">{t('punchPg.identified', { date: item.identifiedOn })}</p>
       <p className="mt-1 text-xs text-gray-500">{t('photoPg.idLabel', { id: item.id })}</p>
       <div className="mt-6">
+        <PunchItemStatusBar
+          id={item.id}
+          initialStatus={item.status}
+          closedOn={item.closedOn}
+        />
         <PunchItemEditor mode="edit" item={item} />
       </div>
 
