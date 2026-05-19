@@ -11,11 +11,17 @@
 // bundle. The web app's apps/web/src/lib/session-cookie.ts is a
 // byte-identical sibling — keep them in sync.
 //
-// Wire format:    base64url(json) "." base64url(hmac256(secret, json))
+// Wire format:    "s1." base64url(json) "." base64url(hmac256(secret, json))
+//
+// The "s1." prefix discriminates signed cookies from the legacy
+// URL-encoded JSON format — JSON values can contain unencoded "."
+// characters (encodeURIComponent leaves them alone), so a presence-
+// of-dot check isn't enough.
 
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
 const SEP = '.';
+const SIGNED_PREFIX = 's1.';
 
 function b64urlEncode(buf: Buffer): string {
   return buf
@@ -46,7 +52,7 @@ export function signSession(payload: unknown, secret: string): string {
     return encodeURIComponent(json);
   }
   const body = b64urlEncode(Buffer.from(json, 'utf8'));
-  return `${body}${SEP}${hmacOf(secret, body)}`;
+  return `${SIGNED_PREFIX}${body}${SEP}${hmacOf(secret, body)}`;
 }
 
 export interface VerifyResult<T> {
@@ -70,26 +76,34 @@ export function verifySession<T = unknown>(
 ): VerifyResult<T> {
   if (!raw) return { payload: null, signed: false, valid: false };
 
-  const idx = raw.indexOf(SEP);
-  if (idx > 0 && secret) {
-    const body = raw.slice(0, idx);
-    const sig = raw.slice(idx + 1);
-    const expected = hmacOf(secret, body);
-    const got = Buffer.from(sig);
-    const want = Buffer.from(expected);
-    if (got.length !== want.length || !timingSafeEqual(got, want)) {
-      return { payload: null, signed: false, valid: false };
+  // Signed format: must start with `s1.` then have body.signature.
+  if (raw.startsWith(SIGNED_PREFIX) && secret) {
+    const after = raw.slice(SIGNED_PREFIX.length);
+    const idx = after.indexOf(SEP);
+    if (idx > 0) {
+      const body = after.slice(0, idx);
+      const sig = after.slice(idx + 1);
+      const expected = hmacOf(secret, body);
+      const got = Buffer.from(sig);
+      const want = Buffer.from(expected);
+      if (got.length !== want.length || !timingSafeEqual(got, want)) {
+        return { payload: null, signed: false, valid: false };
+      }
+      try {
+        const json = b64urlDecode(body).toString('utf8');
+        const parsed = JSON.parse(json) as T;
+        return { payload: parsed, signed: true, valid: parsed != null };
+      } catch {
+        return { payload: null, signed: true, valid: false };
+      }
     }
-    try {
-      const json = b64urlDecode(body).toString('utf8');
-      const parsed = JSON.parse(json) as T;
-      return { payload: parsed, signed: true, valid: parsed != null };
-    } catch {
-      return { payload: null, signed: true, valid: false };
-    }
+    // Malformed signed cookie (no separator after prefix).
+    return { payload: null, signed: false, valid: false };
   }
 
-  // Legacy unsigned path — JSON, URL-encoded.
+  // Legacy unsigned path — URL-encoded JSON. Accepted whether or not
+  // a secret is configured so existing browser sessions keep working
+  // through the YGE_SESSION_SECRET rollout.
   try {
     const decoded = decodeURIComponent(raw);
     const parsed = JSON.parse(decoded) as T;
