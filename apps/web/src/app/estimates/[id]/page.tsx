@@ -18,6 +18,7 @@ import { getCurrentUser } from '../../../lib/auth';
 import { notFound } from 'next/navigation';
 import type { PricedEstimate, PricedEstimateTotals } from '@yge/shared';
 import { EstimateEditor } from '@/components/estimate-editor';
+import { BidStatusBar } from '@/components/bid-status-bar';
 import { BidReviewButton } from '@/components/bid-review-button';
 import { BidDueBanner } from '@/components/bid-due-banner';
 import { Money } from '@/components';
@@ -413,6 +414,12 @@ export default async function EstimateDetailPage({
       <div className="mb-3 flex justify-end print:hidden">
         <BidReviewButton estimateId={data.estimate.id} />
       </div>
+      <BidStatusBar
+        apiBaseUrl={publicApiBaseUrl()}
+        estimateId={data.estimate.id}
+        initialStatus={data.estimate.bidStatus ?? 'pursuing'}
+        bidSubmittedAt={data.estimate.bidSubmittedAt}
+      />
       <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <EstimateEditor
           initialEstimate={data.estimate}
