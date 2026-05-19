@@ -116,6 +116,7 @@ export * from './dr-photo-coverage';
 export * from './weather-lost-hours';
 export * from './customer-concentration';
 export * from './sub-list-audit';
+export * from './sub-award-notice';
 export * from './retention-projection';
 export * from './equipment-idle';
 export * from './bid-pipeline';
