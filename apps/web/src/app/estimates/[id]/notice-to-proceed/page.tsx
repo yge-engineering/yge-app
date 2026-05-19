@@ -5,6 +5,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
+  YGE_COMPANY_INFO,
   buildSubNoticeToProceed,
   type PricedEstimate,
   type PricedEstimateTotals,
@@ -58,6 +59,7 @@ export default async function NoticeToProceedPage({
     fcPhone?: string;
     fcTitle?: string;
     reminders?: string;
+    signer?: string;
   };
 }) {
   const data = await fetchEstimate(params.id);
@@ -99,6 +101,11 @@ export default async function NoticeToProceedPage({
     };
   }
 
+  const signerKey: 'vp' | 'president' =
+    searchParams.signer === 'president' ? 'president' : 'vp';
+  const signer =
+    signerKey === 'president' ? YGE_COMPANY_INFO.president : YGE_COMPANY_INFO.vicePresident;
+
   const ntp = mobDate.length > 0
     ? buildSubNoticeToProceed(estimate, sub, {
         mobilizationStartDate: mobDate,
@@ -106,6 +113,7 @@ export default async function NoticeToProceedPage({
         reportToAddress: searchParams.reportTo?.trim() || undefined,
         fieldContact,
         scopeReminderBullets: reminders,
+        signer,
       })
     : null;
 
@@ -178,6 +186,24 @@ export default async function NoticeToProceedPage({
                   placeholder="7:00 AM"
                   className="mt-1 w-full rounded border border-gray-300 bg-white px-2 py-1 text-xs"
                 />
+              </label>
+
+              <label className="block">
+                <span className="block text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+                  Signed by
+                </span>
+                <select
+                  name="signer"
+                  defaultValue={signerKey}
+                  className="mt-1 w-full rounded border border-gray-300 bg-white px-2 py-1 text-xs"
+                >
+                  <option value="vp">
+                    {YGE_COMPANY_INFO.vicePresident.name} (VP)
+                  </option>
+                  <option value="president">
+                    {YGE_COMPANY_INFO.president.name} (President)
+                  </option>
+                </select>
               </label>
 
               <label className="block">
