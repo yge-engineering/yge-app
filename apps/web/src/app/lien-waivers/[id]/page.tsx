@@ -10,6 +10,7 @@ import {
   type LienWaiver,
 } from '@yge/shared';
 import { LienWaiverEditor } from '../../../components/lien-waiver-editor';
+import { LienWaiverStatusBar } from '../../../components/lien-waiver-status-bar';
 import { getTranslator } from '../../../lib/locale';
 import { cookies } from 'next/headers';
 
@@ -58,6 +59,12 @@ export default async function LienWaiverDetailPage({
       </p>
       <p className="mt-1 text-xs text-gray-500">{t('photoPg.idLabel', { id: waiver.id })}</p>
       <div className="mt-6">
+        <LienWaiverStatusBar
+          id={waiver.id}
+          initialStatus={waiver.status}
+          signedOn={waiver.signedOn}
+          deliveredOn={waiver.deliveredOn}
+        />
         <LienWaiverEditor mode="edit" waiver={waiver} />
       </div>
 
