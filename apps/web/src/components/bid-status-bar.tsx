@@ -106,6 +106,15 @@ export function BidStatusBar({
             Reopen (mis-marked)
           </button>
         )}
+        {status === 'awarded' && (
+          <a
+            href={`/estimates/${estimateId}/award-notices`}
+            className="rounded border border-green-500 bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-800 hover:bg-green-100"
+            title="Print one-per-sub award letters for the §4104 listed subs."
+          >
+            Print sub award notices →
+          </a>
+        )}
       </div>
       {error && <p className="mt-2 text-xs text-red-700">{error}</p>}
     </div>
