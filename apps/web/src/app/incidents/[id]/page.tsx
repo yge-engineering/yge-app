@@ -5,6 +5,7 @@ import { AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { Incident } from '@yge/shared';
 import { IncidentEditor } from '../../../components/incident-editor';
+import { IncidentStatusBar } from '../../../components/incident-status-bar';
 import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
@@ -50,6 +51,7 @@ export default async function IncidentDetailPage({
       </p>
       <p className="mt-1 text-xs text-gray-500">{t('photoPg.idLabel', { id: incident.id })}</p>
       <div className="mt-6">
+        <IncidentStatusBar id={incident.id} initialStatus={incident.status} />
         <IncidentEditor mode="edit" incident={incident} />
       </div>
 
