@@ -134,6 +134,34 @@ export default async function SubListPage({
           </table>
         )}
 
+        {estimate.bidStatus === 'awarded' && printRows.length > 0 && (
+          <section className="no-print mt-6 rounded border border-amber-300 bg-amber-50 p-3 text-xs">
+            <h2 className="text-[10px] font-semibold uppercase tracking-wide text-amber-900">
+              Post-award substitutions (PCC §4107)
+            </h2>
+            <p className="mt-1 text-[11px] text-amber-900">
+              Only use these if a listed sub fails to perform after award. Each link
+              opens a pre-filled draft of the substitution request to the awarding
+              authority — review the boilerplate facts and edit before sending.
+            </p>
+            <ul className="mt-2 divide-y divide-amber-200">
+              {printRows.map((s) => (
+                <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 py-1">
+                  <span className="text-amber-900">
+                    <span className="font-semibold">{s.contractorName}</span> — {s.portionOfWork}
+                  </span>
+                  <Link
+                    href={`/estimates/${estimate.id}/substitution-notice?subId=${encodeURIComponent(s.id)}`}
+                    className="rounded border border-amber-400 bg-white px-2 py-0.5 text-[11px] font-semibold text-amber-800 hover:bg-amber-100"
+                  >
+                    Request §4107 substitution
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         {classification.borderline.length > 0 && (
           <div className="mt-4 rounded border border-yellow-400 bg-yellow-50 p-2 text-xs print:bg-white">
             <strong>Borderline subs ({classification.borderline.length}):</strong>{' '}
