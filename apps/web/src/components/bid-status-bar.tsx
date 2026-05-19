@@ -115,6 +115,15 @@ export function BidStatusBar({
             Print sub award notices →
           </a>
         )}
+        {status === 'awarded' && (
+          <a
+            href={`/estimates/${estimateId}/notice-to-proceed`}
+            className="rounded border border-green-500 bg-white px-3 py-1.5 text-xs font-semibold text-green-700 hover:bg-green-50"
+            title="Draft a Notice to Proceed once the subcontract is executed."
+          >
+            Draft NTP →
+          </a>
+        )}
       </div>
       {error && <p className="mt-2 text-xs text-red-700">{error}</p>}
     </div>
