@@ -91,9 +91,14 @@ export default async function JournalEntriesPage({
           title={t('je.title')}
           subtitle={t('je.subtitle')}
           actions={
-            <LinkButton href="/trial-balance" variant="secondary" size="md">
-              {t('je.trialBalance')}
-            </LinkButton>
+            <div className="flex items-center gap-2">
+              <LinkButton href="/trial-balance" variant="secondary" size="md">
+                {t('je.trialBalance')}
+              </LinkButton>
+              <LinkButton href="/journal-entries/new" variant="primary" size="md">
+                + New entry
+              </LinkButton>
+            </div>
           }
         />
 
