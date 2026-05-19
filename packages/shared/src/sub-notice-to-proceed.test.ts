@@ -126,3 +126,22 @@ describe('buildSubNoticeToProceed', () => {
     expect(presidentN.closing.signer.title).toBe('President');
   });
 });
+
+describe('buildSubNoticeToProceed — regression: pinned subject phrase', () => {
+  it('keeps "Notice to Proceed" as the subject prefix', () => {
+    const n = buildSubNoticeToProceed(ESTIMATE, makeSub(), {
+      date: 'May 19, 2026',
+      mobilizationStartDate: 'June 2, 2026',
+    });
+    expect(n.subjectLine.startsWith('Notice to Proceed')).toBe(true);
+  });
+
+  it('greets the sub by team name (so the letter does not start with bare "Dear,")', () => {
+    const n = buildSubNoticeToProceed(ESTIMATE, makeSub(), {
+      date: 'May 19, 2026',
+      mobilizationStartDate: 'June 2, 2026',
+    });
+    expect(n.salutation.startsWith('Dear ')).toBe(true);
+    expect(n.salutation.endsWith(' team,')).toBe(true);
+  });
+});

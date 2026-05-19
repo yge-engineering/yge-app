@@ -113,3 +113,16 @@ describe('buildSubAwardNotice', () => {
     );
   });
 });
+
+describe('buildSubAwardNotice — regression: pinned legal phrases', () => {
+  it('quotes §4104 by name in the body so the sub sees the statutory basis', () => {
+    const n = buildSubAwardNotice(ESTIMATE, makeSub(), { date: 'May 18, 2026' });
+    const allBody = [n.subjectLine, ...n.bodyParagraphs, n.closingParagraph].join(' ');
+    expect(allBody).toContain('§4104');
+  });
+
+  it('keeps "Notice of Subcontract Award" as the subject prefix', () => {
+    const n = buildSubAwardNotice(ESTIMATE, makeSub(), { date: 'May 18, 2026' });
+    expect(n.subjectLine.startsWith('Notice of Subcontract Award')).toBe(true);
+  });
+});

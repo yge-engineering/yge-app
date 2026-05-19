@@ -148,3 +148,25 @@ describe('buildSubstitutionNotice', () => {
     expect(n.bodyParagraphs[0]).toContain('the Awarding Authority');
   });
 });
+
+describe('buildSubstitutionNotice — regression: pinned legal phrases', () => {
+  it('cites §4107 in the subject line', () => {
+    const n = buildSubstitutionNotice(ESTIMATE, makeSub(), 'PERFORM_FAILURE', {
+      date: 'May 19, 2026',
+    });
+    expect(n.subjectLine).toContain('§4107');
+  });
+
+  it('mentions §4107 in the boilerplate body so the agency clerk sees the statute', () => {
+    const n = buildSubstitutionNotice(ESTIMATE, makeSub(), 'PERFORM_FAILURE', {
+      date: 'May 19, 2026',
+    });
+    expect(n.bodyParagraphs.join(' ')).toContain('§4107');
+  });
+
+  it('starts every statute reference with "PCC §4107" so the cite stays canonical', () => {
+    for (const g of listSubstitutionGrounds()) {
+      expect(g.statuteRef.startsWith('PCC §4107')).toBe(true);
+    }
+  });
+});
