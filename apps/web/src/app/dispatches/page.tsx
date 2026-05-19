@@ -75,8 +75,12 @@ export default async function DispatchesPage() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {rows.map((d) => (
-                  <tr key={d.id}>
-                    <td className="px-3 py-2 font-mono text-xs">{d.scheduledFor}</td>
+                  <tr key={d.id} className="hover:bg-gray-50">
+                    <td className="px-3 py-2 font-mono text-xs">
+                      <Link href={`/dispatches/${d.id}`} className="text-yge-blue-700 hover:underline">
+                        {d.scheduledFor}
+                      </Link>
+                    </td>
                     <td className="px-3 py-2 font-mono text-xs">{d.jobId}</td>
                     <td className="px-3 py-2">{d.foremanName}</td>
                     <td className="px-3 py-2 text-xs text-gray-700">
