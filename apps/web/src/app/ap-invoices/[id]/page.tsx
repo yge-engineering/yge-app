@@ -10,6 +10,7 @@ import {
 import { notFound } from 'next/navigation';
 import type { ApInvoice, Job } from '@yge/shared';
 import { ApInvoiceEditor } from '@/components/ap-invoice-editor';
+import { ApInvoiceStatusBar } from '@/components/ap-invoice-status-bar';
 import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
@@ -81,6 +82,12 @@ export default async function ApInvoiceDetailPage({
         </div>
       )}
 
+      <ApInvoiceStatusBar
+        id={invoice.id}
+        initialStatus={invoice.status}
+        approvedAt={invoice.approvedAt}
+        paidAt={invoice.paidAt}
+      />
       <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <ApInvoiceEditor initial={invoice} jobs={jobs} apiBaseUrl={publicApiBaseUrl()} />
       </div>
