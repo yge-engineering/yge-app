@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { AuditBinderPanel } from '../../../components';
 import type { Job, Rfi } from '@yge/shared';
 import { RfiEditor } from '@/components/rfi-editor';
+import { RfiStatusBar } from '@/components/rfi-status-bar';
 import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
@@ -47,6 +48,12 @@ export default async function RfiDetailPage({
         </Link>
       </div>
 
+      <RfiStatusBar
+        id={rfi.id}
+        initialStatus={rfi.status}
+        sentAt={rfi.sentAt}
+        answeredAt={rfi.answeredAt}
+      />
       <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <RfiEditor initial={rfi} jobs={jobs} apiBaseUrl={publicApiBaseUrl()} />
       </div>
