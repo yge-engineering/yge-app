@@ -283,6 +283,15 @@ export default async function EstimateDetailPage({
           >
             {t('estPg.addenda')}
           </Link>
+          {data.estimate.bidStatus === 'awarded' && (
+            <Link
+              href={`/estimates/${data.estimate.id}/award-notices`}
+              className="rounded border border-green-500 bg-green-50 px-3 py-1 font-medium text-green-800 transition hover:bg-green-100 hover:shadow-sm"
+              title="Print one-per-sub award letters for everyone on the §4104 list."
+            >
+              Sub award notices
+            </Link>
+          )}
           <BidStatusSwitcher
             apiBaseUrl={publicApiBaseUrl()}
             estimateId={data.estimate.id}
