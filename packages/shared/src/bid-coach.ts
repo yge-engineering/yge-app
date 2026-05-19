@@ -27,6 +27,7 @@
 
 import { z } from 'zod';
 import type { PricedEstimate, PricedEstimateTotals } from './priced-estimate';
+import { buildSubListAudit } from './sub-list-audit';
 
 // ---- Severities + categories --------------------------------------------
 
@@ -382,6 +383,39 @@ export function ruleDeadline(inputs: BidCoachInputs): BidCoachFlag[] {
   return [];
 }
 
+/**
+ * §4104 sub-list completeness. For every sub the §4104 audit flags as a
+ * blocker (must-list, missing required fields) we emit one danger flag;
+ * each warning is surfaced as a warn flag. Both categories live under
+ * CONTRACT — losing the bid at envelope-open is a contract responsiveness
+ * problem, not a pricing one.
+ */
+export function ruleSubListCompleteness(inputs: BidCoachInputs): BidCoachFlag[] {
+  const { estimate, totals } = inputs;
+  if (!estimate.subBids || estimate.subBids.length === 0) return [];
+  const audit = buildSubListAudit({
+    estimate,
+    bidTotalCents: totals.bidTotalCents,
+  });
+  if (audit.issues.length === 0) return [];
+  const flags: BidCoachFlag[] = [];
+  for (const issue of audit.issues) {
+    const fieldKey = issue.missing.slice().sort().join('-') || 'none';
+    flags.push({
+      id: `${estimate.id}/contract.sub-list.${issue.subId}.${fieldKey}`,
+      severity: issue.severity === 'BLOCKER' ? 'danger' : 'warn',
+      category: 'CONTRACT',
+      ruleId: 'contract.sub-list-completeness',
+      title:
+        issue.severity === 'BLOCKER'
+          ? `Sub list blocker — ${issue.contractorName}`
+          : `Sub list borderline — ${issue.contractorName}`,
+      message: issue.detail,
+    });
+  }
+  return flags;
+}
+
 // ---- Runner -------------------------------------------------------------
 
 const ALL_RULES = [
@@ -391,6 +425,7 @@ const ALL_RULES = [
   ruleMissingBidSecurity,
   ruleBondingCapacity,
   ruleDeadline,
+  ruleSubListCompleteness,
 ] as const;
 
 const SEVERITY_ORDER: Record<BidCoachSeverity, number> = {

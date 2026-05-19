@@ -4,6 +4,7 @@ import {
   ruleBondingCapacity,
   ruleDeadline,
   ruleMissingBidSecurity,
+  ruleSubListCompleteness,
   ruleUnackedAddenda,
   ruleUnitPriceOutliers,
   ruleUnpricedLines,
@@ -334,5 +335,103 @@ describe('summarizeBidCoach', () => {
   it('cleanToSubmit is true when only info-level (or no) flags fire', () => {
     const r = summarizeBidCoach([]);
     expect(r.cleanToSubmit).toBe(true);
+  });
+});
+
+
+describe('ruleSubListCompleteness', () => {
+  it('does not fire when there are no sub bids on the estimate', () => {
+    expect(ruleSubListCompleteness({ estimate: est(), totals: totals() })).toEqual([]);
+  });
+
+  it('does not fire when every must-list sub has the required fields', () => {
+    const e = est({
+      bidItems: [
+        { itemNumber: '1', description: 'Mobilization', unit: 'LS', quantity: 1, confidence: 'HIGH', unitPriceCents: 1_000_000_00 },
+      ],
+      subBids: [
+        {
+          id: 'sub-ok',
+          contractorName: 'Acme Striping LLC',
+          address: '123 Industrial Way, Redding, CA 96002',
+          cslbLicense: '999999',
+          dirRegistration: '1000000111',
+          portionOfWork: 'Striping',
+          bidAmountCents: 200_000_00,
+        },
+      ],
+    });
+    const t = totals({ bidTotalCents: 1_000_000_00 });
+    expect(ruleSubListCompleteness({ estimate: e, totals: t })).toEqual([]);
+  });
+
+  it('fires danger for a must-list sub missing CSLB + DIR', () => {
+    const e = est({
+      bidItems: [
+        { itemNumber: '1', description: 'Mobilization', unit: 'LS', quantity: 1, confidence: 'HIGH', unitPriceCents: 1_000_000_00 },
+      ],
+      subBids: [
+        {
+          id: 'sub-bad',
+          contractorName: 'Mystery Crew',
+          portionOfWork: 'Striping',
+          bidAmountCents: 200_000_00,
+        },
+      ],
+    });
+    const t = totals({ bidTotalCents: 1_000_000_00 });
+    const flags = ruleSubListCompleteness({ estimate: e, totals: t });
+    expect(flags).toHaveLength(1);
+    const f = flags[0]!;
+    expect(f.severity).toBe('danger');
+    expect(f.category).toBe('CONTRACT');
+    expect(f.ruleId).toBe('contract.sub-list-completeness');
+    expect(f.title).toContain('Mystery Crew');
+    expect(f.message).toMatch(/CSLB|DIR/);
+  });
+
+  it('produces stable ids that include the sub id + missing-fields key', () => {
+    const e = est({
+      bidItems: [
+        { itemNumber: '1', description: 'Mob', unit: 'LS', quantity: 1, confidence: 'HIGH', unitPriceCents: 1_000_000_00 },
+      ],
+      subBids: [
+        {
+          id: 'sub-stable',
+          contractorName: 'Stable Co',
+          portionOfWork: 'Striping',
+          bidAmountCents: 200_000_00,
+        },
+      ],
+    });
+    const t = totals({ bidTotalCents: 1_000_000_00 });
+    const f1 = ruleSubListCompleteness({ estimate: e, totals: t });
+    const f2 = ruleSubListCompleteness({ estimate: e, totals: t });
+    expect(f1[0]!.id).toBe(f2[0]!.id);
+    expect(f1[0]!.id).toContain('sub-stable');
+  });
+
+  it('runs end-to-end via runBidCoach and counts as a blocker', () => {
+    const e = est({
+      bidItems: [
+        { itemNumber: '1', description: 'Mob', unit: 'LS', quantity: 1, confidence: 'HIGH', unitPriceCents: 1_000_000_00 },
+      ],
+      subBids: [
+        {
+          id: 'sub-end-to-end',
+          contractorName: 'No Docs Inc',
+          portionOfWork: 'Striping',
+          bidAmountCents: 200_000_00,
+        },
+      ],
+    });
+    const t = totals({ bidTotalCents: 1_000_000_00 });
+    const flags = runBidCoach({ estimate: e, totals: t });
+    const subListFlag = flags.find((f) => f.ruleId === 'contract.sub-list-completeness');
+    expect(subListFlag).toBeDefined();
+    expect(subListFlag!.severity).toBe('danger');
+    const summary = summarizeBidCoach(flags);
+    expect(summary.blockingCount).toBeGreaterThanOrEqual(1);
+    expect(summary.byCategory.CONTRACT).toBeGreaterThanOrEqual(1);
   });
 });
