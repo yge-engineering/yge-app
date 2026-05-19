@@ -575,6 +575,16 @@ export default async function EstimatesPage() {
                     >
                       ↗ Job
                     </Link>
+                    {e.bidStatus === 'awarded' && (
+                      <Link
+                        href={`/estimates/${e.id}/post-award`}
+                        onClick={(ev) => ev.stopPropagation()}
+                        className="mt-1 mr-1 inline-block rounded-full border border-green-400 bg-green-50 px-2 py-0.5 text-[10px] font-semibold text-green-800 hover:bg-green-100"
+                        title="Open the post-award launchpad — letters and §4107 actions."
+                      >
+                        ↗ Post-award
+                      </Link>
+                    )}
                     {e.notesPreview && (
                       <div className="mt-1 text-[11px] italic text-gray-500">
                         ✏ {e.notesPreview}
