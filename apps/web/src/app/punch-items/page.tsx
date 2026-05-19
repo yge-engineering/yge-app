@@ -25,8 +25,8 @@ async function fetchItems(): Promise<PunchItem[]> {
   try {
     const res = await fetch(`${apiBaseUrl()}/api/punch-items`, { cache: 'no-store' });
     if (!res.ok) return [];
-    const json = (await res.json()) as { punchItems?: PunchItem[] };
-    return json.punchItems ?? [];
+    const json = (await res.json()) as { items?: PunchItem[]; punchItems?: PunchItem[] };
+    return json.items ?? json.punchItems ?? [];
   } catch {
     return [];
   }
@@ -106,8 +106,12 @@ export default async function PunchItemsPage() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {rows.map((r) => (
-                  <tr key={r.id}>
-                    <td className="px-3 py-2 font-mono text-xs">{r.identifiedOn}</td>
+                  <tr key={r.id} className="hover:bg-gray-50">
+                    <td className="px-3 py-2 font-mono text-xs">
+                      <Link href={`/punch-items/${r.id}`} className="text-yge-blue-700 hover:underline">
+                        {r.identifiedOn}
+                      </Link>
+                    </td>
                     <td className="px-3 py-2 font-mono text-xs">{r.jobId}</td>
                     <td className="px-3 py-2 text-xs">{r.location}</td>
                     <td className="px-3 py-2 text-xs">
