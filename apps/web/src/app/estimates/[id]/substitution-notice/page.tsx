@@ -13,6 +13,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
+  YGE_COMPANY_INFO,
   buildSubstitutionNotice,
   listSubstitutionGrounds,
   type PricedEstimate,
@@ -84,6 +85,7 @@ export default async function SubstitutionNoticePage({
     rCslb?: string;
     rDir?: string;
     rAmtCents?: string;
+    signer?: string;
   };
 }) {
   const data = await fetchEstimate(params.id);
@@ -127,9 +129,15 @@ export default async function SubstitutionNoticePage({
     };
   }
 
+  const signerKey: 'vp' | 'president' =
+    searchParams.signer === 'president' ? 'president' : 'vp';
+  const signer =
+    signerKey === 'president' ? YGE_COMPANY_INFO.president : YGE_COMPANY_INFO.vicePresident;
+
   const notice = buildSubstitutionNotice(estimate, sub, ground, {
     groundDetail,
     replacement,
+    signer,
   });
 
   const grounds = listSubstitutionGrounds();
@@ -192,6 +200,24 @@ export default async function SubstitutionNoticePage({
                       {g.statuteRef} — {g.label}
                     </option>
                   ))}
+                </select>
+              </label>
+
+              <label className="block">
+                <span className="block text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+                  Signed by
+                </span>
+                <select
+                  name="signer"
+                  defaultValue={signerKey}
+                  className="mt-1 w-full rounded border border-gray-300 bg-white px-2 py-1 text-xs"
+                >
+                  <option value="vp">
+                    {YGE_COMPANY_INFO.vicePresident.name} (VP)
+                  </option>
+                  <option value="president">
+                    {YGE_COMPANY_INFO.president.name} (President)
+                  </option>
                 </select>
               </label>
 
