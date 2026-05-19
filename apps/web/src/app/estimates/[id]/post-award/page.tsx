@@ -134,9 +134,17 @@ export default async function PostAwardLaunchpadPage({
 
         {recipients.length > 0 && (
           <section className="mt-6 rounded border border-gray-200 bg-white p-3 shadow-sm">
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-              Listed subs (in print order)
-            </h2>
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Listed subs (in print order)
+              </h2>
+              <Link
+                href={`/estimates/${estimate.id}/sub-list`}
+                className="text-[11px] font-semibold text-yge-blue-700 hover:underline"
+              >
+                View §4104 sub list →
+              </Link>
+            </div>
             <ul className="mt-2 divide-y divide-gray-100">
               {recipients.map((s) => (
                 <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 py-1.5 text-sm">
