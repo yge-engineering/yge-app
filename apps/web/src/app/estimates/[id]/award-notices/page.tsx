@@ -6,10 +6,10 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
+  YGE_COMPANY_INFO,
   buildSubAwardNotice,
   classifySubBids,
   computeEstimateTotals,
-  formatUSD,
   type PricedEstimate,
   type PricedEstimateTotals,
   type SubAwardNotice,
@@ -39,11 +39,21 @@ async function fetchEstimate(id: string): Promise<FullResponse | null> {
   return (await res.json()) as FullResponse;
 }
 
+type SignerKey = 'vp' | 'president';
+function pickSigner(key: SignerKey) {
+  return key === 'president' ? YGE_COMPANY_INFO.president : YGE_COMPANY_INFO.vicePresident;
+}
+
 export default async function AwardNoticesPage({
   params,
+  searchParams,
 }: {
   params: { id: string };
+  searchParams: { signer?: string };
 }) {
+  const signerKey: SignerKey =
+    searchParams.signer === 'president' ? 'president' : 'vp';
+  const signer = pickSigner(signerKey);
   const data = await fetchEstimate(params.id);
   if (!data) notFound();
   const { estimate } = data;
@@ -63,7 +73,7 @@ export default async function AwardNoticesPage({
 
   const notices: Array<{ sub: SubBid; notice: SubAwardNotice }> = recipients.map((sub) => ({
     sub,
-    notice: buildSubAwardNotice(estimate, sub),
+    notice: buildSubAwardNotice(estimate, sub, { signer }),
   }));
 
   const awarded = estimate.bidStatus === 'awarded';
@@ -88,7 +98,30 @@ export default async function AwardNoticesPage({
           >
             &larr; Back to estimate
           </Link>
-          <PrintButton />
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] uppercase tracking-wide text-gray-500">Signed by</span>
+            <Link
+              href={`/estimates/${estimate.id}/award-notices?signer=vp`}
+              className={`rounded px-2 py-1 text-xs font-medium ${
+                signerKey === 'vp'
+                  ? 'bg-yge-blue-500 text-white'
+                  : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              {YGE_COMPANY_INFO.vicePresident.name.split(' ')[0] ?? 'VP'} (VP)
+            </Link>
+            <Link
+              href={`/estimates/${estimate.id}/award-notices?signer=president`}
+              className={`rounded px-2 py-1 text-xs font-medium ${
+                signerKey === 'president'
+                  ? 'bg-yge-blue-500 text-white'
+                  : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              {YGE_COMPANY_INFO.president.name.split(' ')[0] ?? 'President'} (President)
+            </Link>
+            <PrintButton />
+          </div>
         </div>
 
         {!awarded && (
@@ -220,7 +253,7 @@ function LetterArticle({ notice }: { notice: SubAwardNotice }) {
 
       <p className="mt-6 text-[10px] italic text-gray-500">
         Notice prepared from the §4104 designated-subcontractor list as filed
-        with the awarding agency. Award price reflects {formatUSD(0).slice(0, 0)}the bid
+        with the awarding agency. Award price reflects the bid
         listed; any change in scope or price requires a written change order
         before work begins.
       </p>
