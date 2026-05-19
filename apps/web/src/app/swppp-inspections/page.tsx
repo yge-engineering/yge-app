@@ -82,8 +82,12 @@ export default async function SwpppInspectionsPage() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {rows.map((r) => (
-                  <tr key={r.id}>
-                    <td className="px-3 py-2 font-mono text-xs">{r.inspectedOn}</td>
+                  <tr key={r.id} className="hover:bg-gray-50">
+                    <td className="px-3 py-2 font-mono text-xs">
+                      <Link href={`/swppp-inspections/${r.id}`} className="text-yge-blue-700 hover:underline">
+                        {r.inspectedOn}
+                      </Link>
+                    </td>
                     <td className="px-3 py-2 font-mono text-xs">{r.jobId}</td>
                     <td className="px-3 py-2">
                       <span className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${TRIGGER_TONE[r.trigger]}`}>

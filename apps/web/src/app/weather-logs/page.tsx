@@ -104,8 +104,12 @@ export default async function WeatherLogsPage() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {rows.map((r) => (
-                  <tr key={r.id}>
-                    <td className="px-3 py-2 font-mono text-xs">{r.observedOn}</td>
+                  <tr key={r.id} className="hover:bg-gray-50">
+                    <td className="px-3 py-2 font-mono text-xs">
+                      <Link href={`/weather-logs/${r.id}`} className="text-yge-blue-700 hover:underline">
+                        {r.observedOn}
+                      </Link>
+                    </td>
                     <td className="px-3 py-2 font-mono text-xs">{r.jobId}</td>
                     <td className="px-3 py-2 text-xs">{CONDITION_LABEL[r.primaryCondition]}</td>
                     <td className="px-3 py-2 text-right font-mono text-xs">{r.highF ?? '—'}</td>
