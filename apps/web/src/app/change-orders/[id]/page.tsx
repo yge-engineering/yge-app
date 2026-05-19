@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { AuditBinderPanel } from '../../../components';
 import type { ChangeOrder, Job, Rfi } from '@yge/shared';
 import { ChangeOrderEditor } from '@/components/change-order-editor';
+import { ChangeOrderStatusBar } from '@/components/change-order-status-bar';
 import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
@@ -55,6 +56,13 @@ export default async function ChangeOrderDetailPage({
         </Link>
       </div>
 
+      <ChangeOrderStatusBar
+        id={co.id}
+        initialStatus={co.status}
+        proposedAt={co.proposedAt}
+        approvedAt={co.approvedAt}
+        executedAt={co.executedAt}
+      />
       <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <ChangeOrderEditor
           initial={co}
