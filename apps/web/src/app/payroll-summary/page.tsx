@@ -17,6 +17,7 @@ import {
 import { getTranslator } from '../../lib/locale';
 import { requirePermission } from '../../lib/permissions';
 import { StatementCsvButton } from '../../components/statement-csv-button';
+import { PrintButton } from '../../components/print-button';
 import {
   buildPayrollSummary,
   computePayrollSummaryRollup,
@@ -125,11 +126,12 @@ export default async function PayrollSummaryPage({
           subtitle={t('pr.subtitle')}
         />
 
-        <div className="mb-4 flex justify-end print:hidden">
+        <div className="mb-4 flex justify-end gap-2 print:hidden">
+          <PrintButton />
           <StatementCsvButton filename={`payroll-summary_${year}.csv`} headers={prHeaders} rows={prCsvRows} />
         </div>
 
-        <form action="/payroll-summary" className="mb-4 flex flex-wrap items-end gap-3 rounded-md border border-gray-200 bg-white p-3">
+        <form action="/payroll-summary" className="mb-4 flex flex-wrap items-end gap-3 rounded-md border border-gray-200 bg-white p-3 print:hidden">
           <label className="block text-xs">
             <span className="mb-1 block font-medium text-gray-700">{t('pr.year')}</span>
             <input
