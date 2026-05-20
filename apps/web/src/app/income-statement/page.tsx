@@ -16,6 +16,7 @@ import {
 } from '../../components';
 import { getTranslator, type Translator } from '../../lib/locale';
 import { requirePermission } from '../../lib/permissions';
+import Link from 'next/link';
 import { StatementCsvButton } from '../../components/statement-csv-button';
 import {
   buildIncomeStatement,
@@ -294,7 +295,11 @@ function SectionTable({ section, label, t }: { section: IncomeStatementSection; 
         <tbody>
           {section.lines.map((ln) => (
             <tr key={ln.accountNumber} className="border-b border-gray-100">
-              <td className="w-20 px-2 py-1 font-mono text-xs text-gray-600">{ln.accountNumber}</td>
+              <td className="w-20 px-2 py-1 font-mono text-xs text-gray-600">
+                <Link href={`/journal-entries/by-account?account=${ln.accountNumber}`} className="text-yge-blue-600 hover:underline" title="See the transactions behind this line">
+                  {ln.accountNumber}
+                </Link>
+              </td>
               <td className="px-2 py-1">{ln.accountName}</td>
               <td className="px-2 py-1 text-right">
                 <Money cents={ln.amountCents} />
