@@ -16,6 +16,8 @@ import {
 } from '../../components';
 import { getTranslator, type Translator } from '../../lib/locale';
 import { requirePermission } from '../../lib/permissions';
+import { StatementCsvButton } from '../../components/statement-csv-button';
+import { PrintButton } from '../../components/print-button';
 import {
   buildCostForecast,
   buildWipRow,
@@ -143,6 +145,25 @@ export default async function WipPage({
   const forecast = buildCostForecast(rows);
   const t = getTranslator();
 
+  const wipHeaders = ['Job', 'Job ID', 'Contract', 'Change orders', 'Adjusted contract', 'Cost at complete', 'Cost to date', '% complete', 'Earned revenue', 'Billed', 'Collected', 'Retention', 'Over-billed', 'Under-billed'];
+  const dw = (c: number) => (c / 100).toFixed(2);
+  const wipCsvRows: Array<Array<string | number>> = rows.map((r) => [
+    r.projectName,
+    r.jobId,
+    dw(r.originalContractCents),
+    dw(r.changeOrderTotalCents),
+    dw(r.adjustedContractCents),
+    dw(r.estimatedCostAtCompletionCents),
+    dw(r.costsIncurredCents),
+    (r.percentComplete * 100).toFixed(1),
+    dw(r.earnedRevenueCents),
+    dw(r.billedToDateCents),
+    dw(r.collectedToDateCents),
+    dw(r.retentionHeldCents),
+    dw(r.overBilledCents),
+    dw(r.underBilledCents),
+  ]);
+
   return (
     <AppShell>
       <main className="mx-auto max-w-7xl">
@@ -150,6 +171,11 @@ export default async function WipPage({
           title={t('wip.title')}
           subtitle={t('wip.subtitle')}
         />
+
+        <div className="mb-4 flex justify-end gap-2 print:hidden">
+          <PrintButton />
+          <StatementCsvButton filename="wip-report.csv" headers={wipHeaders} rows={wipCsvRows} />
+        </div>
 
         <section className="mb-3 grid gap-3 sm:grid-cols-4">
           <Tile label={t('wip.tile.jobs')} value={rollup.jobs} />
