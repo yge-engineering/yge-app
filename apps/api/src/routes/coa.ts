@@ -1,7 +1,13 @@
 // Chart of Accounts routes.
 
 import { Router } from 'express';
-import { AccountCreateSchema, AccountPatchSchema } from '@yge/shared';
+import { z } from 'zod';
+import {
+  AccountCreateSchema,
+  AccountPatchSchema,
+  buildQboCoaImport,
+  coaRowsFromCsv,
+} from '@yge/shared';
 import {
   applyDefaultCoaSeed,
   createAccount,
@@ -76,6 +82,78 @@ coaRouter.post('/seed', async (_req, res, next) => {
   try {
     const added = await applyDefaultCoaSeed();
     return res.status(201).json({ added });
+  } catch (err) {
+    next(err);
+  }
+});
+
+
+/** QuickBooks Online Chart-of-Accounts import.
+ *
+ *  Body: { csv: string, dryRun?: boolean }. Default is a dry run — it
+ *  returns the full plan (accounts to create, accounts that would be
+ *  skipped because their number already exists, unmapped rows, warnings)
+ *  without touching the database. Send dryRun:false to commit. The commit
+ *  is idempotent: any account number that already exists is skipped, so
+ *  re-running never duplicates. */
+const QboImportBodySchema = z.object({
+  csv: z.string().min(1).max(5_000_000),
+  dryRun: z.boolean().optional(),
+});
+
+coaRouter.post('/import-qbo', async (req, res, next) => {
+  try {
+    const parsed = QboImportBodySchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res
+        .status(400)
+        .json({ error: 'Validation failed', issues: parsed.error.issues });
+    }
+    const { csv, dryRun = true } = parsed.data;
+
+    const rows = coaRowsFromCsv(csv);
+    const plan = buildQboCoaImport(rows);
+
+    const existing = await listAccounts();
+    const haveNumbers = new Set(existing.map((a) => a.number));
+
+    const toCreate = plan.accounts.filter((a) => !haveNumbers.has(a.number));
+    const skipped = plan.accounts.filter((a) => haveNumbers.has(a.number));
+
+    const summary = {
+      parsedRows: rows.length,
+      mapped: plan.accounts.length,
+      willCreate: toCreate.length,
+      willSkip: skipped.length,
+      unmapped: plan.unmapped.length,
+      warnings: plan.warnings.length,
+    };
+
+    if (dryRun) {
+      return res.json({
+        dryRun: true,
+        summary,
+        plan,
+        skipped: skipped.map((a) => ({ number: a.number, name: a.name })),
+      });
+    }
+
+    const created: Array<{ number: string; name: string; type: string }> = [];
+    for (const a of toCreate) {
+      const { sourceFullName: _sourceFullName, ...accountCreate } = a;
+      void _sourceFullName;
+      const acc = await createAccount(accountCreate);
+      created.push({ number: acc.number, name: acc.name, type: acc.type });
+    }
+
+    return res.status(201).json({
+      dryRun: false,
+      summary: { ...summary, created: created.length },
+      created,
+      skipped: skipped.map((a) => ({ number: a.number, name: a.name })),
+      unmapped: plan.unmapped,
+      warnings: plan.warnings,
+    });
   } catch (err) {
     next(err);
   }
