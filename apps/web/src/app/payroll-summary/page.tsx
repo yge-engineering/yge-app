@@ -16,6 +16,7 @@ import {
 } from '../../components';
 import { getTranslator } from '../../lib/locale';
 import { requirePermission } from '../../lib/permissions';
+import { StatementCsvButton } from '../../components/statement-csv-button';
 import {
   buildPayrollSummary,
   computePayrollSummaryRollup,
@@ -93,6 +94,22 @@ export default async function PayrollSummaryPage({
     employerTaxRate,
   });
   const visible = rows.filter((r) => r.totalHours > 0);
+
+  const prHeaders = ['Employee', 'Classification', 'Weeks', 'Reg hrs', 'OT hrs', 'Total hrs', 'Reg wages', 'OT wages', 'Fringe', 'Gross', 'Employer tax est'];
+  const dp = (c: number) => (c / 100).toFixed(2);
+  const prCsvRows: Array<Array<string | number>> = visible.map((r) => [
+    r.employeeName,
+    r.classificationLabel,
+    r.weeksWorked,
+    r.regularHours,
+    r.overtimeHours,
+    r.totalHours,
+    dp(r.regularWagesCents),
+    dp(r.overtimeWagesCents),
+    dp(r.fringeCents),
+    dp(r.grossWagesCents),
+    dp(r.employerTaxEstimateCents),
+  ]);
   const rollup = computePayrollSummaryRollup(visible);
 
   const missingRates = Array.from(classifications).filter(
@@ -107,6 +124,10 @@ export default async function PayrollSummaryPage({
           title={t('pr.title')}
           subtitle={t('pr.subtitle')}
         />
+
+        <div className="mb-4 flex justify-end print:hidden">
+          <StatementCsvButton filename={`payroll-summary_${year}.csv`} headers={prHeaders} rows={prCsvRows} />
+        </div>
 
         <form action="/payroll-summary" className="mb-4 flex flex-wrap items-end gap-3 rounded-md border border-gray-200 bg-white p-3">
           <label className="block text-xs">
