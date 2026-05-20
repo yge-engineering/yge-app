@@ -16,6 +16,7 @@ import {
 } from '../../components';
 import { getTranslator, type Translator } from '../../lib/locale';
 import { requirePermission } from '../../lib/permissions';
+import { StatementCsvButton } from '../../components/statement-csv-button';
 import {
   buildIncomeStatement,
   comparisonPeriod,
@@ -91,6 +92,24 @@ export default async function IncomeStatementPage({
     : null;
   const qs = `start=${periodStart}&end=${periodEnd}`;
 
+  const csvHeaders = ['Section', 'Account #', 'Account', 'Amount'];
+  const csvRows: Array<Array<string | number>> = [];
+  const d = (cents: number) => (cents / 100).toFixed(2);
+  const pushSection = (lbl: string, sec: IncomeStatementSection) => {
+    for (const ln of sec.lines) csvRows.push([lbl, ln.accountNumber, ln.accountName, d(ln.amountCents)]);
+  };
+  pushSection('Revenue', stmt.revenue);
+  csvRows.push(['', '', 'Total revenue', d(stmt.revenue.totalCents)]);
+  pushSection('COGS', stmt.cogs);
+  csvRows.push(['', '', 'Total COGS', d(stmt.cogs.totalCents)]);
+  csvRows.push(['', '', 'Gross profit', d(stmt.grossProfitCents)]);
+  pushSection('Overhead', stmt.overhead);
+  csvRows.push(['', '', 'Total overhead', d(stmt.overhead.totalCents)]);
+  csvRows.push(['', '', 'Operating income', d(stmt.operatingIncomeCents)]);
+  pushSection('Other income', stmt.otherIncome);
+  pushSection('Other expense', stmt.otherExpense);
+  csvRows.push(['', '', 'Net income', d(stmt.netIncomeCents)]);
+
   // Section heading lookup keyed by section.type so localized strings replace
   // the hard-coded English labels baked into buildIncomeStatement.
   function sectionLabel(s: IncomeStatementSection): string {
@@ -142,6 +161,14 @@ export default async function IncomeStatementPage({
             )}
           </div>
         </form>
+
+        <div className="mb-4 flex justify-end">
+          <StatementCsvButton
+            filename={`income-statement_${periodStart}_${periodEnd}.csv`}
+            headers={csvHeaders}
+            rows={csvRows}
+          />
+        </div>
 
         <section className="mb-4 grid gap-3 sm:grid-cols-4">
           <Tile label={t('is.tile.revenue')} value={<Money cents={stmt.revenue.totalCents} />} />
