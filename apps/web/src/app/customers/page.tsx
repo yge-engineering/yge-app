@@ -98,6 +98,9 @@ export default async function CustomersPage({
               >
                 {t('customers.downloadCsv')}
               </a>
+              <LinkButton href="/customers/import" variant="secondary" size="md">
+                Import from QuickBooks
+              </LinkButton>
               <LinkButton href="/customers/new" variant="primary" size="md">
                 {t('customers.add')}
               </LinkButton>
