@@ -4,6 +4,10 @@
 // earnings. Built from POSTED journal entries through the as-of date.
 // The in-balance check at the top is the bookkeeper's first sanity
 // step before printing the statement.
+//
+// Optional ?vsAsOf=yyyy-mm-dd adds a comparison column as of an earlier
+// date (a "Prior year" toggle fills it from the current as-of). We rebuild
+// the sheet as of that date and show headline totals with $ + % variance.
 
 import {
   Alert,
@@ -16,6 +20,9 @@ import { getTranslator, type Translator } from '../../lib/locale';
 import { requirePermission } from '../../lib/permissions';
 import {
   buildBalanceSheet,
+  priorYearDate,
+  varianceCents,
+  variancePct,
   type Account,
   type BalanceSheetSection,
   type JournalEntry,
@@ -42,18 +49,26 @@ async function fetchEntries(): Promise<JournalEntry[]> {
   } catch { return []; }
 }
 
+function equityTotal(sheet: ReturnType<typeof buildBalanceSheet>): number {
+  return sheet.equity.totalCents + sheet.currentPeriodEarningsCents;
+}
+
 export default async function BalanceSheetPage({
   searchParams,
 }: {
-  searchParams: { asOf?: string };
+  searchParams: { asOf?: string; vsAsOf?: string };
 }) {
   const today = new Date().toISOString().slice(0, 10);
   const asOf = /^\d{4}-\d{2}-\d{2}$/.test(searchParams.asOf ?? '')
     ? (searchParams.asOf as string)
     : today;
+  const vsAsOf = /^\d{4}-\d{2}-\d{2}$/.test(searchParams.vsAsOf ?? '')
+    ? (searchParams.vsAsOf as string)
+    : '';
 
   const [accounts, entries] = await Promise.all([fetchAccounts(), fetchEntries()]);
   const sheet = buildBalanceSheet({ accounts, entries, asOf });
+  const sheetPrior = vsAsOf ? buildBalanceSheet({ accounts, entries, asOf: vsAsOf }) : null;
   const t = getTranslator();
 
   // Section heading: prefer the locale-aware label keyed by section.type, fall
@@ -93,9 +108,33 @@ export default async function BalanceSheetPage({
               className="rounded border border-gray-300 px-2 py-1 text-sm"
             />
           </label>
+          <label className="block text-xs">
+            <span className="mb-1 block font-medium text-gray-700">Compare to (as of)</span>
+            <input
+              type="date"
+              name="vsAsOf"
+              defaultValue={vsAsOf}
+              className="rounded border border-gray-300 px-2 py-1 text-sm"
+            />
+          </label>
           <button type="submit" className="rounded-md bg-blue-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-800">
             {t('bs.recalculate')}
           </button>
+          <div className="flex items-center gap-1 text-xs">
+            <span className="text-gray-500">Quick:</span>
+            <a
+              href={`/balance-sheet?asOf=${asOf}`}
+              className={`rounded px-2 py-1 font-medium ${vsAsOf === '' ? 'bg-blue-700 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+            >
+              None
+            </a>
+            <a
+              href={`/balance-sheet?asOf=${asOf}&vsAsOf=${priorYearDate(asOf)}`}
+              className={`rounded px-2 py-1 font-medium ${vsAsOf === priorYearDate(asOf) ? 'bg-blue-700 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+            >
+              Prior year
+            </a>
+          </div>
         </form>
 
         <Alert
@@ -110,6 +149,50 @@ export default async function BalanceSheetPage({
             return <> {imParts[0]}<Money cents={sheet.imbalanceCents} />{imParts[1]}</>;
           })() : null}
         </Alert>
+
+        {sheetPrior && (
+          <section className="mb-4 rounded-md border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 flex items-baseline justify-between">
+              <h2 className="text-sm font-semibold text-gray-900">Comparison</h2>
+              <span className="text-xs text-gray-500">as of {vsAsOf}</span>
+            </div>
+            <table className="w-full text-sm">
+              <thead className="text-xs uppercase tracking-wide text-gray-500">
+                <tr className="border-b border-gray-200">
+                  <th className="py-1 text-left">Line</th>
+                  <th className="py-1 text-right">{asOf}</th>
+                  <th className="py-1 text-right">{vsAsOf}</th>
+                  <th className="py-1 text-right">Δ $</th>
+                  <th className="py-1 text-right">Δ %</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {([
+                  ['Total assets', sheet.assets.totalCents, sheetPrior.assets.totalCents],
+                  ['Total liabilities', sheet.liabilities.totalCents, sheetPrior.liabilities.totalCents],
+                  ['Total equity', equityTotal(sheet), equityTotal(sheetPrior)],
+                  ['Liabilities + equity', sheet.totalLiabilitiesAndEquityCents, sheetPrior.totalLiabilitiesAndEquityCents],
+                ] as Array<[string, number, number]>).map(([name, cur, prior]) => {
+                  const dv = varianceCents(cur, prior);
+                  const dp = variancePct(cur, prior);
+                  return (
+                    <tr key={name}>
+                      <td className="py-1">{name}</td>
+                      <td className="py-1 text-right font-mono"><Money cents={cur} /></td>
+                      <td className="py-1 text-right font-mono text-gray-500"><Money cents={prior} /></td>
+                      <td className={`py-1 text-right font-mono ${dv < 0 ? 'text-red-700' : 'text-gray-900'}`}>
+                        <Money cents={dv} />
+                      </td>
+                      <td className={`py-1 text-right font-mono ${dp !== null && dp < 0 ? 'text-red-700' : 'text-gray-900'}`}>
+                        {dp === null ? '—' : `${dp >= 0 ? '+' : ''}${(dp * 100).toFixed(1)}%`}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </section>
+        )}
 
         <article className="rounded-md border border-gray-200 bg-white p-6">
           <header className="border-b border-gray-300 pb-2 text-center">
