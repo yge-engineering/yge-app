@@ -13,6 +13,7 @@ import {
 } from '../../components';
 import { getTranslator } from '../../lib/locale';
 import { requirePermission } from '../../lib/permissions';
+import Link from 'next/link';
 import { StatementCsvButton } from '../../components/statement-csv-button';
 import {
   accountTypeLabel,
@@ -117,7 +118,15 @@ export default async function TrialBalancePage() {
                   const acc = accountByNum.get(b.accountNumber);
                   return (
                     <tr key={b.accountNumber}>
-                      <td className="px-4 py-3 font-mono text-sm">{b.accountNumber}</td>
+                      <td className="px-4 py-3 font-mono text-sm">
+                        <Link
+                          href={`/journal-entries/by-account?account=${b.accountNumber}`}
+                          className="text-yge-blue-600 hover:underline"
+                          title="See the transactions behind this balance"
+                        >
+                          {b.accountNumber}
+                        </Link>
+                      </td>
                       <td className="px-4 py-3 text-sm">
                         {acc?.name ?? <span className="text-red-700">{t('tb.unknownAccount')}</span>}
                       </td>
