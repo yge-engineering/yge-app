@@ -8,6 +8,7 @@ import {
   PageHeader,
 } from '../../components';
 import { requirePermission } from '../../lib/permissions';
+import { StatementCsvButton } from '../../components/statement-csv-button';
 import { type BankRec } from '@yge/shared';
 
 function apiBaseUrl(): string {
@@ -76,6 +77,17 @@ export default async function CashPositionPage() {
     0,
   );
 
+  const cpHeaders = ['Account', 'GL balance', 'Statement balance', 'Last reconciled', 'Days since', 'Status'];
+  const dc = (c: number) => (c / 100).toFixed(2);
+  const cpCsvRows: Array<Array<string | number>> = snapshots.map((sn) => [
+    sn.account,
+    dc(sn.glBalanceCents),
+    dc(sn.statementBalanceCents),
+    sn.lastReconciledAt ?? '',
+    sn.daysSinceReconciled ?? '',
+    sn.status,
+  ]);
+
   return (
     <AppShell>
       <main className="mx-auto max-w-4xl">
@@ -83,6 +95,10 @@ export default async function CashPositionPage() {
           title="Cash position"
           subtitle="Latest reconciled balances per bank account. Numbers update when you save a new bank rec."
         />
+
+        <div className="mb-4 flex justify-end print:hidden">
+          <StatementCsvButton filename="cash-position.csv" headers={cpHeaders} rows={cpCsvRows} />
+        </div>
 
         <section className="mb-4 grid grid-cols-2 gap-3">
           <div className="rounded-md border border-yge-blue-300 bg-yge-blue-50 p-4">
