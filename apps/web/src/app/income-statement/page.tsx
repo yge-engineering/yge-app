@@ -112,6 +112,27 @@ export default async function IncomeStatementPage({
   pushSection('Other expense', stmt.otherExpense);
   csvRows.push(['', '', 'Net income', d(stmt.netIncomeCents)]);
 
+  const curSections = [stmt.revenue, stmt.cogs, stmt.overhead, stmt.otherIncome, stmt.otherExpense];
+  const priorSections = stmtPrior
+    ? [stmtPrior.revenue, stmtPrior.cogs, stmtPrior.overhead, stmtPrior.otherIncome, stmtPrior.otherExpense]
+    : [];
+  const lineCmp = new Map<string, { name: string; cur: number; prior: number }>();
+  for (const sec of curSections)
+    for (const ln of sec.lines) {
+      const e = lineCmp.get(ln.accountNumber) ?? { name: ln.accountName, cur: 0, prior: 0 };
+      e.cur += ln.amountCents;
+      lineCmp.set(ln.accountNumber, e);
+    }
+  for (const sec of priorSections)
+    for (const ln of sec.lines) {
+      const e = lineCmp.get(ln.accountNumber) ?? { name: ln.accountName, cur: 0, prior: 0 };
+      e.prior += ln.amountCents;
+      lineCmp.set(ln.accountNumber, e);
+    }
+  const lineCmpRows = Array.from(lineCmp.entries())
+    .map(([num, v]) => ({ num, name: v.name, cur: v.cur, prior: v.prior }))
+    .sort((a, b) => a.num.localeCompare(b.num));
+
   // Section heading lookup keyed by section.type so localized strings replace
   // the hard-coded English labels baked into buildIncomeStatement.
   function sectionLabel(s: IncomeStatementSection): string {
@@ -197,6 +218,36 @@ export default async function IncomeStatementPage({
               ['Net income', stmt.netIncomeCents, stmtPrior.netIncomeCents],
             ]}
           />
+        )}
+
+        {stmtPrior && lineCmpRows.length > 0 && (
+          <section className="mb-4 rounded-md border border-gray-200 bg-white p-4 shadow-sm">
+            <h2 className="mb-2 text-sm font-semibold text-gray-900">Account-level comparison</h2>
+            <table className="w-full text-xs">
+              <thead className="text-left text-gray-500">
+                <tr className="border-b border-gray-200">
+                  <th className="py-1">#</th>
+                  <th className="py-1">Account</th>
+                  <th className="py-1 text-right">This period</th>
+                  <th className="py-1 text-right">Comparison</th>
+                  <th className="py-1 text-right">Δ $</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {lineCmpRows.map((r) => (
+                  <tr key={r.num}>
+                    <td className="py-1 font-mono">{r.num}</td>
+                    <td className="py-1">{r.name}</td>
+                    <td className="py-1 text-right font-mono"><Money cents={r.cur} /></td>
+                    <td className="py-1 text-right font-mono text-gray-500"><Money cents={r.prior} /></td>
+                    <td className={`py-1 text-right font-mono ${r.cur - r.prior < 0 ? 'text-red-700' : 'text-gray-900'}`}>
+                      <Money cents={r.cur - r.prior} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
         )}
 
         <article className="rounded-md border border-gray-200 bg-white p-6">
