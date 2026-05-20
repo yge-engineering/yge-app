@@ -2,6 +2,7 @@
 // Vendor routes.
 
 import { Router } from 'express';
+import { z } from 'zod';
 import multer from 'multer';
 
 const vendorUpload = multer({ limits: { fileSize: 5 * 1024 * 1024 } });
@@ -10,10 +11,12 @@ import { prisma } from '@yge/db';
 import {
   VendorCreateSchema,
   VendorPatchSchema,
+  buildQboVendorImport,
   maskTaxId,
   vendorCoiCurrent,
   vendorKindLabel,
   vendorPaymentTermsLabel,
+  vendorRowsFromCsv,
   vendorW9Current,
   type Vendor,
 } from '@yge/shared';
@@ -446,6 +449,75 @@ vendorsRouter.patch('/:id', async (req, res, next) => {
     const updated = await updateVendor(req.params.id, parsed.data);
     if (!updated) return res.status(404).json({ error: 'Vendor not found' });
     return res.json({ vendor: updated });
+  } catch (err) {
+    next(err);
+  }
+});
+
+
+/** QuickBooks Online vendor import. Body: { csv, dryRun? }. Dry run
+ *  (default) previews; dryRun:false commits. Idempotent: skips any vendor
+ *  whose legal name already exists (case-insensitive). */
+const QboVendorImportBody = z.object({
+  csv: z.string().min(1).max(5_000_000),
+  dryRun: z.boolean().optional(),
+});
+
+vendorsRouter.post('/import-qbo', async (req, res, next) => {
+  try {
+    const parsed = QboVendorImportBody.safeParse(req.body);
+    if (!parsed.success) {
+      return res
+        .status(400)
+        .json({ error: 'Validation failed', issues: parsed.error.issues });
+    }
+    const { csv, dryRun = true } = parsed.data;
+
+    const rows = vendorRowsFromCsv(csv);
+    const plan = buildQboVendorImport(rows);
+
+    const existing = await listVendors();
+    const haveNames = new Set(existing.map((v) => v.legalName.trim().toLowerCase()));
+
+    const toCreate = plan.vendors.filter(
+      (v) => !haveNames.has(v.legalName.trim().toLowerCase()),
+    );
+    const skipped = plan.vendors.filter((v) =>
+      haveNames.has(v.legalName.trim().toLowerCase()),
+    );
+
+    const summary = {
+      parsedRows: rows.length,
+      mapped: plan.vendors.length,
+      willCreate: toCreate.length,
+      willSkip: skipped.length,
+      warnings: plan.warnings.length,
+    };
+
+    if (dryRun) {
+      return res.json({
+        dryRun: true,
+        summary,
+        plan,
+        skipped: skipped.map((v) => ({ legalName: v.legalName })),
+      });
+    }
+
+    const created: Array<{ legalName: string; kind: string }> = [];
+    for (const v of toCreate) {
+      const { sourceName: _sourceName, ...vendorCreate } = v;
+      void _sourceName;
+      const saved = await createVendor(vendorCreate);
+      created.push({ legalName: saved.legalName, kind: saved.kind });
+    }
+
+    return res.status(201).json({
+      dryRun: false,
+      summary: { ...summary, created: created.length },
+      created,
+      skipped: skipped.map((v) => ({ legalName: v.legalName })),
+      warnings: plan.warnings,
+    });
   } catch (err) {
     next(err);
   }
