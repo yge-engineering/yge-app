@@ -14,6 +14,7 @@ import {
 } from '../../components';
 import { getTranslator } from '../../lib/locale';
 import { requirePermission } from '../../lib/permissions';
+import { StatementCsvButton } from '../../components/statement-csv-button';
 import {
   buildCashForecast,
   dollarsToCents,
@@ -63,6 +64,18 @@ export default async function CashForecastPage({
   });
   const t = getTranslator();
 
+  const fcHeaders = ['Week', 'Week start', 'AR in', 'AP out', 'Payroll', 'Net', 'Running balance'];
+  const df = (c: number) => (c / 100).toFixed(2);
+  const fcCsvRows: Array<Array<string | number>> = forecast.weeks.map((w, i) => [
+    i + 1,
+    w.weekStart,
+    df(w.arInflowCents),
+    df(w.apOutflowCents),
+    df(w.payrollOutflowCents),
+    df(w.netCents),
+    df(w.runningCents),
+  ]);
+
   return (
     <AppShell>
       <main className="mx-auto max-w-7xl">
@@ -70,6 +83,10 @@ export default async function CashForecastPage({
           title={t('cf.title')}
           subtitle={t('cf.subtitle')}
         />
+
+        <div className="mb-4 flex justify-end print:hidden">
+          <StatementCsvButton filename="cash-forecast.csv" headers={fcHeaders} rows={fcCsvRows} />
+        </div>
 
         <form action="/cash-forecast" className="mb-4 flex flex-wrap items-end gap-3 rounded-md border border-gray-200 bg-white p-3">
           <label className="block text-xs">
