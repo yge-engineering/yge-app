@@ -13,6 +13,7 @@ import {
 } from '../../components';
 import { getTranslator } from '../../lib/locale';
 import { requirePermission } from '../../lib/permissions';
+import { StatementCsvButton } from '../../components/statement-csv-button';
 import {
   accountTypeLabel,
   computeAccountBalances,
@@ -56,6 +57,14 @@ export default async function TrialBalancePage() {
   const balanced = totalDebit === totalCredit;
   const t = getTranslator();
 
+  const csvHeaders = ['Account #', 'Name', 'Type', 'Debit', 'Credit', 'Balance'];
+  const dd = (cents: number) => (cents / 100).toFixed(2);
+  const csvRows: Array<Array<string | number>> = balances.map((b) => {
+    const acc = accountByNum.get(b.accountNumber);
+    return [b.accountNumber, acc?.name ?? '(unknown)', acc ? acc.type : '', dd(b.debitCents), dd(b.creditCents), dd(b.balanceCents)];
+  });
+  csvRows.push(['', 'TOTALS', '', dd(totalDebit), dd(totalCredit), dd(totalDebit - totalCredit)]);
+
   return (
     <AppShell>
       <main className="mx-auto max-w-5xl">
@@ -81,6 +90,10 @@ export default async function TrialBalancePage() {
             );
           })()}
         </Alert>
+
+        <div className="mb-4 flex justify-end">
+          <StatementCsvButton filename="trial-balance.csv" headers={csvHeaders} rows={csvRows} />
+        </div>
 
         {balances.length === 0 ? (
           <div className="rounded-md border border-gray-200 bg-gray-50 p-6 text-sm text-gray-600">
