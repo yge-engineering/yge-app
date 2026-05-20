@@ -26,6 +26,7 @@ import {
   type AccountType,
 } from '@yge/shared';
 import { CoaSeedButton } from '../../components/coa-seed-button';
+import { StatementCsvButton } from '../../components/statement-csv-button';
 
 const TYPES: AccountType[] = [
   'ASSET',
@@ -86,6 +87,11 @@ export default async function CoaPage({
   }
   const t = getTranslator();
 
+  const coaHeaders = ['Number', 'Name', 'Type', 'Parent', 'Active'];
+  const coaCsvRows: Array<Array<string | number>> = [...all]
+    .sort((a, b) => a.number.localeCompare(b.number))
+    .map((a) => [a.number, a.name, a.type, a.parentNumber ?? '', a.active ? 'Y' : 'N']);
+
   return (
     <AppShell>
       <main className="mx-auto max-w-6xl">
@@ -98,6 +104,7 @@ export default async function CoaPage({
               <LinkButton href="/coa/import" variant="secondary" size="md">
                 Import from QuickBooks
               </LinkButton>
+              <StatementCsvButton filename="chart-of-accounts.csv" headers={coaHeaders} rows={coaCsvRows} />
               <LinkButton href="/coa/new" variant="primary" size="md">
                 {t('coa.addAccount')}
               </LinkButton>
