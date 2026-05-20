@@ -275,6 +275,27 @@ export function InboxTriageFull({
                               </span>
                             </div>
                           ) : null}
+                          {(() => {
+                            const ROUTE: Partial<
+                              Record<TriagedMessage['category'], { href: string; label: string }>
+                            > = {
+                              COI: { href: '/coi-chase', label: 'Log certificate of insurance' },
+                              SUBMITTAL: { href: '/submittals/new', label: 'Log submittal' },
+                              RFI: { href: '/rfis', label: 'Open RFIs' },
+                              LIEN_WAIVER: { href: '/lien-waivers', label: 'Open lien waivers' },
+                            };
+                            const route = ROUTE[m.category];
+                            return route ? (
+                              <div className="mt-2">
+                                <a
+                                  href={route.href}
+                                  className="inline-block rounded border border-yge-blue-300 bg-yge-blue-50 px-2 py-1 text-[11px] font-semibold text-yge-blue-800 hover:bg-yge-blue-100"
+                                >
+                                  → {route.label}
+                                </a>
+                              </div>
+                            ) : null;
+                          })()}
                         </div>
                         <span
                           className={`shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-semibold ${
