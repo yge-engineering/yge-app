@@ -30,6 +30,110 @@ export function csvEscape(value: string | number | undefined | null): string {
   return s;
 }
 
+/**
+ * Parse CSV text into rows of string cells (RFC 4180).
+ *
+ * The mirror image of `objectsToCsv` — used by every QuickBooks import
+ * (chart of accounts, customers, vendors, open AR/AP, GL opening balances),
+ * which all arrive as CSV exports. Handles:
+ *
+ *   - fields wrapped in double quotes
+ *   - commas, CR, and LF inside quoted fields
+ *   - escaped quotes ("" inside a quoted field)
+ *   - CRLF or LF record separators (mixed is fine)
+ *   - a leading UTF-8 BOM (QuickBooks + Excel both emit one)
+ *
+ * Output is literal: a blank line yields a one-cell row `['']`, and no
+ * trimming happens inside cells. Callers that want to skip blank lines or
+ * trim whitespace should do so on the returned rows.
+ */
+export function parseCsvRows(text: string): string[][] {
+  const rows: string[][] = [];
+  let field = '';
+  let row: string[] = [];
+  let inQuotes = false;
+  let started = false;
+  const n = text.length;
+  let i = 0;
+  // Strip a leading UTF-8 BOM if present.
+  if (n > 0 && text.charCodeAt(0) === 0xfeff) i = 1;
+
+  for (; i < n; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (text[i + 1] === '"') {
+          field += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        field += c;
+      }
+      started = true;
+      continue;
+    }
+    if (c === '"') {
+      inQuotes = true;
+      started = true;
+    } else if (c === ',') {
+      row.push(field);
+      field = '';
+      started = true;
+    } else if (c === '\n') {
+      row.push(field);
+      field = '';
+      rows.push(row);
+      row = [];
+      started = false;
+    } else if (c === '\r') {
+      row.push(field);
+      field = '';
+      rows.push(row);
+      row = [];
+      started = false;
+      if (text[i + 1] === '\n') i++;
+    } else {
+      field += c;
+      started = true;
+    }
+  }
+
+  // Flush a trailing partial row (file that doesn't end in a newline).
+  if (started || field.length > 0 || row.length > 0) {
+    row.push(field);
+    rows.push(row);
+  }
+  return rows;
+}
+
+/**
+ * Parse CSV text into objects keyed by the header row. Blank lines are
+ * skipped. Header cells are trimmed; duplicate headers keep the last
+ * column. Rows shorter than the header get '' for the missing trailing
+ * cells; longer rows drop the extras.
+ */
+export function parseCsvObjects(text: string): Array<Record<string, string>> {
+  const rows = parseCsvRows(text).filter(
+    (r) => !(r.length === 1 && r[0]!.trim() === ''),
+  );
+  if (rows.length === 0) return [];
+  const header = rows[0]!.map((h) => h.trim());
+  const out: Array<Record<string, string>> = [];
+  for (let r = 1; r < rows.length; r++) {
+    const cells = rows[r]!;
+    const obj: Record<string, string> = {};
+    for (let c = 0; c < header.length; c++) {
+      const key = header[c]!;
+      if (key.length === 0) continue;
+      obj[key] = cells[c] ?? '';
+    }
+    out.push(obj);
+  }
+  return out;
+}
+
 /** Generic typed-row CSV builder.
  *
  *  Columns are defined as `{ header, get }` pairs. The `get` function can

@@ -5,6 +5,8 @@ import { describe, it, expect } from 'vitest';
 import {
   bidItemsToCsv,
   csvEscape,
+  parseCsvRows,
+  parseCsvObjects,
   BID_ITEM_CSV_HEADERS,
   pricedEstimateToCsv,
   PRICED_ESTIMATE_CSV_HEADERS,
@@ -174,5 +176,67 @@ describe('pricedEstimateToCsv', () => {
     const out = pricedEstimateToCsv(fullyUnpriced);
     expect(out).toContain(',,,,Direct cost,0.00');
     expect(out).toContain(',,,,Bid total,0.00');
+  });
+});
+
+
+describe('parseCsvRows', () => {
+  it('parses a simple grid', () => {
+    expect(parseCsvRows('a,b,c\n1,2,3')).toEqual([
+      ['a', 'b', 'c'],
+      ['1', '2', '3'],
+    ]);
+  });
+
+  it('handles CRLF and a trailing newline without a spurious blank row', () => {
+    expect(parseCsvRows('a,b\r\n1,2\r\n')).toEqual([
+      ['a', 'b'],
+      ['1', '2'],
+    ]);
+  });
+
+  it('keeps commas inside quoted fields', () => {
+    expect(parseCsvRows('"Smith, John",100')).toEqual([['Smith, John', '100']]);
+  });
+
+  it('unescapes doubled quotes inside a quoted field', () => {
+    expect(parseCsvRows('"He said ""hi""",x')).toEqual([['He said "hi"', 'x']]);
+  });
+
+  it('keeps newlines inside quoted fields', () => {
+    expect(parseCsvRows('"line1\nline2",b')).toEqual([['line1\nline2', 'b']]);
+  });
+
+  it('strips a leading UTF-8 BOM', () => {
+    expect(parseCsvRows('\uFEFFa,b')).toEqual([['a', 'b']]);
+  });
+
+  it('returns [] for empty input', () => {
+    expect(parseCsvRows('')).toEqual([]);
+  });
+
+  it('preserves trailing empty cells', () => {
+    expect(parseCsvRows('a,,c')).toEqual([['a', '', 'c']]);
+  });
+});
+
+describe('parseCsvObjects', () => {
+  it('keys rows by the trimmed header', () => {
+    const rows = parseCsvObjects(' Name , Type \nBank,ASSET\n');
+    expect(rows).toEqual([{ Name: 'Bank', Type: 'ASSET' }]);
+  });
+
+  it('skips blank lines', () => {
+    const rows = parseCsvObjects('Name,Type\nBank,ASSET\n\n');
+    expect(rows).toHaveLength(1);
+  });
+
+  it('pads short rows with empty strings', () => {
+    const rows = parseCsvObjects('a,b,c\n1,2');
+    expect(rows).toEqual([{ a: '1', b: '2', c: '' }]);
+  });
+
+  it('returns [] when only a header is present', () => {
+    expect(parseCsvObjects('a,b,c')).toEqual([]);
   });
 });
