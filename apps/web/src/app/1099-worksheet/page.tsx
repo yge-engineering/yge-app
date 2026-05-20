@@ -13,6 +13,8 @@ import {
   PageHeader,
 } from '../../components';
 import { requirePermission } from '../../lib/permissions';
+import { StatementCsvButton } from '../../components/statement-csv-button';
+import { PrintButton } from '../../components/print-button';
 import {
   buildVendor1099Report,
   type ApPayment,
@@ -64,6 +66,17 @@ export default async function Tax1099WorksheetPage({
     asOf: now,
   });
 
+  const nineNineHeaders = ['Vendor', 'Paid YTD', 'Payments', 'Over $600', 'Missing W-9', 'Missing TIN'];
+  const d99 = (c: number) => (c / 100).toFixed(2);
+  const nineNineRows: Array<Array<string | number>> = report.rows.map((r) => [
+    r.vendorName,
+    d99(r.paidYtdCents),
+    r.paymentCount,
+    r.overThreshold ? 'Y' : 'N',
+    r.missingCurrentW9 ? 'Y' : 'N',
+    r.missingTaxId ? 'Y' : 'N',
+  ]);
+
   return (
     <AppShell>
       <main className="mx-auto max-w-5xl">
@@ -72,9 +85,14 @@ export default async function Tax1099WorksheetPage({
           subtitle="Non-corp vendors paid this year, biggest first. Red badges = IRS-blocker (no W-9 or no TIN)."
         />
 
+        <div className="mb-4 flex justify-end gap-2 print:hidden">
+          <PrintButton />
+          <StatementCsvButton filename={`1099-worksheet_${year}.csv`} headers={nineNineHeaders} rows={nineNineRows} />
+        </div>
+
         <form
           action="/1099-worksheet"
-          className="mb-4 flex flex-wrap items-end gap-3 rounded-md border border-gray-200 bg-white p-3"
+          className="mb-4 flex flex-wrap items-end gap-3 rounded-md border border-gray-200 bg-white p-3 print:hidden"
         >
           <label className="block text-xs">
             <span className="mb-1 block font-medium text-gray-700">Tax year</span>
