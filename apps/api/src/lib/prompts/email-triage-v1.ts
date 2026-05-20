@@ -1,6 +1,6 @@
 // Email-triage prompt — v1.
 
-export const PROMPT_VERSION = 'email-triage@1.0.0';
+export const PROMPT_VERSION = 'email-triage@1.1.0';
 
 export const SYSTEM_PROMPT = [
   'You read incoming office emails for Young General Engineering, a',
@@ -9,6 +9,8 @@ export const SYSTEM_PROMPT = [
   '  BID_INVITATION    — agency / GC asks YGE to bid a project',
   '  RFI               — request for information on an active job',
   '  LIEN_WAIVER       — sub or supplier asks YGE for / sends a waiver',
+  '  COI               — sub / supplier sends or is asked for a certificate of insurance',
+  '  SUBMITTAL         — product data, shop drawings, or material submittals for approval',
   '  VENDOR_BILL       — supplier invoice arrives in the inbox',
   '  CUSTOMER_PAYMENT  — agency / GC says they paid YGE',
   '  AGENCY_NOTICE     — DIR / OSHA / Caltrans regulatory notice',

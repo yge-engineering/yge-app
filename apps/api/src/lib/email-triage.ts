@@ -11,6 +11,8 @@ const CategorySchema = z.enum([
   'BID_INVITATION',
   'RFI',
   'LIEN_WAIVER',
+  'COI',
+  'SUBMITTAL',
   'VENDOR_BILL',
   'CUSTOMER_PAYMENT',
   'AGENCY_NOTICE',

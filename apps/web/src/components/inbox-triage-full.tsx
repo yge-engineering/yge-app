@@ -17,6 +17,8 @@ interface TriagedMessage {
     | 'BID_INVITATION'
     | 'RFI'
     | 'LIEN_WAIVER'
+    | 'COI'
+    | 'SUBMITTAL'
     | 'VENDOR_BILL'
     | 'CUSTOMER_PAYMENT'
     | 'AGENCY_NOTICE'
@@ -38,6 +40,8 @@ const CATEGORY_LABELS: Record<TriagedMessage['category'], string> = {
   BID_INVITATION: 'Bid invitation',
   RFI: 'RFI',
   LIEN_WAIVER: 'Lien waiver',
+  COI: 'Insurance cert (COI)',
+  SUBMITTAL: 'Submittal',
   VENDOR_BILL: 'Vendor bill',
   CUSTOMER_PAYMENT: 'Customer payment',
   AGENCY_NOTICE: 'Agency notice',
@@ -54,6 +58,8 @@ const PRIORITY: TriagedMessage['category'][] = [
   'VENDOR_BILL',
   'RFI',
   'LIEN_WAIVER',
+  'COI',
+  'SUBMITTAL',
   'EMPLOYEE_HR',
   'INTERNAL',
   'OTHER',
