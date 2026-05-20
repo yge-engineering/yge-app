@@ -16,6 +16,7 @@ import {
 import { getTranslator, type Translator } from '../../lib/locale';
 import { requirePermission } from '../../lib/permissions';
 import { StatementCsvButton } from '../../components/statement-csv-button';
+import { PrintButton } from '../../components/print-button';
 import {
   AGING_BUCKETS,
   buildApAgingReport,
@@ -87,7 +88,7 @@ export default async function AgingPage({
           subtitle={t('aging.subtitle', { asOf })}
         />
 
-        <form action="/aging" className="mb-4 flex flex-wrap items-end gap-3 rounded-md border border-gray-200 bg-white p-3">
+        <form action="/aging" className="mb-4 flex flex-wrap items-end gap-3 rounded-md border border-gray-200 bg-white p-3 print:hidden">
           <label className="block text-xs">
             <span className="mb-1 block font-medium text-gray-700">{t('aging.asOfDate')}</span>
             <input
@@ -104,6 +105,10 @@ export default async function AgingPage({
             {t('aging.reload')}
           </button>
         </form>
+
+        <div className="mb-4 flex justify-end print:hidden">
+          <PrintButton />
+        </div>
 
         {/* Summary cards — net AR-AP exposure at a glance. */}
         <section className="mb-4 grid gap-3 sm:grid-cols-3">
