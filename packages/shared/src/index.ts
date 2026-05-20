@@ -82,6 +82,7 @@ export * from './qbo-parse';
 export * from './qbo-ar-import';
 export * from './qbo-ap-import';
 export * from './qbo-trial-balance-import';
+export * from './comparison-period';
 export * from './journal-entry';
 export * from './income-statement';
 export * from './balance-sheet';
