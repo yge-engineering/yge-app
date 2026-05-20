@@ -18,6 +18,7 @@ import {
 } from '../../components';
 import { getTranslator, type Translator } from '../../lib/locale';
 import { requirePermission } from '../../lib/permissions';
+import { PrintButton } from '../../components/print-button';
 import { StatementCsvButton } from '../../components/statement-csv-button';
 import {
   buildBalanceSheet,
@@ -114,7 +115,7 @@ export default async function BalanceSheetPage({
           }
         />
 
-        <form action="/balance-sheet" className="mb-4 flex flex-wrap items-end gap-3 rounded-md border border-gray-200 bg-white p-3">
+        <form action="/balance-sheet" className="mb-4 flex flex-wrap items-end gap-3 rounded-md border border-gray-200 bg-white p-3 print:hidden">
           <label className="block text-xs">
             <span className="mb-1 block font-medium text-gray-700">{t('bs.asOf')}</span>
             <input
@@ -153,7 +154,8 @@ export default async function BalanceSheetPage({
           </div>
         </form>
 
-        <div className="mb-4 flex justify-end">
+        <div className="mb-4 flex justify-end gap-2 print:hidden">
+          <PrintButton />
           <StatementCsvButton
             filename={`balance-sheet_${asOf}.csv`}
             headers={csvHeaders}

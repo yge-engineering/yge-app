@@ -14,6 +14,7 @@ import {
 } from '../../components';
 import { getTranslator } from '../../lib/locale';
 import { requirePermission } from '../../lib/permissions';
+import { PrintButton } from '../../components/print-button';
 import { StatementCsvButton } from '../../components/statement-csv-button';
 import {
   buildCashFlow,
@@ -123,7 +124,7 @@ export default async function CashFlowPage({
           subtitle={t('cf.subtitle')}
         />
 
-        <form action="/cash-flow" className="mb-4 flex flex-wrap items-end gap-3 rounded-md border border-gray-200 bg-white p-3">
+        <form action="/cash-flow" className="mb-4 flex flex-wrap items-end gap-3 rounded-md border border-gray-200 bg-white p-3 print:hidden">
           <label className="block text-xs">
             <span className="mb-1 block font-medium text-gray-700">{t('cf.periodStart')}</span>
             <input type="date" name="start" defaultValue={periodStart} className="rounded border border-gray-300 px-2 py-1 text-sm" />
@@ -163,7 +164,8 @@ export default async function CashFlowPage({
           </span>
         </form>
 
-        <div className="mb-4 flex justify-end">
+        <div className="mb-4 flex justify-end gap-2 print:hidden">
+          <PrintButton />
           <StatementCsvButton
             filename={`cash-flow_${periodStart}_${periodEnd}.csv`}
             headers={csvHeaders}

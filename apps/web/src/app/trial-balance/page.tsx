@@ -14,6 +14,7 @@ import {
 import { getTranslator } from '../../lib/locale';
 import { requirePermission } from '../../lib/permissions';
 import Link from 'next/link';
+import { PrintButton } from '../../components/print-button';
 import { StatementCsvButton } from '../../components/statement-csv-button';
 import {
   accountTypeLabel,
@@ -92,7 +93,8 @@ export default async function TrialBalancePage() {
           })()}
         </Alert>
 
-        <div className="mb-4 flex justify-end">
+        <div className="mb-4 flex justify-end gap-2 print:hidden">
+          <PrintButton />
           <StatementCsvButton filename="trial-balance.csv" headers={csvHeaders} rows={csvRows} />
         </div>
 

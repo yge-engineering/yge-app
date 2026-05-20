@@ -17,6 +17,7 @@ import {
 import { getTranslator, type Translator } from '../../lib/locale';
 import { requirePermission } from '../../lib/permissions';
 import Link from 'next/link';
+import { PrintButton } from '../../components/print-button';
 import { StatementCsvButton } from '../../components/statement-csv-button';
 import {
   buildIncomeStatement,
@@ -130,7 +131,7 @@ export default async function IncomeStatementPage({
           subtitle={t('is.subtitle')}
         />
 
-        <form action="/income-statement" className="mb-4 flex flex-wrap items-end gap-3 rounded-md border border-gray-200 bg-white p-3">
+        <form action="/income-statement" className="mb-4 flex flex-wrap items-end gap-3 rounded-md border border-gray-200 bg-white p-3 print:hidden">
           <label className="block text-xs">
             <span className="mb-1 block font-medium text-gray-700">{t('is.periodStart')}</span>
             <input type="date" name="start" defaultValue={periodStart} className="rounded border border-gray-300 px-2 py-1 text-sm" />
@@ -163,7 +164,8 @@ export default async function IncomeStatementPage({
           </div>
         </form>
 
-        <div className="mb-4 flex justify-end">
+        <div className="mb-4 flex justify-end gap-2 print:hidden">
+          <PrintButton />
           <StatementCsvButton
             filename={`income-statement_${periodStart}_${periodEnd}.csv`}
             headers={csvHeaders}
