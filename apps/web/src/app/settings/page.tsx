@@ -67,11 +67,12 @@ export default function SettingsPage() {
       blurb: t('settings.section.integrations.blurb'),
       status: 'planned',
       items: [
-        { label: 'QuickBooks Online', value: 'Planned for Phase 2' },
+        { label: 'QuickBooks Online', value: 'Import tools ready \u2014 accounts, customers, vendors, open AR/AP, trial balance.' },
         { label: 'DIR rate sync', value: 'Planned for Phase 1 — read https://docs.dir.ca.gov/dlsr/' },
         { label: 'Bluebeam (PDF plan editor)', value: 'Path A — bolt-on per project memory' },
         { label: 'Microsoft Graph (Outlook)', value: 'Planned for Phase 3' },
       ],
+      actions: [{ label: 'Open QuickBooks cutover', href: '/qbo-cutover' }],
     },
     {
       title: t('settings.section.dataExport'),
