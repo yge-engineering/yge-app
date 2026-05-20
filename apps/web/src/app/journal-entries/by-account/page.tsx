@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { AppShell, Money, PageHeader } from '../../../components';
 import { requirePermission } from '../../../lib/permissions';
 import { PrintButton } from '../../../components/print-button';
+import { StatementCsvButton } from '../../../components/statement-csv-button';
 import {
   accountTypeLabel,
   buildAccountLedger,
@@ -57,6 +58,20 @@ export default async function ByAccountPage({
       })
     : null;
 
+  const ledgerHeaders = ['Date', 'Entry', 'Memo', 'Source', 'Debit', 'Credit', 'Balance'];
+  const dl = (c: number) => (c / 100).toFixed(2);
+  const ledgerCsvRows: Array<Array<string | number>> = ledger
+    ? ledger.lines.map((l) => [
+        l.entryDate,
+        l.entryId,
+        l.lineMemo ? `${l.memo} · ${l.lineMemo}` : l.memo,
+        l.source,
+        dl(l.debitCents),
+        dl(l.creditCents),
+        dl(l.runningBalanceCents),
+      ])
+    : [];
+
   const sortedAccounts = [...accounts].sort((a, b) => a.number.localeCompare(b.number));
 
   return (
@@ -97,7 +112,8 @@ export default async function ByAccountPage({
           </button>
         </form>
 
-        <div className="mb-4 flex justify-end print:hidden">
+        <div className="mb-4 flex justify-end gap-2 print:hidden">
+          {ledger ? <StatementCsvButton filename={`account-${account}.csv`} headers={ledgerHeaders} rows={ledgerCsvRows} /> : null}
           <PrintButton />
         </div>
 
