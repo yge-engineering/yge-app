@@ -95,6 +95,9 @@ export default async function CoaPage({
           actions={
             <span className="flex gap-2">
               {empty ? <CoaSeedButton apiBaseUrl={publicApiBaseUrl()} /> : null}
+              <LinkButton href="/coa/import" variant="secondary" size="md">
+                Import from QuickBooks
+              </LinkButton>
               <LinkButton href="/coa/new" variant="primary" size="md">
                 {t('coa.addAccount')}
               </LinkButton>
