@@ -2,6 +2,7 @@
 // Customer master routes.
 
 import { Router } from 'express';
+import { z } from 'zod';
 import multer from 'multer';
 
 const upload = multer({ limits: { fileSize: 5 * 1024 * 1024 } });
@@ -9,7 +10,9 @@ import { prisma } from '@yge/db';
 import {
   CustomerCreateSchema,
   CustomerPatchSchema,
+  buildQboCustomerImport,
   customerKindLabel,
+  customerRowsFromCsv,
   type Customer,
 } from '@yge/shared';
 import {
@@ -538,6 +541,78 @@ customersRouter.patch('/:id', async (req, res, next) => {
     const updated = await updateCustomer(req.params.id, parsed.data);
     if (!updated) return res.status(404).json({ error: 'Customer not found' });
     return res.json({ customer: updated });
+  } catch (err) {
+    next(err);
+  }
+});
+
+
+/** QuickBooks Online customer import.
+ *
+ *  Body: { csv: string, dryRun?: boolean }. Dry run (default) returns the
+ *  full plan without writing; dryRun:false commits. Idempotent: any
+ *  customer whose legal name already exists (case-insensitive) is skipped,
+ *  so re-running never duplicates. */
+const QboCustomerImportBody = z.object({
+  csv: z.string().min(1).max(5_000_000),
+  dryRun: z.boolean().optional(),
+});
+
+customersRouter.post('/import-qbo', async (req, res, next) => {
+  try {
+    const parsed = QboCustomerImportBody.safeParse(req.body);
+    if (!parsed.success) {
+      return res
+        .status(400)
+        .json({ error: 'Validation failed', issues: parsed.error.issues });
+    }
+    const { csv, dryRun = true } = parsed.data;
+
+    const rows = customerRowsFromCsv(csv);
+    const plan = buildQboCustomerImport(rows);
+
+    const existing = await listCustomers();
+    const haveNames = new Set(existing.map((c) => c.legalName.trim().toLowerCase()));
+
+    const toCreate = plan.customers.filter(
+      (c) => !haveNames.has(c.legalName.trim().toLowerCase()),
+    );
+    const skipped = plan.customers.filter((c) =>
+      haveNames.has(c.legalName.trim().toLowerCase()),
+    );
+
+    const summary = {
+      parsedRows: rows.length,
+      mapped: plan.customers.length,
+      willCreate: toCreate.length,
+      willSkip: skipped.length,
+      warnings: plan.warnings.length,
+    };
+
+    if (dryRun) {
+      return res.json({
+        dryRun: true,
+        summary,
+        plan,
+        skipped: skipped.map((c) => ({ legalName: c.legalName })),
+      });
+    }
+
+    const created: Array<{ legalName: string; kind: string }> = [];
+    for (const c of toCreate) {
+      const { sourceName: _sourceName, ...customerCreate } = c;
+      void _sourceName;
+      const saved = await createCustomer(customerCreate);
+      created.push({ legalName: saved.legalName, kind: saved.kind });
+    }
+
+    return res.status(201).json({
+      dryRun: false,
+      summary: { ...summary, created: created.length },
+      created,
+      skipped: skipped.map((c) => ({ legalName: c.legalName })),
+      warnings: plan.warnings,
+    });
   } catch (err) {
     next(err);
   }
