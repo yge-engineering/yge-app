@@ -18,6 +18,7 @@ import {
 } from '../../components';
 import { getTranslator, type Translator } from '../../lib/locale';
 import { requirePermission } from '../../lib/permissions';
+import { StatementCsvButton } from '../../components/statement-csv-button';
 import {
   buildBalanceSheet,
   priorYearDate,
@@ -85,6 +86,21 @@ export default async function BalanceSheetPage({
   const eqTpl = t('bs.equation', { assets: '__ASSETS__', liabEq: '__LIABEQ__' });
   const eqParts = eqTpl.split(/__ASSETS__|__LIABEQ__/);
 
+  const csvHeaders = ['Section', 'Account #', 'Account', 'Amount'];
+  const csvRows: Array<Array<string | number>> = [];
+  const d = (cents: number) => (cents / 100).toFixed(2);
+  const pushSection = (lbl: string, sec: BalanceSheetSection) => {
+    for (const ln of sec.lines) csvRows.push([lbl, ln.accountNumber, ln.accountName, d(ln.amountCents)]);
+  };
+  pushSection('Assets', sheet.assets);
+  csvRows.push(['', '', 'Total assets', d(sheet.assets.totalCents)]);
+  pushSection('Liabilities', sheet.liabilities);
+  csvRows.push(['', '', 'Total liabilities', d(sheet.liabilities.totalCents)]);
+  pushSection('Equity', sheet.equity);
+  csvRows.push(['', '', 'Current period earnings', d(sheet.currentPeriodEarningsCents)]);
+  csvRows.push(['', '', 'Total equity', d(sheet.equity.totalCents + sheet.currentPeriodEarningsCents)]);
+  csvRows.push(['', '', 'Total liabilities + equity', d(sheet.totalLiabilitiesAndEquityCents)]);
+
   return (
     <AppShell>
       <main className="mx-auto max-w-5xl">
@@ -136,6 +152,14 @@ export default async function BalanceSheetPage({
             </a>
           </div>
         </form>
+
+        <div className="mb-4 flex justify-end">
+          <StatementCsvButton
+            filename={`balance-sheet_${asOf}.csv`}
+            headers={csvHeaders}
+            rows={csvRows}
+          />
+        </div>
 
         <Alert
           tone={sheet.inBalance ? 'success' : 'danger'}
