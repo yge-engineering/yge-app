@@ -3,6 +3,10 @@
 // Plain English: profit & loss for the period. Revenue − COGS = Gross
 // Profit, less overhead, plus other income, less other expense = Net
 // Income. Built from POSTED journal entries (drafts don't count).
+//
+// Optional ?compare=prior-period|prior-year adds a comparison column: we
+// rebuild the same statement for the comparison window and show the headline
+// totals side by side with dollar + percent variance.
 
 import {
   AppShell,
@@ -14,9 +18,13 @@ import { getTranslator, type Translator } from '../../lib/locale';
 import { requirePermission } from '../../lib/permissions';
 import {
   buildIncomeStatement,
+  comparisonPeriod,
   grossProfitMargin,
   netProfitMargin,
+  varianceCents,
+  variancePct,
   type Account,
+  type ComparisonMode,
   type IncomeStatementSection,
   type JournalEntry,
 } from '@yge/shared';
@@ -54,7 +62,7 @@ function defaultPeriod(): { start: string; end: string } {
 export default async function IncomeStatementPage({
   searchParams,
 }: {
-  searchParams: { start?: string; end?: string };
+  searchParams: { start?: string; end?: string; compare?: string };
 }) {
   const def = defaultPeriod();
   const periodStart = /^\d{4}-\d{2}-\d{2}$/.test(searchParams.start ?? '')
@@ -69,6 +77,19 @@ export default async function IncomeStatementPage({
   const gpm = grossProfitMargin(stmt);
   const npm = netProfitMargin(stmt);
   const t = getTranslator();
+
+  const compareRaw = searchParams.compare ?? '';
+  const compareMode: ComparisonMode | null =
+    compareRaw === 'prior-year'
+      ? 'PRIOR_YEAR'
+      : compareRaw === 'prior-period'
+        ? 'PRIOR_PERIOD'
+        : null;
+  const cmp = compareMode ? comparisonPeriod(periodStart, periodEnd, compareMode) : null;
+  const stmtPrior = cmp
+    ? buildIncomeStatement({ accounts, entries, periodStart: cmp.start, periodEnd: cmp.end })
+    : null;
+  const qs = `start=${periodStart}&end=${periodEnd}`;
 
   // Section heading lookup keyed by section.type so localized strings replace
   // the hard-coded English labels baked into buildIncomeStatement.
@@ -98,9 +119,28 @@ export default async function IncomeStatementPage({
             <span className="mb-1 block font-medium text-gray-700">{t('is.periodEnd')}</span>
             <input type="date" name="end" defaultValue={periodEnd} className="rounded border border-gray-300 px-2 py-1 text-sm" />
           </label>
+          <input type="hidden" name="compare" value={compareRaw} />
           <button type="submit" className="rounded-md bg-blue-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-800">
             {t('is.recalculate')}
           </button>
+          <div className="flex items-center gap-1 text-xs">
+            <span className="text-gray-500">Compare:</span>
+            {([['', 'None'], ['prior-period', 'Prior period'], ['prior-year', 'Prior year']] as const).map(
+              ([val, lbl]) => (
+                <a
+                  key={val || 'none'}
+                  href={`/income-statement?${qs}${val ? `&compare=${val}` : ''}`}
+                  className={`rounded px-2 py-1 font-medium ${
+                    compareRaw === val
+                      ? 'bg-blue-700 text-white'
+                      : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  {lbl}
+                </a>
+              ),
+            )}
+          </div>
         </form>
 
         <section className="mb-4 grid gap-3 sm:grid-cols-4">
@@ -113,6 +153,21 @@ export default async function IncomeStatementPage({
           />
           <Tile label={t('is.tile.margins')} value={`${(gpm * 100).toFixed(1)}% / ${(npm * 100).toFixed(1)}%`} />
         </section>
+
+        {stmtPrior && cmp && (
+          <ComparisonCard
+            label={compareMode === 'PRIOR_YEAR' ? 'Prior year' : 'Prior period'}
+            priorRange={`${cmp.start} → ${cmp.end}`}
+            rows={[
+              ['Revenue', stmt.revenue.totalCents, stmtPrior.revenue.totalCents],
+              ['COGS', stmt.cogs.totalCents, stmtPrior.cogs.totalCents],
+              ['Gross profit', stmt.grossProfitCents, stmtPrior.grossProfitCents],
+              ['Overhead', stmt.overhead.totalCents, stmtPrior.overhead.totalCents],
+              ['Operating income', stmt.operatingIncomeCents, stmtPrior.operatingIncomeCents],
+              ['Net income', stmt.netIncomeCents, stmtPrior.netIncomeCents],
+            ]}
+          />
+        )}
 
         <article className="rounded-md border border-gray-200 bg-white p-6">
           <header className="border-b border-gray-300 pb-2 text-center">
@@ -144,6 +199,55 @@ export default async function IncomeStatementPage({
         </article>
       </main>
     </AppShell>
+  );
+}
+
+function ComparisonCard({
+  label,
+  priorRange,
+  rows,
+}: {
+  label: string;
+  priorRange: string;
+  rows: Array<[string, number, number]>;
+}) {
+  return (
+    <section className="mb-4 rounded-md border border-gray-200 bg-white p-4 shadow-sm">
+      <div className="mb-2 flex items-baseline justify-between">
+        <h2 className="text-sm font-semibold text-gray-900">Period comparison</h2>
+        <span className="text-xs text-gray-500">{label}: {priorRange}</span>
+      </div>
+      <table className="w-full text-sm">
+        <thead className="text-xs uppercase tracking-wide text-gray-500">
+          <tr className="border-b border-gray-200">
+            <th className="py-1 text-left">Line</th>
+            <th className="py-1 text-right">This period</th>
+            <th className="py-1 text-right">{label}</th>
+            <th className="py-1 text-right">Δ $</th>
+            <th className="py-1 text-right">Δ %</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-100">
+          {rows.map(([name, cur, prior]) => {
+            const dv = varianceCents(cur, prior);
+            const dp = variancePct(cur, prior);
+            return (
+              <tr key={name}>
+                <td className="py-1">{name}</td>
+                <td className="py-1 text-right font-mono"><Money cents={cur} /></td>
+                <td className="py-1 text-right font-mono text-gray-500"><Money cents={prior} /></td>
+                <td className={`py-1 text-right font-mono ${dv < 0 ? 'text-red-700' : 'text-gray-900'}`}>
+                  <Money cents={dv} />
+                </td>
+                <td className={`py-1 text-right font-mono ${dp !== null && dp < 0 ? 'text-red-700' : 'text-gray-900'}`}>
+                  {dp === null ? '—' : `${dp >= 0 ? '+' : ''}${(dp * 100).toFixed(1)}%`}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </section>
   );
 }
 
