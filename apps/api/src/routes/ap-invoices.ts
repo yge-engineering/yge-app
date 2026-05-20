@@ -8,6 +8,8 @@ import {
   ApInvoicePatchSchema,
   ApInvoicePaySchema,
   ApInvoiceRejectSchema,
+  apRowsFromCsv,
+  buildQboApImport,
   csvDollars,
   type ApInvoice,
 } from '@yge/shared';
@@ -409,3 +411,82 @@ apInvoicesRouter.post('/draft-from-email', async (req, res, next) => {
   }
 });
 
+
+/** QuickBooks Online open A/P import. Body: { csv, dryRun? }. Dry run
+ *  (default) previews; dryRun:false commits. Idempotent: skips any bill
+ *  whose (vendor + bill number) — or (vendor + date + amount) when there is
+ *  no number — already exists. */
+const QboApImportBody = z.object({
+  csv: z.string().min(1).max(5_000_000),
+  dryRun: z.boolean().optional(),
+});
+
+function apDedupKey(vendorName: string, invoiceNumber: string | undefined, invoiceDate: string, totalCents: number): string {
+  const tail = invoiceNumber && invoiceNumber.length > 0
+    ? invoiceNumber.toLowerCase()
+    : `${invoiceDate}|${totalCents}`;
+  return `${vendorName.trim().toLowerCase()}::${tail}`;
+}
+
+apInvoicesRouter.post('/import-qbo', async (req, res, next) => {
+  try {
+    const parsed = QboApImportBody.safeParse(req.body);
+    if (!parsed.success) {
+      return res
+        .status(400)
+        .json({ error: 'Validation failed', issues: parsed.error.issues });
+    }
+    const { csv, dryRun = true } = parsed.data;
+
+    const rows = apRowsFromCsv(csv);
+    const plan = buildQboApImport(rows);
+
+    const existing = await listApInvoices();
+    const have = new Set(
+      existing.map((b) => apDedupKey(b.vendorName, b.invoiceNumber, b.invoiceDate, b.totalCents)),
+    );
+
+    const toCreate = plan.bills.filter(
+      (b) => !have.has(apDedupKey(b.vendorName, b.invoiceNumber, b.invoiceDate, b.totalCents ?? 0)),
+    );
+    const skipped = plan.bills.filter((b) =>
+      have.has(apDedupKey(b.vendorName, b.invoiceNumber, b.invoiceDate, b.totalCents ?? 0)),
+    );
+
+    const summary = {
+      parsedRows: rows.length,
+      mapped: plan.bills.length,
+      willCreate: toCreate.length,
+      willSkip: skipped.length,
+      warnings: plan.warnings.length,
+      totalOpenCents: plan.totalOpenCents,
+    };
+
+    if (dryRun) {
+      return res.json({
+        dryRun: true,
+        summary,
+        plan,
+        skipped: skipped.map((b) => ({ vendorName: b.vendorName, invoiceNumber: b.invoiceNumber ?? null })),
+      });
+    }
+
+    const created: Array<{ vendorName: string; totalCents: number }> = [];
+    for (const b of toCreate) {
+      const { sourceVendor: _sourceVendor, ...billCreate } = b;
+      void _sourceVendor;
+      const saved = await createApInvoice(billCreate);
+      created.push({ vendorName: saved.vendorName, totalCents: saved.totalCents });
+    }
+
+    return res.status(201).json({
+      dryRun: false,
+      summary: { ...summary, created: created.length },
+      created,
+      skipped: skipped.map((b) => ({ vendorName: b.vendorName, invoiceNumber: b.invoiceNumber ?? null })),
+      warnings: plan.warnings,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
