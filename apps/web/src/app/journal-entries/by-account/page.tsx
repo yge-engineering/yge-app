@@ -8,6 +8,7 @@
 import Link from 'next/link';
 import { AppShell, Money, PageHeader } from '../../../components';
 import { requirePermission } from '../../../lib/permissions';
+import { PrintButton } from '../../../components/print-button';
 import {
   accountTypeLabel,
   buildAccountLedger,
@@ -71,7 +72,7 @@ export default async function ByAccountPage({
           subtitle="The transactions behind an account balance. Pick an account and (optionally) a period to see the posted detail."
         />
 
-        <form action="/journal-entries/by-account" className="mb-4 flex flex-wrap items-end gap-3 rounded-md border border-gray-200 bg-white p-3">
+        <form action="/journal-entries/by-account" className="mb-4 flex flex-wrap items-end gap-3 rounded-md border border-gray-200 bg-white p-3 print:hidden">
           <label className="block text-xs">
             <span className="mb-1 block font-medium text-gray-700">Account</span>
             <select name="account" defaultValue={account} className="rounded border border-gray-300 px-2 py-1 text-sm">
@@ -95,6 +96,10 @@ export default async function ByAccountPage({
             Show ledger
           </button>
         </form>
+
+        <div className="mb-4 flex justify-end print:hidden">
+          <PrintButton />
+        </div>
 
         {!ledger ? (
           <div className="rounded-md border border-gray-200 bg-gray-50 p-6 text-sm text-gray-600">
