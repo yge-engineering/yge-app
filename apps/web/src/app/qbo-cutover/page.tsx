@@ -8,6 +8,22 @@ import Link from 'next/link';
 import { AppShell, PageHeader } from '../../components';
 import { requirePermission } from '../../lib/permissions';
 
+function apiBaseUrl(): string {
+  return process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+}
+
+async function fetchCount(pathname: string, key: string): Promise<number> {
+  try {
+    const res = await fetch(apiBaseUrl() + pathname, { cache: 'no-store' });
+    if (!res.ok) return 0;
+    const body = (await res.json()) as Record<string, unknown>;
+    const arr = body[key];
+    return Array.isArray(arr) ? arr.length : 0;
+  } catch {
+    return 0;
+  }
+}
+
 interface Step {
   n: number;
   title: string;
@@ -54,8 +70,15 @@ const STEPS: Step[] = [
   },
 ];
 
-export default function QboCutoverPage() {
+export default async function QboCutoverPage() {
   requirePermission('financials:view');
+  const [accounts, customers, vendors, arInvoices, apInvoices] = await Promise.all([
+    fetchCount('/api/coa', 'accounts'),
+    fetchCount('/api/customers', 'customers'),
+    fetchCount('/api/vendors', 'vendors'),
+    fetchCount('/api/ar-invoices', 'invoices'),
+    fetchCount('/api/ap-invoices', 'invoices'),
+  ]);
   return (
     <AppShell>
       <main className="mx-auto max-w-3xl">
@@ -69,6 +92,24 @@ export default function QboCutoverPage() {
           report to Excel and save it as CSV. Pick a single cutover date and use
           it for the A/R aging, A/P aging, and Trial Balance reports so the
           opening books tie out.
+        </div>
+
+        <div className="mb-4">
+          <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-gray-500">In your books now</div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+            {([
+              ['Accounts', accounts],
+              ['Customers', customers],
+              ['Vendors', vendors],
+              ['AR invoices', arInvoices],
+              ['AP invoices', apInvoices],
+            ] as Array<[string, number]>).map(([label, n]) => (
+              <div key={label} className="rounded border border-gray-200 bg-white p-2 text-center">
+                <div className="text-lg font-bold text-yge-blue-900">{n}</div>
+                <div className="text-[10px] uppercase tracking-wide text-gray-500">{label}</div>
+              </div>
+            ))}
+          </div>
         </div>
 
         <ol className="space-y-3">
