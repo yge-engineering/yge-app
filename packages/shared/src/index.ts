@@ -74,6 +74,7 @@ export * from './cert-watchlist';
 export * from './photo';
 export * from './cash-forecast';
 export * from './coa';
+export * from './qbo-coa-import';
 export * from './journal-entry';
 export * from './income-statement';
 export * from './balance-sheet';
