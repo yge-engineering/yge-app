@@ -95,6 +95,9 @@ export default async function JournalEntriesPage({
               <LinkButton href="/trial-balance" variant="secondary" size="md">
                 {t('je.trialBalance')}
               </LinkButton>
+              <LinkButton href="/journal-entries/import" variant="secondary" size="md">
+                Import from QuickBooks
+              </LinkButton>
               <LinkButton href="/journal-entries/new" variant="primary" size="md">
                 + New entry
               </LinkButton>
