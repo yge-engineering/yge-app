@@ -100,6 +100,14 @@ export default function QboCutoverPage() {
           A/R &amp; A/P control balances) so the balance sheet ties out. Review
           the draft opening journal entry and post it when you&apos;re ready.
         </div>
+
+        <div className="mt-3 rounded border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+          <strong>After importing open A/R:</strong> the invoices land on a
+          migration job. Move them onto their real YGE jobs at{' '}
+          <Link href="/ar-invoices/migration" className="font-semibold text-yge-blue-700 hover:underline">
+            Reassign imported A/R
+          </Link>.
+        </div>
       </main>
     </AppShell>
   );
