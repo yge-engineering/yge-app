@@ -5,6 +5,13 @@ import { requirePermission } from '../../lib/permissions';
 interface Report { area: string; name: string; href: string }
 
 const REPORTS: Report[] = [
+  { area: 'Financials', name: 'Income statement (P&L)', href: '/income-statement' },
+  { area: 'Financials', name: 'Balance sheet', href: '/balance-sheet' },
+  { area: 'Financials', name: 'Cash flow', href: '/cash-flow' },
+  { area: 'Financials', name: 'Trial balance', href: '/trial-balance' },
+  { area: 'Financials', name: 'AR / AP aging', href: '/aging' },
+  { area: 'Financials', name: 'WIP (work in progress)', href: '/wip' },
+  { area: 'Financials', name: 'Account ledger', href: '/journal-entries/by-account' },
   { area: 'Bid intel', name: 'By year', href: '/bid-results/by-year' },
   { area: 'Bid intel', name: 'By quarter', href: '/bid-results/by-quarter' },
   { area: 'Bid intel', name: 'By month', href: '/bid-results/by-month' },
