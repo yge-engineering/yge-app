@@ -15,6 +15,7 @@ import {
 } from '../../components';
 import { getTranslator, type Translator } from '../../lib/locale';
 import { requirePermission } from '../../lib/permissions';
+import { StatementCsvButton } from '../../components/statement-csv-button';
 import {
   AGING_BUCKETS,
   buildApAgingReport,
@@ -61,6 +62,22 @@ export default async function AgingPage({
   const ap = buildApAgingReport({ asOf, apInvoices });
   const netCents = ar.totalOpenCents - ap.totalOpenCents;
   const t = getTranslator();
+
+  const agHeaders = ['Party', 'Invoices', '0-30', '31-60', '61-90', '90+', 'Total open', 'Oldest (days)'];
+  const dd = (c: number) => (c / 100).toFixed(2);
+  const agRows = (rep: AgingReport): Array<Array<string | number>> =>
+    rep.byParty.map((pp) => [
+      pp.partyName,
+      pp.invoiceCount,
+      dd(pp.bucket0to30Cents),
+      dd(pp.bucket31to60Cents),
+      dd(pp.bucket61to90Cents),
+      dd(pp.bucket90PlusCents),
+      dd(pp.totalOpenCents),
+      pp.oldestDaysOverdue,
+    ]);
+  const arCsvRows = agRows(ar);
+  const apCsvRows = agRows(ap);
 
   return (
     <AppShell>
@@ -120,12 +137,18 @@ export default async function AgingPage({
         <section id="ar" className="scroll-mt-8">
           <h2 className="text-xl font-bold text-gray-900">{t('aging.ar.heading')}</h2>
           <p className="mt-1 text-sm text-gray-600">{t('aging.ar.body')}</p>
+          <div className="mt-2 flex justify-end print:hidden">
+            <StatementCsvButton filename={`ar-aging_${asOf}.csv`} headers={agHeaders} rows={arCsvRows} />
+          </div>
           <PartyTable side="AR" report={ar} partyHeader={t('aging.col.customer')} empty={t('aging.empty.ar')} t={t} />
         </section>
 
         <section id="ap" className="mt-12 scroll-mt-8">
           <h2 className="text-xl font-bold text-gray-900">{t('aging.ap.heading')}</h2>
           <p className="mt-1 text-sm text-gray-600">{t('aging.ap.body')}</p>
+          <div className="mt-2 flex justify-end print:hidden">
+            <StatementCsvButton filename={`ap-aging_${asOf}.csv`} headers={agHeaders} rows={apCsvRows} />
+          </div>
           <PartyTable side="AP" report={ap} partyHeader={t('aging.col.vendor')} empty={t('aging.empty.ap')} t={t} />
         </section>
       </main>
