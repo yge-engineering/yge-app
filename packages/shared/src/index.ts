@@ -79,6 +79,7 @@ export * from './qbo-coa-import-build';
 export * from './qbo-customer-import';
 export * from './qbo-vendor-import';
 export * from './qbo-parse';
+export * from './qbo-ar-import';
 export * from './journal-entry';
 export * from './income-statement';
 export * from './balance-sheet';
