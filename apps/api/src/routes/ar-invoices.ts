@@ -1,13 +1,16 @@
 // AR invoice routes — outgoing customer/agency bills.
 
 import { Router } from 'express';
+import { z } from 'zod';
 import {
   ArInvoiceBuildFromReportsSchema,
   ArInvoiceCreateSchema,
   ArInvoicePatchSchema,
   arInvoiceStatusLabel,
   arInvoiceSourceLabel,
+  arRowsFromCsv,
   arUnpaidBalanceCents,
+  buildQboArImport,
   computeArTotals,
   csvDollars,
   type ArInvoice,
@@ -149,6 +152,79 @@ arInvoicesRouter.post('/:id/build-from-daily-reports', async (req, res, next) =>
         unsubmittedReportsSkipped: built.unsubmittedReportsSkipped,
         hoursPerClassification: built.hoursPerClassification,
       },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+
+/** QuickBooks Online open A/R import. Body: { csv, dryRun?, jobId? }.
+ *  Dry run (default) previews; dryRun:false commits. Idempotent: skips any
+ *  invoice whose (customer name + invoice number) already exists. */
+const QboArImportBody = z.object({
+  csv: z.string().min(1).max(5_000_000),
+  dryRun: z.boolean().optional(),
+  jobId: z.string().max(120).optional(),
+});
+
+arInvoicesRouter.post('/import-qbo', async (req, res, next) => {
+  try {
+    const parsed = QboArImportBody.safeParse(req.body);
+    if (!parsed.success) {
+      return res
+        .status(400)
+        .json({ error: 'Validation failed', issues: parsed.error.issues });
+    }
+    const { csv, dryRun = true, jobId } = parsed.data;
+
+    const rows = arRowsFromCsv(csv);
+    const plan = buildQboArImport(rows, jobId ? { jobId } : {});
+
+    const existing = await listArInvoices();
+    const key = (customerName: string, invoiceNumber: string) =>
+      `${customerName.trim().toLowerCase()}::${invoiceNumber.trim().toLowerCase()}`;
+    const have = new Set(existing.map((i) => key(i.customerName, i.invoiceNumber)));
+
+    const toCreate = plan.invoices.filter((i) => !have.has(key(i.customerName, i.invoiceNumber)));
+    const skipped = plan.invoices.filter((i) => have.has(key(i.customerName, i.invoiceNumber)));
+
+    const summary = {
+      parsedRows: rows.length,
+      mapped: plan.invoices.length,
+      willCreate: toCreate.length,
+      willSkip: skipped.length,
+      warnings: plan.warnings.length,
+      totalOpenCents: plan.totalOpenCents,
+    };
+
+    if (dryRun) {
+      return res.json({
+        dryRun: true,
+        summary,
+        plan,
+        skipped: skipped.map((i) => ({ customerName: i.customerName, invoiceNumber: i.invoiceNumber })),
+      });
+    }
+
+    const created: Array<{ customerName: string; invoiceNumber: string; totalCents: number }> = [];
+    for (const i of toCreate) {
+      const { sourceCustomer: _sourceCustomer, ...invoiceCreate } = i;
+      void _sourceCustomer;
+      const saved = await createArInvoice(invoiceCreate);
+      created.push({
+        customerName: saved.customerName,
+        invoiceNumber: saved.invoiceNumber,
+        totalCents: saved.totalCents,
+      });
+    }
+
+    return res.status(201).json({
+      dryRun: false,
+      summary: { ...summary, created: created.length },
+      created,
+      skipped: skipped.map((i) => ({ customerName: i.customerName, invoiceNumber: i.invoiceNumber })),
+      warnings: plan.warnings,
     });
   } catch (err) {
     next(err);
