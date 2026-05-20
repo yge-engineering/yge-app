@@ -75,6 +75,7 @@ export * from './photo';
 export * from './cash-forecast';
 export * from './coa';
 export * from './qbo-coa-import';
+export * from './qbo-coa-import-build';
 export * from './journal-entry';
 export * from './income-statement';
 export * from './balance-sheet';
