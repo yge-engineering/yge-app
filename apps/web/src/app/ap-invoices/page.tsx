@@ -126,6 +126,9 @@ export default async function ApInvoicesPage({
               >
                 {t('ap.downloadCsv')}
               </a>
+              <LinkButton href="/ap-invoices/import" variant="secondary" size="md">
+                Import from QuickBooks
+              </LinkButton>
               <LinkButton href="/ap-invoices/new" variant="primary" size="md">
                 {t('ap.newInvoice')}
               </LinkButton>
