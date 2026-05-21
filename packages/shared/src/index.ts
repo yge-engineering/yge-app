@@ -84,6 +84,7 @@ export * from './qbo-ap-import';
 export * from './qbo-trial-balance-import';
 export * from './comparison-period';
 export * from './account-ledger';
+export * from './ar-invoice-posting';
 export * from './journal-entry';
 export * from './income-statement';
 export * from './balance-sheet';
