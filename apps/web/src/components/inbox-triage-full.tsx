@@ -34,6 +34,12 @@ interface TriagedMessage {
     confidence: 'high' | 'medium' | 'low';
     reasons: string[];
   } | null;
+  suggestedVendor: {
+    vendorId: string;
+    vendorName: string;
+    confidence: 'high' | 'medium' | 'low';
+    reasons: string[];
+  } | null;
 }
 
 const CATEGORY_LABELS: Record<TriagedMessage['category'], string> = {
@@ -254,6 +260,20 @@ export function InboxTriageFull({
                                 → {m.suggestedJob.projectName}
                                 <span className="ml-1 text-gray-500">
                                   ({m.suggestedJob.confidence})
+                                </span>
+                              </a>
+                            </div>
+                          ) : null}
+                          {m.suggestedVendor ? (
+                            <div className="mt-1 text-[11px]">
+                              <a
+                                href={`/vendors/${m.suggestedVendor.vendorId}`}
+                                className="text-yge-blue-700 underline"
+                                title={m.suggestedVendor.reasons.join('; ')}
+                              >
+                                → {m.suggestedVendor.vendorName}
+                                <span className="ml-1 text-gray-500">
+                                  ({m.suggestedVendor.confidence})
                                 </span>
                               </a>
                             </div>
