@@ -8,11 +8,11 @@ import {
   ArInvoicePatchSchema,
   arInvoiceStatusLabel,
   arInvoiceSourceLabel,
-  AR_POSTING_DEFAULTS,
   arRowsFromCsv,
   arUnpaidBalanceCents,
   buildArInvoiceJournalEntry,
   buildQboArImport,
+  resolvePostingAccounts,
   computeArTotals,
   csvDollars,
   type ArInvoice,
@@ -24,6 +24,7 @@ import {
   updateArInvoice,
 } from '../lib/ar-invoices-store';
 import { createJournalEntry, listJournalEntries } from '../lib/journal-entries-store';
+import { listAccounts } from '../lib/coa-store';
 import { listDailyReports } from '../lib/daily-reports-store';
 import { listEmployees } from '../lib/employees-store';
 import { buildArLineItemsFromReports } from '../lib/ar-build-from-reports';
@@ -255,18 +256,21 @@ arInvoicesRouter.post('/:id/post-to-gl', async (req, res, next) => {
       });
     }
 
+    const coa = await listAccounts();
+    const resolved = resolvePostingAccounts(coa);
     const { entry, warnings } = buildArInvoiceJournalEntry(invoice, {
-      arControl: AR_POSTING_DEFAULTS.arControl,
-      revenue: AR_POSTING_DEFAULTS.revenue,
-      salesTax: AR_POSTING_DEFAULTS.salesTax,
-      retentionReceivable: AR_POSTING_DEFAULTS.retentionReceivable,
+      arControl: resolved.arControl,
+      revenue: resolved.revenue,
+      ...(resolved.salesTax ? { salesTax: resolved.salesTax } : {}),
+      ...(resolved.arRetention ? { retentionReceivable: resolved.arRetention } : {}),
     });
+    const allWarnings = [...resolved.warnings, ...warnings];
     if (!entry) {
-      return res.status(400).json({ error: 'Cannot build a journal entry for this invoice.', warnings });
+      return res.status(400).json({ error: 'Cannot build a journal entry for this invoice.', warnings: allWarnings });
     }
 
     const saved = await createJournalEntry(entry);
-    return res.status(201).json({ journalEntryId: saved.id, status: saved.status, warnings });
+    return res.status(201).json({ journalEntryId: saved.id, status: saved.status, warnings: allWarnings });
   } catch (err) {
     next(err);
   }
