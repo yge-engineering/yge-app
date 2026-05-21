@@ -32,7 +32,13 @@ import {
 } from '../lib/email-triage';
 import { listJobs } from '../lib/jobs-store';
 import { listCustomers } from '../lib/customers-store';
-import { matchEmailToJob, type EmailJobCandidateJob } from '@yge/shared';
+import { listVendors } from '../lib/vendors-store';
+import {
+  matchEmailToJob,
+  matchEmailToVendor,
+  type EmailJobCandidateJob,
+  type EmailVendorCandidate,
+} from '@yge/shared';
 import {
   ensureMailFolder,
   jobFolderName,
@@ -370,9 +376,10 @@ microsoftRouter.post('/inbox-triage', async (req, res, next) => {
     }
 
     // Build the candidate-job list for the email→job matcher.
-    const [jobs, customers] = await Promise.all([
+    const [jobs, customers, vendors] = await Promise.all([
       listJobs(),
       listCustomers(),
+      listVendors(),
     ]);
     const customerById = new Map(customers.map((c) => [c.id, c]));
     const candidates: EmailJobCandidateJob[] = jobs.map((j) => {
@@ -388,6 +395,13 @@ microsoftRouter.post('/inbox-triage', async (req, res, next) => {
         customerEmail: cust?.email,
       };
     });
+
+    const vendorCandidates: EmailVendorCandidate[] = vendors.map((v) => ({
+      id: v.id,
+      legalName: v.legalName,
+      ...(v.dbaName ? { dbaName: v.dbaName } : {}),
+      ...(v.email ? { email: v.email } : {}),
+    }));
 
     // Map AI items back onto the source messages so the UI gets
     // subject + from + suggested-job in one shot.
@@ -406,6 +420,11 @@ microsoftRouter.post('/inbox-triage', async (req, res, next) => {
         match.jobId
           ? jobs.find((j) => j.id === match.jobId)
           : undefined;
+      const vmatch = matchEmailToVendor(
+        { subject: m.subject, fromAddress: m.fromAddress, fromName: m.fromName, bodyPreview: m.bodyPreview },
+        vendorCandidates,
+      );
+      const matchedVendor = vmatch.vendorId ? vendors.find((v) => v.id === vmatch.vendorId) : undefined;
       return {
         id: m.id,
         subject: m.subject,
@@ -422,6 +441,15 @@ microsoftRouter.post('/inbox-triage', async (req, res, next) => {
                 projectName: matchedJob.projectName,
                 confidence: match.confidence,
                 reasons: match.reasons,
+              }
+            : null,
+        suggestedVendor:
+          vmatch.vendorId && matchedVendor && vmatch.confidence !== 'none'
+            ? {
+                vendorId: vmatch.vendorId,
+                vendorName: matchedVendor.dbaName ?? matchedVendor.legalName,
+                confidence: vmatch.confidence,
+                reasons: vmatch.reasons,
               }
             : null,
       };
