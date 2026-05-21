@@ -6,6 +6,7 @@ import { AuditBinderPanel } from '../../../components';
 import type { ArInvoice, Job } from '@yge/shared';
 import { ArInvoiceEditor } from '@/components/ar-invoice-editor';
 import { ArInvoiceStatusBar } from '@/components/ar-invoice-status-bar';
+import { PostToGlButton } from '@/components/post-to-gl-button';
 import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
@@ -54,6 +55,7 @@ export default async function ArInvoiceDetailPage({
         initialStatus={invoice.status}
         sentAt={invoice.sentAt}
       />
+      <PostToGlButton apiBaseUrl={publicApiBaseUrl()} entity="ar-invoices" id={invoice.id} />
       <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <ArInvoiceEditor initial={invoice} jobs={jobs} apiBaseUrl={publicApiBaseUrl()} />
       </div>
