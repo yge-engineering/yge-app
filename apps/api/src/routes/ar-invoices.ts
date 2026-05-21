@@ -8,8 +8,10 @@ import {
   ArInvoicePatchSchema,
   arInvoiceStatusLabel,
   arInvoiceSourceLabel,
+  AR_POSTING_DEFAULTS,
   arRowsFromCsv,
   arUnpaidBalanceCents,
+  buildArInvoiceJournalEntry,
   buildQboArImport,
   computeArTotals,
   csvDollars,
@@ -21,6 +23,7 @@ import {
   listArInvoices,
   updateArInvoice,
 } from '../lib/ar-invoices-store';
+import { createJournalEntry, listJournalEntries } from '../lib/journal-entries-store';
 import { listDailyReports } from '../lib/daily-reports-store';
 import { listEmployees } from '../lib/employees-store';
 import { buildArLineItemsFromReports } from '../lib/ar-build-from-reports';
@@ -226,6 +229,44 @@ arInvoicesRouter.post('/import-qbo', async (req, res, next) => {
       skipped: skipped.map((i) => ({ customerName: i.customerName, invoiceNumber: i.invoiceNumber })),
       warnings: plan.warnings,
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+
+/** Generate a DRAFT general-ledger entry from this AR invoice (Debit A/R +
+ *  retention, Credit revenue + tax). Idempotent: refuses if a non-voided
+ *  AR_INVOICE entry already references this invoice. The office reviews the
+ *  draft and posts it. */
+arInvoicesRouter.post('/:id/post-to-gl', async (req, res, next) => {
+  try {
+    const invoice = await getArInvoice(req.params.id);
+    if (!invoice) return res.status(404).json({ error: 'Invoice not found' });
+
+    const entries = await listJournalEntries();
+    const dup = entries.find(
+      (je) => je.source === 'AR_INVOICE' && je.sourceRef === invoice.id && je.status !== 'VOIDED',
+    );
+    if (dup) {
+      return res.status(409).json({
+        error: 'This invoice is already posted to the GL.',
+        journalEntryId: dup.id,
+      });
+    }
+
+    const { entry, warnings } = buildArInvoiceJournalEntry(invoice, {
+      arControl: AR_POSTING_DEFAULTS.arControl,
+      revenue: AR_POSTING_DEFAULTS.revenue,
+      salesTax: AR_POSTING_DEFAULTS.salesTax,
+      retentionReceivable: AR_POSTING_DEFAULTS.retentionReceivable,
+    });
+    if (!entry) {
+      return res.status(400).json({ error: 'Cannot build a journal entry for this invoice.', warnings });
+    }
+
+    const saved = await createJournalEntry(entry);
+    return res.status(201).json({ journalEntryId: saved.id, status: saved.status, warnings });
   } catch (err) {
     next(err);
   }
