@@ -11,6 +11,7 @@ import { notFound } from 'next/navigation';
 import type { ApInvoice, Job } from '@yge/shared';
 import { ApInvoiceEditor } from '@/components/ap-invoice-editor';
 import { ApInvoiceStatusBar } from '@/components/ap-invoice-status-bar';
+import { PostToGlButton } from '@/components/post-to-gl-button';
 import { getTranslator } from '../../../lib/locale';
 
 function apiBaseUrl(): string {
@@ -88,6 +89,7 @@ export default async function ApInvoiceDetailPage({
         approvedAt={invoice.approvedAt}
         paidAt={invoice.paidAt}
       />
+      <PostToGlButton apiBaseUrl={publicApiBaseUrl()} entity="ap-invoices" id={invoice.id} />
       <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <ApInvoiceEditor initial={invoice} jobs={jobs} apiBaseUrl={publicApiBaseUrl()} />
       </div>
