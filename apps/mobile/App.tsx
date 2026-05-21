@@ -8,6 +8,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import TodayScreen from './src/screens/today-screen';
 import DailyReportsScreen from './src/screens/daily-reports-screen';
+import TimeCardsScreen from './src/screens/time-cards-screen';
 import DashboardScreen from './src/screens/dashboard-screen';
 import JobsScreen from './src/screens/jobs-screen';
 import JobDetailScreen from './src/screens/job-detail-screen';
@@ -22,6 +23,7 @@ import { useTranslator } from './src/lib/use-translator';
 export type TodayStackParamList = {
   TodayHome: undefined;
   DailyReports: undefined;
+  TimeCards: undefined;
 };
 export type JobsStackParamList = {
   JobsList: undefined;
@@ -53,6 +55,7 @@ function TodayStackNav() {
     >
       <TodayStack.Screen name="TodayHome" component={TodayScreen} options={{ title: 'Today' }} />
       <TodayStack.Screen name="DailyReports" component={DailyReportsScreen} options={{ title: 'Daily reports' }} />
+      <TodayStack.Screen name="TimeCards" component={TimeCardsScreen} options={{ title: 'Time cards' }} />
     </TodayStack.Navigator>
   );
 }
