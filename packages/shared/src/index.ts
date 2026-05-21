@@ -86,6 +86,7 @@ export * from './comparison-period';
 export * from './account-ledger';
 export * from './ar-invoice-posting';
 export * from './ap-invoice-posting';
+export * from './posting-account-resolver';
 export * from './journal-entry';
 export * from './income-statement';
 export * from './balance-sheet';
