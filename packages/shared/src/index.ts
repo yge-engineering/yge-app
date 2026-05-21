@@ -87,6 +87,7 @@ export * from './account-ledger';
 export * from './ar-invoice-posting';
 export * from './ap-invoice-posting';
 export * from './posting-account-resolver';
+export * from './email-vendor-match';
 export * from './journal-entry';
 export * from './income-statement';
 export * from './balance-sheet';
