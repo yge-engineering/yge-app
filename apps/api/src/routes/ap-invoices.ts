@@ -8,7 +8,9 @@ import {
   ApInvoicePatchSchema,
   ApInvoicePaySchema,
   ApInvoiceRejectSchema,
+  AP_POSTING_DEFAULTS,
   apRowsFromCsv,
+  buildApInvoiceJournalEntry,
   buildQboApImport,
   csvDollars,
   type ApInvoice,
@@ -22,6 +24,7 @@ import {
   rejectApInvoice,
   updateApInvoice,
 } from '../lib/ap-invoices-store';
+import { createJournalEntry, listJournalEntries } from '../lib/journal-entries-store';
 import { maybeCsv } from '../lib/csv-response';
 import { graphGet, graphGetBinary, isMicrosoftConfigured } from '../lib/microsoft-graph';
 import { extractInvoiceFromPdf } from '../lib/ap-invoice-extractor';
@@ -486,6 +489,41 @@ apInvoicesRouter.post('/import-qbo', async (req, res, next) => {
       skipped: skipped.map((b) => ({ vendorName: b.vendorName, invoiceNumber: b.invoiceNumber ?? null })),
       warnings: plan.warnings,
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+
+/** Generate a DRAFT general-ledger entry from this AP bill (Debit expense by
+ *  line GL code, Credit A/P). Idempotent: refuses if a non-voided AP_INVOICE
+ *  entry already references this bill. */
+apInvoicesRouter.post('/:id/post-to-gl', async (req, res, next) => {
+  try {
+    const invoice = await getApInvoice(req.params.id);
+    if (!invoice) return res.status(404).json({ error: 'Bill not found' });
+
+    const entries = await listJournalEntries();
+    const dup = entries.find(
+      (je) => je.source === 'AP_INVOICE' && je.sourceRef === invoice.id && je.status !== 'VOIDED',
+    );
+    if (dup) {
+      return res.status(409).json({
+        error: 'This bill is already posted to the GL.',
+        journalEntryId: dup.id,
+      });
+    }
+
+    const { entry, warnings } = buildApInvoiceJournalEntry(invoice, {
+      apControl: AP_POSTING_DEFAULTS.apControl,
+      defaultExpense: AP_POSTING_DEFAULTS.defaultExpense,
+    });
+    if (!entry) {
+      return res.status(400).json({ error: 'Cannot build a journal entry for this bill.', warnings });
+    }
+
+    const saved = await createJournalEntry(entry);
+    return res.status(201).json({ journalEntryId: saved.id, status: saved.status, warnings });
   } catch (err) {
     next(err);
   }
