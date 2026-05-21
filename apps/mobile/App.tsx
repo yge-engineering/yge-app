@@ -11,6 +11,7 @@ import DailyReportsScreen from './src/screens/daily-reports-screen';
 import TimeCardsScreen from './src/screens/time-cards-screen';
 import ToolboxTalksScreen from './src/screens/toolbox-talks-screen';
 import PunchListScreen from './src/screens/punch-list-screen';
+import ChangeOrdersScreen from './src/screens/change-orders-screen';
 import DashboardScreen from './src/screens/dashboard-screen';
 import JobsScreen from './src/screens/jobs-screen';
 import JobDetailScreen from './src/screens/job-detail-screen';
@@ -28,6 +29,7 @@ export type TodayStackParamList = {
   TimeCards: undefined;
   Safety: undefined;
   PunchList: undefined;
+  ChangeOrders: undefined;
 };
 export type JobsStackParamList = {
   JobsList: undefined;
@@ -62,6 +64,7 @@ function TodayStackNav() {
       <TodayStack.Screen name="TimeCards" component={TimeCardsScreen} options={{ title: 'Time cards' }} />
       <TodayStack.Screen name="Safety" component={ToolboxTalksScreen} options={{ title: 'Safety meetings' }} />
       <TodayStack.Screen name="PunchList" component={PunchListScreen} options={{ title: 'Punch list' }} />
+      <TodayStack.Screen name="ChangeOrders" component={ChangeOrdersScreen} options={{ title: 'Change orders' }} />
     </TodayStack.Navigator>
   );
 }
