@@ -8,10 +8,10 @@ import {
   ApInvoicePatchSchema,
   ApInvoicePaySchema,
   ApInvoiceRejectSchema,
-  AP_POSTING_DEFAULTS,
   apRowsFromCsv,
   buildApInvoiceJournalEntry,
   buildQboApImport,
+  resolvePostingAccounts,
   csvDollars,
   type ApInvoice,
 } from '@yge/shared';
@@ -25,6 +25,7 @@ import {
   updateApInvoice,
 } from '../lib/ap-invoices-store';
 import { createJournalEntry, listJournalEntries } from '../lib/journal-entries-store';
+import { listAccounts } from '../lib/coa-store';
 import { maybeCsv } from '../lib/csv-response';
 import { graphGet, graphGetBinary, isMicrosoftConfigured } from '../lib/microsoft-graph';
 import { extractInvoiceFromPdf } from '../lib/ap-invoice-extractor';
@@ -514,16 +515,19 @@ apInvoicesRouter.post('/:id/post-to-gl', async (req, res, next) => {
       });
     }
 
+    const coa = await listAccounts();
+    const resolved = resolvePostingAccounts(coa);
     const { entry, warnings } = buildApInvoiceJournalEntry(invoice, {
-      apControl: AP_POSTING_DEFAULTS.apControl,
-      defaultExpense: AP_POSTING_DEFAULTS.defaultExpense,
+      apControl: resolved.apControl,
+      defaultExpense: resolved.defaultExpense,
     });
+    const allWarnings = [...resolved.warnings, ...warnings];
     if (!entry) {
-      return res.status(400).json({ error: 'Cannot build a journal entry for this bill.', warnings });
+      return res.status(400).json({ error: 'Cannot build a journal entry for this bill.', warnings: allWarnings });
     }
 
     const saved = await createJournalEntry(entry);
-    return res.status(201).json({ journalEntryId: saved.id, status: saved.status, warnings });
+    return res.status(201).json({ journalEntryId: saved.id, status: saved.status, warnings: allWarnings });
   } catch (err) {
     next(err);
   }
