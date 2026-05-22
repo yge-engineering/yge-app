@@ -229,6 +229,29 @@ export default function TodayScreen() {
         <Text style={{ fontSize: 18, color: '#1e40af' }}>→</Text>
       </Pressable>
 
+      <Pressable
+        onPress={() => navigation.navigate('PhotoCapture')}
+        style={{
+          marginBottom: 12,
+          padding: 14,
+          borderRadius: 8,
+          borderWidth: 1,
+          borderColor: '#bfdbfe',
+          backgroundColor: '#eff6ff',
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <View>
+          <Text style={{ fontSize: 14, fontWeight: '700', color: '#1e40af' }}>📸 Add photo</Text>
+          <Text style={{ fontSize: 12, color: '#3b82f6', marginTop: 2 }}>
+            Snap a job-site photo
+          </Text>
+        </View>
+        <Text style={{ fontSize: 18, color: '#1e40af' }}>→</Text>
+      </Pressable>
+
       {!loading && items.length === 0 && !error && (
         <View style={[styles.card, { borderColor: '#e5e7eb' }]}>
           <Text style={{ color: '#475569', fontSize: 14 }}>
