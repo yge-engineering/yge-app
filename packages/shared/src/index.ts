@@ -790,3 +790,4 @@ export * from './email-job-match';
 export * from './cash-flow';
 export * from './ofx-parser';
 export * from './gl-posting-status';
+export * from './equipment-inspection';
