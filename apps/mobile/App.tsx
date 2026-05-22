@@ -15,6 +15,7 @@ import ChangeOrdersScreen from './src/screens/change-orders-screen';
 import RfisScreen from './src/screens/rfis-screen';
 import PhotoCaptureScreen from './src/screens/photo-capture-screen';
 import SubmittalsScreen from './src/screens/submittals-screen';
+import WeatherLogsScreen from './src/screens/weather-logs-screen';
 import DashboardScreen from './src/screens/dashboard-screen';
 import JobsScreen from './src/screens/jobs-screen';
 import JobDetailScreen from './src/screens/job-detail-screen';
@@ -36,6 +37,7 @@ export type TodayStackParamList = {
   Rfis: undefined;
   PhotoCapture: undefined;
   Submittals: undefined;
+  Weather: undefined;
 };
 export type JobsStackParamList = {
   JobsList: undefined;
@@ -74,6 +76,7 @@ function TodayStackNav() {
       <TodayStack.Screen name="Rfis" component={RfisScreen} options={{ title: 'RFIs' }} />
       <TodayStack.Screen name="PhotoCapture" component={PhotoCaptureScreen} options={{ title: 'Add photo' }} />
       <TodayStack.Screen name="Submittals" component={SubmittalsScreen} options={{ title: 'Submittals' }} />
+      <TodayStack.Screen name="Weather" component={WeatherLogsScreen} options={{ title: 'Weather' }} />
     </TodayStack.Navigator>
   );
 }
