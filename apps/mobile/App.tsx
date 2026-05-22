@@ -14,6 +14,7 @@ import PunchListScreen from './src/screens/punch-list-screen';
 import ChangeOrdersScreen from './src/screens/change-orders-screen';
 import RfisScreen from './src/screens/rfis-screen';
 import PhotoCaptureScreen from './src/screens/photo-capture-screen';
+import SubmittalsScreen from './src/screens/submittals-screen';
 import DashboardScreen from './src/screens/dashboard-screen';
 import JobsScreen from './src/screens/jobs-screen';
 import JobDetailScreen from './src/screens/job-detail-screen';
@@ -34,6 +35,7 @@ export type TodayStackParamList = {
   ChangeOrders: undefined;
   Rfis: undefined;
   PhotoCapture: undefined;
+  Submittals: undefined;
 };
 export type JobsStackParamList = {
   JobsList: undefined;
@@ -71,6 +73,7 @@ function TodayStackNav() {
       <TodayStack.Screen name="ChangeOrders" component={ChangeOrdersScreen} options={{ title: 'Change orders' }} />
       <TodayStack.Screen name="Rfis" component={RfisScreen} options={{ title: 'RFIs' }} />
       <TodayStack.Screen name="PhotoCapture" component={PhotoCaptureScreen} options={{ title: 'Add photo' }} />
+      <TodayStack.Screen name="Submittals" component={SubmittalsScreen} options={{ title: 'Submittals' }} />
     </TodayStack.Navigator>
   );
 }
