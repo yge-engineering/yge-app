@@ -789,3 +789,4 @@ export * from './portal-user';
 export * from './email-job-match';
 export * from './cash-flow';
 export * from './ofx-parser';
+export * from './gl-posting-status';
