@@ -118,6 +118,9 @@ export default async function ArInvoicesPage({
               >
                 {t('ar.downloadCsv')}
               </a>
+              <LinkButton href="/gl-posting-status" variant="secondary" size="md">
+                GL posting status
+              </LinkButton>
               <LinkButton href="/ar-invoices/import" variant="secondary" size="md">
                 Import from QuickBooks
               </LinkButton>
