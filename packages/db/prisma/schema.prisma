@@ -1267,3 +1267,18 @@ model ApiError {
   @@index([statusCode, occurredAt])
   @@map("api_errors")
 }
+
+model EquipmentInspection {
+  id           String    @id
+  companyId    String
+  equipmentId  String
+  outOfService Boolean   @default(false)
+  data         Json
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  @@index([companyId, equipmentId])
+  @@index([companyId, outOfService])
+  @@map("equipment_inspections")
+}
