@@ -18,6 +18,7 @@ import {
   Tile,
 } from '../../components';
 import { requirePermission } from '../../lib/permissions';
+import { StatementCsvButton } from '../../components/statement-csv-button';
 import {
   buildGlPostingStatus,
   type GlPostingInvoiceInput,
@@ -87,6 +88,14 @@ export default async function GlPostingStatusPage({
   // DataTable infers its row type from `rows` and needs an `id`; derive a
   // stable one so inference resolves to the full row shape.
   const tableRows = visible.map((r) => ({ ...r, id: `${r.kind}-${r.invoiceId}` }));
+  const csvRows: Array<Array<string | number>> = summary.rows.map((r) => [
+    r.kind,
+    r.invoiceNumber,
+    r.party,
+    (r.totalCents / 100).toFixed(2),
+    r.invoiceStatus,
+    r.glState,
+  ]);
 
   function buildHref(state: string): string {
     return state === 'all' ? '/gl-posting-status' : `/gl-posting-status?state=${state}`;
@@ -99,9 +108,16 @@ export default async function GlPostingStatusPage({
           title="GL posting status"
           subtitle="Which AR and AP invoices still need a journal entry. Unposted invoices float to the top — open the invoice and use Post to GL to clear them."
           actions={
-            <LinkButton href="/journal-entries" variant="secondary" size="md">
-              Journal entries
-            </LinkButton>
+            <span className="flex gap-2">
+              <StatementCsvButton
+                filename="gl-posting-status.csv"
+                headers={['Type', 'Invoice', 'Customer / Vendor', 'Amount', 'Invoice status', 'GL state']}
+                rows={csvRows}
+              />
+              <LinkButton href="/journal-entries" variant="secondary" size="md">
+                Journal entries
+              </LinkButton>
+            </span>
           }
         />
 
