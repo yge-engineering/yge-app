@@ -12,6 +12,7 @@ import { cacheGet, cacheSet } from '../lib/cache';
 import { useIsTablet } from '../lib/use-is-tablet';
 import { ErrorCard } from '../components/error-card';
 import { useTranslator } from '../lib/use-translator';
+import { MoneyPosition } from '../components/money-position';
 
 interface EstimateLite {
   id: string;
@@ -188,6 +189,8 @@ export default function DashboardScreen() {
           ))}
         </>
       )}
+
+      <MoneyPosition />
 
       {!loading && !error && estimates.length === 0 && (
         <View style={[styles.card, { borderColor: '#e5e7eb' }]}>
