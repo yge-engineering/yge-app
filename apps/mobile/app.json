@@ -38,6 +38,15 @@
     },
     "updates": {
       "fallbackToCacheTimeout": 0
-    }
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "YGE attaches job-site photos to daily reports and the job record.",
+          "cameraPermission": "YGE uses the camera to take job-site photos."
+        }
+      ]
+    ]
   }
 }

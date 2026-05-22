@@ -79,3 +79,31 @@ export async function postJson<T>(pathname: string, body: unknown): Promise<T> {
   }
   return (await res.json()) as T;
 }
+
+
+/**
+ * Upload photo bytes to POST /api/photos/upload as multipart form-data,
+ * carrying the same bearer auth as the JSON helpers. Returns the storage
+ * reference (objectKey) to attach via POST /api/photos. React Native's
+ * FormData accepts a { uri, name, type } file part; we do not set
+ * Content-Type so fetch adds the multipart boundary itself.
+ */
+export async function uploadPhotoBytes(file: {
+  uri: string;
+  name: string;
+  type: string;
+}): Promise<{ reference: string; signedUrl?: string }> {
+  const base = await getApiBaseUrl();
+  const form = new FormData();
+  form.append('file', { uri: file.uri, name: file.name, type: file.type } as unknown as Blob);
+  const res = await fetch(`${base}/api/photos/upload`, {
+    method: 'POST',
+    headers: { Accept: 'application/json', ...(await authHeader()) },
+    body: form,
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Upload ${res.status}: ${text || 'failed'}`);
+  }
+  return (await res.json()) as { reference: string; signedUrl?: string };
+}
