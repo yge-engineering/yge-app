@@ -19,6 +19,7 @@ import {
 } from '../../components';
 import { getTranslator } from '../../lib/locale';
 import { requirePermission } from '../../lib/permissions';
+import { StatementCsvButton } from '../../components/statement-csv-button';
 import {
   computeJournalEntryRollup,
   isBalanced,
@@ -83,6 +84,14 @@ export default async function JournalEntriesPage({
     return q ? `/journal-entries?${q}` : '/journal-entries';
   }
   const t = getTranslator();
+  const csvRows: Array<Array<string | number>> = all.map((j) => [
+    j.entryDate,
+    j.memo ?? '',
+    journalEntrySourceLabel(j.source),
+    journalEntryStatusLabel(j.status),
+    j.lines.length,
+    (totalDebitCents(j) / 100).toFixed(2),
+  ]);
 
   return (
     <AppShell>
@@ -92,6 +101,11 @@ export default async function JournalEntriesPage({
           subtitle={t('je.subtitle')}
           actions={
             <div className="flex items-center gap-2">
+              <StatementCsvButton
+                filename="journal-entries.csv"
+                headers={['Date', 'Memo', 'Source', 'Status', 'Lines', 'Total']}
+                rows={csvRows}
+              />
               <LinkButton href="/gl-posting-status" variant="secondary" size="md">
                 Posting status
               </LinkButton>
