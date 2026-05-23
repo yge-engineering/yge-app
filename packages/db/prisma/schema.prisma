@@ -1299,3 +1299,18 @@ model PlanTakeoff {
   @@index([companyId, planRef])
   @@map("plan_takeoffs")
 }
+
+model Jsa {
+  id        String    @id
+  companyId String
+  jobId     String
+  workDate  String
+  data      Json
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([companyId, jobId])
+  @@index([companyId, workDate])
+  @@map("jsas")
+}
