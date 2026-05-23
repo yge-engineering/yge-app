@@ -13,6 +13,7 @@
     "@simplewebauthn/browser": "^11.0.0",
     "@yge/shared": "workspace:*",
     "next": "^14.2.0",
+    "pdfjs-dist": "^5.7.284",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
     "zod": "^3.22.4"
