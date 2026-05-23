@@ -9,8 +9,13 @@ import { notFound } from 'next/navigation';
 
 import { AppShell, PageHeader } from '../../../components';
 import { PlanViewer } from '../../../components/plan-viewer';
+import { PlanEditor } from '../../../components/plan-editor';
 import { requirePermission } from '../../../lib/permissions';
 import type { PlanTakeoff } from '@yge/shared';
+
+function publicApiBaseUrl(): string {
+  return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+}
 
 function apiBaseUrl(): string {
   return (
@@ -65,7 +70,11 @@ export default async function PlanTakeoffDetailPage({
             </span>
           ) : null}
         </div>
-        <PlanViewer url={pdfUrl} />
+        {takeoff ? (
+          <PlanEditor takeoff={takeoff} apiBaseUrl={publicApiBaseUrl()} />
+        ) : (
+          <PlanViewer url={pdfUrl} />
+        )}
         {!takeoff && overrideUrl ? (
           <p className="mt-3 text-xs text-gray-500">
             Viewing via <code className="font-mono">?url=</code> override — no takeoff record loaded.
