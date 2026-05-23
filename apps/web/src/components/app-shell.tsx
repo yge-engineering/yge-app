@@ -147,6 +147,7 @@ const NAV_SPEC: NavGroupSpec[] = [
       { key: 'nav.estimates', href: '/estimates', requires: 'estimates:view' },
       { key: 'nav.planTakeoffs', href: '/plan-takeoffs', requires: 'estimates:view' },
       { key: 'nav.bidResults', href: '/bid-results', requires: 'estimates:view' },
+      { key: 'nav.bidNoBidCoach', href: '/bid-no-bid-coach', requires: 'estimates:view' },
       { key: 'nav.changeOrders', href: '/change-orders' },
       { key: 'nav.rfis', href: '/rfis' },
       { key: 'nav.submittals', href: '/submittals' },
