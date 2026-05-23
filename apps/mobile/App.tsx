@@ -18,6 +18,7 @@ import SubmittalsScreen from './src/screens/submittals-screen';
 import WeatherLogsScreen from './src/screens/weather-logs-screen';
 import ToolsScreen from './src/screens/tools-screen';
 import SwpppScreen from './src/screens/swppp-screen';
+import EquipmentInspectionsScreen from './src/screens/equipment-inspections-screen';
 import DashboardScreen from './src/screens/dashboard-screen';
 import JobsScreen from './src/screens/jobs-screen';
 import JobDetailScreen from './src/screens/job-detail-screen';
@@ -42,6 +43,7 @@ export type TodayStackParamList = {
   Weather: undefined;
   Tools: undefined;
   Swppp: undefined;
+  EquipmentInspections: undefined;
 };
 export type JobsStackParamList = {
   JobsList: undefined;
@@ -83,6 +85,7 @@ function TodayStackNav() {
       <TodayStack.Screen name="Weather" component={WeatherLogsScreen} options={{ title: 'Weather' }} />
       <TodayStack.Screen name="Tools" component={ToolsScreen} options={{ title: 'Tools' }} />
       <TodayStack.Screen name="Swppp" component={SwpppScreen} options={{ title: 'SWPPP' }} />
+      <TodayStack.Screen name="EquipmentInspections" component={EquipmentInspectionsScreen} options={{ title: 'Equipment' }} />
     </TodayStack.Navigator>
   );
 }
