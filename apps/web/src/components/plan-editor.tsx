@@ -1,6 +1,17 @@
 'use client';
 
 // PlanEditor — interactive PDF viewer + measurement overlay.
+//
+// Tools shipped so far:
+//   - pan    : no-op overlay (canvas drag/scroll the underlying pane)
+//   - scale  : 2-click calibration, modal for real distance + unit, persists on sheet
+//   - length : 2-click line measurement (LF). Disabled until scale is set.
+//   - count  : click to stamp; clicks accumulate into a single "count group"
+//              until the user switches tools. Each click persists.
+//
+// All geometry is stored in plan-page coords (zoom-independent). The SVG
+// overlay's viewBox = the PDF page user-space, so e.clientX/Y → plan-page
+// coords via getScreenCTM().inverse().
 
 import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
 import {
@@ -10,24 +21,23 @@ import {
   type PDFDocumentProxy,
 } from 'pdfjs-dist';
 import {
+  defaultMeasurementColor,
   feetPerPlanUnit,
+  measurementValue,
+  newPlanMeasurementId,
   type PlanPoint,
   type PlanScale,
   type PlanSheetTakeoff,
   type PlanTakeoff,
   type ScaleUnit,
+  type TakeoffMeasurement,
 } from '@yge/shared';
 
 if (typeof window !== 'undefined' && !GlobalWorkerOptions.workerSrc) {
   GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsVersion}/pdf.worker.min.mjs`;
 }
 
-type Tool = 'pan' | 'scale';
-
-interface ScaleDraft {
-  pointA?: PlanPoint;
-  pointB?: PlanPoint;
-}
+type Tool = 'pan' | 'scale' | 'length' | 'count';
 
 interface Props {
   takeoff: PlanTakeoff;
@@ -47,10 +57,12 @@ export function PlanEditor({ takeoff: initial, apiBaseUrl }: Props) {
   const [loading, setLoading] = useState(true);
 
   const [tool, setTool] = useState<Tool>('pan');
-  const [scaleDraft, setScaleDraft] = useState<ScaleDraft>({});
+  const [scaleDraft, setScaleDraft] = useState<{ pointA?: PlanPoint; pointB?: PlanPoint }>({});
   const [scaleDialogOpen, setScaleDialogOpen] = useState(false);
   const [scaleDistance, setScaleDistance] = useState('');
   const [scaleUnit, setScaleUnit] = useState<ScaleUnit>('FT');
+  const [lengthDraft, setLengthDraft] = useState<{ pointA?: PlanPoint }>({});
+  const [activeCountId, setActiveCountId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -62,7 +74,9 @@ export function PlanEditor({ takeoff: initial, apiBaseUrl }: Props) {
     (s) => s.sheetIndex === sheetIndex,
   );
   const currentScale = currentSheet?.scale;
+  const currentMeasurements = currentSheet?.measurements ?? [];
 
+  // ---- PDF loading + render -------------------------------------------------
   useEffect(() => {
     let cancelled = false;
     setError(null);
@@ -85,9 +99,7 @@ export function PlanEditor({ takeoff: initial, apiBaseUrl }: Props) {
         setPageCount(doc.numPages);
         setPage(1);
       } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Failed to load PDF');
-        }
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load PDF');
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -115,9 +127,7 @@ export function PlanEditor({ takeoff: initial, apiBaseUrl }: Props) {
         if (!ctx) return;
         await pageObj.render({ canvas, canvasContext: ctx, viewport }).promise;
       } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Failed to render page');
-        }
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to render page');
       }
     })();
     return () => {
@@ -125,22 +135,68 @@ export function PlanEditor({ takeoff: initial, apiBaseUrl }: Props) {
     };
   }, [pdf, page, zoom]);
 
+  // ---- Tool helpers ---------------------------------------------------------
   function activateTool(next: Tool) {
     setTool(next);
     setScaleDraft({});
+    setLengthDraft({});
+    setActiveCountId(null);
     setSaveError(null);
   }
 
-  function handleOverlayClick(e: ReactMouseEvent<SVGSVGElement>) {
-    if (tool !== 'scale') return;
+  function svgPointFromEvent(e: ReactMouseEvent<SVGSVGElement>): PlanPoint | null {
     const svg = e.currentTarget;
     const pt = svg.createSVGPoint();
     pt.x = e.clientX;
     pt.y = e.clientY;
     const ctm = svg.getScreenCTM();
-    if (!ctm) return;
+    if (!ctm) return null;
     const planPt = pt.matrixTransform(ctm.inverse());
-    const point: PlanPoint = { x: planPt.x, y: planPt.y };
+    return { x: planPt.x, y: planPt.y };
+  }
+
+  /** PATCH the current sheet via a sheet-updater fn. Returns the saved takeoff
+   *  on success, null on failure (saveError is set). */
+  async function patchCurrentSheet(
+    updater: (sheet: PlanSheetTakeoff) => PlanSheetTakeoff,
+  ): Promise<PlanTakeoff | null> {
+    const newSheets: PlanSheetTakeoff[] = takeoff.sheets.map((s) => ({ ...s }));
+    const existingIdx = newSheets.findIndex((s) => s.sheetIndex === sheetIndex);
+    if (existingIdx >= 0) {
+      const existing = newSheets[existingIdx];
+      if (existing) newSheets[existingIdx] = updater(existing);
+    } else {
+      newSheets.push(updater({ sheetIndex, measurements: [] }));
+    }
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const res = await fetch(
+        `${apiBaseUrl}/api/plan-takeoffs/${encodeURIComponent(takeoff.id)}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sheets: newSheets }),
+        },
+      );
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        setSaveError(body.error ?? `Save failed (${res.status})`);
+        return null;
+      }
+      const body = (await res.json()) as { takeoff: PlanTakeoff };
+      setTakeoff(body.takeoff);
+      return body.takeoff;
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Save failed');
+      return null;
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // ---- Scale tool -----------------------------------------------------------
+  function handleScaleClick(point: PlanPoint) {
     if (!scaleDraft.pointA) {
       setScaleDraft({ pointA: point });
     } else if (!scaleDraft.pointB) {
@@ -163,81 +219,119 @@ export function PlanEditor({ takeoff: initial, apiBaseUrl }: Props) {
       setSaveError('Enter a positive real-world distance.');
       return;
     }
-    setSaving(true);
-    setSaveError(null);
     const newScale: PlanScale = {
       pointA: scaleDraft.pointA,
       pointB: scaleDraft.pointB,
       realDistance: dist,
       realUnit: scaleUnit,
     };
-    const newSheets: PlanSheetTakeoff[] = takeoff.sheets.map((s) => ({ ...s }));
-    const existingIdx = newSheets.findIndex((s) => s.sheetIndex === sheetIndex);
-    if (existingIdx >= 0) {
-      const existing = newSheets[existingIdx];
-      if (existing) newSheets[existingIdx] = { ...existing, scale: newScale };
-    } else {
-      newSheets.push({ sheetIndex, scale: newScale, measurements: [] });
-    }
-    try {
-      const res = await fetch(
-        `${apiBaseUrl}/api/plan-takeoffs/${encodeURIComponent(takeoff.id)}`,
-        {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sheets: newSheets }),
-        },
-      );
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setSaveError(body.error ?? `Save failed (${res.status})`);
-        setSaving(false);
-        return;
-      }
-      const body = (await res.json()) as { takeoff: PlanTakeoff };
-      setTakeoff(body.takeoff);
+    const ok = await patchCurrentSheet((sheet) => ({ ...sheet, scale: newScale }));
+    if (ok) {
       setScaleDialogOpen(false);
       setScaleDraft({});
       setScaleDistance('');
       setTool('pan');
-    } catch (err) {
-      setSaveError(err instanceof Error ? err.message : 'Save failed');
-    } finally {
-      setSaving(false);
     }
   }
 
+  // ---- Length tool ----------------------------------------------------------
+  async function handleLengthClick(point: PlanPoint) {
+    if (!lengthDraft.pointA) {
+      setLengthDraft({ pointA: point });
+      return;
+    }
+    const a = lengthDraft.pointA;
+    setLengthDraft({});
+    const m: TakeoffMeasurement = {
+      id: newPlanMeasurementId(),
+      kind: 'LENGTH',
+      points: [a, point],
+      color: defaultMeasurementColor('LENGTH'),
+    };
+    await patchCurrentSheet((sheet) => ({
+      ...sheet,
+      measurements: [...sheet.measurements, m],
+    }));
+  }
+
+  // ---- Count tool -----------------------------------------------------------
+  async function handleCountClick(point: PlanPoint) {
+    if (!activeCountId) {
+      const newId = newPlanMeasurementId();
+      setActiveCountId(newId);
+      const existingCounts = currentMeasurements.filter((m) => m.kind === 'COUNT').length;
+      const m: TakeoffMeasurement = {
+        id: newId,
+        kind: 'COUNT',
+        points: [point],
+        color: defaultMeasurementColor('COUNT'),
+        label: `Count ${existingCounts + 1}`,
+      };
+      await patchCurrentSheet((sheet) => ({
+        ...sheet,
+        measurements: [...sheet.measurements, m],
+      }));
+      return;
+    }
+    const id = activeCountId;
+    await patchCurrentSheet((sheet) => ({
+      ...sheet,
+      measurements: sheet.measurements.map((m) =>
+        m.id === id ? { ...m, points: [...m.points, point] } : m,
+      ),
+    }));
+  }
+
+  // ---- Overlay click dispatcher ---------------------------------------------
+  function handleOverlayClick(e: ReactMouseEvent<SVGSVGElement>) {
+    if (tool === 'pan') return;
+    const point = svgPointFromEvent(e);
+    if (!point) return;
+    if (tool === 'scale') handleScaleClick(point);
+    else if (tool === 'length') void handleLengthClick(point);
+    else if (tool === 'count') void handleCountClick(point);
+  }
+
+  // ---- Sheet rollup ---------------------------------------------------------
+  const totals = currentMeasurements.reduce<Record<string, number>>((acc, m) => {
+    const v = measurementValue(m, currentScale);
+    acc[v.unit] = (acc[v.unit] ?? 0) + v.value;
+    return acc;
+  }, {});
+
+  // ---- Render ---------------------------------------------------------------
   const strokePx = pageSize ? 2 / Math.max(zoom, 0.001) : 1;
+  const textPx = pageSize ? 12 / Math.max(zoom, 0.001) : 1;
+  const overlayActive = tool !== 'pan';
 
   return (
     <div className="rounded-md border border-gray-200 bg-white">
       <div className="flex flex-wrap items-center gap-2 border-b border-gray-200 bg-gray-50 px-3 py-2">
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => activateTool('pan')}
-            className={`rounded border px-2 py-1 text-xs ${
-              tool === 'pan'
-                ? 'border-blue-600 bg-blue-600 text-white'
-                : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            ✋ Pan
-          </button>
-          <button
-            type="button"
-            onClick={() => activateTool('scale')}
-            disabled={!pdf}
-            className={`rounded border px-2 py-1 text-xs ${
-              tool === 'scale'
-                ? 'border-red-600 bg-red-600 text-white'
-                : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-            } disabled:opacity-40`}
-            title="Click two points with a known real-world distance"
-          >
-            📏 Set scale
-          </button>
-        </div>
+        <ToolBtn label="✋ Pan" active={tool === 'pan'} onClick={() => activateTool('pan')} />
+        <ToolBtn
+          label="📏 Scale"
+          tone="red"
+          active={tool === 'scale'}
+          disabled={!pdf}
+          onClick={() => activateTool('scale')}
+          title="Click two points with a known real-world distance"
+        />
+        <ToolBtn
+          label="📐 Length"
+          tone="red"
+          active={tool === 'length'}
+          disabled={!pdf || !currentScale}
+          onClick={() => activateTool('length')}
+          title={currentScale ? 'Two-click line measurement' : 'Set a scale first'}
+        />
+        <ToolBtn
+          label="🔢 Count"
+          tone="blue"
+          active={tool === 'count'}
+          disabled={!pdf}
+          onClick={() => activateTool('count')}
+          title="Click to stamp items (catch basins, trees, signs…)"
+        />
         <span className="mx-2 h-4 w-px bg-gray-300" />
         <button
           type="button"
@@ -284,14 +378,28 @@ export function PlanEditor({ takeoff: initial, apiBaseUrl }: Props) {
         <span className="ml-auto text-xs text-gray-600">
           Scale:{' '}
           {currentScale ? (
-            <strong>
-              1 plan unit = {feetPerPlanUnit(currentScale).toFixed(4)} ft
-            </strong>
+            <strong>1 plan unit = {feetPerPlanUnit(currentScale).toFixed(4)} ft</strong>
           ) : (
             <em className="text-amber-700">not set on this sheet</em>
           )}
         </span>
       </div>
+
+      {/* Rollup row (per-sheet measurement totals) */}
+      {currentMeasurements.length > 0 ? (
+        <div className="flex flex-wrap items-center gap-3 border-b border-gray-200 bg-white px-3 py-1 text-[11px] text-gray-700">
+          <span className="font-semibold text-gray-500 uppercase tracking-wide">Sheet rollup:</span>
+          {Object.entries(totals).map(([unit, value]) => (
+            <span key={unit}>
+              <strong>{value.toFixed(unit === 'EA' ? 0 : 2)}</strong> {unit}
+            </span>
+          ))}
+          <span className="text-gray-500">·</span>
+          <span>{currentMeasurements.length} measurements</span>
+          {saving ? <span className="text-blue-700">saving…</span> : null}
+          {saveError ? <span className="text-red-700">{saveError}</span> : null}
+        </div>
+      ) : null}
 
       <div className="relative max-h-[80vh] overflow-auto bg-gray-100 p-4">
         {loading ? (
@@ -315,10 +423,16 @@ export function PlanEditor({ takeoff: initial, apiBaseUrl }: Props) {
                 onClick={handleOverlayClick}
                 className="absolute inset-0 h-full w-full"
                 style={{
-                  cursor: tool === 'scale' ? 'crosshair' : 'default',
-                  pointerEvents: tool === 'pan' ? 'none' : 'auto',
+                  cursor: overlayActive ? 'crosshair' : 'default',
+                  pointerEvents: overlayActive ? 'auto' : 'none',
                 }}
               >
+                {/* Saved measurements */}
+                {currentMeasurements.map((m) =>
+                  renderMeasurement(m, currentScale, strokePx, textPx),
+                )}
+
+                {/* Saved scale calibration line */}
                 {currentScale ? (
                   <g>
                     <line
@@ -334,6 +448,8 @@ export function PlanEditor({ takeoff: initial, apiBaseUrl }: Props) {
                     <circle cx={currentScale.pointB.x} cy={currentScale.pointB.y} r={strokePx * 3} fill="#dc2626" />
                   </g>
                 ) : null}
+
+                {/* Drafts */}
                 {scaleDraft.pointA ? (
                   <circle cx={scaleDraft.pointA.x} cy={scaleDraft.pointA.y} r={strokePx * 3} fill="#f59e0b" />
                 ) : null}
@@ -350,13 +466,22 @@ export function PlanEditor({ takeoff: initial, apiBaseUrl }: Props) {
                     <circle cx={scaleDraft.pointB.x} cy={scaleDraft.pointB.y} r={strokePx * 3} fill="#f59e0b" />
                   </g>
                 ) : null}
+                {lengthDraft.pointA ? (
+                  <circle cx={lengthDraft.pointA.x} cy={lengthDraft.pointA.y} r={strokePx * 3} fill={defaultMeasurementColor('LENGTH')} />
+                ) : null}
               </svg>
             ) : null}
-            {tool === 'scale' && !scaleDialogOpen ? (
+            {overlayActive && !scaleDialogOpen ? (
               <div className="pointer-events-none absolute left-2 top-2 rounded bg-amber-100 px-2 py-1 text-[11px] font-semibold text-amber-900 shadow">
-                {scaleDraft.pointA
-                  ? 'Click the second point of a known distance.'
-                  : 'Click the first point of a known distance.'}
+                {tool === 'scale'
+                  ? scaleDraft.pointA
+                    ? 'Click the second point of a known distance.'
+                    : 'Click the first point of a known distance.'
+                  : tool === 'length'
+                    ? lengthDraft.pointA
+                      ? 'Click the end of the line.'
+                      : 'Click the start of the line.'
+                    : 'Click to stamp. Switch tools to end this count group.'}
               </div>
             ) : null}
           </div>
@@ -427,4 +552,102 @@ export function PlanEditor({ takeoff: initial, apiBaseUrl }: Props) {
       ) : null}
     </div>
   );
+}
+
+// ---- Sub-components / render helpers ----------------------------------------
+
+interface ToolBtnProps {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+  disabled?: boolean;
+  tone?: 'red' | 'blue';
+  title?: string;
+}
+function ToolBtn({ label, active, onClick, disabled, tone, title }: ToolBtnProps) {
+  const activeClass =
+    tone === 'red'
+      ? 'border-red-600 bg-red-600 text-white'
+      : tone === 'blue'
+        ? 'border-blue-600 bg-blue-600 text-white'
+        : 'border-slate-700 bg-slate-700 text-white';
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      className={`rounded border px-2 py-1 text-xs ${
+        active ? activeClass : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+      } disabled:opacity-40`}
+    >
+      {label}
+    </button>
+  );
+}
+
+function renderMeasurement(
+  m: TakeoffMeasurement,
+  scale: PlanScale | undefined,
+  strokePx: number,
+  textPx: number,
+): React.ReactNode {
+  const color = m.color ?? defaultMeasurementColor(m.kind);
+  if (m.kind === 'LENGTH') {
+    const a = m.points[0];
+    const b = m.points[1];
+    if (!a || !b) return null;
+    const v = measurementValue(m, scale);
+    const midX = (a.x + b.x) / 2;
+    const midY = (a.y + b.y) / 2;
+    return (
+      <g key={m.id}>
+        <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={color} strokeWidth={strokePx} />
+        <circle cx={a.x} cy={a.y} r={strokePx * 2} fill={color} />
+        <circle cx={b.x} cy={b.y} r={strokePx * 2} fill={color} />
+        <text
+          x={midX}
+          y={midY - textPx * 0.5}
+          fontSize={textPx}
+          fill={color}
+          textAnchor="middle"
+          paintOrder="stroke"
+          stroke="white"
+          strokeWidth={strokePx * 0.8}
+        >
+          {v.value.toFixed(1)} {v.unit}
+        </text>
+      </g>
+    );
+  }
+  if (m.kind === 'COUNT') {
+    return (
+      <g key={m.id}>
+        {m.points.map((p, i) => (
+          <g key={`${m.id}-${i}`}>
+            <circle
+              cx={p.x}
+              cy={p.y}
+              r={strokePx * 4}
+              fill={color}
+              fillOpacity={0.8}
+              stroke="white"
+              strokeWidth={strokePx * 0.6}
+            />
+            <text
+              x={p.x}
+              y={p.y + strokePx * 1.5}
+              fontSize={strokePx * 4}
+              fill="white"
+              textAnchor="middle"
+              fontWeight="bold"
+            >
+              {i + 1}
+            </text>
+          </g>
+        ))}
+      </g>
+    );
+  }
+  return null;
 }
