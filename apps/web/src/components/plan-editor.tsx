@@ -76,6 +76,16 @@ export function PlanEditor({ takeoff: initial, apiBaseUrl }: Props) {
   const [volumeDepth, setVolumeDepth] = useState('');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [hiddenLayers, setHiddenLayers] = useState<Set<string>>(new Set());
+
+  function toggleLayer(layer: string) {
+    setHiddenLayers((prev) => {
+      const next = new Set(prev);
+      if (next.has(layer)) next.delete(layer);
+      else next.add(layer);
+      return next;
+    });
+  }
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -86,6 +96,9 @@ export function PlanEditor({ takeoff: initial, apiBaseUrl }: Props) {
   );
   const currentScale = currentSheet?.scale;
   const currentMeasurements = currentSheet?.measurements ?? [];
+  const visibleMeasurements = currentMeasurements.filter(
+    (m) => !hiddenLayers.has(m.layer ?? '__nolayer__'),
+  );
   const needsScale = (k: TakeoffMeasurementKind) => k !== 'COUNT';
 
   // ---- PDF loading + render -------------------------------------------------
@@ -548,6 +561,8 @@ export function PlanEditor({ takeoff: initial, apiBaseUrl }: Props) {
         scale={currentScale}
         saving={saving}
         saveError={saveError}
+        hiddenLayers={hiddenLayers}
+        onToggleLayer={toggleLayer}
         onPatchSheet={patchCurrentSheet}
       />
 
@@ -577,7 +592,7 @@ export function PlanEditor({ takeoff: initial, apiBaseUrl }: Props) {
                   pointerEvents: overlayActive ? 'auto' : 'none',
                 }}
               >
-                {currentMeasurements.map((m) =>
+                {visibleMeasurements.map((m) =>
                   renderMeasurement(m, currentScale, strokePx, textPx),
                 )}
 
