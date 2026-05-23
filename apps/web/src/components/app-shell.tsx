@@ -90,6 +90,7 @@ const QUICK_ACTIONS: QuickActionSpec[] = [
   { label: '+ New vendor',           href: '/vendors/new',           group: 'New' },
   { label: '+ New employee',         href: '/employees/new',         group: 'New' },
   { label: '+ New equipment',        href: '/equipment/new',         group: 'New' },
+  { label: '+ New equipment inspection', href: '/equipment-inspections/new', group: 'New', requires: 'safety:view' },
   { label: '+ New material',         href: '/materials/new',         group: 'New' },
   { label: '+ New tool',             href: '/tools/new',             group: 'New' },
   { label: '+ New photo',            href: '/photos/new',            group: 'New' },
@@ -181,6 +182,7 @@ const NAV_SPEC: NavGroupSpec[] = [
     links: [
       { key: 'nav.crew', href: '/crew' },
       { key: 'nav.equipment', href: '/equipment' },
+      { key: 'nav.equipmentInspections', href: '/equipment-inspections', requires: 'safety:view' },
       { key: 'nav.equipmentRates', href: '/equipment-rates' },
       { key: 'nav.costCodes', href: '/cost-codes' },
       { key: 'nav.importedEstimates', href: '/imported-estimates' },
