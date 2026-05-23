@@ -174,6 +174,7 @@ const NAV_SPEC: NavGroupSpec[] = [
       { key: 'nav.stopPaymentNotice', href: '/stop-payment-notice', requires: 'financials:edit' },
       { key: 'nav.pwForms', href: '/pw-forms', requires: 'safety:view' },
       { key: 'nav.dotPool', href: '/dot-pool', requires: 'safety:view' },
+      { key: 'nav.safetyLibrary', href: '/safety-library', requires: 'safety:view' },
       { key: 'nav.osha300', href: '/osha-300', requires: 'safety:view' },
       { key: 'nav.jsas', href: '/jsas', requires: 'safety:view' },
       { key: 'nav.apCheckRun', href: '/ap-check-run', requires: 'financials:edit' },
