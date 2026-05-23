@@ -5,7 +5,9 @@ import Link from 'next/link';
 import { AppShell } from '../../components/app-shell';
 import { getLocale, getTranslator } from '../../lib/locale';
 import {
+  attentionRows,
   fullName,
+  projectOvertime,
   timeCardStatusLabel,
   totalCardHours,
   type Employee,
@@ -72,6 +74,8 @@ export default async function TimeCardsPage({
 
       <h1 className="text-3xl font-bold text-yge-blue-500">{t('timecards.title')}</h1>
       <p className="mt-2 text-gray-700">{t('timecards.subtitle')}</p>
+
+      <OvertimeAttentionBanner cards={cards} employees={employees} />
 
       <section className="mt-6 flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 bg-white p-3 shadow-sm">
         <span className="text-xs uppercase tracking-wide text-gray-500">{t('timecards.filter.status')}</span>
@@ -152,5 +156,65 @@ export default async function TimeCardsPage({
       )}
     </main>
     </AppShell>
+  );
+}
+
+function currentMondayIso(): string {
+  const d = new Date();
+  const dow = d.getUTCDay(); // Sun = 0
+  const sinceMonday = (dow + 6) % 7;
+  d.setUTCDate(d.getUTCDate() - sinceMonday);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+}
+
+function todayIso(): string {
+  const d = new Date();
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+}
+
+function OvertimeAttentionBanner({
+  cards,
+  employees,
+}: {
+  cards: TimeCard[];
+  employees: Employee[];
+}) {
+  const weekStarting = currentMondayIso();
+  const rows = projectOvertime({
+    timeCards: cards,
+    weekStarting,
+    asOfDate: todayIso(),
+  });
+  const attention = attentionRows(rows);
+  if (attention.length === 0) return null;
+  const empById = new Map(employees.map((e) => [e.id, e]));
+  return (
+    <section className="mt-6 rounded-lg border border-amber-300 bg-amber-50 p-4 shadow-sm">
+      <h2 className="text-sm font-semibold text-amber-900">
+        Overtime watch — {attention.length} {attention.length === 1 ? 'employee' : 'employees'} need attention this week
+      </h2>
+      <p className="mt-1 text-xs text-amber-900/80">
+        Week of {weekStarting}. Projection assumes 8 h/day for remaining workdays. Based on loaded time cards (filter status may hide DRAFT entries).
+      </p>
+      <ul className="mt-2 space-y-1 text-sm text-amber-900">
+        {attention.map((r) => {
+          const e = empById.get(r.employeeId);
+          const name = e ? fullName(e) : r.employeeId;
+          const label =
+            r.flag === 'DOUBLE_TIME_TODAY'
+              ? `${r.longestDayHours.toFixed(1)} h on one day — double time`
+              : r.flag === 'DAILY_OT_TODAY'
+                ? `${r.longestDayHours.toFixed(1)} h on one day — daily OT`
+                : r.flag === 'ALREADY_OVER_WEEKLY'
+                  ? `${r.hoursWorkedSoFar.toFixed(1)} h logged so far — already past 40`
+                  : `${r.hoursWorkedSoFar.toFixed(1)} h so far, ${r.projectedHoursThisWeek.toFixed(1)} h projected — will hit OT`;
+          return (
+            <li key={r.employeeId} className="font-medium">
+              · {name} — {label}
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }
