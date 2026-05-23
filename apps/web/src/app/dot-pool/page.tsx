@@ -184,10 +184,19 @@ export default function DotPoolPage() {
 
           {selectedRoster.length > 0 && (
             <div className="mt-6">
-              <h3 className="text-sm font-semibold text-gray-900">
-                Selected drivers ({selectedRoster.length}) — {testType.toLowerCase()} test
-              </h3>
-              <p className="mt-1 text-xs text-gray-500">Seed: {seed}</p>
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <h3 className="text-sm font-semibold text-gray-900">
+                  Selected drivers ({selectedRoster.length}) — {testType.toLowerCase()} test
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => downloadSelectionCsv({ seed, testType, asOf, drivers: selectedRoster, poolSize: roster.length })}
+                  className="rounded border border-gray-300 px-3 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-100"
+                >
+                  Download CSV
+                </button>
+              </div>
+              <p className="mt-1 text-xs text-gray-500">Seed: {seed} · As of {asOf} · Pool size {roster.length}</p>
               <table className="mt-3 w-full text-left text-sm">
                 <thead className="text-xs uppercase tracking-wide text-gray-500">
                   <tr>
@@ -247,4 +256,42 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       {children}
     </label>
   );
+}
+
+function csvEscape(s: string): string {
+  if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+function downloadSelectionCsv(args: {
+  seed: string;
+  testType: DotTestType;
+  asOf: string;
+  drivers: DotDriver[];
+  poolSize: number;
+}) {
+  const lines: string[] = [
+    // Header rows — auditor-friendly. NOT in CSV grid form so the
+    // spreadsheet view still shows them cleanly.
+    csvEscape(`FMCSA Part 382 random testing selection`),
+    csvEscape(`Test type,${args.testType}`),
+    csvEscape(`As of date,${args.asOf}`),
+    csvEscape(`Seed,${args.seed}`),
+    csvEscape(`Pool size,${args.poolSize}`),
+    csvEscape(`Selected count,${args.drivers.length}`),
+    '',
+    '#,Driver,ID',
+    ...args.drivers.map((d, i) =>
+      [String(i + 1), csvEscape(d.name), csvEscape(d.id)].join(','),
+    ),
+  ];
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `dot-selection-${args.testType.toLowerCase()}-${args.asOf}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
