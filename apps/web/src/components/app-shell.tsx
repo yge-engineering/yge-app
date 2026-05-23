@@ -213,6 +213,7 @@ const NAV_SPEC: NavGroupSpec[] = [
       { key: 'nav.pwForms', href: '/pw-forms', requires: 'safety:view' },
       { key: 'nav.pwDeadlines', href: '/pw-deadlines', requires: 'safety:view' },
       { key: 'nav.dotPool', href: '/dot-pool', requires: 'safety:view' },
+      { key: 'nav.dotDvir', href: '/dot-dvir', requires: 'safety:view' },
       { key: 'nav.safetyLibrary', href: '/safety-library', requires: 'safety:view' },
       { key: 'nav.osha300', href: '/osha-300', requires: 'safety:view' },
       { key: 'nav.jsas', href: '/jsas', requires: 'safety:view' },
