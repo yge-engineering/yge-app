@@ -76,6 +76,7 @@ interface QuickActionSpec {
 const QUICK_ACTIONS: QuickActionSpec[] = [
   { label: '+ New job',              href: '/jobs/new',              group: 'New' },
   { label: '+ New estimate (blank)', href: '/estimates',             group: 'New', requires: 'estimates:view' },
+  { label: '+ New plan takeoff',    href: '/plan-takeoffs/new',     group: 'New', requires: 'estimates:view' },
   { label: '+ New bid result',       href: '/bid-results/new',       group: 'New', requires: 'estimates:view' },
   { label: '+ New AR invoice',       href: '/ar-invoices/new',       group: 'New', requires: 'financials:view' },
   { label: '+ New AR payment',       href: '/ar-payments/new',       group: 'New', requires: 'financials:view' },
@@ -133,6 +134,7 @@ const NAV_SPEC: NavGroupSpec[] = [
       { key: 'nav.jobs', href: '/jobs' },
       { key: 'nav.jobsBoard', href: '/jobs/board' },
       { key: 'nav.estimates', href: '/estimates', requires: 'estimates:view' },
+      { key: 'nav.planTakeoffs', href: '/plan-takeoffs', requires: 'estimates:view' },
       { key: 'nav.bidResults', href: '/bid-results', requires: 'estimates:view' },
       { key: 'nav.changeOrders', href: '/change-orders' },
       { key: 'nav.rfis', href: '/rfis' },
