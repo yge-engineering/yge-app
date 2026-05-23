@@ -1282,3 +1282,20 @@ model EquipmentInspection {
   @@index([companyId, outOfService])
   @@map("equipment_inspections")
 }
+
+model PlanTakeoff {
+  id        String    @id
+  companyId String
+  jobId     String?
+  bidId     String?
+  planRef   String
+  data      Json
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([companyId, jobId])
+  @@index([companyId, bidId])
+  @@index([companyId, planRef])
+  @@map("plan_takeoffs")
+}
