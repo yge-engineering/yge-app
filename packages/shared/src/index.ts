@@ -818,3 +818,4 @@ export * from './pw-deadline-calendar';
 export * from './bond-capacity';
 export * from './photo-hash-chain';
 export * from './material-price-alert';
+export * from './year-end-checklist';
