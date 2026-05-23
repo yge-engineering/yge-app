@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   BankTransactionSchema,
+  bankTransactionsFromOfx,
   findDuplicateCharges,
   findFeeIncreases,
   findLargeRoundChecks,
@@ -10,6 +11,7 @@ import {
   scanForAnomalies,
   type BankTransaction,
 } from './bank-anomaly';
+import type { OfxTransaction } from './ofx-parser';
 
 function txn(over: Partial<BankTransaction>): BankTransaction {
   return BankTransactionSchema.parse({
@@ -216,5 +218,80 @@ describe('scanForAnomalies (integration)', () => {
     const flags = scanForAnomalies([t], { asOfDate: '2026-05-22' });
     const codes = new Set(flags.map((f) => f.code));
     expect(codes.has('NEW_VENDOR_LARGE')).toBe(false);
+  });
+});
+
+describe('bankTransactionsFromOfx', () => {
+  it('flips sign convention — negative OFX cents become DEBIT positives', () => {
+    const ofx: OfxTransaction[] = [
+      {
+        date: '2026-05-01',
+        description: 'Acme Hardware',
+        amountCents: -157_42,
+        fitId: 'FIT-A',
+        trnType: 'DEBIT',
+      },
+      {
+        date: '2026-05-02',
+        description: 'Customer ACH',
+        amountCents: 5_000_00,
+        fitId: 'FIT-B',
+        trnType: 'CREDIT',
+      },
+    ];
+    const r = bankTransactionsFromOfx(ofx);
+    expect(r[0]).toEqual({
+      id: 'FIT-A',
+      postedOn: '2026-05-01',
+      merchant: 'Acme Hardware',
+      amountCents: 157_42,
+      type: 'DEBIT',
+    });
+    expect(r[1]).toEqual({
+      id: 'FIT-B',
+      postedOn: '2026-05-02',
+      merchant: 'Customer ACH',
+      amountCents: 5_000_00,
+      type: 'CREDIT',
+    });
+  });
+
+  it('falls back to ofx-<idx> when FITID is null', () => {
+    const ofx: OfxTransaction[] = [
+      {
+        date: '2026-05-01',
+        description: 'Vendor X',
+        amountCents: -100_00,
+        fitId: null,
+        trnType: null,
+      },
+    ];
+    const r = bankTransactionsFromOfx(ofx);
+    expect(r[0]!.id).toBe('ofx-0');
+  });
+
+  it('substitutes "(no description)" when OFX description is empty', () => {
+    const ofx: OfxTransaction[] = [
+      {
+        date: '2026-05-01',
+        description: '   ',
+        amountCents: -100_00,
+        fitId: 'F1',
+        trnType: null,
+      },
+    ];
+    const r = bankTransactionsFromOfx(ofx);
+    expect(r[0]!.merchant).toBe('(no description)');
+  });
+
+  it('feeds straight into scanForAnomalies', () => {
+    const ofx: OfxTransaction[] = [
+      // Duplicate within window.
+      { date: '2026-05-01', description: 'Vendor X', amountCents: -250_00, fitId: 'F1', trnType: null },
+      { date: '2026-05-02', description: 'Vendor X', amountCents: -250_00, fitId: 'F2', trnType: null },
+    ];
+    const txns = bankTransactionsFromOfx(ofx);
+    const flags = scanForAnomalies(txns, { asOfDate: '2026-05-22' });
+    expect(flags.some((f) => f.code === 'DUPLICATE_CHARGE')).toBe(true);
   });
 });

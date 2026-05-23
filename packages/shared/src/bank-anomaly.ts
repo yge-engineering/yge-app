@@ -21,6 +21,7 @@
 // Caller supplies the transaction list and the "today" date.
 
 import { z } from 'zod';
+import type { OfxTransaction } from './ofx-parser';
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -266,4 +267,29 @@ function cents$(cents: number): string {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
+}
+
+// ---- OFX adapter --------------------------------------------------------
+
+/** Convert one OFX-parser transaction into the scanner's input shape.
+ *  OFX uses a signed `amountCents` (negative = debit); the scanner uses
+ *  positive cents + an explicit `type`. */
+export function bankTransactionFromOfx(
+  t: OfxTransaction,
+  fallbackIdx: number,
+): BankTransaction {
+  return {
+    id: t.fitId ?? `ofx-${fallbackIdx}`,
+    postedOn: t.date,
+    merchant: t.description.trim() || '(no description)',
+    amountCents: Math.abs(t.amountCents),
+    type: t.amountCents < 0 ? 'DEBIT' : 'CREDIT',
+  };
+}
+
+/** Bulk OFX → scanner conversion. Stable index used for fallback ids. */
+export function bankTransactionsFromOfx(
+  txns: readonly OfxTransaction[],
+): BankTransaction[] {
+  return txns.map((t, i) => bankTransactionFromOfx(t, i));
 }
