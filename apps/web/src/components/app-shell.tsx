@@ -173,6 +173,7 @@ const NAV_SPEC: NavGroupSpec[] = [
       { key: 'nav.ptoCalculator', href: '/pto-calculator', requires: 'financials:view' },
       { key: 'nav.stopPaymentNotice', href: '/stop-payment-notice', requires: 'financials:edit' },
       { key: 'nav.pwForms', href: '/pw-forms', requires: 'safety:view' },
+      { key: 'nav.pwDeadlines', href: '/pw-deadlines', requires: 'safety:view' },
       { key: 'nav.dotPool', href: '/dot-pool', requires: 'safety:view' },
       { key: 'nav.safetyLibrary', href: '/safety-library', requires: 'safety:view' },
       { key: 'nav.osha300', href: '/osha-300', requires: 'safety:view' },
