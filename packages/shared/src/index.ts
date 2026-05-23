@@ -816,3 +816,4 @@ export * from './cpr-builder';
 export * from './overtime-projection';
 export * from './pw-deadline-calendar';
 export * from './bond-capacity';
+export * from './photo-hash-chain';
