@@ -488,6 +488,14 @@ async function DashboardPageInner() {
     <main className="mx-auto max-w-7xl p-6">
       <DataStatusBanner />
       <GlobalSearchBar />
+      <div className="mb-4 flex items-center justify-end text-xs">
+        <Link
+          href="/dashboard/lite"
+          className="rounded border border-gray-300 px-2.5 py-1 font-medium text-gray-600 hover:bg-gray-50"
+        >
+          Simplified view →
+        </Link>
+      </div>
       <header className="mb-6 flex flex-wrap items-baseline justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-yge-blue-500">
