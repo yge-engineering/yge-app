@@ -85,6 +85,7 @@ export const AuditEntityTypeSchema = z.enum([
   'Equipment',
   'EquipmentRate',
   'EquipmentRental',
+  'EquipmentInspection',
   'Estimate',
   'Expense',
   'Folder',
