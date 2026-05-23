@@ -8,6 +8,7 @@ import { Alert, AppShell } from '../../../components';
 import type { Jsa, JsaHazard, JsaTaskType, Job } from '@yge/shared';
 import { JSA_TEMPLATES, jsaTaskTypeLabel } from '@yge/shared';
 import { ApiError, postJson } from '@/lib/api';
+import { VoiceButton } from '@/components/voice-button';
 
 const TASK_TYPES: JsaTaskType[] = [
   'EXCAVATION',
@@ -201,6 +202,9 @@ export default function NewJsaPage() {
               placeholder="What's the crew doing today? Where?"
               className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
             />
+            <div className="mt-1">
+              <VoiceButton currentValue={taskDescription} onTranscript={setTaskDescription} ariaLabel="Dictate task description" />
+            </div>
           </Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Weather (optional)">
@@ -276,6 +280,9 @@ export default function NewJsaPage() {
               placeholder="e.g. Wasp nest near catch basin&#10;Steep cut bank above grade work"
               className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
             />
+            <div className="mt-1">
+              <VoiceButton currentValue={additionalHazardsText} onTranscript={setAdditionalHazardsText} ariaLabel="Dictate additional hazards" />
+            </div>
           </Field>
 
           <Field label="Notes (optional)">
@@ -285,6 +292,9 @@ export default function NewJsaPage() {
               onChange={(e) => setNotes(e.target.value)}
               className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
             />
+            <div className="mt-1">
+              <VoiceButton currentValue={notes} onTranscript={setNotes} ariaLabel="Dictate notes" />
+            </div>
           </Field>
 
           {error && <Alert tone="danger">{error}</Alert>}

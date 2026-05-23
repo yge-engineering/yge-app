@@ -4,6 +4,7 @@
 
 import { useState } from 'react';
 import { useTranslator } from '../lib/use-translator';
+import { VoiceButton } from './voice-button';
 import {
   entryWorkedHours,
   fullName,
@@ -329,6 +330,16 @@ export function TimeCardEditor({ initial, employees, jobs, apiBaseUrl }: Props) 
           onBlur={() => void patch({ notes: notes.trim() || undefined })}
           className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
         />
+        <div className="mt-1">
+          <VoiceButton
+            currentValue={notes}
+            onTranscript={(next) => {
+              setNotes(next);
+              void patch({ notes: next.trim() || undefined });
+            }}
+            ariaLabel="Dictate time-card notes"
+          />
+        </div>
       </Field>
     </div>
   );
