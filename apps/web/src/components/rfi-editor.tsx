@@ -11,6 +11,7 @@ import {
   type RfiPriority,
   type RfiStatus,
 } from '@yge/shared';
+import { VoiceButton } from './voice-button';
 
 const STATUSES: RfiStatus[] = ['DRAFT', 'SENT', 'ANSWERED', 'CLOSED', 'WITHDRAWN'];
 const PRIORITIES: RfiPriority[] = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
@@ -191,6 +192,13 @@ export function RfiEditor({ initial, jobs, apiBaseUrl }: Props) {
           onBlur={saveAll}
           className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
         />
+        <div className="mt-1">
+          <VoiceButton
+            currentValue={question}
+            onTranscript={(next) => { setQuestion(next); saveAll(); }}
+            ariaLabel="Dictate RFI question"
+          />
+        </div>
       </Field>
 
       <Field label={t('rfiEditor.lblAnswer')}>
@@ -201,6 +209,13 @@ export function RfiEditor({ initial, jobs, apiBaseUrl }: Props) {
           onBlur={saveAll}
           className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
         />
+        <div className="mt-1">
+          <VoiceButton
+            currentValue={answer}
+            onTranscript={(next) => { setAnswer(next); saveAll(); }}
+            ariaLabel="Dictate RFI answer"
+          />
+        </div>
       </Field>
 
       <section className="grid gap-4 sm:grid-cols-2">
@@ -251,6 +266,13 @@ export function RfiEditor({ initial, jobs, apiBaseUrl }: Props) {
           onBlur={saveAll}
           className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
         />
+        <div className="mt-1">
+          <VoiceButton
+            currentValue={notes}
+            onTranscript={(next) => { setNotes(next); saveAll(); }}
+            ariaLabel="Dictate RFI notes"
+          />
+        </div>
       </Field>
     </div>
   );
