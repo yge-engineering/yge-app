@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { AppShell, AuditBinderPanel } from '../../../components';
 import { notFound } from 'next/navigation';
 import type { Employee, Job, TimeCard } from '@yge/shared';
+import { MealPremiumPanel } from '@/components/meal-premium-panel';
 import { TimeCardEditor } from '@/components/time-card-editor';
 import { TimeCardStatusBar } from '@/components/time-card-status-bar';
 import { getTranslator } from '../../../lib/locale';
@@ -73,6 +74,8 @@ export default async function TimeCardDetailPage({
           apiBaseUrl={publicApiBaseUrl()}
         />
       </div>
+
+      <MealPremiumPanel card={card} />
 
       <AuditBinderPanel entityType="TimeCard" entityId={card.id} />
     </main>
