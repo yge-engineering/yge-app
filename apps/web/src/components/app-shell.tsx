@@ -168,6 +168,7 @@ const NAV_SPEC: NavGroupSpec[] = [
       { key: 'nav.bankActivityScan', href: '/bank-activity-scan', requires: 'financials:view' },
       { key: 'nav.cashPosition', href: '/cash-position', requires: 'financials:view' },
       { key: 'nav.cashForecast', href: '/cash-forecast', requires: 'financials:view' },
+      { key: 'nav.cashRunway', href: '/cash-runway', requires: 'financials:view' },
     ],
   },
   {
