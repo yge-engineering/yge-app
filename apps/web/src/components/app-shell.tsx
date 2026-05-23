@@ -206,6 +206,7 @@ const NAV_SPEC: NavGroupSpec[] = [
       { key: 'nav.equipment', href: '/equipment' },
       { key: 'nav.equipmentInspections', href: '/equipment-inspections', requires: 'safety:view' },
       { key: 'nav.equipmentService', href: '/equipment-service-records', requires: 'safety:view' },
+      { key: 'nav.partsClassify', href: '/parts-classify', requires: 'safety:view' },
       { key: 'nav.equipmentRates', href: '/equipment-rates' },
       { key: 'nav.costCodes', href: '/cost-codes' },
       { key: 'nav.importedEstimates', href: '/imported-estimates' },
