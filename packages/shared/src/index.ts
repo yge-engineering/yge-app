@@ -826,3 +826,4 @@ export * from './dot-pretrip-inspection';
 export * from './cash-runway';
 export * from './purchase-order';
 export * from './equipment-fuel-burn';
+export * from './bid-no-bid-score';
