@@ -14,6 +14,7 @@ import {
   version as pdfjsVersion,
   type PDFDocumentProxy,
 } from 'pdfjs-dist';
+import { MeasurementsPanel } from './plan-editor-measurements';
 import {
   defaultMeasurementColor,
   feetPerPlanUnit,
@@ -541,6 +542,14 @@ export function PlanEditor({ takeoff: initial, apiBaseUrl }: Props) {
           {saveError ? <span className="text-red-700">{saveError}</span> : null}
         </div>
       ) : null}
+
+      <MeasurementsPanel
+        measurements={currentMeasurements}
+        scale={currentScale}
+        saving={saving}
+        saveError={saveError}
+        onPatchSheet={patchCurrentSheet}
+      />
 
       <div className="relative max-h-[80vh] overflow-auto bg-gray-100 p-4">
         {loading ? (
