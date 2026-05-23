@@ -14,6 +14,7 @@
 
 import { Router } from 'express';
 import multer from 'multer';
+import Anthropic from '@anthropic-ai/sdk';
 import { anthropic, DEFAULT_MODEL } from '../lib/anthropic';
 import { logger } from '../lib/logger';
 
@@ -26,22 +27,32 @@ const upload = multer({
   limits: { fileSize: 25 * 1024 * 1024 },
 });
 
-pdfExtractRouter.post('/extract-text', upload.single('file'), async (req, res, next) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
-    }
-    const isPdf =
-      req.file.mimetype === 'application/pdf' ||
-      req.file.originalname.toLowerCase().endsWith('.pdf');
-    if (!isPdf) {
-      return res
-        .status(400)
-        .json({ error: 'Only PDFs are supported on this endpoint' });
-    }
+pdfExtractRouter.post('/extract-text', upload.single('file'), async (req, res) => {
+  // Bail fast if the API key isn't configured. Returning a plain JSON
+  // error means the PDF drop handler shows the real reason instead of
+  // a generic "HTTP 500".
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return res.status(503).json({
+      error:
+        'PDF text extraction is unavailable: ANTHROPIC_API_KEY is not set on the API. Ask Ryan to add it to the Render env vars.',
+    });
+  }
+  if (!req.file) {
+    return res.status(400).json({ error: 'No file uploaded' });
+  }
+  const isPdf =
+    req.file.mimetype === 'application/pdf' ||
+    req.file.originalname.toLowerCase().endsWith('.pdf');
+  if (!isPdf) {
+    return res
+      .status(400)
+      .json({ error: 'Only PDFs are supported on this endpoint' });
+  }
 
-    const start = Date.now();
-    const base64 = req.file.buffer.toString('base64');
+  const start = Date.now();
+  const base64 = req.file.buffer.toString('base64');
+
+  try {
     const message = await anthropic.messages.create({
       model: DEFAULT_MODEL,
       max_tokens: 8000,
@@ -107,6 +118,52 @@ pdfExtractRouter.post('/extract-text', upload.single('file'), async (req, res, n
       },
     });
   } catch (err) {
-    next(err);
+    // Capture Anthropic-specific errors with their actual status +
+    // message so the user sees what went wrong instead of a generic
+    // 500. Common failure modes here:
+    //   - 404 'model not found' (model name typo / sunset model)
+    //   - 401 / 403 (bad key, no PDF access, account suspended)
+    //   - 413 (PDF too large for Anthropic — different limit than ours)
+    //   - 429 (rate limit / overload)
+    //   - 502/503/504 (Anthropic transient outage)
+    const elapsedMs = Date.now() - start;
+    const filename = req.file.originalname;
+    if (err instanceof Anthropic.APIError) {
+      logger.error(
+        {
+          filename,
+          elapsedMs,
+          anthropicStatus: err.status,
+          anthropicMessage: err.message,
+          model: DEFAULT_MODEL,
+        },
+        'Anthropic API error during PDF extract',
+      );
+      // Surface the model + status + a hint about what to check.
+      const hint =
+        err.status === 404
+          ? ` (model '${DEFAULT_MODEL}' not found — check apps/api/src/lib/anthropic.ts)`
+          : err.status === 401 || err.status === 403
+            ? ` (auth failed — check ANTHROPIC_API_KEY on Render)`
+            : err.status === 413
+              ? ` (PDF too big for Anthropic — try a smaller file or the multi-pass page)`
+              : err.status === 429
+                ? ` (rate limited — wait a minute + retry)`
+                : '';
+      return res.status(err.status ?? 502).json({
+        error: `Anthropic API error: ${err.message}${hint}`,
+        model: DEFAULT_MODEL,
+      });
+    }
+    // Unknown error — surface the real message instead of swallowing it.
+    const msg = err instanceof Error ? err.message : String(err);
+    logger.error(
+      { filename, elapsedMs, err, model: DEFAULT_MODEL },
+      'Unknown error during PDF extract',
+    );
+    return res.status(502).json({
+      error: `PDF extract failed: ${msg}`,
+      model: DEFAULT_MODEL,
+    });
   }
 });

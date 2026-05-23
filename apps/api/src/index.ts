@@ -247,6 +247,16 @@ app.use((_req, res) => {
 
 // Error handler — last middleware. Captures into api_errors
 // table for observability + still logs to pino.
+//
+// What ships back to the client:
+//   - Anthropic SDK errors: surface the real status + message so the
+//     PDF-drop / AI flows show something actionable instead of a
+//     generic 500. Common ones are model-not-found, auth, rate
+//     limits, and PDF-too-big.
+//   - Multer file-size limits: also surface clearly.
+//   - Everything else: generic 500 (don't leak internal details).
+import Anthropic from '@anthropic-ai/sdk';
+import multer from 'multer';
 import { captureApiError } from './lib/api-error-capture';
 
 app.use(
@@ -255,10 +265,37 @@ app.use(
       { err, requestId: req.requestId, method: req.method, url: req.originalUrl },
       'Unhandled error',
     );
-    res.status(500).json({
-      error: 'Internal Server Error',
-      requestId: req.requestId,
-    });
+
+    // Anthropic — surface the actual status + a short hint.
+    if (err instanceof Anthropic.APIError) {
+      const status = err.status ?? 502;
+      const hint =
+        status === 404
+          ? ' (model not found — check apps/api/src/lib/anthropic.ts DEFAULT_MODEL)'
+          : status === 401 || status === 403
+            ? ' (auth failed — check ANTHROPIC_API_KEY on Render)'
+            : status === 413
+              ? ' (input too large — try a smaller file or the multi-pass page)'
+              : status === 429
+                ? ' (rate limited — wait + retry)'
+                : '';
+      res.status(status).json({
+        error: `Anthropic API error: ${err.message}${hint}`,
+        requestId: req.requestId,
+      });
+    } else if (err instanceof multer.MulterError) {
+      res.status(413).json({
+        error: `Upload rejected: ${err.message}${
+          err.code === 'LIMIT_FILE_SIZE' ? ' (file too big)' : ''
+        }`,
+        requestId: req.requestId,
+      });
+    } else {
+      res.status(500).json({
+        error: 'Internal Server Error',
+        requestId: req.requestId,
+      });
+    }
     // Fire-and-forget — don't await; if Postgres is down the
     // response should still go out.
     void captureApiError({
