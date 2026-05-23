@@ -170,6 +170,7 @@ const NAV_SPEC: NavGroupSpec[] = [
       { key: 'nav.lienCalendar', href: '/lien-calendar', requires: 'financials:view' },
       { key: 'nav.fixedAssets', href: '/fixed-assets', requires: 'financials:view' },
       { key: 'nav.fringeCalculator', href: '/fringe-calculator', requires: 'financials:view' },
+      { key: 'nav.ptoCalculator', href: '/pto-calculator', requires: 'financials:view' },
       { key: 'nav.stopPaymentNotice', href: '/stop-payment-notice', requires: 'financials:edit' },
       { key: 'nav.pwForms', href: '/pw-forms', requires: 'safety:view' },
       { key: 'nav.dotPool', href: '/dot-pool', requires: 'safety:view' },
