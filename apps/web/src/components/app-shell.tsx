@@ -40,6 +40,8 @@ interface NavLink {
 
 interface NavGroup {
   label: string;
+  /** Group key — used to decide which groups stay open by default. */
+  key: string;
   links: NavLink[];
 }
 
@@ -292,10 +294,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
   const NAV: NavGroup[] = NAV_SPEC.map((g) => ({
     label: t(g.key),
+    key: g.key,
     links: g.links
       .filter(linkVisible)
       .map((l) => ({ label: t(l.key), href: l.href })),
   })).filter((g) => g.links.length > 0);
+  // Sidebar de-clutter: only the daily group expands by default + the
+  // group containing the active page. Everything else collapses
+  // behind a disclosure so the sidebar stops being a wall of text.
+  const ALWAYS_OPEN_GROUPS = new Set<string>(['nav.group.daily']);
+  function groupContainsActive(g: NavGroup): boolean {
+    return g.links.some(
+      (l) => pathname === l.href || pathname.startsWith(l.href + '/'),
+    );
+  }
   return (
     <div className="min-h-screen flex flex-col">
       <a
@@ -367,30 +379,35 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </header>
       <div className="flex flex-1">
         <aside className="hidden w-56 shrink-0 border-r border-gray-200 bg-white px-3 py-4 lg:block print:hidden">
-          <nav className="space-y-5">
-            {NAV.map((group) => (
-              <div key={group.label}>
-                <div className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wider text-gray-500">
-                  {group.label}
-                </div>
-                <ul className="space-y-0.5">
-                  {group.links.map((l) => {
-                    const active = pathname === l.href || pathname.startsWith(l.href + '/');
-                    return (
-                      <li key={l.href}>
-                        <Link
-                          href={l.href}
-                          aria-current={active ? 'page' : undefined}
-                          className={`block rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-gray-100 ${active ? 'bg-yge-blue-50 font-semibold text-yge-blue-700' : 'text-gray-700 hover:text-gray-900'}`}
-                        >
-                          {l.label}
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            ))}
+          <nav className="space-y-2">
+            {NAV.map((group) => {
+              const open =
+                ALWAYS_OPEN_GROUPS.has(group.key) || groupContainsActive(group);
+              return (
+                <details key={group.label} open={open} className="group">
+                  <summary className="flex cursor-pointer list-none items-center justify-between rounded-md px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-gray-500 hover:bg-gray-50">
+                    <span>{group.label}</span>
+                    <span className="text-gray-400 transition-transform group-open:rotate-90">▸</span>
+                  </summary>
+                  <ul className="mt-1 space-y-0.5">
+                    {group.links.map((l) => {
+                      const active = pathname === l.href || pathname.startsWith(l.href + '/');
+                      return (
+                        <li key={l.href}>
+                          <Link
+                            href={l.href}
+                            aria-current={active ? 'page' : undefined}
+                            className={`block rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-gray-100 ${active ? 'bg-yge-blue-50 font-semibold text-yge-blue-700' : 'text-gray-700 hover:text-gray-900'}`}
+                          >
+                            {l.label}
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </details>
+              );
+            })}
           </nav>
         </aside>
         <main id="main" className="flex-1 px-4 py-6 sm:px-6 lg:px-8 print:px-0 print:py-0">{children}</main>
