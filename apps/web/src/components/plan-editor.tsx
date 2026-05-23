@@ -2,13 +2,7 @@
 
 // PlanEditor — interactive PDF viewer + measurement overlay.
 //
-// Tools shipped so far:
-//   - pan    : no-op overlay (canvas drag/scroll the underlying pane)
-//   - scale  : 2-click calibration, modal for real distance + unit, persists on sheet
-//   - length : 2-click line measurement (LF). Disabled until scale is set.
-//   - count  : click to stamp; clicks accumulate into a single "count group"
-//              until the user switches tools. Each click persists.
-//
+// Tools: pan / scale / length / count / area / polyline / radius / volume.
 // All geometry is stored in plan-page coords (zoom-independent). The SVG
 // overlay's viewBox = the PDF page user-space, so e.clientX/Y → plan-page
 // coords via getScreenCTM().inverse().
@@ -31,13 +25,22 @@ import {
   type PlanTakeoff,
   type ScaleUnit,
   type TakeoffMeasurement,
+  type TakeoffMeasurementKind,
 } from '@yge/shared';
 
 if (typeof window !== 'undefined' && !GlobalWorkerOptions.workerSrc) {
   GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsVersion}/pdf.worker.min.mjs`;
 }
 
-type Tool = 'pan' | 'scale' | 'length' | 'count';
+type Tool =
+  | 'pan'
+  | 'scale'
+  | 'length'
+  | 'count'
+  | 'area'
+  | 'polyline'
+  | 'radius'
+  | 'volume';
 
 interface Props {
   takeoff: PlanTakeoff;
@@ -45,6 +48,9 @@ interface Props {
 }
 
 const SCALE_UNITS: ScaleUnit[] = ['FT', 'IN', 'YD', 'M', 'CM'];
+
+/** Tools that accumulate points and need a "Finish" button. */
+const POLY_TOOLS: Tool[] = ['area', 'polyline', 'volume'];
 
 export function PlanEditor({ takeoff: initial, apiBaseUrl }: Props) {
   const [takeoff, setTakeoff] = useState<PlanTakeoff>(initial);
@@ -63,6 +69,10 @@ export function PlanEditor({ takeoff: initial, apiBaseUrl }: Props) {
   const [scaleUnit, setScaleUnit] = useState<ScaleUnit>('FT');
   const [lengthDraft, setLengthDraft] = useState<{ pointA?: PlanPoint }>({});
   const [activeCountId, setActiveCountId] = useState<string | null>(null);
+  const [polygonPoints, setPolygonPoints] = useState<PlanPoint[]>([]);
+  const [radiusDraft, setRadiusDraft] = useState<{ pointA?: PlanPoint }>({});
+  const [volumeDialogOpen, setVolumeDialogOpen] = useState(false);
+  const [volumeDepth, setVolumeDepth] = useState('');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -75,6 +85,7 @@ export function PlanEditor({ takeoff: initial, apiBaseUrl }: Props) {
   );
   const currentScale = currentSheet?.scale;
   const currentMeasurements = currentSheet?.measurements ?? [];
+  const needsScale = (k: TakeoffMeasurementKind) => k !== 'COUNT';
 
   // ---- PDF loading + render -------------------------------------------------
   useEffect(() => {
@@ -141,6 +152,10 @@ export function PlanEditor({ takeoff: initial, apiBaseUrl }: Props) {
     setScaleDraft({});
     setLengthDraft({});
     setActiveCountId(null);
+    setPolygonPoints([]);
+    setRadiusDraft({});
+    setVolumeDialogOpen(false);
+    setVolumeDepth('');
     setSaveError(null);
   }
 
@@ -155,8 +170,6 @@ export function PlanEditor({ takeoff: initial, apiBaseUrl }: Props) {
     return { x: planPt.x, y: planPt.y };
   }
 
-  /** PATCH the current sheet via a sheet-updater fn. Returns the saved takeoff
-   *  on success, null on failure (saveError is set). */
   async function patchCurrentSheet(
     updater: (sheet: PlanSheetTakeoff) => PlanSheetTakeoff,
   ): Promise<PlanTakeoff | null> {
@@ -195,23 +208,28 @@ export function PlanEditor({ takeoff: initial, apiBaseUrl }: Props) {
     }
   }
 
+  async function appendMeasurement(m: TakeoffMeasurement): Promise<boolean> {
+    const out = await patchCurrentSheet((sheet) => ({
+      ...sheet,
+      measurements: [...sheet.measurements, m],
+    }));
+    return out !== null;
+  }
+
   // ---- Scale tool -----------------------------------------------------------
   function handleScaleClick(point: PlanPoint) {
-    if (!scaleDraft.pointA) {
-      setScaleDraft({ pointA: point });
-    } else if (!scaleDraft.pointB) {
+    if (!scaleDraft.pointA) setScaleDraft({ pointA: point });
+    else if (!scaleDraft.pointB) {
       setScaleDraft({ pointA: scaleDraft.pointA, pointB: point });
       setScaleDialogOpen(true);
     }
   }
-
   function cancelScale() {
     setScaleDraft({});
     setScaleDialogOpen(false);
     setScaleDistance('');
     setSaveError(null);
   }
-
   async function saveScale() {
     if (!scaleDraft.pointA || !scaleDraft.pointB) return;
     const dist = Number(scaleDistance);
@@ -242,16 +260,12 @@ export function PlanEditor({ takeoff: initial, apiBaseUrl }: Props) {
     }
     const a = lengthDraft.pointA;
     setLengthDraft({});
-    const m: TakeoffMeasurement = {
+    await appendMeasurement({
       id: newPlanMeasurementId(),
       kind: 'LENGTH',
       points: [a, point],
       color: defaultMeasurementColor('LENGTH'),
-    };
-    await patchCurrentSheet((sheet) => ({
-      ...sheet,
-      measurements: [...sheet.measurements, m],
-    }));
+    });
   }
 
   // ---- Count tool -----------------------------------------------------------
@@ -259,18 +273,14 @@ export function PlanEditor({ takeoff: initial, apiBaseUrl }: Props) {
     if (!activeCountId) {
       const newId = newPlanMeasurementId();
       setActiveCountId(newId);
-      const existingCounts = currentMeasurements.filter((m) => m.kind === 'COUNT').length;
-      const m: TakeoffMeasurement = {
+      const n = currentMeasurements.filter((m) => m.kind === 'COUNT').length + 1;
+      await appendMeasurement({
         id: newId,
         kind: 'COUNT',
         points: [point],
         color: defaultMeasurementColor('COUNT'),
-        label: `Count ${existingCounts + 1}`,
-      };
-      await patchCurrentSheet((sheet) => ({
-        ...sheet,
-        measurements: [...sheet.measurements, m],
-      }));
+        label: `Count ${n}`,
+      });
       return;
     }
     const id = activeCountId;
@@ -282,6 +292,85 @@ export function PlanEditor({ takeoff: initial, apiBaseUrl }: Props) {
     }));
   }
 
+  // ---- Radius tool ----------------------------------------------------------
+  async function handleRadiusClick(point: PlanPoint) {
+    if (!radiusDraft.pointA) {
+      setRadiusDraft({ pointA: point });
+      return;
+    }
+    const a = radiusDraft.pointA;
+    setRadiusDraft({});
+    await appendMeasurement({
+      id: newPlanMeasurementId(),
+      kind: 'RADIUS',
+      points: [a, point],
+      color: defaultMeasurementColor('RADIUS'),
+    });
+  }
+
+  // ---- Area / polyline / volume drafts --------------------------------------
+  function handlePolyClick(point: PlanPoint) {
+    setPolygonPoints((pts) => [...pts, point]);
+  }
+
+  async function finishAreaOrPolyline() {
+    if (tool === 'area' && polygonPoints.length >= 3) {
+      const pts = polygonPoints;
+      setPolygonPoints([]);
+      await appendMeasurement({
+        id: newPlanMeasurementId(),
+        kind: 'AREA',
+        points: pts,
+        color: defaultMeasurementColor('AREA'),
+      });
+    } else if (tool === 'polyline' && polygonPoints.length >= 2) {
+      const pts = polygonPoints;
+      setPolygonPoints([]);
+      await appendMeasurement({
+        id: newPlanMeasurementId(),
+        kind: 'POLYLINE',
+        points: pts,
+        color: defaultMeasurementColor('POLYLINE'),
+      });
+    } else if (tool === 'volume' && polygonPoints.length >= 3) {
+      // Open the depth dialog — measurement is created on saveVolume().
+      setVolumeDialogOpen(true);
+    } else {
+      setSaveError(
+        tool === 'polyline'
+          ? 'Click at least 2 points before finishing.'
+          : 'Click at least 3 points before finishing.',
+      );
+    }
+  }
+
+  function cancelVolume() {
+    setVolumeDialogOpen(false);
+    setVolumeDepth('');
+    setSaveError(null);
+  }
+  async function saveVolume() {
+    const depth = Number(volumeDepth);
+    if (!Number.isFinite(depth) || depth <= 0) {
+      setSaveError('Enter a positive depth in feet.');
+      return;
+    }
+    const pts = polygonPoints;
+    if (pts.length < 3) return;
+    const ok = await appendMeasurement({
+      id: newPlanMeasurementId(),
+      kind: 'VOLUME',
+      points: pts,
+      depthFeet: depth,
+      color: defaultMeasurementColor('VOLUME'),
+    });
+    if (ok) {
+      setPolygonPoints([]);
+      setVolumeDialogOpen(false);
+      setVolumeDepth('');
+    }
+  }
+
   // ---- Overlay click dispatcher ---------------------------------------------
   function handleOverlayClick(e: ReactMouseEvent<SVGSVGElement>) {
     if (tool === 'pan') return;
@@ -290,6 +379,8 @@ export function PlanEditor({ takeoff: initial, apiBaseUrl }: Props) {
     if (tool === 'scale') handleScaleClick(point);
     else if (tool === 'length') void handleLengthClick(point);
     else if (tool === 'count') void handleCountClick(point);
+    else if (tool === 'radius') void handleRadiusClick(point);
+    else handlePolyClick(point);
   }
 
   // ---- Sheet rollup ---------------------------------------------------------
@@ -299,10 +390,10 @@ export function PlanEditor({ takeoff: initial, apiBaseUrl }: Props) {
     return acc;
   }, {});
 
-  // ---- Render ---------------------------------------------------------------
   const strokePx = pageSize ? 2 / Math.max(zoom, 0.001) : 1;
   const textPx = pageSize ? 12 / Math.max(zoom, 0.001) : 1;
   const overlayActive = tool !== 'pan';
+  const polyActive = POLY_TOOLS.includes(tool);
 
   return (
     <div className="rounded-md border border-gray-200 bg-white">
@@ -330,8 +421,59 @@ export function PlanEditor({ takeoff: initial, apiBaseUrl }: Props) {
           active={tool === 'count'}
           disabled={!pdf}
           onClick={() => activateTool('count')}
-          title="Click to stamp items (catch basins, trees, signs…)"
+          title="Click to stamp items"
         />
+        <ToolBtn
+          label="⬢ Area"
+          tone="green"
+          active={tool === 'area'}
+          disabled={!pdf || !currentScale}
+          onClick={() => activateTool('area')}
+          title={currentScale ? 'Multi-click polygon → Finish' : 'Set a scale first'}
+        />
+        <ToolBtn
+          label="〰 Polyline"
+          tone="orange"
+          active={tool === 'polyline'}
+          disabled={!pdf || !currentScale}
+          onClick={() => activateTool('polyline')}
+          title={currentScale ? 'Multi-click chain → Finish' : 'Set a scale first'}
+        />
+        <ToolBtn
+          label="◯ Radius"
+          tone="amber"
+          active={tool === 'radius'}
+          disabled={!pdf || !currentScale}
+          onClick={() => activateTool('radius')}
+          title={currentScale ? 'Click center, then edge' : 'Set a scale first'}
+        />
+        <ToolBtn
+          label="⛏ Volume"
+          tone="teal"
+          active={tool === 'volume'}
+          disabled={!pdf || !currentScale}
+          onClick={() => activateTool('volume')}
+          title={currentScale ? 'Multi-click polygon → Finish → enter depth' : 'Set a scale first'}
+        />
+        {polyActive && polygonPoints.length > 0 ? (
+          <>
+            <span className="mx-2 h-4 w-px bg-gray-300" />
+            <button
+              type="button"
+              onClick={() => void finishAreaOrPolyline()}
+              className="rounded border border-emerald-600 bg-emerald-600 px-2 py-1 text-xs font-semibold text-white hover:bg-emerald-700"
+            >
+              ✓ Finish ({polygonPoints.length} pts)
+            </button>
+            <button
+              type="button"
+              onClick={() => setPolygonPoints([])}
+              className="rounded border border-gray-300 bg-white px-2 py-1 text-xs text-gray-700 hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+          </>
+        ) : null}
         <span className="mx-2 h-4 w-px bg-gray-300" />
         <button
           type="button"
@@ -385,10 +527,9 @@ export function PlanEditor({ takeoff: initial, apiBaseUrl }: Props) {
         </span>
       </div>
 
-      {/* Rollup row (per-sheet measurement totals) */}
       {currentMeasurements.length > 0 ? (
         <div className="flex flex-wrap items-center gap-3 border-b border-gray-200 bg-white px-3 py-1 text-[11px] text-gray-700">
-          <span className="font-semibold text-gray-500 uppercase tracking-wide">Sheet rollup:</span>
+          <span className="font-semibold uppercase tracking-wide text-gray-500">Sheet rollup:</span>
           {Object.entries(totals).map(([unit, value]) => (
             <span key={unit}>
               <strong>{value.toFixed(unit === 'EA' ? 0 : 2)}</strong> {unit}
@@ -427,12 +568,10 @@ export function PlanEditor({ takeoff: initial, apiBaseUrl }: Props) {
                   pointerEvents: overlayActive ? 'auto' : 'none',
                 }}
               >
-                {/* Saved measurements */}
                 {currentMeasurements.map((m) =>
                   renderMeasurement(m, currentScale, strokePx, textPx),
                 )}
 
-                {/* Saved scale calibration line */}
                 {currentScale ? (
                   <g>
                     <line
@@ -453,26 +592,38 @@ export function PlanEditor({ takeoff: initial, apiBaseUrl }: Props) {
                 {scaleDraft.pointA ? (
                   <circle cx={scaleDraft.pointA.x} cy={scaleDraft.pointA.y} r={strokePx * 3} fill="#f59e0b" />
                 ) : null}
-                {scaleDraft.pointA && scaleDraft.pointB ? (
-                  <g>
-                    <line
-                      x1={scaleDraft.pointA.x}
-                      y1={scaleDraft.pointA.y}
-                      x2={scaleDraft.pointB.x}
-                      y2={scaleDraft.pointB.y}
-                      stroke="#f59e0b"
-                      strokeWidth={strokePx}
-                    />
-                    <circle cx={scaleDraft.pointB.x} cy={scaleDraft.pointB.y} r={strokePx * 3} fill="#f59e0b" />
-                  </g>
-                ) : null}
                 {lengthDraft.pointA ? (
                   <circle cx={lengthDraft.pointA.x} cy={lengthDraft.pointA.y} r={strokePx * 3} fill={defaultMeasurementColor('LENGTH')} />
                 ) : null}
+                {radiusDraft.pointA ? (
+                  <circle cx={radiusDraft.pointA.x} cy={radiusDraft.pointA.y} r={strokePx * 3} fill={defaultMeasurementColor('RADIUS')} />
+                ) : null}
+                {polyActive && polygonPoints.length > 0 ? (
+                  <g>
+                    {polygonPoints.length >= 2 ? (
+                      <polyline
+                        points={polygonPoints.map((p) => `${p.x},${p.y}`).join(' ')}
+                        fill="none"
+                        stroke={defaultMeasurementColor(tool === 'polyline' ? 'POLYLINE' : tool === 'volume' ? 'VOLUME' : 'AREA')}
+                        strokeWidth={strokePx}
+                        strokeDasharray={`${strokePx * 2} ${strokePx * 2}`}
+                      />
+                    ) : null}
+                    {polygonPoints.map((p, i) => (
+                      <circle
+                        key={i}
+                        cx={p.x}
+                        cy={p.y}
+                        r={strokePx * 2}
+                        fill={defaultMeasurementColor(tool === 'polyline' ? 'POLYLINE' : tool === 'volume' ? 'VOLUME' : 'AREA')}
+                      />
+                    ))}
+                  </g>
+                ) : null}
               </svg>
             ) : null}
-            {overlayActive && !scaleDialogOpen ? (
-              <div className="pointer-events-none absolute left-2 top-2 rounded bg-amber-100 px-2 py-1 text-[11px] font-semibold text-amber-900 shadow">
+            {overlayActive && !scaleDialogOpen && !volumeDialogOpen ? (
+              <div className="pointer-events-none absolute left-2 top-2 max-w-xs rounded bg-amber-100 px-2 py-1 text-[11px] font-semibold text-amber-900 shadow">
                 {tool === 'scale'
                   ? scaleDraft.pointA
                     ? 'Click the second point of a known distance.'
@@ -481,7 +632,17 @@ export function PlanEditor({ takeoff: initial, apiBaseUrl }: Props) {
                     ? lengthDraft.pointA
                       ? 'Click the end of the line.'
                       : 'Click the start of the line.'
-                    : 'Click to stamp. Switch tools to end this count group.'}
+                  : tool === 'count'
+                    ? 'Click to stamp. Switch tools to end this count group.'
+                  : tool === 'radius'
+                    ? radiusDraft.pointA
+                      ? 'Click a point on the edge of the circle.'
+                      : 'Click the center of the circle.'
+                  : polyActive
+                    ? polygonPoints.length === 0
+                      ? `Click points to outline the ${tool === 'polyline' ? 'chain' : tool === 'volume' ? 'volume area' : 'polygon'}.`
+                      : `Click more points, then “Finish” (${polygonPoints.length} so far).`
+                    : ''}
               </div>
             ) : null}
           </div>
@@ -489,88 +650,80 @@ export function PlanEditor({ takeoff: initial, apiBaseUrl }: Props) {
       </div>
 
       {scaleDialogOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="w-full max-w-sm rounded-md border border-gray-200 bg-white p-5 shadow-xl">
-            <h2 className="text-lg font-bold text-gray-900">Set scale</h2>
-            <p className="mt-1 text-sm text-gray-700">
-              How long is the distance you just drew, in real-world units?
-            </p>
-            <div className="mt-4 flex items-end gap-2">
-              <label className="flex-1 text-sm">
-                <span className="mb-1 block font-medium text-gray-700">Distance</span>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  autoFocus
-                  value={scaleDistance}
-                  onChange={(e) => setScaleDistance(e.target.value)}
-                  className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
-                  placeholder="e.g. 50"
-                />
-              </label>
-              <label className="text-sm">
-                <span className="mb-1 block font-medium text-gray-700">Unit</span>
-                <select
-                  value={scaleUnit}
-                  onChange={(e) => setScaleUnit(e.target.value as ScaleUnit)}
-                  className="rounded border border-gray-300 px-3 py-2 text-sm"
-                >
-                  {SCALE_UNITS.map((u) => (
-                    <option key={u} value={u}>
-                      {u}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            {saveError ? (
-              <div className="mt-3 rounded border border-red-300 bg-red-50 p-2 text-xs text-red-800">
-                {saveError}
-              </div>
-            ) : null}
-            <div className="mt-5 flex items-center justify-end gap-2">
-              <button
-                type="button"
-                onClick={cancelScale}
-                disabled={saving}
-                className="rounded border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+        <ModalDialog title="Set scale" onCancel={cancelScale} onSave={() => void saveScale()} saving={saving} saveError={saveError} saveLabel="Set scale">
+          <p className="text-sm text-gray-700">How long is the distance you just drew, in real-world units?</p>
+          <div className="mt-4 flex items-end gap-2">
+            <label className="flex-1 text-sm">
+              <span className="mb-1 block font-medium text-gray-700">Distance</span>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                autoFocus
+                value={scaleDistance}
+                onChange={(e) => setScaleDistance(e.target.value)}
+                className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
+                placeholder="e.g. 50"
+              />
+            </label>
+            <label className="text-sm">
+              <span className="mb-1 block font-medium text-gray-700">Unit</span>
+              <select
+                value={scaleUnit}
+                onChange={(e) => setScaleUnit(e.target.value as ScaleUnit)}
+                className="rounded border border-gray-300 px-3 py-2 text-sm"
               >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => void saveScale()}
-                disabled={saving}
-                className="rounded bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
-              >
-                {saving ? 'Saving…' : 'Set scale'}
-              </button>
-            </div>
+                {SCALE_UNITS.map((u) => (
+                  <option key={u} value={u}>{u}</option>
+                ))}
+              </select>
+            </label>
           </div>
-        </div>
+        </ModalDialog>
+      ) : null}
+
+      {volumeDialogOpen ? (
+        <ModalDialog title="Enter depth" onCancel={cancelVolume} onSave={() => void saveVolume()} saving={saving} saveError={saveError} saveLabel="Save volume">
+          <p className="text-sm text-gray-700">How deep is the volume, in feet? Cubic yards = area × depth ÷ 27.</p>
+          <label className="mt-4 block text-sm">
+            <span className="mb-1 block font-medium text-gray-700">Depth (ft)</span>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              autoFocus
+              value={volumeDepth}
+              onChange={(e) => setVolumeDepth(e.target.value)}
+              className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
+              placeholder="e.g. 1.5"
+            />
+          </label>
+        </ModalDialog>
       ) : null}
     </div>
   );
 }
 
-// ---- Sub-components / render helpers ----------------------------------------
+// ---- Sub-components ---------------------------------------------------------
 
 interface ToolBtnProps {
   label: string;
   active: boolean;
   onClick: () => void;
   disabled?: boolean;
-  tone?: 'red' | 'blue';
+  tone?: 'red' | 'blue' | 'green' | 'orange' | 'amber' | 'teal';
   title?: string;
 }
 function ToolBtn({ label, active, onClick, disabled, tone, title }: ToolBtnProps) {
-  const activeClass =
-    tone === 'red'
-      ? 'border-red-600 bg-red-600 text-white'
-      : tone === 'blue'
-        ? 'border-blue-600 bg-blue-600 text-white'
-        : 'border-slate-700 bg-slate-700 text-white';
+  const TONE_CLASSES: Record<NonNullable<ToolBtnProps['tone']>, string> = {
+    red: 'border-red-600 bg-red-600 text-white',
+    blue: 'border-blue-600 bg-blue-600 text-white',
+    green: 'border-green-600 bg-green-600 text-white',
+    orange: 'border-orange-600 bg-orange-600 text-white',
+    amber: 'border-amber-600 bg-amber-600 text-white',
+    teal: 'border-teal-700 bg-teal-700 text-white',
+  };
+  const activeClass = tone ? TONE_CLASSES[tone] : 'border-slate-700 bg-slate-700 text-white';
   return (
     <button
       type="button"
@@ -583,6 +736,47 @@ function ToolBtn({ label, active, onClick, disabled, tone, title }: ToolBtnProps
     >
       {label}
     </button>
+  );
+}
+
+interface ModalDialogProps {
+  title: string;
+  onCancel: () => void;
+  onSave: () => void;
+  saving: boolean;
+  saveError: string | null;
+  saveLabel: string;
+  children: React.ReactNode;
+}
+function ModalDialog({ title, onCancel, onSave, saving, saveError, saveLabel, children }: ModalDialogProps) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="w-full max-w-sm rounded-md border border-gray-200 bg-white p-5 shadow-xl">
+        <h2 className="text-lg font-bold text-gray-900">{title}</h2>
+        <div className="mt-1">{children}</div>
+        {saveError ? (
+          <div className="mt-3 rounded border border-red-300 bg-red-50 p-2 text-xs text-red-800">{saveError}</div>
+        ) : null}
+        <div className="mt-5 flex items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={saving}
+            className="rounded border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={saving}
+            className="rounded bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+          >
+            {saving ? 'Saving…' : saveLabel}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -605,16 +799,65 @@ function renderMeasurement(
         <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={color} strokeWidth={strokePx} />
         <circle cx={a.x} cy={a.y} r={strokePx * 2} fill={color} />
         <circle cx={b.x} cy={b.y} r={strokePx * 2} fill={color} />
-        <text
-          x={midX}
-          y={midY - textPx * 0.5}
-          fontSize={textPx}
+        <text x={midX} y={midY - textPx * 0.5} fontSize={textPx} fill={color} textAnchor="middle" paintOrder="stroke" stroke="white" strokeWidth={strokePx * 0.8}>
+          {v.value.toFixed(1)} {v.unit}
+        </text>
+      </g>
+    );
+  }
+  if (m.kind === 'POLYLINE' && m.points.length >= 2) {
+    const v = measurementValue(m, scale);
+    const last = m.points[m.points.length - 1];
+    return (
+      <g key={m.id}>
+        <polyline
+          points={m.points.map((p) => `${p.x},${p.y}`).join(' ')}
+          fill="none"
+          stroke={color}
+          strokeWidth={strokePx}
+        />
+        {m.points.map((p, i) => (
+          <circle key={i} cx={p.x} cy={p.y} r={strokePx * 1.5} fill={color} />
+        ))}
+        {last ? (
+          <text x={last.x + textPx * 0.4} y={last.y - textPx * 0.4} fontSize={textPx} fill={color} paintOrder="stroke" stroke="white" strokeWidth={strokePx * 0.8}>
+            {v.value.toFixed(1)} {v.unit}
+          </text>
+        ) : null}
+      </g>
+    );
+  }
+  if ((m.kind === 'AREA' || m.kind === 'VOLUME') && m.points.length >= 3) {
+    const v = measurementValue(m, scale);
+    const cx = m.points.reduce((s, p) => s + p.x, 0) / m.points.length;
+    const cy = m.points.reduce((s, p) => s + p.y, 0) / m.points.length;
+    return (
+      <g key={m.id}>
+        <polygon
+          points={m.points.map((p) => `${p.x},${p.y}`).join(' ')}
           fill={color}
-          textAnchor="middle"
-          paintOrder="stroke"
-          stroke="white"
-          strokeWidth={strokePx * 0.8}
-        >
+          fillOpacity={0.15}
+          stroke={color}
+          strokeWidth={strokePx}
+        />
+        <text x={cx} y={cy} fontSize={textPx} fill={color} textAnchor="middle" paintOrder="stroke" stroke="white" strokeWidth={strokePx * 0.8}>
+          {v.value.toFixed(1)} {v.unit}
+        </text>
+      </g>
+    );
+  }
+  if (m.kind === 'RADIUS') {
+    const a = m.points[0];
+    const b = m.points[1];
+    if (!a || !b) return null;
+    const r = Math.sqrt((b.x - a.x) ** 2 + (b.y - a.y) ** 2);
+    const v = measurementValue(m, scale);
+    return (
+      <g key={m.id}>
+        <circle cx={a.x} cy={a.y} r={r} fill="none" stroke={color} strokeWidth={strokePx} />
+        <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={color} strokeWidth={strokePx * 0.6} strokeDasharray={`${strokePx * 2} ${strokePx * 2}`} />
+        <circle cx={a.x} cy={a.y} r={strokePx * 1.5} fill={color} />
+        <text x={a.x} y={a.y - r - textPx * 0.4} fontSize={textPx} fill={color} textAnchor="middle" paintOrder="stroke" stroke="white" strokeWidth={strokePx * 0.8}>
           {v.value.toFixed(1)} {v.unit}
         </text>
       </g>
@@ -625,23 +868,8 @@ function renderMeasurement(
       <g key={m.id}>
         {m.points.map((p, i) => (
           <g key={`${m.id}-${i}`}>
-            <circle
-              cx={p.x}
-              cy={p.y}
-              r={strokePx * 4}
-              fill={color}
-              fillOpacity={0.8}
-              stroke="white"
-              strokeWidth={strokePx * 0.6}
-            />
-            <text
-              x={p.x}
-              y={p.y + strokePx * 1.5}
-              fontSize={strokePx * 4}
-              fill="white"
-              textAnchor="middle"
-              fontWeight="bold"
-            >
+            <circle cx={p.x} cy={p.y} r={strokePx * 4} fill={color} fillOpacity={0.8} stroke="white" strokeWidth={strokePx * 0.6} />
+            <text x={p.x} y={p.y + strokePx * 1.5} fontSize={strokePx * 4} fill="white" textAnchor="middle" fontWeight="bold">
               {i + 1}
             </text>
           </g>
