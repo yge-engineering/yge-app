@@ -801,3 +801,5 @@ export * from './fixed-asset';
 export * from './wc-audit-export';
 export * from './stop-payment-notice';
 export * from './equipment-service-record';
+export * from './das-140';
+export * from './das-142';
