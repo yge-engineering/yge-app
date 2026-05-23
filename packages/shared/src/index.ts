@@ -800,3 +800,4 @@ export * from './fringe-benefit-calc';
 export * from './fixed-asset';
 export * from './wc-audit-export';
 export * from './stop-payment-notice';
+export * from './equipment-service-record';
