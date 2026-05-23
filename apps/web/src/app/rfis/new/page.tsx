@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import type { Job, Rfi } from '@yge/shared';
 import { ApiError, postJson } from '@/lib/api';
 import { useTranslator } from '../../../lib/use-translator';
+import { VoiceButton } from '@/components/voice-button';
 
 export default function NewRfiPage() {
   const t = useTranslator();
@@ -93,13 +94,20 @@ export default function NewRfiPage() {
           />
         </Field>
         <Field label={t('newRfi.lblSubject')}>
-          <input
-            required
-            value={subject}
-            onChange={(e) => setSubject(e.target.value)}
-            placeholder={t('newRfi.phSubject')}
-            className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
-          />
+          <div className="flex items-center gap-2">
+            <input
+              required
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              placeholder={t('newRfi.phSubject')}
+              className="flex-1 rounded border border-gray-300 px-3 py-2 text-sm"
+            />
+            <VoiceButton
+              currentValue={subject}
+              onTranscript={setSubject}
+              ariaLabel="Dictate RFI subject"
+            />
+          </div>
         </Field>
 
         {error && (
