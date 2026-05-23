@@ -16,6 +16,7 @@ import {
 } from 'pdfjs-dist';
 import { MeasurementsPanel } from './plan-editor-measurements';
 import { downloadTakeoffPdf } from './plan-editor-export';
+import { PlanViewer } from './plan-viewer';
 import {
   defaultMeasurementColor,
   feetPerPlanUnit,
@@ -79,6 +80,9 @@ export function PlanEditor({ takeoff: initial, apiBaseUrl }: Props) {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [hiddenLayers, setHiddenLayers] = useState<Set<string>>(new Set());
   const [exporting, setExporting] = useState(false);
+  const [comparisonUrl, setComparisonUrl] = useState<string | null>(null);
+  const [comparisonDialogOpen, setComparisonDialogOpen] = useState(false);
+  const [comparisonInput, setComparisonInput] = useState('');
 
   function toggleLayer(layer: string) {
     setHiddenLayers((prev) => {
@@ -552,6 +556,25 @@ export function PlanEditor({ takeoff: initial, apiBaseUrl }: Props) {
         >
           {exporting ? 'Exporting…' : '⬇ Export PDF'}
         </button>
+        <button
+          type="button"
+          onClick={() => {
+            if (comparisonUrl) {
+              setComparisonUrl(null);
+              setComparisonInput('');
+            } else {
+              setComparisonDialogOpen(true);
+            }
+          }}
+          title="View a second PDF revision side-by-side"
+          className={`rounded border px-2 py-1 text-xs font-semibold ${
+            comparisonUrl
+              ? 'border-purple-300 bg-purple-100 text-purple-900 hover:bg-purple-200'
+              : 'border-purple-300 bg-purple-50 text-purple-800 hover:bg-purple-100'
+          }`}
+        >
+          {comparisonUrl ? '✕ Close compare' : '🔀 Compare'}
+        </button>
         <span className="ml-auto text-xs text-gray-600">
           Scale:{' '}
           {currentScale ? (
@@ -744,6 +767,63 @@ export function PlanEditor({ takeoff: initial, apiBaseUrl }: Props) {
             />
           </label>
         </ModalDialog>
+      ) : null}
+
+      {comparisonDialogOpen ? (
+        <ModalDialog
+          title="Compare a second PDF"
+          onCancel={() => {
+            setComparisonDialogOpen(false);
+            setComparisonInput('');
+          }}
+          onSave={() => {
+            const v = comparisonInput.trim();
+            if (!v) return;
+            setComparisonUrl(v);
+            setComparisonDialogOpen(false);
+          }}
+          saving={false}
+          saveError={null}
+          saveLabel="Open"
+        >
+          <p className="text-sm text-gray-700">
+            Paste a URL to the second PDF (a revision, another version of the same plan set, etc.). It opens in a read-only viewer to the right.
+          </p>
+          <label className="mt-4 block text-sm">
+            <span className="mb-1 block font-medium text-gray-700">PDF URL</span>
+            <input
+              type="text"
+              autoFocus
+              value={comparisonInput}
+              onChange={(e) => setComparisonInput(e.target.value)}
+              placeholder="https://…"
+              className="w-full rounded border border-gray-300 px-3 py-2 text-sm font-mono"
+            />
+          </label>
+        </ModalDialog>
+      ) : null}
+
+      {comparisonUrl ? (
+        <div className="fixed right-0 top-0 z-40 flex h-screen w-1/2 flex-col border-l border-gray-300 bg-white p-2 shadow-2xl">
+          <div className="mb-2 flex items-center justify-between border-b border-gray-200 pb-2">
+            <span className="text-sm font-semibold text-gray-700">
+              🔀 Comparison PDF
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setComparisonUrl(null);
+                setComparisonInput('');
+              }}
+              className="rounded border border-gray-300 bg-white px-2 py-1 text-xs hover:bg-gray-50"
+            >
+              ✕ Close
+            </button>
+          </div>
+          <div className="flex-1 overflow-auto">
+            <PlanViewer url={comparisonUrl} />
+          </div>
+        </div>
       ) : null}
     </div>
   );
