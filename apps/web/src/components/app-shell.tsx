@@ -185,6 +185,7 @@ const NAV_SPEC: NavGroupSpec[] = [
       { key: 'nav.closePackage', href: '/close-package', requires: 'financials:view' },
       { key: 'nav.periodClose', href: '/period-close', requires: 'financials:edit' },
       { key: 'nav.yearEndClose', href: '/year-end-close', requires: 'financials:edit' },
+      { key: 'nav.yearEndChecklist', href: '/year-end-checklist', requires: 'financials:view' },
     ],
   },
   {
