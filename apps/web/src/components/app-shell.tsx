@@ -203,6 +203,7 @@ const NAV_SPEC: NavGroupSpec[] = [
       { key: 'nav.stopPaymentNotice', href: '/stop-payment-notice', requires: 'financials:edit' },
       { key: 'nav.tax1099Worksheet', href: '/1099-worksheet', requires: 'financials:view' },
       { key: 'nav.vendorW9Chase', href: '/vendor-w9-chase', requires: 'financials:edit' },
+      { key: 'nav.w9ChaseEmail', href: '/w9-chase-email', requires: 'financials:edit' },
       { key: 'nav.coiChase', href: '/coi-chase', requires: 'financials:edit' },
       { key: 'nav.lienCalendar', href: '/lien-calendar', requires: 'financials:view' },
     ],
