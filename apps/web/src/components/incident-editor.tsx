@@ -14,6 +14,7 @@ import {
   type IncidentOutcome,
   type IncidentStatus,
 } from '@yge/shared';
+import { VoiceButton } from './voice-button';
 
 const CLASSIFICATIONS: IncidentClassification[] = [
   'INJURY',
@@ -332,6 +333,13 @@ export function IncidentEditor({
             placeholder={t('incEditor.phDescription')}
             required
           />
+          <div className="mt-1">
+            <VoiceButton
+              currentValue={form.description}
+              onTranscript={(next) => setField('description', next)}
+              ariaLabel="Dictate incident description"
+            />
+          </div>
         </Field>
       </Section>
 
@@ -391,6 +399,13 @@ export function IncidentEditor({
             value={form.taskBeforeIncident}
             onChange={(e) => setField('taskBeforeIncident', e.target.value)}
           />
+          <div className="mt-1">
+            <VoiceButton
+              currentValue={form.taskBeforeIncident}
+              onTranscript={(next) => setField('taskBeforeIncident', next)}
+              ariaLabel="Dictate task before incident"
+            />
+          </div>
         </Field>
         <Field label={t('incEditor.lblWhatHappened')} full>
           <textarea
@@ -398,6 +413,13 @@ export function IncidentEditor({
             value={form.whatHappened}
             onChange={(e) => setField('whatHappened', e.target.value)}
           />
+          <div className="mt-1">
+            <VoiceButton
+              currentValue={form.whatHappened}
+              onTranscript={(next) => setField('whatHappened', next)}
+              ariaLabel="Dictate what happened"
+            />
+          </div>
         </Field>
         <Field label={t('incEditor.lblInjuryDesc')} full>
           <textarea
@@ -405,6 +427,13 @@ export function IncidentEditor({
             value={form.injuryDescription}
             onChange={(e) => setField('injuryDescription', e.target.value)}
           />
+          <div className="mt-1">
+            <VoiceButton
+              currentValue={form.injuryDescription}
+              onTranscript={(next) => setField('injuryDescription', next)}
+              ariaLabel="Dictate injury description"
+            />
+          </div>
         </Field>
         <Field label={t('incEditor.lblHarmingAgent')}>
           <input
