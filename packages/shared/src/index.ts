@@ -822,3 +822,4 @@ export * from './year-end-checklist';
 export * from './subcontract-cover';
 export * from './backup-manifest';
 export * from './w9-chase-email';
+export * from './dot-pretrip-inspection';
