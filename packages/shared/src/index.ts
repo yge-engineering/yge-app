@@ -820,3 +820,4 @@ export * from './photo-hash-chain';
 export * from './material-price-alert';
 export * from './year-end-checklist';
 export * from './subcontract-cover';
+export * from './backup-manifest';
