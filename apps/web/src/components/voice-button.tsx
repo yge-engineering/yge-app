@@ -7,14 +7,20 @@
 // space separator), so the user can dictate multiple short phrases
 // into the same field.
 //
+// Default language tracks the current app locale ('en' → 'en-US',
+// 'es' → 'es-MX'). Override via the `lang` prop for per-field tags.
+//
 // Renders a small icon button — '🎙' when idle, '◼' while listening.
 // Disabled state with tooltip when the browser doesn't expose
 // SpeechRecognition (currently Firefox + older Safari).
 
 import { useVoiceInput } from '@/lib/use-voice-input';
+import { useLocale } from '@/lib/use-translator';
+import type { Locale } from '@yge/shared';
 
 interface Props {
-  /** BCP-47 language tag — defaults to 'en-US'. Pass 'es-MX' for ES. */
+  /** BCP-47 language tag — defaults to the current app locale's
+   *  natural tag ('en-US' / 'es-MX'). Override per-field as needed. */
   lang?: string;
   /** Current value of the input, so appends produce 'hello world'
    *  instead of 'helloworld'. */
@@ -27,15 +33,22 @@ interface Props {
   ariaLabel?: string;
 }
 
+const DEFAULT_BCP47_BY_LOCALE: Record<Locale, string> = {
+  en: 'en-US',
+  es: 'es-MX',
+};
+
 export function VoiceButton({
-  lang = 'en-US',
+  lang,
   currentValue,
   onTranscript,
   className,
   ariaLabel = 'Dictate input',
 }: Props) {
+  const locale = useLocale();
+  const effectiveLang = lang ?? DEFAULT_BCP47_BY_LOCALE[locale];
   const v = useVoiceInput({
-    lang,
+    lang: effectiveLang,
     onFinal: (text) => {
       const trimmed = text.trim();
       if (!trimmed) return;
