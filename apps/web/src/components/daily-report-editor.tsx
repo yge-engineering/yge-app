@@ -25,6 +25,7 @@ import {
 
 import { NarrativeExpandButton } from './narrative-expand-button';
 import { DailyReportPhotoPanel } from './daily-report-photo-panel';
+import { VoiceButton } from './voice-button';
 interface Props {
   initial: DailyReport;
   employees: Employee[];
@@ -363,10 +364,13 @@ export function DailyReportEditor({ initial, employees, jobs, apiBaseUrl }: Prop
             onBlur={saveText}
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
-          <NarrativeExpandButton
-            value={scopeCompleted}
-            onApply={(next) => { setScopeCompleted(next); saveText(); }}
-          />
+          <div className="mt-1 flex items-center gap-2">
+            <VoiceButton currentValue={scopeCompleted} onTranscript={(next) => { setScopeCompleted(next); saveText(); }} ariaLabel="Dictate scope completed" />
+            <NarrativeExpandButton
+              value={scopeCompleted}
+              onApply={(next) => { setScopeCompleted(next); saveText(); }}
+            />
+          </div>
         </Field>
         <Field label={t('dre.lblIssues')}>
           <textarea
@@ -376,6 +380,9 @@ export function DailyReportEditor({ initial, employees, jobs, apiBaseUrl }: Prop
             onBlur={saveText}
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
+          <div className="mt-1">
+            <VoiceButton currentValue={issues} onTranscript={(next) => { setIssues(next); saveText(); }} ariaLabel="Dictate issues" />
+          </div>
         </Field>
         <Field label={t('dre.lblVisitors')}>
           <textarea
@@ -385,6 +392,9 @@ export function DailyReportEditor({ initial, employees, jobs, apiBaseUrl }: Prop
             onBlur={saveText}
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
+          <div className="mt-1">
+            <VoiceButton currentValue={visitors} onTranscript={(next) => { setVisitors(next); saveText(); }} ariaLabel="Dictate visitors" />
+          </div>
         </Field>
         <Field label={t('dre.lblSubsOnSite')}>
           <textarea
@@ -394,6 +404,9 @@ export function DailyReportEditor({ initial, employees, jobs, apiBaseUrl }: Prop
             onBlur={saveText}
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
+          <div className="mt-1">
+            <VoiceButton currentValue={subsOnSite} onTranscript={(next) => { setSubsOnSite(next); saveText(); }} ariaLabel="Dictate subs on site" />
+          </div>
         </Field>
         <Field label={t('dre.lblMaterials')}>
           <textarea
@@ -403,6 +416,9 @@ export function DailyReportEditor({ initial, employees, jobs, apiBaseUrl }: Prop
             onBlur={saveText}
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
+          <div className="mt-1">
+            <VoiceButton currentValue={materialsConsumed} onTranscript={(next) => { setMaterialsConsumed(next); saveText(); }} ariaLabel="Dictate materials" />
+          </div>
         </Field>
         <Field label={t('dre.lblNextDay')}>
           <textarea
@@ -412,6 +428,9 @@ export function DailyReportEditor({ initial, employees, jobs, apiBaseUrl }: Prop
             onBlur={saveText}
             className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
           />
+          <div className="mt-1">
+            <VoiceButton currentValue={nextDayPlan} onTranscript={(next) => { setNextDayPlan(next); saveText(); }} ariaLabel="Dictate next-day plan" />
+          </div>
         </Field>
       </section>
     </div>
