@@ -15,6 +15,7 @@ import {
   type PDFDocumentProxy,
 } from 'pdfjs-dist';
 import { MeasurementsPanel } from './plan-editor-measurements';
+import { downloadTakeoffPdf } from './plan-editor-export';
 import {
   defaultMeasurementColor,
   feetPerPlanUnit,
@@ -77,6 +78,7 @@ export function PlanEditor({ takeoff: initial, apiBaseUrl }: Props) {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [hiddenLayers, setHiddenLayers] = useState<Set<string>>(new Set());
+  const [exporting, setExporting] = useState(false);
 
   function toggleLayer(layer: string) {
     setHiddenLayers((prev) => {
@@ -530,6 +532,25 @@ export function PlanEditor({ takeoff: initial, apiBaseUrl }: Props) {
           className="rounded border border-gray-300 bg-white px-2 py-1 text-xs hover:bg-gray-50"
         >
           Reset
+        </button>
+        <span className="mx-2 h-4 w-px bg-gray-300" />
+        <button
+          type="button"
+          disabled={exporting || !pdf}
+          onClick={async () => {
+            setExporting(true);
+            try {
+              await downloadTakeoffPdf(takeoff);
+            } catch (err) {
+              setSaveError(err instanceof Error ? err.message : 'Export failed');
+            } finally {
+              setExporting(false);
+            }
+          }}
+          title="Download a flattened PDF with measurements baked in"
+          className="rounded border border-emerald-300 bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 disabled:opacity-40"
+        >
+          {exporting ? 'Exporting…' : '⬇ Export PDF'}
         </button>
         <span className="ml-auto text-xs text-gray-600">
           Scale:{' '}
