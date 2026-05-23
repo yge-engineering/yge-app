@@ -17,6 +17,10 @@ import { AppShell, PageHeader } from '../../../components';
 import { ArAgingTile } from '../../../components/ar-aging-tile';
 import { CoiAgingTile } from '../../../components/coi-aging-tile';
 import { CprDueTile } from '../../../components/cpr-due-tile';
+import {
+  DashboardViewPrefEnforcer,
+  DashboardViewPrefSetter,
+} from '../../../components/dashboard-view-pref';
 import { MorningBriefingTile } from '../../../components/morning-briefing-tile';
 
 export default function DashboardLitePage() {
@@ -28,16 +32,18 @@ export default function DashboardLitePage() {
           subtitle="Simplified morning view. Four tiles. Need everything? Open the full board."
         />
 
-        <div className="mb-4 flex items-center justify-between text-sm">
-          <span className="text-gray-600">
-            Showing the simplified board.
-          </span>
-          <Link
-            href="/dashboard"
-            className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-semibold text-yge-blue-500 hover:bg-yge-blue-50"
-          >
-            Switch to full dashboard →
-          </Link>
+        <DashboardViewPrefEnforcer hereIs="lite" />
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 text-sm">
+          <span className="text-gray-600">Showing the simplified board.</span>
+          <div className="flex items-center gap-2">
+            <DashboardViewPrefSetter value="lite" label="Make this the default" />
+            <Link
+              href="/dashboard"
+              className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-semibold text-yge-blue-500 hover:bg-yge-blue-50"
+            >
+              Switch to full dashboard →
+            </Link>
+          </div>
         </div>
 
         <div className="space-y-4">

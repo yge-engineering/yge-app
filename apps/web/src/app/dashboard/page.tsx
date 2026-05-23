@@ -11,6 +11,10 @@ import type React from 'react';
 
 import { Alert } from '../../components/alert';
 import { AppShell } from '../../components/app-shell';
+import {
+  DashboardViewPrefEnforcer,
+  DashboardViewPrefSetter,
+} from '../../components/dashboard-view-pref';
 import { BidDueSoonBanner } from '../../components/bid-due-soon-banner';
 import { GettingStartedBanner } from '../../components/getting-started-banner';
 import { LicenseRenewalBanner } from '../../components/license-renewal-banner';
@@ -488,7 +492,9 @@ async function DashboardPageInner() {
     <main className="mx-auto max-w-7xl p-6">
       <DataStatusBanner />
       <GlobalSearchBar />
-      <div className="mb-4 flex items-center justify-end text-xs">
+      <div className="mb-4 flex items-center justify-end gap-2 text-xs">
+        <DashboardViewPrefEnforcer hereIs="full" />
+        <DashboardViewPrefSetter value="full" label="Make full the default" />
         <Link
           href="/dashboard/lite"
           className="rounded border border-gray-300 px-2.5 py-1 font-medium text-gray-600 hover:bg-gray-50"
