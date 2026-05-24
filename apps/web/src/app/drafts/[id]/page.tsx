@@ -11,6 +11,7 @@ import type { PtoEOutput } from '@yge/shared';
 import { classifyOwnerAgency } from '@yge/shared';
 import { DraftView } from '@/components/draft-view';
 import { ConvertDraftButton } from '@/components/convert-draft-button';
+import { DeleteDraftButton } from '@/components/delete-draft-button';
 import { OwnerAgencyComplianceCard } from '@/components/owner-agency-compliance-card';
 import { getTranslator } from '../../../lib/locale';
 
@@ -86,11 +87,19 @@ export default async function DraftDetailPage({ params }: { params: { id: string
           <p className="text-xs uppercase tracking-wide text-gray-500">
             {t('draftPg.savedAt', { when: formatWhen(saved.createdAt) })}
           </p>
-          <ConvertDraftButton
-            draftId={saved.id}
-            apiBaseUrl={publicApiBaseUrl()}
-            preview={{ bidItems: saved.draft.bidItems }}
-          />
+          <div className="flex items-start gap-3">
+            <ConvertDraftButton
+              draftId={saved.id}
+              apiBaseUrl={publicApiBaseUrl()}
+              preview={{ bidItems: saved.draft.bidItems }}
+            />
+            <DeleteDraftButton
+              draftId={saved.id}
+              draftLabel={saved.draft.projectName}
+              apiBaseUrl={publicApiBaseUrl()}
+              variant="detail"
+            />
+          </div>
         </div>
         <DraftView
           draft={saved.draft}

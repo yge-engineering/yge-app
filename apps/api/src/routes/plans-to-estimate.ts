@@ -16,7 +16,7 @@ import {
   runMultiPass,
   MultiPassError,
 } from '../services/plans-to-estimate-multipass';
-import { saveDraft, listDrafts, getDraft } from '../lib/drafts-store';
+import { saveDraft, listDrafts, getDraft, softDeleteDraft } from '../lib/drafts-store';
 
 export const plansToEstimateRouter = Router();
 
@@ -205,6 +205,20 @@ plansToEstimateRouter.get('/drafts/:id', async (req, res, next) => {
     const draft = await getDraft(req.params.id);
     if (!draft) return res.status(404).json({ error: 'Draft not found' });
     return res.json({ draft });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /api/plans-to-estimate/drafts/:id — soft-delete. The row
+// stays in Postgres (deletedAt set) so a recovery query can bring
+// it back; the list / detail GET endpoints filter on deletedAt:null
+// so the user no longer sees it.
+plansToEstimateRouter.delete('/drafts/:id', async (req, res, next) => {
+  try {
+    const ok = await softDeleteDraft(req.params.id);
+    if (!ok) return res.status(404).json({ error: 'Draft not found' });
+    return res.json({ ok: true, id: req.params.id });
   } catch (err) {
     next(err);
   }

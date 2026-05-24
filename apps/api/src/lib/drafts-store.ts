@@ -133,3 +133,21 @@ export async function getDraft(id: string): Promise<SavedDraft | null> {
   });
   return row ? (row.data as unknown as SavedDraft) : null;
 }
+
+/** Soft-delete a draft by setting deletedAt. We never hard-delete —
+ *  per CLAUDE.md prohibited-actions, permanent deletions are off the
+ *  table. The row stays in Postgres so a recovery query can bring
+ *  it back (and audit trails stay intact). The list + detail
+ *  queries already filter on deletedAt:null so soft-deleted drafts
+ *  vanish from the user's view immediately.
+ *
+ *  Returns true when the draft existed (and is now deleted), false
+ *  when the id didn't match a live draft. */
+export async function softDeleteDraft(id: string): Promise<boolean> {
+  if (!/^[a-z0-9-]{10,80}$/.test(id)) return false;
+  const result = await prisma.ptoEDraft.updateMany({
+    where: { id, companyId: companyId(), deletedAt: null },
+    data: { deletedAt: new Date() },
+  });
+  return result.count > 0;
+}

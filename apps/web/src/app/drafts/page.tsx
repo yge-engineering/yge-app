@@ -8,6 +8,7 @@ import Link from 'next/link';
 
 import { formatUSD } from '@yge/shared';
 import { Alert, AppShell } from '../../components';
+import { DeleteDraftButton } from '../../components/delete-draft-button';
 import { relativeTime } from '../../lib/relative-time';
 import { DraftsSearchInput } from '../../components/drafts-search-input';
 import { projectTypeIcon } from '../../lib/project-type-icon';
@@ -228,6 +229,12 @@ export default async function DraftsPage() {
                       >
                         {t('drafts.action.csv')}
                       </a>
+                      <DeleteDraftButton
+                        draftId={d.id}
+                        draftLabel={d.projectName}
+                        apiBaseUrl={publicApiBaseUrl()}
+                        variant="row"
+                      />
                     </div>
                   </td>
                 </tr>
