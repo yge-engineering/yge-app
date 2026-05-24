@@ -8,8 +8,10 @@ import Link from 'next/link';
 import { AppShell } from '../../../components/app-shell';
 import { notFound } from 'next/navigation';
 import type { PtoEOutput } from '@yge/shared';
+import { classifyOwnerAgency } from '@yge/shared';
 import { DraftView } from '@/components/draft-view';
 import { ConvertDraftButton } from '@/components/convert-draft-button';
+import { OwnerAgencyComplianceCard } from '@/components/owner-agency-compliance-card';
 import { getTranslator } from '../../../lib/locale';
 
 interface SavedDraft {
@@ -96,6 +98,16 @@ export default async function DraftDetailPage({ params }: { params: { id: string
           promptVersion={saved.promptVersion}
           usage={saved.usage}
           elapsedMs={saved.durationMs}
+        />
+      </div>
+
+      <div className="mb-6">
+        <OwnerAgencyComplianceCard
+          classification={classifyOwnerAgency({
+            ownerName: saved.draft.ownerAgency,
+            documentText: saved.documentText,
+          })}
+          ownerLabel={saved.draft.ownerAgency}
         />
       </div>
 
