@@ -199,6 +199,7 @@ const NAV_SPEC: NavGroupSpec[] = [
       { key: 'nav.laborBurden', href: '/labor-burden', requires: 'financials:view' },
       { key: 'nav.materialYield', href: '/material-yield' },
       { key: 'nav.pavingWeather', href: '/paving-weather' },
+      { key: 'nav.toolboxRotation', href: '/toolbox-rotation' },
       { key: 'nav.bondCapacity', href: '/bond-capacity', requires: 'financials:view' },
       { key: 'nav.fixedAssets', href: '/fixed-assets', requires: 'financials:view' },
       { key: 'nav.materialAlerts', href: '/material-alerts', requires: 'financials:view' },
