@@ -54,6 +54,7 @@ export * from './document';
 export * from './ap-invoice';
 export * from './rfi';
 export * from './material';
+export * from './ar-collection-sequence';
 export * from './ar-invoice';
 export * from './submittal';
 export * from './change-order';
