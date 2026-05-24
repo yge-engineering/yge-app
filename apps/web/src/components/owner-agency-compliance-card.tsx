@@ -7,7 +7,11 @@
 // Server-component friendly: no client hooks, no state — the parent
 // passes in the classification result already computed.
 
-import type { OwnerAgencyClassification } from '@yge/shared';
+import type {
+  OwnerAgencyClassification,
+  PtoEProjectType,
+} from '@yge/shared';
+import { buildJobStartupChecklist } from '@yge/shared';
 
 // Short, plain-English labels for each agency kind. Matches the
 // CLAUDE.md "plain English" guidance — no agency acronyms without
@@ -53,11 +57,34 @@ interface Props {
   /** Owner string the heuristic ran against. Surfaced so the user can
    *  sanity-check the input. */
   ownerLabel?: string;
+  /** When provided, the card surfaces an "If awarded, do these first"
+   *  preview of the top critical startup items so the estimator sees
+   *  the post-award workload before they even submit the bid. */
+  projectType?: PtoEProjectType;
 }
 
-export function OwnerAgencyComplianceCard({ classification, ownerLabel }: Props) {
+export function OwnerAgencyComplianceCard({
+  classification,
+  ownerLabel,
+  projectType,
+}: Props) {
   const { kind, confidence, matchedSignals, compliance } = classification;
   const lowConfidence = confidence > 0 && confidence < 0.7;
+
+  // Compute the top critical startup items when projectType + a
+  // classified agency are both present. Showing 4 to keep the card
+  // short — the editor can link to the full /jobs/[id]/startup-checklist
+  // page later when one exists.
+  const startupTop =
+    projectType && kind !== 'UNCLASSIFIED'
+      ? buildJobStartupChecklist({
+          projectType,
+          classification,
+          hasListedSubs: true, // optimistic — true for most bid jobs
+        })
+          .items.filter((i) => i.severity === 'critical')
+          .slice(0, 4)
+      : [];
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
@@ -103,6 +130,24 @@ export function OwnerAgencyComplianceCard({ classification, ownerLabel }: Props)
           <ComplianceChip on={compliance.subListingRequired} label="§4104 sub list" />
           <ComplianceChip on={compliance.swpppLikely} label="SWPPP likely" />
         </div>
+      )}
+
+      {startupTop.length > 0 && (
+        <details className="mt-4 rounded-md border border-gray-100 bg-gray-50 p-3">
+          <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-gray-700">
+            If awarded — first {startupTop.length} critical items
+          </summary>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-gray-800">
+            {startupTop.map((item) => (
+              <li key={item.id}>
+                <span className="font-medium">{item.label}</span>
+                {item.detail && (
+                  <span className="ml-1 italic text-gray-500">— {item.detail}</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </details>
       )}
 
       {matchedSignals.length > 0 && (

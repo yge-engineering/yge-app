@@ -108,6 +108,7 @@ export default async function DraftDetailPage({ params }: { params: { id: string
             documentText: saved.documentText,
           })}
           ownerLabel={saved.draft.ownerAgency}
+          projectType={saved.draft.projectType}
         />
       </div>
 

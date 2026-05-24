@@ -396,6 +396,7 @@ export default function PlansToEstimatePage() {
                     documentText,
                   })}
                   ownerLabel={result.draft.ownerAgency}
+                  projectType={result.draft.projectType}
                 />
               </div>
             </>
