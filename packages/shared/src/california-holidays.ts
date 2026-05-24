@@ -268,6 +268,29 @@ export function addBusinessDays(
   return cur;
 }
 
+/** Mirror of addBusinessDays moving in the OTHER direction. Returns the
+ *  date that is `count` business days BEFORE `date`. Used by 72-hour-
+ *  notice math (DAS-142) and similar "no later than" deadlines. If the
+ *  start date is itself a weekend / holiday, snaps backward to the
+ *  previous business day before counting. */
+export function subtractBusinessDays(
+  date: CalDate,
+  count: number,
+  options: HolidayOptions = {},
+): CalDate {
+  if (count < 0) {
+    throw new Error('subtractBusinessDays: count must be >= 0');
+  }
+  let cur = date;
+  while (!isBusinessDay(cur, options)) cur = addDays(cur, -1);
+  let remaining = count;
+  while (remaining > 0) {
+    cur = addDays(cur, -1);
+    if (isBusinessDay(cur, options)) remaining -= 1;
+  }
+  return cur;
+}
+
 /** Convenience: the next CA business day on or after `date`. */
 export function nextBusinessDay(
   date: CalDate,

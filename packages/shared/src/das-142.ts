@@ -7,6 +7,10 @@
 // an actual dispatch request for specific people on specific dates.
 
 import { z } from 'zod';
+// 72-hour rule = 3 business days back. Use the CA-holiday-aware helper
+// so the math doesn't quietly schedule the latest send date on top of a
+// state holiday (Memorial Day, Cesar Chavez, etc).
+import { subtractBusinessDays } from './california-holidays';
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -50,22 +54,14 @@ function formatDate(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-/** Subtract 72 business hours (3 business days) from `needed`. Excludes
- *  Saturdays and Sundays; holidays not modeled — caller can add buffer. */
-function subtract72BusinessHours(needed: Date): Date {
-  let d = new Date(needed);
-  let businessDaysSubtracted = 0;
-  while (businessDaysSubtracted < 3) {
-    d.setUTCDate(d.getUTCDate() - 1);
-    const day = d.getUTCDay();
-    if (day !== 0 && day !== 6) businessDaysSubtracted += 1;
-  }
-  return d;
-}
-
 export function buildDas142(input: Das142Input, today: string): Das142Result {
   const needed = parseISO(input.neededByDate);
-  const earliest = subtract72BusinessHours(needed);
+  // 72 business hours = 3 business days back from neededByDate. The
+  // helper handles weekends + CA-observed holidays so the answer is
+  // never a Memorial Day / Christmas Eve / etc.
+  const earliest = parseISO(
+    subtractBusinessDays(input.neededByDate, 3),
+  );
   const todayDate = parseISO(today);
   const noticeDaysGiven = Math.round(
     (needed.getTime() - todayDate.getTime()) / (1000 * 60 * 60 * 24),

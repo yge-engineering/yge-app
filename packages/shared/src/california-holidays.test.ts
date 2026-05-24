@@ -12,6 +12,7 @@ import {
   isBusinessDay,
   addDays,
   addBusinessDays,
+  subtractBusinessDays,
   nextBusinessDay,
   businessDaysBetween,
 } from './california-holidays';
@@ -120,6 +121,32 @@ describe('addBusinessDays', () => {
   });
   it('throws on negative count', () => {
     expect(() => addBusinessDays('2026-01-01', -1)).toThrow();
+  });
+});
+
+describe('subtractBusinessDays', () => {
+  it('subtracts 3 business days across a normal week', () => {
+    // Fri 2026-05-22 - 3 biz days = Tue 2026-05-19.
+    expect(subtractBusinessDays('2026-05-22', 3)).toBe('2026-05-19');
+  });
+  it('skips weekends when going backward', () => {
+    // Mon 2026-05-18 - 1 = Fri 2026-05-15.
+    expect(subtractBusinessDays('2026-05-18', 1)).toBe('2026-05-15');
+  });
+  it('skips Memorial Day going backward', () => {
+    // Tue 2026-05-26 - 3 biz days. Mon 5/25 is Memorial Day → skip.
+    // 5/26 (start, biz day) → 5/22 (Fri, day 1) → 5/21 (Thu, day 2) →
+    // 5/20 (Wed, day 3) → answer 5/20.
+    expect(subtractBusinessDays('2026-05-26', 3)).toBe('2026-05-20');
+  });
+  it('count 0 returns the input when it is a business day', () => {
+    expect(subtractBusinessDays('2026-05-26', 0)).toBe('2026-05-26');
+  });
+  it('count 0 snaps backward from a weekend', () => {
+    expect(subtractBusinessDays('2026-05-23', 0)).toBe('2026-05-22');
+  });
+  it('throws on negative count', () => {
+    expect(() => subtractBusinessDays('2026-01-01', -1)).toThrow();
   });
 });
 

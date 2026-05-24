@@ -18,10 +18,15 @@ const baseInput: Das142Input = Das142InputSchema.parse({
 });
 
 describe('buildDas142', () => {
-  it('computes earliest 72-hour compliance date (3 business days back)', () => {
-    // Needed Tuesday 2026-05-26 → minus 3 business days = Thursday 2026-05-21.
+  it('computes earliest 72-hour compliance date (3 business days back, holiday-aware)', () => {
+    // Needed Tuesday 2026-05-26 → minus 3 business days.
+    // Mon 2026-05-25 is Memorial Day so the countdown skips it:
+    //   Tue 5/26 start → Fri 5/22 (1) → Thu 5/21 (2) → Wed 5/20 (3) → 2026-05-20.
+    // Before bundle 2553 the local subtract72BusinessHours only skipped
+    // weekends and returned 2026-05-21; this test pins the new
+    // holiday-aware answer.
     const r = buildDas142(baseInput, '2026-05-22');
-    expect(r.earliestComplianceDate).toBe('2026-05-21');
+    expect(r.earliestComplianceDate).toBe('2026-05-20');
   });
   it('handles weekends in the 72-hour calculation', () => {
     // Needed Monday 2026-06-01 → minus 3 business days = Wednesday 2026-05-27.
