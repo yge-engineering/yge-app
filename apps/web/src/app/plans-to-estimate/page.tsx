@@ -19,6 +19,8 @@ import { useSearchParams } from 'next/navigation';
 import type { Job, PtoEOutput } from '@yge/shared';
 import { ApiError, getJson, postJson } from '@/lib/api';
 import { DraftView } from '@/components/draft-view';
+import { OwnerAgencyComplianceCard } from '@/components/owner-agency-compliance-card';
+import { classifyOwnerAgency } from '@yge/shared';
 import { useTranslator } from '@/lib/use-translator';
 
 interface ApiResult {
@@ -387,6 +389,15 @@ export default function PlansToEstimatePage() {
                 usage={result.usage}
                 elapsedMs={elapsedMs}
               />
+              <div className="mt-5">
+                <OwnerAgencyComplianceCard
+                  classification={classifyOwnerAgency({
+                    ownerName: result.draft.ownerAgency,
+                    documentText,
+                  })}
+                  ownerLabel={result.draft.ownerAgency}
+                />
+              </div>
             </>
           )}
         </section>
