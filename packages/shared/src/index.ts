@@ -838,3 +838,4 @@ export * from './sub-bid-lead-time';
 export * from './paving-weather-window';
 export * from './toolbox-rotation';
 export * from './job-billing-pace';
+export * from './bid-line-rounding';
