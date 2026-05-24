@@ -30,6 +30,7 @@ export * from './rates';
 export * from './estimate';
 export * from './schemas';
 export * from './plans-to-estimate-output';
+export * from './pre-bid-walkdown';
 export * from './csv';
 export * from './priced-estimate';
 export * from './company';
