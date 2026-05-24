@@ -7,6 +7,7 @@
 // quotes.
 
 import type { PtoEBidItem } from './plans-to-estimate-output';
+import { sumPtoEBidTotalCents } from './plans-to-estimate-output';
 import type { PricedEstimate } from './priced-estimate';
 import { computeEstimateTotals, lineExtendedCents } from './priced-estimate';
 import { centsToDollars } from './money';
@@ -19,6 +20,16 @@ export const BID_ITEM_CSV_HEADERS = [
   'Confidence',
   'Page Reference',
   'Notes',
+] as const;
+
+/** Columns added when any item carries an estimatedUnitPriceCents — the
+ *  Plans-to-Estimate@1.1.0 market-priced takeoff path. Kept as a separate
+ *  constant so the schema-extension behavior is explicit + testable. */
+export const BID_ITEM_PRICED_EXTRA_HEADERS = [
+  'Unit Price',
+  'Line Total',
+  'Price Source',
+  'Price Source Note',
 ] as const;
 
 export function csvEscape(value: string | number | undefined | null): string {
@@ -161,23 +172,64 @@ export function csvDollars(cents: number | null | undefined): string {
   return (cents / 100).toFixed(2);
 }
 
+/**
+ * Bid-item CSV. When any item has an `estimatedUnitPriceCents`, four
+ * extra columns + a totals block get appended so Ryan can paste the
+ * priced AI draft straight into Excel and have the math line up:
+ *
+ *   Item #, Description, Unit, Quantity, Confidence, Page Reference, Notes,
+ *   Unit Price, Line Total, Price Source, Price Source Note
+ *
+ * When NO items are priced (legacy drafts, T&M-only jobs), the output is
+ * byte-for-byte identical to the original 7-column format — so saved CSVs
+ * + downstream tooling keep working.
+ */
 export function bidItemsToCsv(items: PtoEBidItem[]): string {
-  const rows: string[] = [BID_ITEM_CSV_HEADERS.map(csvEscape).join(',')];
+  const anyPriced = items.some((i) => i.estimatedUnitPriceCents != null);
+  const headers = anyPriced
+    ? [...BID_ITEM_CSV_HEADERS, ...BID_ITEM_PRICED_EXTRA_HEADERS]
+    : BID_ITEM_CSV_HEADERS;
+  const rows: string[] = [headers.map(csvEscape).join(',')];
+
   for (const item of items) {
+    const base = [
+      item.itemNumber,
+      item.description,
+      item.unit,
+      item.quantity,
+      item.confidence,
+      item.pageReference ?? '',
+      item.notes ?? '',
+    ];
+    if (anyPriced) {
+      // Recompute the line total defensively in case the model gave a unit
+      // price but skipped the multiplication.
+      const unit = item.estimatedUnitPriceCents;
+      const line =
+        item.estimatedLineTotalCents ??
+        (unit != null ? Math.round(item.quantity * unit) : null);
+      base.push(
+        csvDollars(unit ?? null),
+        csvDollars(line ?? null),
+        item.priceSourceConfidence ?? '',
+        item.priceSourceNote ?? '',
+      );
+    }
+    rows.push(base.map(csvEscape).join(','));
+  }
+
+  if (anyPriced) {
+    // Right-align the grand-total cell under the "Line Total" column
+    // (index 8 in the priced layout, 0-based — so 8 leading blanks).
+    const grand = sumPtoEBidTotalCents(items);
+    rows.push('');
     rows.push(
-      [
-        item.itemNumber,
-        item.description,
-        item.unit,
-        item.quantity,
-        item.confidence,
-        item.pageReference ?? '',
-        item.notes ?? '',
-      ]
+      ['', '', '', '', '', '', '', 'Estimated bid total', csvDollars(grand)]
         .map(csvEscape)
         .join(','),
     );
   }
+
   // Excel handles \r\n cleanly. Trailing newline is conventional.
   return rows.join('\r\n') + '\r\n';
 }

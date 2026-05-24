@@ -8,6 +8,7 @@ import {
   parseCsvRows,
   parseCsvObjects,
   BID_ITEM_CSV_HEADERS,
+  BID_ITEM_PRICED_EXTRA_HEADERS,
   pricedEstimateToCsv,
   PRICED_ESTIMATE_CSV_HEADERS,
 } from './csv';
@@ -103,6 +104,95 @@ describe('bidItemsToCsv', () => {
   it('returns just a header + trailing newline for an empty list', () => {
     const out = bidItemsToCsv([]);
     expect(out).toBe(BID_ITEM_CSV_HEADERS.join(',') + '\r\n');
+  });
+
+  // ---- Plans-to-Estimate@1.1.0 priced-takeoff CSV behavior ---------------
+  describe('priced takeoff path', () => {
+    const priced: PtoEBidItem[] = [
+      {
+        itemNumber: '1',
+        description: 'Class 2 AB',
+        unit: 'TON',
+        quantity: 1200,
+        confidence: 'MEDIUM',
+        estimatedUnitPriceCents: 4250,
+        estimatedLineTotalCents: 1200 * 4250,
+        priceSourceConfidence: 'MEDIUM',
+        priceSourceNote: 'Caltrans 2024-2026 D2 avg + 20% O&P',
+      },
+      {
+        itemNumber: '2',
+        description: 'T&M subgrade',
+        unit: 'LS',
+        quantity: 1,
+        confidence: 'LOW',
+        // unpriced — falls under the "any item priced extends columns" rule
+      },
+    ];
+
+    it('appends the priced columns to the header when any item is priced', () => {
+      const out = bidItemsToCsv(priced);
+      const firstLine = out.split('\r\n')[0];
+      expect(firstLine).toBe(
+        [...BID_ITEM_CSV_HEADERS, ...BID_ITEM_PRICED_EXTRA_HEADERS].join(','),
+      );
+    });
+
+    it('renders unit price + line total in plain dollar format', () => {
+      const out = bidItemsToCsv(priced);
+      // 4250 cents = $42.50; 5,100,000 cents = $51,000.00.
+      // Note has no comma/quote/newline, so it's not quote-wrapped.
+      expect(out).toContain(
+        '1,Class 2 AB,TON,1200,MEDIUM,,,42.50,51000.00,MEDIUM,Caltrans 2024-2026 D2 avg + 20% O&P',
+      );
+    });
+
+    it('leaves price cells blank for unpriced items inside a priced draft', () => {
+      const out = bidItemsToCsv(priced);
+      // Item 2 is unpriced — the 4 trailing cells are empty.
+      expect(out).toContain('2,T&M subgrade,LS,1,LOW,,,,,,');
+    });
+
+    it('backfills line total when only the unit price is set', () => {
+      const onlyUnit: PtoEBidItem[] = [
+        {
+          itemNumber: '1',
+          description: 'Foo',
+          unit: 'EA',
+          quantity: 3,
+          confidence: 'HIGH',
+          estimatedUnitPriceCents: 1000, // $10
+          // estimatedLineTotalCents intentionally omitted
+        },
+      ];
+      const out = bidItemsToCsv(onlyUnit);
+      // line total = 3 * 1000 cents = $30.00
+      expect(out).toContain('1,Foo,EA,3,HIGH,,,10.00,30.00,,');
+    });
+
+    it('appends an "Estimated bid total" row right-aligned under Line Total', () => {
+      const out = bidItemsToCsv(priced);
+      // Grand total = $51,000.00 (item 1 only; item 2 unpriced)
+      expect(out).toContain(',,,,,,,Estimated bid total,51000.00');
+    });
+
+    it('keeps the 7-column layout when no items are priced (backward compat)', () => {
+      const legacy: PtoEBidItem[] = [
+        {
+          itemNumber: '1',
+          description: 'Mob',
+          unit: 'LS',
+          quantity: 1,
+          confidence: 'HIGH',
+        },
+      ];
+      const out = bidItemsToCsv(legacy);
+      // Exactly the old 7-column header + data row + trailing newline.
+      // No extra columns, no totals block.
+      expect(out).toBe(
+        BID_ITEM_CSV_HEADERS.join(',') + '\r\n' + '1,Mob,LS,1,HIGH,,' + '\r\n',
+      );
+    });
   });
 });
 
