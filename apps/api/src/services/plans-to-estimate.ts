@@ -7,7 +7,7 @@
 // the runtime call still goes through the typed `anthropic` client.
 import { anthropic, DEFAULT_MODEL } from '../lib/anthropic';
 import { SYSTEM_PROMPT, buildUserMessage, PROMPT_VERSION } from '../lib/prompts/plans-to-estimate-v1';
-import { PtoEOutputSchema, type PtoEOutput } from '@yge/shared';
+import { PtoEOutputSchema, sumPtoEBidTotalCents, type PtoEOutput } from '@yge/shared';
 
 export interface RunPlansToEstimateInput {
   documentText: string;
@@ -70,12 +70,29 @@ const SUBMIT_TOOL: SubmitTool = {
             confidence: { type: 'string', enum: ['HIGH', 'MEDIUM', 'LOW'] },
             notes: { type: 'string' },
             pageReference: { type: 'string' },
+            // Market-priced unit cost in cents. All-in (labor + equip +
+            // material + 20% O&P unless flagged in priceSourceNote).
+            estimatedUnitPriceCents: { type: 'integer', minimum: 0 },
+            // quantity × estimatedUnitPriceCents at output time.
+            estimatedLineTotalCents: { type: 'integer', minimum: 0 },
+            // Where the price came from: HIGH = local recent comparable,
+            // MEDIUM = California regional average, LOW = generic.
+            priceSourceConfidence: {
+              type: 'string',
+              enum: ['HIGH', 'MEDIUM', 'LOW'],
+            },
+            // One-line rationale ("Caltrans 2024-2026 avg for Class 2
+            // base", "similar 2024 won bid"). Forces a price stance.
+            priceSourceNote: { type: 'string' },
           },
         },
       },
       assumptions: { type: 'array', items: { type: 'string' } },
       questionsForEstimator: { type: 'array', items: { type: 'string' } },
       overallConfidence: { type: 'string', enum: ['HIGH', 'MEDIUM', 'LOW'] },
+      // Roll-up across bidItems. The service backfills this when the
+      // model forgets, so the UI always has a total.
+      estimatedBidTotalCents: { type: 'integer', minimum: 0 },
     },
   },
 };
@@ -135,8 +152,27 @@ export async function runPlansToEstimate(
     );
   }
 
+  // Backfill any missing per-line totals (quantity × unit price) +
+  // the grand total. The model is supposed to set these but we
+  // recompute defensively so the UI always has consistent numbers.
+  const bidItems = parsed.data.bidItems.map((item) => {
+    if (item.estimatedUnitPriceCents === undefined) return item;
+    const computed = Math.round(item.quantity * item.estimatedUnitPriceCents);
+    return {
+      ...item,
+      estimatedLineTotalCents: item.estimatedLineTotalCents ?? computed,
+    };
+  });
+  const grand = sumPtoEBidTotalCents(bidItems);
+  const enriched: PtoEOutput = {
+    ...parsed.data,
+    bidItems,
+    estimatedBidTotalCents:
+      grand > 0 ? grand : parsed.data.estimatedBidTotalCents,
+  };
+
   return {
-    output: parsed.data,
+    output: enriched,
     usage: {
       inputTokens: response.usage.input_tokens,
       outputTokens: response.usage.output_tokens,

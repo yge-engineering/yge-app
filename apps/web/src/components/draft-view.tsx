@@ -11,7 +11,7 @@
 import { useState } from 'react';
 import type { PtoEOutput, PtoEBidItem, PtoEItemConfidence } from '@yge/shared';
 import { useTranslator, type Translator } from '../lib/use-translator';
-import { bidItemsToCsv } from '@yge/shared';
+import { bidItemsToCsv, formatUSD, sumPtoEBidTotalCents } from '@yge/shared';
 
 // CSV row generation lives in @yge/shared/csv so the API can emit the same
 // bytes from a future server-side download endpoint. The UI just picks the
@@ -131,6 +131,7 @@ export function DraftView({
             <BidItemRow key={i} item={item} t={t} />
           ))}
         </ul>
+        <BidTotalRow draft={draft} />
       </div>
 
       {draft.assumptions.length > 0 && (
@@ -168,6 +169,15 @@ export function DraftView({
 }
 
 function BidItemRow({ item, t }: { item: PtoEBidItem; t: Translator }) {
+  const hasPrice = item.estimatedUnitPriceCents !== undefined;
+  // Recompute line total defensively — if the model only filled the unit
+  // price we still want a number for display.
+  const lineCents =
+    item.estimatedLineTotalCents ??
+    (hasPrice
+      ? Math.round(item.quantity * (item.estimatedUnitPriceCents ?? 0))
+      : undefined);
+
   return (
     <li className="py-3">
       <div className="flex items-baseline justify-between gap-3">
@@ -179,11 +189,73 @@ function BidItemRow({ item, t }: { item: PtoEBidItem; t: Translator }) {
             {item.quantity.toLocaleString()} {item.unit}
             {item.pageReference && t('draftView.itemUnitSep', { ref: item.pageReference })}
           </p>
+          {hasPrice && (
+            <p className="mt-1 text-xs text-gray-700">
+              <span className="font-medium">
+                {formatUSD(item.estimatedUnitPriceCents ?? 0)} / {item.unit}
+              </span>
+              {lineCents !== undefined && (
+                <span className="text-gray-500"> · line {formatUSD(lineCents)}</span>
+              )}
+              {item.priceSourceConfidence && (
+                <span className="ml-2 align-middle">
+                  <PriceSourcePill value={item.priceSourceConfidence} />
+                </span>
+              )}
+            </p>
+          )}
+          {item.priceSourceNote && (
+            <p className="mt-1 text-xs italic text-gray-500">
+              <span className="font-medium not-italic text-gray-600">Price source:</span>{' '}
+              {item.priceSourceNote}
+            </p>
+          )}
           {item.notes && <p className="mt-1 text-xs italic text-gray-500">{item.notes}</p>}
         </div>
         <ConfidencePill value={item.confidence} />
       </div>
     </li>
+  );
+}
+
+/** Grand-total row at the bottom of the bid items list. Renders nothing
+ *  when the draft has no priced items (older drafts, T&M-only jobs). */
+function BidTotalRow({ draft }: { draft: PtoEOutput }) {
+  // Prefer the model-emitted total when present; otherwise sum what's
+  // there. Older drafts that don't have prices return 0, which we hide.
+  const grand = draft.estimatedBidTotalCents ?? sumPtoEBidTotalCents(draft.bidItems);
+  if (grand <= 0) return null;
+  return (
+    <div className="mt-3 flex items-baseline justify-between border-t border-gray-200 pt-3">
+      <span className="text-sm font-semibold uppercase tracking-wide text-gray-700">
+        Estimated bid total
+      </span>
+      <span className="text-lg font-semibold text-gray-900">{formatUSD(grand)}</span>
+    </div>
+  );
+}
+
+/** Small pill explaining how confident the AI is in the PRICE (not the
+ *  quantity). Visually distinct from ConfidencePill — uses a muted
+ *  outline so the two pills don't compete. */
+function PriceSourcePill({ value }: { value: PtoEItemConfidence }) {
+  const styles: Record<PtoEItemConfidence, string> = {
+    HIGH: 'border-green-300 text-green-700',
+    MEDIUM: 'border-yellow-300 text-yellow-700',
+    LOW: 'border-red-300 text-red-700',
+  };
+  const label: Record<PtoEItemConfidence, string> = {
+    HIGH: 'Local comparable',
+    MEDIUM: 'CA regional avg',
+    LOW: 'Generic',
+  };
+  return (
+    <span
+      className={`inline-block rounded-full border bg-white px-1.5 py-0.5 text-[10px] font-medium ${styles[value]}`}
+      title={`Price source confidence: ${value}`}
+    >
+      {label[value]}
+    </span>
   );
 }
 
