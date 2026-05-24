@@ -11,7 +11,7 @@
 import { useState } from 'react';
 import type { PtoEOutput, PtoEBidItem, PtoEItemConfidence } from '@yge/shared';
 import { useTranslator, type Translator } from '../lib/use-translator';
-import { bidItemsToCsv, formatUSD, sumPtoEBidTotalCents } from '@yge/shared';
+import { bidItemsToCsv, formatUSD, sumPtoEBidTotalCents, buildWalkdownChecklist } from '@yge/shared';
 
 // CSV row generation lives in @yge/shared/csv so the API can emit the same
 // bytes from a future server-side download endpoint. The UI just picks the
@@ -160,6 +160,8 @@ export function DraftView({
         </div>
       )}
 
+      <SiteWalkdownPanel projectType={draft.projectType} />
+
       <footer className="border-t border-gray-100 pt-3 text-xs text-gray-400">
         {t('draftView.footer', { model: modelUsed, prompt: promptVersion, input: usage.inputTokens.toLocaleString(), output: usage.outputTokens.toLocaleString() })}
         {elapsedMs != null && t('draftView.footerElapsed', { seconds: (elapsedMs / 1000).toFixed(1) })}
@@ -256,6 +258,37 @@ function PriceSourcePill({ value }: { value: PtoEItemConfidence }) {
     >
       {label[value]}
     </span>
+  );
+}
+
+/** Collapsed-by-default panel that lists the project-type-specific
+ *  site-walkdown items the estimator should verify in person before
+ *  pricing. Renders as a native <details> so it stays static-friendly
+ *  and prints reasonably with the section open. */
+function SiteWalkdownPanel({ projectType }: { projectType: PtoEOutput['projectType'] }) {
+  const checklist = buildWalkdownChecklist(projectType);
+  return (
+    <details className="rounded-md border border-gray-200 bg-gray-50 p-4">
+      <summary className="cursor-pointer text-sm font-semibold uppercase tracking-wide text-gray-700">
+        Site walkdown · {checklist.items.length} items
+        <span className="ml-2 text-[10px] font-normal lowercase tracking-normal text-gray-500">
+          things to verify in person before bidding
+        </span>
+      </summary>
+      <ul className="mt-3 space-y-2 text-sm text-gray-800">
+        {checklist.items.map((item) => (
+          <li key={item.id} className="flex items-start gap-2">
+            <span className="mt-0.5 inline-block h-3 w-3 flex-shrink-0 rounded border border-gray-400" />
+            <div>
+              <div className="font-medium">{item.label}</div>
+              {item.note && (
+                <div className="text-xs italic text-gray-600">{item.note}</div>
+              )}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </details>
   );
 }
 
