@@ -22,8 +22,15 @@ export const PtoEBidItemSchema = z.object({
   unit: z.string().min(1).max(20),
   quantity: z.number().nonnegative(),
   confidence: PtoEItemConfidenceSchema,
-  notes: z.string().max(1000).optional(),
-  pageReference: z.string().max(80).optional(),
+  /** v1.5.0+ derivation math lives here ("Lot 280 LF × 320 LF =
+   *  89,600 SF × 6" depth = 1,659 CY") so cap raised from 1000 to
+   *  2000. */
+  notes: z.string().max(2000).optional(),
+  /** v1.5.0 page references commonly cite sheet + view + station
+   *  range ("Sheet C-3 plan view, sta 12+50 to 14+00, typical
+   *  section A-A") — bumped from 80 to 300 so the AI doesn't have
+   *  to truncate. */
+  pageReference: z.string().max(300).optional(),
   /** Market-priced unit cost in cents. Optional — present only when
    *  the model produced a price. All-in number that bakes labor +
    *  equipment + material + the project's markup unless flagged
@@ -66,16 +73,18 @@ export const PtoEOutputSchema = z.object({
   bidItems: z.array(PtoEBidItemSchema).min(1),
   /** Plain assumptions list. v1.3.0+: each entry MUST start with one
    *  of "[HIGH] " / "[MED] " / "[LOW] " so the UI can color-code by
-   *  risk. Older drafts without the prefix are treated as MEDIUM. */
-  assumptions: z.array(z.string().max(500)).default([]),
+   *  risk. Older drafts without the prefix are treated as MEDIUM.
+   *  Cap bumped 500→1000 in v1.5.0 to fit risk-tag + derivation
+   *  rationale. */
+  assumptions: z.array(z.string().max(1000)).default([]),
   /** Scope the document EXPLICITLY says the owner provides ("by
    *  Owner", "by SMUD", "OFM", "NIC", "furnished and installed by
    *  agency"). The AI is forbidden from inventing this list — items
-   *  go here ONLY when the plans / spec literally say so. Prevents
-   *  silent scope reductions that hide million-dollar gaps in the
-   *  assumptions list. */
-  ownerFurnishedItems: z.array(z.string().max(300)).default([]),
-  questionsForEstimator: z.array(z.string().max(500)).default([]),
+   *  go here ONLY when the plans / spec literally say so. Each entry
+   *  is supposed to quote the source page so the cap is 600 (up
+   *  from 300). */
+  ownerFurnishedItems: z.array(z.string().max(600)).default([]),
+  questionsForEstimator: z.array(z.string().max(1000)).default([]),
   overallConfidence: PtoEItemConfidenceSchema,
   /** Sum of estimatedLineTotalCents across bidItems, when prices
    *  exist. Optional — old drafts without prices keep returning

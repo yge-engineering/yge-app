@@ -217,12 +217,29 @@ export async function runPlansToEstimate(
     );
   }
 
-  const parsed = PtoEOutputSchema.safeParse(toolUse.input);
+  // First parse attempt against the raw AI output.
+  let parsed = PtoEOutputSchema.safeParse(toolUse.input);
+
+  // When the only problems are over-long strings on descriptive
+  // fields (notes, pageReference, etc.), truncating to the cap and
+  // re-parsing is preferable to bailing — losing the whole bid for
+  // a 90-character pageReference that should be 80 is the worst
+  // possible UX. We only do this when EVERY issue is a max-length
+  // overflow on a string; any other shape problem still bails.
   if (!parsed.success) {
-    // Truncation: max_tokens stop + missing required fields = the
-    // model started filling the tool call but ran out of budget
-    // mid-JSON. Surface a clear, actionable error instead of dumping
-    // raw Zod issue lists on the estimator.
+    const allMaxLen = parsed.error.issues.every(
+      (i) => i.code === 'too_big' && i.type === 'string',
+    );
+    if (allMaxLen) {
+      const truncated = truncateOverlongStrings(toolUse.input, parsed.error.issues);
+      const retry = PtoEOutputSchema.safeParse(truncated);
+      if (retry.success) {
+        parsed = retry;
+      }
+    }
+  }
+
+  if (!parsed.success) {
     if (stopReason === 'max_tokens') {
       throw new PlansToEstimateError(
         'AI response was cut off mid-takeoff — the plan set has more bid items than fit in one response. Try (1) running it again in case Anthropic returns a faster path, (2) splitting the plan set into the bid schedule + spec sheets and dropping them separately, or (3) using the multi-pass page which chunks the work.',
@@ -267,4 +284,42 @@ export async function runPlansToEstimate(
     modelUsed: model,
     promptVersion: PROMPT_VERSION,
   };
+}
+
+/** Walk the over-length Zod issues and truncate the offending string
+ *  in a deep-cloned copy of the AI output. Each Zod issue has a
+ *  `path` (array of keys / indexes) + a `maximum` length we trimmed
+ *  past. Returns the cloned object ready for a re-parse.
+ *
+ *  Defensive: when the path is invalid for the cloned object (rare —
+ *  Zod could in theory issue against a node that no longer exists)
+ *  we just skip that issue. Worst case the re-parse fails on the
+ *  same issue and we surface the original error to the user. */
+function truncateOverlongStrings(input: unknown, issues: readonly any[]): unknown {
+  const cloned: unknown = JSON.parse(JSON.stringify(input));
+  for (const issue of issues) {
+    if (issue.code !== 'too_big' || issue.type !== 'string') continue;
+    const max = Number(issue.maximum);
+    if (!Number.isFinite(max) || max <= 0) continue;
+    const parent = walkToParent(cloned, issue.path);
+    if (!parent) continue;
+    const key = issue.path[issue.path.length - 1];
+    const value = parent[key];
+    if (typeof value !== 'string') continue;
+    parent[key] = value.slice(0, max - 3) + '...';
+  }
+  return cloned;
+}
+
+/** Drill into a nested object/array along the path, stopping at the
+ *  parent of the final key. Returns null when the path doesn't
+ *  resolve. */
+function walkToParent(root: unknown, path: readonly (string | number)[]): any {
+  if (path.length === 0) return null;
+  let cur: any = root;
+  for (let i = 0; i < path.length - 1; i += 1) {
+    if (cur == null) return null;
+    cur = cur[path[i] as string | number];
+  }
+  return cur ?? null;
 }
