@@ -20,11 +20,13 @@ export type SiteCondition = 'LIVE' | 'GREENFIELD' | 'PARTIAL_LIVE' | 'UNKNOWN';
 export interface ProductionRate {
   /** Stable id for the UI / lookups. */
   id: string;
-  /** Plain-English category tag. */
+  /** Plain-English category tag. Mirrors GanttGroup (minus MOB /
+   *  DEMOB which are fixed-day adders, not rate-driven). */
   category:
     | 'EARTHWORK'
     | 'UTILITY'
     | 'CONCRETE'
+    | 'STRUCTURE'
     | 'FENCE'
     | 'PAVING'
     | 'STRIPING'
@@ -114,22 +116,42 @@ export const DEFAULT_PRODUCTION_RATES: ProductionRate[] = [
   {
     id: 'conduit-trench-pull',
     category: 'UTILITY',
-    task: 'PVC conduit trench, lay, backfill (2–4" duct)',
+    task: 'PVC conduit trench, lay, backfill (single 2-4" duct)',
     unit: 'LF',
     perCrewDayLow: 150,
     perCrewDayHigh: 400,
     crewSize: 4,
-    note: 'Trencher / excavator + 2 laborers + grade-checker. Multi-conduit ductbanks slow the rate.',
+    note: 'Trencher / excavator + 2 laborers + grade-checker. SINGLE conduit only — multi-conduit ductbanks use the substation rate below.',
+  },
+  {
+    id: 'conduit-substation-ductbank-4-6',
+    category: 'UTILITY',
+    task: 'Substation ductbank, 4-6 conduits encased',
+    unit: 'LF',
+    perCrewDayLow: 30,
+    perCrewDayHigh: 80,
+    crewSize: 5,
+    note: 'Deep trench + chair stands + multi-conduit alignment + concrete encasement + utility inspection. Real-world substation rate (NOT 275/day single-conduit). Use for SMUD / PG&E / utility duct banks.',
+  },
+  {
+    id: 'conduit-substation-ductbank-8plus',
+    category: 'UTILITY',
+    task: 'Substation ductbank, 8+ conduits encased',
+    unit: 'LF',
+    perCrewDayLow: 15,
+    perCrewDayHigh: 40,
+    crewSize: 6,
+    note: 'Wide deep trench, multiple chair tiers, hand-set conduit alignment, careful concrete placement to avoid voids. Inspection-heavy.',
   },
   {
     id: 'conduit-encased-concrete',
     category: 'UTILITY',
-    task: 'Concrete-encased duct bank',
+    task: 'Concrete-encased duct bank (1-3 conduits)',
     unit: 'LF',
     perCrewDayLow: 60,
     perCrewDayHigh: 200,
     crewSize: 5,
-    note: 'Trench + duct + chair + flowable fill or 2-sack slurry. Inspection-heavy.',
+    note: 'Trench + duct + chair + flowable fill or 2-sack slurry. Inspection-heavy. Use the substation rates above for higher conduit counts.',
   },
   {
     id: 'ground-rod-install',
@@ -184,14 +206,34 @@ export const DEFAULT_PRODUCTION_RATES: ProductionRate[] = [
     note: 'Per-CY rate is misleading for foundations — bigger driver is # of separate foundations.',
   },
   {
+    id: 'transformer-foundation-each',
+    category: 'CONCRETE',
+    task: 'Transformer foundation (excavate, form walls + pad, rebar, anchor bolts, pour, strip, cure)',
+    unit: 'EA',
+    perCrewDayLow: 0.15,
+    perCrewDayHigh: 0.5,
+    crewSize: 8,
+    note: 'Substation transformer foundations take 2-7 crew-days EACH (form + rebar + anchor-bolt template + pour + cure + strip). Per-EA rate matters more than per-CY. Big transformers with stem walls + collection sumps trend low; small step-down pad foundations trend high.',
+  },
+  {
     id: 'oil-containment-berm',
     category: 'CONCRETE',
-    task: 'Oil-containment berm + liner',
+    task: 'Oil-containment berm + liner (substation perimeter)',
     unit: 'SF',
-    perCrewDayLow: 200,
-    perCrewDayHigh: 500,
+    perCrewDayLow: 150,
+    perCrewDayHigh: 400,
     crewSize: 4,
-    note: 'Containment-grade liner + concrete curb. Substation-specific.',
+    note: 'Containment-grade HDPE liner + concrete curb wall + drain sump. Substation-specific. Slower than flatwork because of the liner termination + sump tie-in.',
+  },
+  {
+    id: 'cmu-control-house-wall',
+    category: 'STRUCTURE',
+    task: 'CMU control-house / equipment-enclosure wall',
+    unit: 'SF',
+    perCrewDayLow: 80,
+    perCrewDayHigh: 200,
+    crewSize: 4,
+    note: 'Block + mortar + grout + rebar. Common on substation control buildings.',
   },
   {
     id: 'flatwork-pour-finish',
