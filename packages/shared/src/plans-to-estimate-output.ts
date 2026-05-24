@@ -49,6 +49,17 @@ export const PtoEOutputSchema = z.object({
   projectName: z.string().min(1).max(200),
   projectType: PtoEProjectTypeSchema,
   location: z.string().max(200).optional(),
+  /** Structured location fields the AI extracts from the plans (title
+   *  block address, vicinity map note, project description). City +
+   *  county let the server look up a NorCal centroid for quarry
+   *  trucking math when explicit lat/lng aren't on the plans. */
+  locationCity: z.string().max(120).optional(),
+  locationCounty: z.string().max(120).optional(),
+  /** Decimal degrees if the plans literally print them. Most plan
+   *  sets don't — the centroid lookup based on city + county is the
+   *  fallback. */
+  locationLat: z.number().min(-90).max(90).optional(),
+  locationLng: z.number().min(-180).max(180).optional(),
   ownerAgency: z.string().max(200).optional(),
   bidDueDate: z.string().max(40).optional(),
   prebidMeeting: z.string().max(1000).optional(),

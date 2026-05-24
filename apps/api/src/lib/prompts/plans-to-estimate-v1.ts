@@ -10,7 +10,7 @@
 // prompt produced (see Estimate.aiPromptVer in prisma/schema.prisma) so we
 // can correlate AI accuracy with prompt iterations as data accumulates.
 
-export const PROMPT_VERSION = 'plans-to-estimate@1.4.0';
+export const PROMPT_VERSION = 'plans-to-estimate@1.5.0';
 
 export const SYSTEM_PROMPT = [
   'You are an expert heavy civil construction estimator drafting a preliminary bid',
@@ -255,6 +255,29 @@ export const SYSTEM_PROMPT = [
   '',
   'Identify the project as a whole: name, type, location, owner agency, bid due date,',
   'mandatory pre-bid meeting (if any).',
+  '',
+  '## LOCATION — STRUCTURED FIELDS REQUIRED FOR TRUCKING MATH',
+  '',
+  'The server uses the project location to find the nearest aggregate quarries and',
+  'compute trucking cycle time + per-CY/TON haul cost on import / AB / drain rock /',
+  'asphalt / concrete line items. Trucking is the silent killer on long-haul jobs;',
+  'a 45-mile haul vs 12-mile haul can swing a 5,000-CY import line by $40,000+.',
+  '',
+  'You MUST emit:',
+  '  - `location` — free-form description ("Hwy 36 at PM 22.5, Tehama County"),',
+  '  - `locationCity` — nearest named city or town ("Red Bluff", "Cottonwood"),',
+  '  - `locationCounty` — county name without the "County" suffix ("Tehama").',
+  '',
+  'When the plans literally print decimal-degree lat/lng (rare — usually on Caltrans',
+  'projects in the title block or on the vicinity map), also emit `locationLat` and',
+  '`locationLng`. Do NOT guess coordinates — the server has a NorCal city centroid',
+  'table that handles the city → lat/lng lookup. Leave lat/lng undefined if the plans',
+  'don\'t print them.',
+  '',
+  'YGE service area is Shasta / Tehama / Trinity / Siskiyou / Butte / Glenn / Lassen',
+  'counties primarily, with spill-over to Modoc / Sutter / Yuba / Sacramento / Placer.',
+  'When the city is in a county outside that list (e.g. Bay Area), still extract it',
+  'and the server will fall back to the county centroid if the city isn\'t in the table.',
   '',
   'YGE conventions:',
   '- Outside trucking is NOT subcontracting — it is a direct line item. Price NorCal end-dump',

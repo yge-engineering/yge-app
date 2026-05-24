@@ -22,6 +22,8 @@ import {
   SITE_CONDITION_NOTE,
   type BidSanityFinding,
 } from '@yge/shared';
+import { QuarryTruckingPanel } from './quarry-trucking-panel';
+import { BidGanttView } from './bid-gantt-view';
 
 // CSV row generation lives in @yge/shared/csv so the API can emit the same
 // bytes from a future server-side download endpoint. The UI just picks the
@@ -235,6 +237,10 @@ export function DraftView({
           </ul>
         </div>
       )}
+
+      <QuarryTruckingPanel draft={draft} />
+
+      <BidGanttView draft={draft} />
 
       <SiteWalkdownPanel projectType={draft.projectType} />
 

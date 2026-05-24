@@ -65,6 +65,14 @@ const SUBMIT_TOOL: SubmitTool = {
         ],
       },
       location: { type: 'string' },
+      // v1.5.0: structured location so the server can drive trucking-
+      // from-quarry math. AI must extract city + county whenever the
+      // title block or vicinity map names them. lat/lng are optional —
+      // most plan sets don't print decimal degrees.
+      locationCity: { type: 'string' },
+      locationCounty: { type: 'string' },
+      locationLat: { type: 'number', minimum: -90, maximum: 90 },
+      locationLng: { type: 'number', minimum: -180, maximum: 180 },
       ownerAgency: { type: 'string' },
       bidDueDate: { type: 'string' },
       prebidMeeting: { type: 'string' },
