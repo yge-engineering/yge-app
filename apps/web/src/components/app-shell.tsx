@@ -197,6 +197,7 @@ const NAV_SPEC: NavGroupSpec[] = [
       { key: 'nav.fringeCalculator', href: '/fringe-calculator', requires: 'financials:view' },
       { key: 'nav.ptoCalculator', href: '/pto-calculator', requires: 'financials:view' },
       { key: 'nav.laborBurden', href: '/labor-burden', requires: 'financials:view' },
+      { key: 'nav.materialYield', href: '/material-yield' },
       { key: 'nav.bondCapacity', href: '/bond-capacity', requires: 'financials:view' },
       { key: 'nav.fixedAssets', href: '/fixed-assets', requires: 'financials:view' },
       { key: 'nav.materialAlerts', href: '/material-alerts', requires: 'financials:view' },
