@@ -1,5 +1,6 @@
 export * from './audit';
 export * from './calendar-event';
+export * from './california-holidays';
 export * from './folder';
 export * from './cost-code';
 export * from './equipment-rate';
