@@ -8,6 +8,7 @@ import { randomBytes } from 'node:crypto';
 import { getRequestCompanyId } from './request-context';
 import { prisma } from '@yge/db';
 import type { PtoEOutput } from '@yge/shared';
+import { sumPtoEBidTotalCents } from '@yge/shared';
 
 const FALLBACK_COMPANY_ID =
   process.env.DEFAULT_COMPANY_ID ?? 'yge-root';
@@ -39,6 +40,11 @@ export interface DraftSummary {
   bidDueDate?: string;
   overallConfidence: 'HIGH' | 'MEDIUM' | 'LOW';
   bidItemCount: number;
+  /** Sum of estimatedLineTotalCents across the draft's bid items. Undefined
+   *  for older drafts (pre-1.1.0) or T&M-only jobs that never carried
+   *  prices. Always recomputed from the items so the value stays correct
+   *  even if the persisted JSON predates the new field. */
+  estimatedBidTotalCents?: number;
   modelUsed: string;
   promptVersion: string;
 }
@@ -70,6 +76,11 @@ function makeId(projectName: string, when: Date): string {
 }
 
 function summarize(d: SavedDraft): DraftSummary {
+  // Always recompute from items so the value stays correct even when the
+  // persisted JSON predates the field (older drafts may not have stored
+  // estimatedBidTotalCents themselves). Returns 0 for fully unpriced
+  // drafts — we surface that as `undefined` so the UI can show "—".
+  const grand = sumPtoEBidTotalCents(d.draft.bidItems);
   return {
     id: d.id,
     createdAt: d.createdAt,
@@ -81,6 +92,7 @@ function summarize(d: SavedDraft): DraftSummary {
     bidDueDate: d.draft.bidDueDate,
     overallConfidence: d.draft.overallConfidence,
     bidItemCount: d.draft.bidItems.length,
+    estimatedBidTotalCents: grand > 0 ? grand : undefined,
     modelUsed: d.modelUsed,
     promptVersion: d.promptVersion,
   };

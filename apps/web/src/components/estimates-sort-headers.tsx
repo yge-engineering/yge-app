@@ -19,6 +19,10 @@ interface Props {
 
 const SORT_TYPES: Record<string, 'number' | 'string'> = {
   cents: 'number',
+  // Plans-to-Estimate@1.1.0 — grand total per saved draft. Numeric;
+  // unpriced drafts surface as -1 in data-sort-bid-total so they sort
+  // to the bottom of a descending bid-total view.
+  bidTotal: 'number',
   updated: 'string',
   due: 'string',
   name: 'string',

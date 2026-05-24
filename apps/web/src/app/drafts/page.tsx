@@ -6,6 +6,7 @@
 
 import Link from 'next/link';
 
+import { formatUSD } from '@yge/shared';
 import { Alert, AppShell } from '../../components';
 import { relativeTime } from '../../lib/relative-time';
 import { DraftsSearchInput } from '../../components/drafts-search-input';
@@ -30,6 +31,9 @@ interface DraftSummary {
   bidDueDate?: string;
   overallConfidence: 'HIGH' | 'MEDIUM' | 'LOW';
   bidItemCount: number;
+  /** Cents — undefined for older drafts that never had prices, so the UI
+   *  can render an em-dash placeholder. */
+  estimatedBidTotalCents?: number;
   modelUsed: string;
   promptVersion: string;
 }
@@ -147,6 +151,10 @@ export default async function DraftsPage() {
                   {t('drafts.col.items')}
                   <span className="sort-arrow" />
                 </th>
+                <th data-sort-key="bidTotal" className="select-none px-4 py-2 text-right hover:bg-gray-100">
+                  {t('drafts.col.bidTotal')}
+                  <span className="sort-arrow" />
+                </th>
                 <th className="px-4 py-2">{t('drafts.col.confidence')}</th>
                 <th data-sort-key="updated" className="select-none px-4 py-2 hover:bg-gray-100">
                   {t('drafts.col.saved')}
@@ -163,6 +171,7 @@ export default async function DraftsPage() {
                   data-search={`${d.projectName} ${d.ownerAgency ?? ''} ${d.projectType.replace(/_/g, ' ')}`}
                   data-sort-name={d.projectName.toLowerCase()}
                   data-sort-cents={d.bidItemCount}
+                  data-sort-bid-total={d.estimatedBidTotalCents ?? -1}
                   data-sort-updated={d.createdAt}
                   className="hover:bg-gray-50"
                 >
@@ -188,6 +197,13 @@ export default async function DraftsPage() {
                     {d.projectType.replace(/_/g, ' ')}
                   </td>
                   <td className="px-4 py-3 text-gray-700">{d.bidItemCount}</td>
+                  <td className="px-4 py-3 text-right tabular-nums text-gray-800">
+                    {d.estimatedBidTotalCents != null ? (
+                      formatUSD(d.estimatedBidTotalCents, { compact: true })
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3">
                     <span
                       className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${CONFIDENCE_STYLES[d.overallConfidence]}`}
