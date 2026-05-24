@@ -49,8 +49,18 @@ export interface BidSanityInput {
   promptVersion?: string;
 }
 
-/** Per-projectType minimum reasonable calendar-month duration.
- *  Anything below this fires a SCHEDULE warning. */
+/** Per-projectType minimum reasonable calendar-month duration when
+ *  the site condition is GREENFIELD or unknown.  Anything below this
+ *  fires a SCHEDULE warning. Bridges are physically constrained by
+ *  in-stream windows + falsework cure times so the floor stays. The
+ *  other floors are conservative — most jobs of these types simply
+ *  can't be physically built faster.
+ *
+ *  v1.4.0: utility work no longer has its own across-the-board floor.
+ *  Schedule is now derived from production rates × quantities × the
+ *  site-condition multiplier, so the smell test moved to
+ *  LIVE_SITE_MIN_MONTHS below (only fires when the AI actually flags
+ *  the site as live). */
 const MIN_REASONABLE_MONTHS: Record<PtoEProjectType, number> = {
   ROAD_RECONSTRUCTION: 2,
   DRAINAGE: 1,
@@ -60,10 +70,11 @@ const MIN_REASONABLE_MONTHS: Record<PtoEProjectType, number> = {
   OTHER: 1,
 };
 
-/** When the owner is a CA utility, override the project-type
- *  minimum upward — substation / utility work is dominated by
- *  inspection-cycle drag, not project type. */
-const UTILITY_AGENCY_MIN_MONTHS = 4;
+/** Hard floor on LIVE-site schedules. Working in an energized
+ *  substation / occupied building / active roadway slows EVERY task
+ *  through outage windows, LOTO, agency coordination — even small
+ *  scope rarely finishes inside ~3 months once those drags compound. */
+const LIVE_SITE_MIN_MONTHS = 3;
 
 /** Suspicious low-bid-total floors by project type, in cents. These
  *  are conservative — below this number, something is probably
@@ -96,16 +107,30 @@ const OWNER_FURNISHES_KEYWORDS = [
 ];
 
 /** True when the agency kind is a California utility — drives the
- *  stricter duration / markup / OFM thresholds. */
+ *  OFM defaults but no longer drives a hard schedule floor (that
+ *  moved to siteCondition in v1.4.0). */
 function isUtilityAgency(kind: OwnerAgencyKind | undefined): boolean {
   return kind === 'MUNICIPAL_UTILITY';
 }
 
-/** Build a duration-warning finding when the AI's estimated duration
- *  looks unreasonably short for the project + agency combo. */
+/** Schedule check.  Three layers, in order:
+ *    1. Missing schedule → WARNING.
+ *    2. Site condition UNKNOWN on a utility job → CRITICAL (must be
+ *       resolved before bidding — the multiplier swings the schedule
+ *       by 1.7×).
+ *    3. Schedule shorter than the project-type floor → CRITICAL.
+ *    4. Site condition LIVE and schedule under LIVE_SITE_MIN_MONTHS
+ *       → CRITICAL regardless of project type.
+ *
+ *  GREENFIELD work that uses production-rate math is trusted; the
+ *  sanity check no longer enforces a 4-month utility floor across
+ *  the board (that was wrong — a small greenfield substation can
+ *  finish in weeks). */
 function checkSchedule(input: BidSanityInput): BidSanityFinding | null {
   const { draft, agencyKind } = input;
   const duration = draft.estimatedDurationCalendarMonths;
+  const site = draft.siteCondition;
+
   if (duration == null) {
     return {
       id: 'schedule-missing',
@@ -116,21 +141,39 @@ function checkSchedule(input: BidSanityInput): BidSanityFinding | null {
         'AI did not emit estimatedDurationCalendarMonths. Manually add a schedule estimate before bid review — the schedule drives mob, general conditions, and standby costs.',
     };
   }
+
+  if (isUtilityAgency(agencyKind) && (!site || site === 'UNKNOWN')) {
+    return {
+      id: 'site-condition-unknown',
+      severity: 'CRITICAL',
+      category: 'SCHEDULE',
+      title: 'Site condition unknown on utility job',
+      detail:
+        'Utility work schedules swing 1.7× depending on whether the site is LIVE (energized, occupied) or GREENFIELD. The AI could not tell — verify with the owner before bidding. Schedule numbers based on the wrong assumption can cost months.',
+    };
+  }
+
+  if (site === 'LIVE' && duration < LIVE_SITE_MIN_MONTHS) {
+    return {
+      id: 'live-site-schedule-too-short',
+      severity: 'CRITICAL',
+      category: 'SCHEDULE',
+      title: `Schedule looks short for a LIVE site: ${duration} month${duration === 1 ? '' : 's'}`,
+      detail: `Live-site work means outage windows, LOTO, agency coordination — production drops 50–70%. ${LIVE_SITE_MIN_MONTHS} months is the practical floor on substation / occupied-site work. Either the AI missed the LIVE multiplier on the production rates, or it underestimated quantities. Verify both before bidding.`,
+    };
+  }
+
   const minForType = MIN_REASONABLE_MONTHS[draft.projectType] ?? 1;
-  const utilityMin = isUtilityAgency(agencyKind) ? UTILITY_AGENCY_MIN_MONTHS : 0;
-  const min = Math.max(minForType, utilityMin);
-  if (duration < min) {
-    const why = isUtilityAgency(agencyKind)
-      ? `Utility substation / facility work historically takes ${UTILITY_AGENCY_MIN_MONTHS}–6 months minimum once inspection holds + energization waits are baked in.`
-      : `${draft.projectType.replace(/_/g, ' ').toLowerCase()} jobs typically need ≥ ${minForType} months from NTP to substantial completion.`;
+  if (duration < minForType) {
     return {
       id: 'schedule-too-short',
       severity: 'CRITICAL',
       category: 'SCHEDULE',
       title: `Schedule looks short: ${duration} month${duration === 1 ? '' : 's'}`,
-      detail: `${why} An under-estimated schedule undersizes general-conditions cost. Verify with the foreman + Brook before committing.`,
+      detail: `${draft.projectType.replace(/_/g, ' ').toLowerCase()} jobs typically need ≥ ${minForType} months from NTP to substantial completion. An under-estimated schedule undersizes general-conditions cost.`,
     };
   }
+
   return null;
 }
 

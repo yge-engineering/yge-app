@@ -40,26 +40,65 @@ describe('runBidSanityCheck', () => {
     expect(findings.some((f) => f.id === 'schedule-missing')).toBe(true);
   });
 
-  it('flags a too-short utility-substation schedule as CRITICAL', () => {
+  it('flags UNKNOWN site condition on a utility job as CRITICAL', () => {
     const findings = runBidSanityCheck({
       draft: draft({
         projectType: 'GRADING',
-        estimatedDurationCalendarMonths: 2, // utility minimum is 4
+        estimatedDurationCalendarMonths: 3,
+        siteCondition: 'UNKNOWN',
       }),
       agencyKind: 'MUNICIPAL_UTILITY',
     });
-    const sched = findings.find((f) => f.id === 'schedule-too-short');
-    expect(sched).toBeDefined();
-    expect(sched!.severity).toBe('CRITICAL');
-    expect(sched!.detail).toContain('inspection holds');
+    const f = findings.find((x) => x.id === 'site-condition-unknown');
+    expect(f).toBeDefined();
+    expect(f!.severity).toBe('CRITICAL');
+    expect(f!.detail).toContain('LIVE');
   });
 
-  it('does NOT flag a 5-month utility schedule (above 4-month floor)', () => {
+  it('flags LIVE-site schedules under the 3-month floor as CRITICAL', () => {
     const findings = runBidSanityCheck({
-      draft: draft({ estimatedDurationCalendarMonths: 5 }),
+      draft: draft({
+        projectType: 'GRADING',
+        estimatedDurationCalendarMonths: 2, // too short for live work
+        siteCondition: 'LIVE',
+      }),
       agencyKind: 'MUNICIPAL_UTILITY',
     });
-    expect(findings.find((f) => f.id === 'schedule-too-short')).toBeUndefined();
+    const f = findings.find((x) => x.id === 'live-site-schedule-too-short');
+    expect(f).toBeDefined();
+    expect(f!.severity).toBe('CRITICAL');
+    expect(f!.detail).toContain('outage windows');
+  });
+
+  it('does NOT flag a short GREENFIELD utility schedule (the regression Ryan caught)', () => {
+    // Small greenfield substation — 2 months is fine when production
+    // rates × quantities work out that way and there is no live
+    // coordination drag.
+    const findings = runBidSanityCheck({
+      draft: draft({
+        projectType: 'GRADING',
+        estimatedDurationCalendarMonths: 2,
+        siteCondition: 'GREENFIELD',
+      }),
+      agencyKind: 'MUNICIPAL_UTILITY',
+    });
+    expect(
+      findings.find((f) => f.id === 'live-site-schedule-too-short'),
+    ).toBeUndefined();
+    expect(findings.find((f) => f.id === 'site-condition-unknown')).toBeUndefined();
+  });
+
+  it('does NOT flag a 5-month LIVE utility schedule (above 3-month live floor)', () => {
+    const findings = runBidSanityCheck({
+      draft: draft({
+        estimatedDurationCalendarMonths: 5,
+        siteCondition: 'LIVE',
+      }),
+      agencyKind: 'MUNICIPAL_UTILITY',
+    });
+    expect(
+      findings.find((f) => f.id === 'live-site-schedule-too-short'),
+    ).toBeUndefined();
   });
 
   it('flags hallucinated owner-furnishes assumptions as CRITICAL', () => {
@@ -132,6 +171,7 @@ describe('runBidSanityCheck', () => {
         estimatedBidTotalCents: 2_500_000_00,
         assumptions: ['[MED] 20% O&P applied.'],
         ownerFurnishedItems: [],
+        siteCondition: 'GREENFIELD',
       }),
       agencyKind: 'MUNICIPAL_UTILITY',
     });

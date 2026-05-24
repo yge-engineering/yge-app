@@ -11,6 +11,7 @@ export * from './bid-coach';
 export * from './bid-postponement-detect';
 export * from './bid-doc-classify';
 export * from './bid-sanity-check';
+export * from './production-rates';
 export * from './bid-tab';
 export * from './bid-tab-link';
 export * from './competitor-from-tabs';

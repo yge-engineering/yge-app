@@ -19,6 +19,7 @@ import {
   classifyOwnerAgency,
   runBidSanityCheck,
   parseAssumptionRisk,
+  SITE_CONDITION_NOTE,
   type BidSanityFinding,
 } from '@yge/shared';
 
@@ -119,17 +120,26 @@ export function DraftView({
           {draft.estimatedDurationCalendarMonths != null && (
             <>
               <dt className="font-medium">Est. duration</dt>
+              <dd>{draft.estimatedDurationCalendarMonths} mo</dd>
+            </>
+          )}
+          {draft.siteCondition && (
+            <>
+              <dt className="font-medium">Site condition</dt>
               <dd>
-                {draft.estimatedDurationCalendarMonths} mo
-                {draft.scheduleNote && (
-                  <span className="ml-1 italic text-gray-500">
-                    · {draft.scheduleNote}
-                  </span>
-                )}
+                <SiteConditionPill value={draft.siteCondition} />
               </dd>
             </>
           )}
         </dl>
+        {draft.scheduleNote && (
+          <details className="mt-2 rounded border border-gray-200 bg-gray-50 p-2 text-xs text-gray-700">
+            <summary className="cursor-pointer font-semibold text-gray-700">
+              Schedule basis — how the AI got to {draft.estimatedDurationCalendarMonths} months
+            </summary>
+            <p className="mt-2 whitespace-pre-wrap">{draft.scheduleNote}</p>
+          </details>
+        )}
       </header>
 
       {sanityFindings.length > 0 && (
@@ -355,6 +365,34 @@ function SiteWalkdownPanel({ projectType }: { projectType: PtoEOutput['projectTy
         ))}
       </ul>
     </details>
+  );
+}
+
+/** Pill that surfaces the AI's site-condition determination. The
+ *  LIVE / PARTIAL_LIVE / GREENFIELD / UNKNOWN distinction is the
+ *  biggest schedule swing on utility + occupied-site work — wrong
+ *  here = months wrong. Color signals the risk: green = clean,
+ *  orange = partial, red = live or unknown. */
+function SiteConditionPill({ value }: { value: NonNullable<PtoEOutput['siteCondition']> }) {
+  const styles: Record<typeof value, string> = {
+    GREENFIELD: 'bg-green-100 text-green-800',
+    PARTIAL_LIVE: 'bg-amber-100 text-amber-900',
+    LIVE: 'bg-red-100 text-red-900',
+    UNKNOWN: 'bg-red-100 text-red-900 border border-red-300',
+  };
+  const label: Record<typeof value, string> = {
+    GREENFIELD: 'Greenfield',
+    PARTIAL_LIVE: 'Partial live',
+    LIVE: 'Live site',
+    UNKNOWN: 'Unknown — verify',
+  };
+  return (
+    <span
+      className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${styles[value]}`}
+      title={SITE_CONDITION_NOTE[value]}
+    >
+      {label[value]}
+    </span>
   );
 }
 

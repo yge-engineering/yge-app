@@ -71,14 +71,27 @@ export const PtoEOutputSchema = z.object({
    *  undefined here. */
   estimatedBidTotalCents: z.number().int().nonnegative().optional(),
   /** AI's calendar-month duration estimate. Includes the permitting
-   *  / inspection / mobilization / energization tail — not just
-   *  active construction days. Lets the sanity check catch "8 week"
-   *  guesses on jobs that historically run half a year (e.g. SMUD
-   *  substation civil → 4–6 months). */
+   *  / inspection / mobilization tail and the LIVE-site multiplier
+   *  when applicable — not just active construction days. Always
+   *  DERIVED from production rates × quantities, never a project-
+   *  type default. */
   estimatedDurationCalendarMonths: z.number().int().positive().max(120).optional(),
-  /** One-line rationale for the schedule estimate ("SMUD substation
-   *  civil — 4–6 months typical incl. inspection cycles"). */
-  scheduleNote: z.string().max(500).optional(),
+  /** Multi-line breakdown of how the schedule was derived: which
+   *  production rates were applied to which quantities, what got
+   *  multiplied for LIVE-site work, what calendar drag was added.
+   *  Example: "Structural fill 1,200 CY @ 300 CY/day = 4 days.
+   *  Conduit 2,400 LF @ 200 LF/day = 12 days. LIVE-site ×1.6 on
+   *  conduit work near energized switchgear = 19 days. Mob + 3
+   *  SMUD inspection holds + weather buffer = +6 weeks. Total ≈
+   *  3.5 months." */
+  scheduleNote: z.string().max(2000).optional(),
+  /** Site condition the AI determined by reading the plans. Drives
+   *  the production-rate multiplier + the schedule-too-short
+   *  warning. UNKNOWN means the AI could not tell and the human
+   *  must verify before bidding. */
+  siteCondition: z
+    .enum(['LIVE', 'GREENFIELD', 'PARTIAL_LIVE', 'UNKNOWN'])
+    .optional(),
 });
 export type PtoEOutput = z.infer<typeof PtoEOutputSchema>;
 

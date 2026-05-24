@@ -110,10 +110,17 @@ const SUBMIT_TOOL: SubmitTool = {
       // Roll-up across bidItems. The service backfills this when the
       // model forgets, so the UI always has a total.
       estimatedBidTotalCents: { type: 'integer', minimum: 0 },
-      // v1.3.0: AI's calendar-month duration estimate including the
-      // permitting / inspection / mobilization tail.
+      // v1.3.0: AI's calendar-month duration estimate.
+      // v1.4.0: must be DERIVED from production rates × quantities ×
+      // site-condition multiplier, with the derivation in scheduleNote.
       estimatedDurationCalendarMonths: { type: 'integer', minimum: 1, maximum: 120 },
       scheduleNote: { type: 'string' },
+      // v1.4.0: AI's read on whether the site is energized / occupied.
+      // Drives the production-rate multiplier on the schedule.
+      siteCondition: {
+        type: 'string',
+        enum: ['LIVE', 'GREENFIELD', 'PARTIAL_LIVE', 'UNKNOWN'],
+      },
     },
   },
 };
