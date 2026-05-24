@@ -98,12 +98,22 @@ const SUBMIT_TOOL: SubmitTool = {
           },
         },
       },
+      // v1.3.0: each assumption must start with [HIGH] / [MED] / [LOW].
       assumptions: { type: 'array', items: { type: 'string' } },
+      // v1.3.0: items the DOCUMENT explicitly says owner furnishes.
+      // The AI is forbidden from putting anything here unless the
+      // plans / spec literally say so — this is the hard line
+      // against hallucinated owner-furnishes scope reductions.
+      ownerFurnishedItems: { type: 'array', items: { type: 'string' } },
       questionsForEstimator: { type: 'array', items: { type: 'string' } },
       overallConfidence: { type: 'string', enum: ['HIGH', 'MEDIUM', 'LOW'] },
       // Roll-up across bidItems. The service backfills this when the
       // model forgets, so the UI always has a total.
       estimatedBidTotalCents: { type: 'integer', minimum: 0 },
+      // v1.3.0: AI's calendar-month duration estimate including the
+      // permitting / inspection / mobilization tail.
+      estimatedDurationCalendarMonths: { type: 'integer', minimum: 1, maximum: 120 },
+      scheduleNote: { type: 'string' },
     },
   },
 };

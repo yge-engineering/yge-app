@@ -53,13 +53,32 @@ export const PtoEOutputSchema = z.object({
   bidDueDate: z.string().max(40).optional(),
   prebidMeeting: z.string().max(1000).optional(),
   bidItems: z.array(PtoEBidItemSchema).min(1),
+  /** Plain assumptions list. v1.3.0+: each entry MUST start with one
+   *  of "[HIGH] " / "[MED] " / "[LOW] " so the UI can color-code by
+   *  risk. Older drafts without the prefix are treated as MEDIUM. */
   assumptions: z.array(z.string().max(500)).default([]),
+  /** Scope the document EXPLICITLY says the owner provides ("by
+   *  Owner", "by SMUD", "OFM", "NIC", "furnished and installed by
+   *  agency"). The AI is forbidden from inventing this list — items
+   *  go here ONLY when the plans / spec literally say so. Prevents
+   *  silent scope reductions that hide million-dollar gaps in the
+   *  assumptions list. */
+  ownerFurnishedItems: z.array(z.string().max(300)).default([]),
   questionsForEstimator: z.array(z.string().max(500)).default([]),
   overallConfidence: PtoEItemConfidenceSchema,
   /** Sum of estimatedLineTotalCents across bidItems, when prices
    *  exist. Optional — old drafts without prices keep returning
    *  undefined here. */
   estimatedBidTotalCents: z.number().int().nonnegative().optional(),
+  /** AI's calendar-month duration estimate. Includes the permitting
+   *  / inspection / mobilization / energization tail — not just
+   *  active construction days. Lets the sanity check catch "8 week"
+   *  guesses on jobs that historically run half a year (e.g. SMUD
+   *  substation civil → 4–6 months). */
+  estimatedDurationCalendarMonths: z.number().int().positive().max(120).optional(),
+  /** One-line rationale for the schedule estimate ("SMUD substation
+   *  civil — 4–6 months typical incl. inspection cycles"). */
+  scheduleNote: z.string().max(500).optional(),
 });
 export type PtoEOutput = z.infer<typeof PtoEOutputSchema>;
 

@@ -11,7 +11,16 @@
 import { useState } from 'react';
 import type { PtoEOutput, PtoEBidItem, PtoEItemConfidence } from '@yge/shared';
 import { useTranslator, type Translator } from '../lib/use-translator';
-import { bidItemsToCsv, formatUSD, sumPtoEBidTotalCents, buildWalkdownChecklist } from '@yge/shared';
+import {
+  bidItemsToCsv,
+  formatUSD,
+  sumPtoEBidTotalCents,
+  buildWalkdownChecklist,
+  classifyOwnerAgency,
+  runBidSanityCheck,
+  parseAssumptionRisk,
+  type BidSanityFinding,
+} from '@yge/shared';
 
 // CSV row generation lives in @yge/shared/csv so the API can emit the same
 // bytes from a future server-side download endpoint. The UI just picks the
@@ -73,6 +82,14 @@ export function DraftView({
     }
   }
 
+  // Run the sanity check before every render. Cheap (pure function),
+  // surfaces hallucinated owner-furnishes scope + short schedules etc.
+  const sanityFindings = runBidSanityCheck({
+    draft,
+    agencyKind: classifyOwnerAgency({ ownerName: draft.ownerAgency }).kind,
+    promptVersion,
+  });
+
   return (
     <div className="space-y-5">
       <header>
@@ -99,8 +116,25 @@ export function DraftView({
           <dd>
             <ConfidencePill value={draft.overallConfidence} />
           </dd>
+          {draft.estimatedDurationCalendarMonths != null && (
+            <>
+              <dt className="font-medium">Est. duration</dt>
+              <dd>
+                {draft.estimatedDurationCalendarMonths} mo
+                {draft.scheduleNote && (
+                  <span className="ml-1 italic text-gray-500">
+                    · {draft.scheduleNote}
+                  </span>
+                )}
+              </dd>
+            </>
+          )}
         </dl>
       </header>
+
+      {sanityFindings.length > 0 && (
+        <BidSanityWarnings findings={sanityFindings} />
+      )}
 
       <div>
         <div className="flex items-center justify-between gap-3">
@@ -134,15 +168,47 @@ export function DraftView({
         <BidTotalRow draft={draft} />
       </div>
 
+      {draft.ownerFurnishedItems && draft.ownerFurnishedItems.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+            Owner-furnished (per the plans)
+          </h3>
+          <p className="mt-1 text-xs text-gray-500">
+            Items the document explicitly says the owner provides. Everything else is contractor-furnished.
+          </p>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-gray-700">
+            {draft.ownerFurnishedItems.map((it, i) => (
+              <li key={i}>{it}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {draft.assumptions.length > 0 && (
         <div>
           <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
             {t('draftView.assumptionsHeader')}
           </h3>
-          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-gray-700">
-            {draft.assumptions.map((a, i) => (
-              <li key={i}>{a}</li>
-            ))}
+          <ul className="mt-2 space-y-1.5 text-sm text-gray-700">
+            {draft.assumptions.map((a, i) => {
+              const { risk, text } = parseAssumptionRisk(a);
+              const tone =
+                risk === 'HIGH'
+                  ? 'bg-red-100 text-red-800'
+                  : risk === 'LOW'
+                    ? 'bg-gray-100 text-gray-700'
+                    : 'bg-amber-100 text-amber-900';
+              return (
+                <li key={i} className="flex items-start gap-2">
+                  <span
+                    className={`mt-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${tone}`}
+                  >
+                    {risk === 'MEDIUM' ? 'MED' : risk}
+                  </span>
+                  <span className="flex-1">{text}</span>
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}
@@ -289,6 +355,67 @@ function SiteWalkdownPanel({ projectType }: { projectType: PtoEOutput['projectTy
         ))}
       </ul>
     </details>
+  );
+}
+
+/** Top-of-draft warnings strip — runs the bid sanity check rules and
+ *  surfaces anything that looks suspicious. CRITICAL items get a red
+ *  hero treatment so the estimator can't miss them. Born from the
+ *  SMUD-substation real-world miss ($814K bid vs $3.1M actual);
+ *  these are the rules that would have caught it. */
+function BidSanityWarnings({ findings }: { findings: BidSanityFinding[] }) {
+  if (findings.length === 0) return null;
+  const critical = findings.filter((f) => f.severity === 'CRITICAL');
+  const warnings = findings.filter((f) => f.severity === 'WARNING');
+  const infos = findings.filter((f) => f.severity === 'INFO');
+  return (
+    <div className="space-y-2">
+      {critical.length > 0 && (
+        <div className="rounded-md border-2 border-red-300 bg-red-50 p-3">
+          <h4 className="text-xs font-bold uppercase tracking-wide text-red-900">
+            ⚠ Sanity check — {critical.length} critical issue
+            {critical.length === 1 ? '' : 's'} to review before submitting
+          </h4>
+          <ul className="mt-2 space-y-1.5 text-sm text-red-900">
+            {critical.map((f) => (
+              <li key={f.id}>
+                <span className="font-semibold">{f.title}.</span>{' '}
+                <span className="text-red-800">{f.detail}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {warnings.length > 0 && (
+        <div className="rounded-md border border-amber-200 bg-amber-50 p-3">
+          <h4 className="text-xs font-semibold uppercase tracking-wide text-amber-900">
+            Sanity check — {warnings.length} warning{warnings.length === 1 ? '' : 's'}
+          </h4>
+          <ul className="mt-2 space-y-1 text-xs text-amber-900">
+            {warnings.map((f) => (
+              <li key={f.id}>
+                <span className="font-semibold">{f.title}.</span>{' '}
+                <span>{f.detail}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {infos.length > 0 && (
+        <details className="rounded-md border border-gray-200 bg-gray-50 p-3 text-xs text-gray-700">
+          <summary className="cursor-pointer font-semibold">
+            {infos.length} info note{infos.length === 1 ? '' : 's'}
+          </summary>
+          <ul className="mt-2 space-y-1">
+            {infos.map((f) => (
+              <li key={f.id}>
+                <span className="font-semibold">{f.title}.</span> {f.detail}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </div>
   );
 }
 
