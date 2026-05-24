@@ -19,6 +19,11 @@
 // `asOfDate` (CPR). Pure: no clock dependency.
 
 import { z } from 'zod';
+// Use the CA-holiday-aware business-day math so DAS-140s that land near
+// Christmas/Thanksgiving / Memorial Day don't quietly slip onto a state
+// holiday. This is a correctness fix — the local addBusinessDays below
+// only skipped weekends.
+import { addBusinessDays as addCaBusinessDays } from './california-holidays';
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -144,14 +149,9 @@ function addCalendarDays(iso: string, days: number): string {
   return formatIso(parseIso(iso) + days * 1000 * 60 * 60 * 24);
 }
 function addBusinessDays(iso: string, days: number): string {
-  let cursor = parseIso(iso);
-  let remaining = days;
-  while (remaining > 0) {
-    cursor += 1000 * 60 * 60 * 24;
-    const dow = new Date(cursor).getUTCDay();
-    if (dow !== 0 && dow !== 6) remaining -= 1;
-  }
-  return formatIso(cursor);
+  // Thin wrapper so the rest of the file keeps its old call shape but
+  // every deadline computation respects CA observed holidays.
+  return addCaBusinessDays(iso, days);
 }
 function nextSunday(iso: string): string {
   let cursor = parseIso(iso);

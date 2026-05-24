@@ -79,6 +79,18 @@ describe('buildPwCalendar — PWC_100', () => {
     const pwc = rows.find((r) => r.kind === 'PWC_100')!;
     expect(pwc.dueDate).toBe('2026-05-20');
   });
+
+  it('PWC-100 skips CA holidays too (Memorial Day)', () => {
+    // 2026-05-22 = Fri. +5 business days must SKIP Memorial Day
+    // (2026-05-25 Mon). So Tue/Wed/Thu/Fri/Mon → 2026-06-01.
+    // Before bundle 2552 the local helper only skipped weekends and
+    // would have returned 2026-05-29. This test pins the holiday-aware
+    // behavior so it can't regress.
+    const j = job({ awardDate: '2026-05-22', crafts: [] });
+    const rows = buildPwCalendar({ jobs: [j], asOfDate: '2026-05-22' });
+    const pwc = rows.find((r) => r.kind === 'PWC_100')!;
+    expect(pwc.dueDate).toBe('2026-06-01');
+  });
 });
 
 describe('buildPwCalendar — CPR_WEEKLY', () => {
