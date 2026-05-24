@@ -17,6 +17,7 @@ export type QuarryMaterial =
   | 'CLASS_2_AB'
   | 'CLASS_3_AB'
   | 'CRUSHED_MISC_BASE'
+  | 'CRUSHED_ROCK_FINISH' // top-course / finish-layer crushed rock
   | 'DRAIN_ROCK_34'
   | 'DRAIN_ROCK_15'
   | 'SAND_CONCRETE'
@@ -211,6 +212,45 @@ export const NORCAL_QUARRIES: NorcalQuarry[] = [
     ],
   },
   {
+    id: 'teichert-grantline',
+    name: 'Teichert — Grantline rock quarry (Elk Grove)',
+    city: 'Elk Grove',
+    state: 'CA',
+    county: 'Sacramento',
+    lat: 38.4258,
+    lng: -121.2778,
+    materials: [
+      'CLASS_2_AB',
+      'CLASS_3_AB',
+      'CRUSHED_MISC_BASE',
+      'DRAIN_ROCK_34',
+      'DRAIN_ROCK_15',
+      'SAND_CONCRETE',
+      'SAND_BEDDING',
+      'IMPORT_BORROW_FILL',
+    ],
+    note: "YGE's go-to base-rock quarry for any Sacramento-area job. Volume pricing + reliable Class 2 AB.",
+  },
+  {
+    id: 'george-reed-ione',
+    name: 'George Reed Inc. — Jackson/Ione plant',
+    city: 'Ione',
+    state: 'CA',
+    county: 'Amador',
+    lat: 38.3527,
+    lng: -120.9333,
+    materials: [
+      'CRUSHED_ROCK_FINISH',
+      'DRAIN_ROCK_34',
+      'DRAIN_ROCK_15',
+      'RIPRAP_QUARTER_TON',
+      'RIPRAP_HALF_TON',
+      'RIPRAP_TWO_TON',
+      'CRUSHED_MISC_BASE',
+    ],
+    note: "YGE's go-to source for top-course crushed rock + riprap on any job that isn't up north (Shasta County and further north source local).",
+  },
+  {
     id: 'granite-roseville',
     name: 'Granite Construction — Roseville plant',
     city: 'Roseville',
@@ -269,6 +309,7 @@ export const QUARRY_MATERIAL_LABEL: Record<QuarryMaterial, string> = {
   CLASS_2_AB: 'Class 2 aggregate base',
   CLASS_3_AB: 'Class 3 aggregate base',
   CRUSHED_MISC_BASE: 'Crushed misc base (CMB)',
+  CRUSHED_ROCK_FINISH: 'Top-course crushed rock (finish layer)',
   DRAIN_ROCK_34: '3/4" drain rock',
   DRAIN_ROCK_15: '1-1/2" drain rock',
   SAND_CONCRETE: 'Concrete sand',

@@ -17,6 +17,7 @@ import {
   type NorcalQuarry,
   type QuarryMaterial,
 } from './norcal-quarries';
+import { findYgePreferredQuarryId } from './yge-quarry-preferences';
 
 /** Decimal degrees → great-circle distance in miles (haversine).
  *  Accurate to ~0.5 mi at NorCal latitudes — more than enough for
@@ -203,6 +204,11 @@ export interface NearestQuarriesInput {
   capacityPerLoad?: number;
   hourlyRateCents?: number;
   maxResults?: number;
+  /** Job county — when supplied, the YGE preferred-supplier rules
+   *  apply on top of the nearest-by-distance ranking. The matching
+   *  rule's quarry is force-promoted to the top with `isYgePreferred:
+   *  true` and the rest are ranked by distance below it. */
+  jobCounty?: string;
 }
 
 export interface QuarryHaulOption {
@@ -211,6 +217,13 @@ export interface QuarryHaulOption {
   roadMiles: number;
   cycle: CycleResult;
   cost: HaulCostResult;
+  /** True when YGE's preferred-supplier rules picked this quarry for
+   *  the job county + material combination. Surfaces a badge in the
+   *  UI so the estimator knows the routing isn't naïve-nearest. */
+  isYgePreferred?: boolean;
+  /** Plain-English explanation for the preference, surfaced in the
+   *  tooltip when isYgePreferred is true. */
+  ygePreferredReason?: string;
 }
 
 export function nearestQuarriesWithHaul(
@@ -220,6 +233,8 @@ export function nearestQuarriesWithHaul(
   if (candidates.length === 0) return [];
   const max = input.maxResults ?? 5;
   const capacityPerLoad = input.capacityPerLoad ?? 14;
+
+  // Step 1: build the raw cost option for every candidate quarry.
   const ranked: QuarryHaulOption[] = candidates
     .map((q) => {
       const straight = haversineMiles(
@@ -242,6 +257,28 @@ export function nearestQuarriesWithHaul(
       };
     })
     .sort((a, b) => a.roadMiles - b.roadMiles);
+
+  // Step 2: apply YGE preferred-supplier rules. If a rule matches
+  // for this material + jobCounty, force-promote the rule's quarry
+  // to the top with isYgePreferred + the reason. Other quarries
+  // stay ranked below by distance.
+  const preferred = findYgePreferredQuarryId({
+    material: input.material,
+    jobCounty: input.jobCounty,
+  });
+  if (preferred) {
+    const idx = ranked.findIndex((r) => r.quarry.id === preferred.quarryId);
+    if (idx >= 0) {
+      const pulled = ranked.splice(idx, 1)[0]!;
+      pulled.isYgePreferred = true;
+      pulled.ygePreferredReason = preferred.reason;
+      ranked.unshift(pulled);
+    }
+    // When the preferred quarry exists but doesn't supply this
+    // material (shouldn't happen given the rules, but defensive),
+    // we just leave the ranking as-is.
+  }
+
   return ranked.slice(0, max);
 }
 
@@ -272,6 +309,12 @@ export function inferQuarryMaterial(
     return 'CLASS_3_AB';
   }
   if (/crushed misc|cmb|crushed.*base/.test(d)) return 'CRUSHED_MISC_BASE';
+  // "Top-course crushed rock" / "finish-layer crushed rock" /
+  // "decorative crushed rock" — used for surface dressing on
+  // substation yards, road shoulders, parking surfacing.
+  if (/top[- ]?course.*crushed|crushed.*top[- ]?course|finish.*crushed|crushed.*finish|decorative.*crushed/.test(d)) {
+    return 'CRUSHED_ROCK_FINISH';
+  }
   if (/drain.*rock|drainrock|gravel.*drain/.test(d)) {
     return /1[- ]?1\/2|1\.5|11\/2/.test(d) ? 'DRAIN_ROCK_15' : 'DRAIN_ROCK_34';
   }

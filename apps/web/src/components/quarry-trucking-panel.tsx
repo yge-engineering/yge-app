@@ -44,6 +44,7 @@ function buildAnalysis(
   draft: PtoEOutput,
   jobLat: number,
   jobLng: number,
+  jobCounty: string | undefined,
 ): QuarryAnalysisRow[] {
   const rows: QuarryAnalysisRow[] = [];
   for (const item of draft.bidItems) {
@@ -56,6 +57,7 @@ function buildAnalysis(
       material,
       capacityPerLoad: capacity,
       maxResults: 3,
+      jobCounty,
     });
     if (options.length === 0) continue;
     rows.push({
@@ -98,7 +100,7 @@ export function QuarryTruckingPanel({ draft }: Props) {
     );
   }
 
-  const analysis = buildAnalysis(draft, geo.lat, geo.lng);
+  const analysis = buildAnalysis(draft, geo.lat, geo.lng, draft.locationCounty);
   if (analysis.length === 0) {
     return (
       <details className="rounded-md border border-gray-200 bg-gray-50 p-3 text-sm">
@@ -175,8 +177,20 @@ export function QuarryTruckingPanel({ draft }: Props) {
                       <tr
                         key={opt.quarry.id}
                         className={idx === 0 ? 'bg-yge-blue-50 font-medium' : ''}
+                        title={
+                          opt.isYgePreferred && opt.ygePreferredReason
+                            ? opt.ygePreferredReason
+                            : undefined
+                        }
                       >
-                        <td className="py-1 pr-3">{opt.quarry.name}</td>
+                        <td className="py-1 pr-3">
+                          {opt.quarry.name}
+                          {opt.isYgePreferred && (
+                            <span className="ml-2 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-800">
+                              YGE preferred
+                            </span>
+                          )}
+                        </td>
                         <td className="py-1 pr-3 text-right tabular-nums">
                           {opt.roadMiles}
                         </td>

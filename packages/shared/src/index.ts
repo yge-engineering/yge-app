@@ -16,6 +16,7 @@ export * from './norcal-cities';
 export * from './norcal-quarries';
 export * from './trucking-cycle';
 export * from './bid-schedule-gantt';
+export * from './yge-quarry-preferences';
 export * from './bid-tab';
 export * from './bid-tab-link';
 export * from './competitor-from-tabs';
