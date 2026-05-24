@@ -23,6 +23,7 @@ import {
 } from '../../../components/dashboard-view-pref';
 import { MorningBriefingTile } from '../../../components/morning-briefing-tile';
 import { UpcomingBidsTile } from '../../../components/upcoming-bids-tile';
+import { ArCollectionsTile } from '../../../components/ar-collections-tile';
 
 export default function DashboardLitePage() {
   return (
@@ -49,6 +50,7 @@ export default function DashboardLitePage() {
 
         <div className="space-y-4">
           <UpcomingBidsTile />
+          <ArCollectionsTile />
 
           <div className="grid gap-4 lg:grid-cols-2">
             <ArAgingTile />
