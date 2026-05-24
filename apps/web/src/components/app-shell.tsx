@@ -208,6 +208,7 @@ const NAV_SPEC: NavGroupSpec[] = [
       { key: 'nav.vendorW9Chase', href: '/vendor-w9-chase', requires: 'financials:edit' },
       { key: 'nav.w9ChaseEmail', href: '/w9-chase-email', requires: 'financials:edit' },
       { key: 'nav.coiChase', href: '/coi-chase', requires: 'financials:edit' },
+      { key: 'nav.arCollections', href: '/ar-collections', requires: 'financials:view' },
       { key: 'nav.lienCalendar', href: '/lien-calendar', requires: 'financials:view' },
     ],
   },
