@@ -7,6 +7,7 @@
 // document text so the AI flow is end-to-end testable.
 
 import { Router } from 'express';
+import multer from 'multer';
 import { z } from 'zod';
 import { bidItemsToCsv } from '@yge/shared';
 import { runPlansToEstimate, PlansToEstimateError } from '../services/plans-to-estimate';
@@ -18,6 +19,15 @@ import {
 import { saveDraft, listDrafts, getDraft } from '../lib/drafts-store';
 
 export const plansToEstimateRouter = Router();
+
+// Multer config for the from-pdf upload — same 25 MB cap as
+// /api/pdf/extract-text. Anthropic's PDF input limit is larger but
+// the network round-trip on bigger files starts hurting; the
+// multipass page is the right escape hatch for monster plan sets.
+const pdfUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 25 * 1024 * 1024 },
+});
 
 // jobId format matches the file-backed jobs store id format
 // (`job-YYYY-MM-DD-slug-<8hex>`). When Postgres lands and ids become CUIDs we
@@ -84,6 +94,100 @@ plansToEstimateRouter.post('/', async (req, res, next) => {
     next(err);
   }
 });
+
+// POST /api/plans-to-estimate/from-pdf — generate a draft directly from
+// a dropped PDF. The original PDF bytes are passed to Anthropic as a
+// `type:'document'` block so the AI can READ THE DRAWINGS — measure
+// lot dimensions against the scale bar, count utility runs, balance
+// cut/fill from the cross-sections, etc. The text-only POST / endpoint
+// above stays available for pasted RFPs that arrived without a PDF.
+const FromPdfFormSchema = z.object({
+  jobId: z.string().regex(/^job-[a-z0-9-]{10,80}$/),
+  sessionNotes: z.string().max(5_000).optional(),
+});
+
+plansToEstimateRouter.post(
+  '/from-pdf',
+  pdfUpload.single('file'),
+  async (req, res, next) => {
+    try {
+      if (!process.env.ANTHROPIC_API_KEY) {
+        return res.status(503).json({
+          error:
+            'AI takeoff is unavailable: ANTHROPIC_API_KEY is not set on the API.',
+        });
+      }
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
+      const isPdf =
+        req.file.mimetype === 'application/pdf' ||
+        req.file.originalname.toLowerCase().endsWith('.pdf');
+      if (!isPdf) {
+        return res
+          .status(400)
+          .json({ error: 'Only PDFs are supported on this endpoint.' });
+      }
+
+      const parsed = FromPdfFormSchema.safeParse({
+        jobId: req.body.jobId,
+        sessionNotes: req.body.sessionNotes,
+      });
+      if (!parsed.success) {
+        return res
+          .status(400)
+          .json({ error: 'Validation failed', issues: parsed.error.issues });
+      }
+
+      const pdfBase64 = req.file.buffer.toString('base64');
+      const start = Date.now();
+      const result = await runPlansToEstimate({
+        pdfBase64,
+        sessionNotes: parsed.data.sessionNotes,
+      });
+      const durationMs = Date.now() - start;
+
+      // Persist a stub documentText so /drafts/[id] doesn't blow up
+      // expecting the prior text-only contract — we lose the raw text
+      // (PDF stayed in memory only) but the AI's output is the
+      // valuable artifact.
+      const stubText = `PDF: ${req.file.originalname} (${req.file.size.toLocaleString()} bytes) — vision takeoff via plans-to-estimate@${result.promptVersion}`;
+      let savedId: string | undefined;
+      try {
+        const saved = await saveDraft({
+          jobId: parsed.data.jobId,
+          modelUsed: result.modelUsed,
+          promptVersion: result.promptVersion,
+          usage: result.usage,
+          durationMs,
+          documentText: stubText,
+          sessionNotes: parsed.data.sessionNotes,
+          draft: result.output,
+        });
+        savedId = saved.id;
+      } catch (err) {
+        const log = (req as { log?: { error?: (...a: unknown[]) => void } })
+          .log;
+        log?.error?.({ err }, 'Failed to persist PDF-takeoff draft');
+      }
+
+      return res.json({
+        jobId: parsed.data.jobId,
+        savedId,
+        modelUsed: result.modelUsed,
+        promptVersion: result.promptVersion,
+        usage: result.usage,
+        durationMs,
+        draft: result.output,
+      });
+    } catch (err) {
+      if (err instanceof PlansToEstimateError) {
+        return res.status(502).json({ error: err.message });
+      }
+      next(err);
+    }
+  },
+);
 
 // GET /api/plans-to-estimate/drafts — newest-first summary list.
 plansToEstimateRouter.get('/drafts', async (_req, res, next) => {

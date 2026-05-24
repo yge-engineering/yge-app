@@ -10,8 +10,19 @@ import { SYSTEM_PROMPT, buildUserMessage, PROMPT_VERSION } from '../lib/prompts/
 import { PtoEOutputSchema, sumPtoEBidTotalCents, type PtoEOutput } from '@yge/shared';
 
 export interface RunPlansToEstimateInput {
-  documentText: string;
+  /** Plain-text source of the project — paste of an RFP, OCR output of a
+   *  plan set, etc. Optional when `pdfBase64` is supplied (the AI can
+   *  read the document directly), required otherwise. */
+  documentText?: string;
   sessionNotes?: string;
+  /** Base64-encoded PDF bytes. When supplied, the AI receives the full
+   *  PDF as a vision-enabled `type:'document'` block so it can SEE the
+   *  drawings — measure lot dimensions against the scale bar, count
+   *  conduit linear feet from the utility plan, derive cut/fill from
+   *  cross-sections, etc. Without this the AI can only work from
+   *  whatever text was extracted earlier in the pipeline, which loses
+   *  every drawing-derived quantity. */
+  pdfBase64?: string;
   /** Optional override — useful for tests. Defaults to the singleton client. */
   client?: Pick<typeof anthropic, 'messages'>;
   /** Optional override — defaults to claude-sonnet-4-6. */
@@ -112,12 +123,38 @@ export class PlansToEstimateError extends Error {
 export async function runPlansToEstimate(
   input: RunPlansToEstimateInput,
 ): Promise<RunPlansToEstimateResult> {
-  if (!input.documentText || input.documentText.trim().length === 0) {
-    throw new PlansToEstimateError('documentText is empty.');
+  const hasText = !!(input.documentText && input.documentText.trim().length > 0);
+  const hasPdf = !!(input.pdfBase64 && input.pdfBase64.length > 0);
+  if (!hasText && !hasPdf) {
+    throw new PlansToEstimateError(
+      'Either documentText or pdfBase64 must be provided.',
+    );
   }
 
   const client = input.client ?? anthropic;
   const model = input.model ?? DEFAULT_MODEL;
+
+  // When we have the original PDF, ALWAYS prefer the vision path. The
+  // AI needs to see the drawings to do real takeoff math — text alone
+  // strips the scale bar, the plan-view shapes, the cross-sections,
+  // and the utility runs. The user pastes-text path stays available
+  // for RFPs that arrived as Word docs / emails.
+  const userMessage = hasPdf
+    ? buildUserMessage(undefined, input.sessionNotes, { hasPdf: true })
+    : buildUserMessage(input.documentText, input.sessionNotes);
+
+  const content: unknown[] = [];
+  if (hasPdf) {
+    content.push({
+      type: 'document',
+      source: {
+        type: 'base64',
+        media_type: 'application/pdf',
+        data: input.pdfBase64,
+      },
+    });
+  }
+  content.push({ type: 'text', text: userMessage });
 
   // NOTE: @anthropic-ai/sdk@0.20.9 (pinned via lockfile) ships incomplete
   // tool-use types — `tools`/`tool_choice` aren't on MessageCreateParamsBase,
@@ -127,11 +164,13 @@ export async function runPlansToEstimate(
   // passes. When we bump the SDK these casts can come out.
   const createParams: any = {
     model,
-    max_tokens: 4096,
+    // Bump max_tokens when the AI is reading drawings — takeoff math +
+    // per-item derivation notes generates more output than text-only.
+    max_tokens: hasPdf ? 8192 : 4096,
     system: SYSTEM_PROMPT,
     tools: [SUBMIT_TOOL],
     tool_choice: { type: 'tool', name: SUBMIT_TOOL.name },
-    messages: [{ role: 'user', content: buildUserMessage(input.documentText, input.sessionNotes) }],
+    messages: [{ role: 'user', content }],
   };
   const response: any = await client.messages.create(createParams);
 

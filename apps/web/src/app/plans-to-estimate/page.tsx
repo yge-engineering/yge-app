@@ -47,6 +47,12 @@ export default function PlansToEstimatePage() {
   const [elapsedMs, setElapsedMs] = useState<number | null>(null);
   const [dropHover, setDropHover] = useState(false);
   const [dropMessage, setDropMessage] = useState<string | null>(null);
+  // When the user drops a PDF, we hold the File here and route Generate
+  // to /api/plans-to-estimate/from-pdf so the AI can SEE the drawings
+  // (measure lot dimensions, count conduit LF, balance cut/fill from
+  // cross-sections, etc.). Text drops bypass this and use the legacy
+  // text-only path.
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
 
   // Job picker — populates from /api/jobs on mount. If the URL has ?jobId=, we
   // pre-select that one. Otherwise the estimator picks from the dropdown.
@@ -93,44 +99,17 @@ export default function PlansToEstimatePage() {
     const isPdf = file.type === 'application/pdf' || lower.endsWith('.pdf');
 
     if (isPdf) {
-      setDropMessage(`Extracting text from ${file.name}…`);
-      try {
-        const apiBase =
-          process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
-        const form = new FormData();
-        form.append('file', file);
-        const res = await fetch(`${apiBase}/api/pdf/extract-text`, {
-          method: 'POST',
-          body: form,
-        });
-        if (!res.ok) {
-          const body = (await res.json().catch(() => ({}))) as {
-            error?: string;
-          };
-          setDropMessage(
-            body.error ?? `Could not extract text (HTTP ${res.status})`,
-          );
-          return;
-        }
-        const json = (await res.json()) as {
-          text: string;
-          filename: string;
-          elapsedMs?: number;
-        };
-        setDocumentText((prev) =>
-          prev.trim().length === 0 ? json.text : `${prev}\n\n${json.text}`,
-        );
-        const seconds = json.elapsedMs
-          ? ` in ${(json.elapsedMs / 1000).toFixed(1)}s`
-          : '';
-        setDropMessage(
-          `Extracted ${json.text.length.toLocaleString()} chars from ${json.filename}${seconds}.`,
-        );
-      } catch (err) {
-        setDropMessage(
-          `PDF upload failed: ${err instanceof Error ? err.message : 'unknown error'}`,
-        );
-      }
+      // Switched in plans-to-estimate@1.2.0: we no longer pre-extract
+      // text. Hold the PDF File in state and the Generate button will
+      // POST it directly to /api/plans-to-estimate/from-pdf so the AI
+      // gets the drawings + the text in one round-trip — that's what
+      // lets it measure lot dimensions, count conduit LF, balance
+      // cut/fill from the cross-sections, etc.
+      setPdfFile(file);
+      const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+      setDropMessage(
+        `📄 PDF ready (vision takeoff): ${file.name} · ${sizeMb} MB. Click Generate to run.`,
+      );
       return;
     }
 
@@ -163,7 +142,10 @@ export default function PlansToEstimatePage() {
       setError(t('pte.errors.pickJob'));
       return;
     }
-    if (documentText.trim().length < 20) {
+    // With a PDF queued, the textarea is optional — Claude reads the
+    // drawings directly. Without one, fall back to the legacy text
+    // requirement.
+    if (!pdfFile && documentText.trim().length < 20) {
       setError(t('pte.errors.tooShort'));
       return;
     }
@@ -171,11 +153,35 @@ export default function PlansToEstimatePage() {
     setLoading(true);
     const start = Date.now();
     try {
-      const res = await postJson<ApiResult>('/api/plans-to-estimate', {
-        jobId: selectedJobId,
-        documentText,
-        sessionNotes: sessionNotes.trim() || undefined,
-      });
+      let res: ApiResult;
+      if (pdfFile) {
+        // Vision-takeoff path. POST the PDF as multipart so the API
+        // hands it straight to Anthropic as a type:'document' block.
+        const apiBase =
+          process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+        const form = new FormData();
+        form.append('file', pdfFile);
+        form.append('jobId', selectedJobId);
+        if (sessionNotes.trim()) {
+          form.append('sessionNotes', sessionNotes.trim());
+        }
+        const r = await fetch(`${apiBase}/api/plans-to-estimate/from-pdf`, {
+          method: 'POST',
+          body: form,
+        });
+        if (!r.ok) {
+          const body = (await r.json().catch(() => ({}))) as { error?: string };
+          throw new Error(body.error ?? `HTTP ${r.status}`);
+        }
+        res = (await r.json()) as ApiResult;
+      } else {
+        // Legacy text-only path — pasted RFP / spec / email.
+        res = await postJson<ApiResult>('/api/plans-to-estimate', {
+          jobId: selectedJobId,
+          documentText,
+          sessionNotes: sessionNotes.trim() || undefined,
+        });
+      }
       setResult(res);
       setElapsedMs(Date.now() - start);
     } catch (err) {
@@ -329,6 +335,25 @@ export default function PlansToEstimatePage() {
             {dropMessage && (
               <p className="mt-1 text-xs text-yge-blue-700">{dropMessage}</p>
             )}
+            {pdfFile && (
+              <div className="mt-2 flex items-center justify-between rounded border border-yge-blue-200 bg-yge-blue-50 px-3 py-2 text-xs text-yge-blue-900">
+                <span>
+                  <span className="font-semibold">Vision takeoff queued:</span>{' '}
+                  {pdfFile.name} ({(pdfFile.size / (1024 * 1024)).toFixed(1)} MB).
+                  The AI will read the drawings + do the takeoff math.
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPdfFile(null);
+                    setDropMessage('PDF cleared.');
+                  }}
+                  className="ml-3 rounded border border-yge-blue-300 px-2 py-0.5 text-[10px] font-medium text-yge-blue-700 hover:bg-white"
+                >
+                  remove
+                </button>
+              </div>
+            )}
           </div>
 
           <div>
@@ -348,11 +373,19 @@ export default function PlansToEstimatePage() {
           <button
             onClick={handleGenerate}
             disabled={
-              loading || documentText.trim().length === 0 || !selectedJobId
+              loading ||
+              !selectedJobId ||
+              (!pdfFile && documentText.trim().length === 0)
             }
             className="rounded bg-yge-blue-500 px-6 py-3 text-white hover:bg-yge-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {loading ? t('pte.btn.generating') : t('pte.btn.generate')}
+            {loading
+              ? pdfFile
+                ? 'Reading drawings + pricing takeoff…'
+                : t('pte.btn.generating')
+              : pdfFile
+                ? 'Run vision takeoff'
+                : t('pte.btn.generate')}
           </button>
 
           {error && <Alert tone="danger">{error}</Alert>}
