@@ -47,7 +47,7 @@ function buildAnalysis(
   jobCounty: string | undefined,
 ): QuarryAnalysisRow[] {
   const rows: QuarryAnalysisRow[] = [];
-  for (const item of draft.bidItems) {
+  for (const item of draft.bidItems ?? []) {
     const material = inferQuarryMaterial(item.description, item.unit);
     if (!material) continue;
     const capacity = defaultCapacity(material);

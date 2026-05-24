@@ -178,6 +178,32 @@ describe('runBidSanityCheck', () => {
     expect(findings.filter((f) => f.severity === 'CRITICAL')).toEqual([]);
   });
 
+  it('survives a pre-v1.3.0 draft missing ownerFurnishedItems / assumptions', () => {
+    // drafts-store re-hydrates raw JSON without Zod, so old saved
+    // drafts have undefined where the schema now declares defaults.
+    // The sanity check must not crash; it should just emit whatever
+    // findings apply.
+    const old = {
+      projectName: 'Old draft',
+      projectType: 'GRADING' as const,
+      bidItems: [
+        {
+          itemNumber: '1',
+          description: 'Excavation, native soil',
+          unit: 'CY',
+          quantity: 100,
+          confidence: 'HIGH' as const,
+        },
+      ],
+      overallConfidence: 'MEDIUM' as const,
+      // The pre-v1.3.0 fields aren't here at all:
+      //   assumptions: undefined
+      //   ownerFurnishedItems: undefined
+      //   questionsForEstimator: undefined
+    } as unknown as Parameters<typeof runBidSanityCheck>[0]['draft'];
+    expect(() => runBidSanityCheck({ draft: old })).not.toThrow();
+  });
+
   it('sorts CRITICAL before WARNING before INFO', () => {
     const findings = runBidSanityCheck({
       draft: draft({

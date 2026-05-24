@@ -193,7 +193,7 @@ export function buildBidGantt(input: BuildGanttInput): GanttResult {
     rateNote?: string;
   };
 
-  const raw: Raw[] = input.bidItems
+  const raw: Raw[] = (input.bidItems ?? [])
     .map((item): Raw | null => {
       const group = inferGroup(item);
       if (item.quantity <= 0) return null;

@@ -179,16 +179,21 @@ function checkSchedule(input: BidSanityInput): BidSanityFinding | null {
 
 /** Catch silent owner-furnishes assumptions — phrases like "X by
  *  SMUD" sitting in `assumptions` without a corresponding entry in
- *  `ownerFurnishedItems`. Those are the gaps that cost millions. */
+ *  `ownerFurnishedItems`. Those are the gaps that cost millions.
+ *
+ *  Defensive against pre-v1.3.0 saved drafts where
+ *  `ownerFurnishedItems` and `assumptions` may be undefined — the
+ *  drafts-store re-hydrates raw JSON without running it back through
+ *  Zod, so the defaults the schema declares don't get applied. */
 function checkOwnerFurnishesHallucination(
   input: BidSanityInput,
 ): BidSanityFinding[] {
   const { draft } = input;
   const findings: BidSanityFinding[] = [];
-  const ofItemsLower = new Set(
-    draft.ownerFurnishedItems.map((s) => s.toLowerCase()),
-  );
-  draft.assumptions.forEach((a, idx) => {
+  const ownerFurnishedItems = draft.ownerFurnishedItems ?? [];
+  const assumptions = draft.assumptions ?? [];
+  const ofItemsLower = new Set(ownerFurnishedItems.map((s) => s.toLowerCase()));
+  assumptions.forEach((a, idx) => {
     const lower = a.toLowerCase();
     const triggered = OWNER_FURNISHES_KEYWORDS.find((k) => lower.includes(k));
     if (!triggered) return;
@@ -249,7 +254,8 @@ function checkEarthwork(input: BidSanityInput): BidSanityFinding | null {
   }
   const earthworkRe =
     /excavat|grad|cut|fill|import|export|scrape|strip|topsoil|borrow|compact|subgrade|aggregate base|class 2 ab|class ii base/i;
-  const hasEarthwork = draft.bidItems.some(
+  const bidItems = draft.bidItems ?? [];
+  const hasEarthwork = bidItems.some(
     (i) => earthworkRe.test(i.description) || earthworkRe.test(i.notes ?? ''),
   );
   if (!hasEarthwork) {

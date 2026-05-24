@@ -60,7 +60,7 @@ export function DraftView({
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'error'>('idle');
 
   function handleDownloadCsv() {
-    const csv = bidItemsToCsv(draft.bidItems);
+    const csv = bidItemsToCsv(draft.bidItems ?? []);
     // BOM helps Excel detect UTF-8 cleanly when the file has any non-ASCII chars.
     const blob = new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -74,7 +74,7 @@ export function DraftView({
   }
 
   async function handleCopyCsv() {
-    const csv = bidItemsToCsv(draft.bidItems);
+    const csv = bidItemsToCsv(draft.bidItems ?? []);
     try {
       await navigator.clipboard.writeText(csv);
       setCopyState('copied');
@@ -173,7 +173,7 @@ export function DraftView({
           </div>
         </div>
         <ul className="mt-2 divide-y divide-gray-100">
-          {draft.bidItems.map((item, i) => (
+          {(draft.bidItems ?? []).map((item, i) => (
             <BidItemRow key={i} item={item} t={t} />
           ))}
         </ul>
@@ -196,13 +196,13 @@ export function DraftView({
         </div>
       )}
 
-      {draft.assumptions.length > 0 && (
+      {(draft.assumptions ?? []).length > 0 && (
         <div>
           <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
             {t('draftView.assumptionsHeader')}
           </h3>
           <ul className="mt-2 space-y-1.5 text-sm text-gray-700">
-            {draft.assumptions.map((a, i) => {
+            {(draft.assumptions ?? []).map((a, i) => {
               const { risk, text } = parseAssumptionRisk(a);
               const tone =
                 risk === 'HIGH'
@@ -225,13 +225,13 @@ export function DraftView({
         </div>
       )}
 
-      {draft.questionsForEstimator.length > 0 && (
+      {(draft.questionsForEstimator ?? []).length > 0 && (
         <div>
           <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
             {t('draftView.questionsHeader')}
           </h3>
           <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-gray-700">
-            {draft.questionsForEstimator.map((q, i) => (
+            {(draft.questionsForEstimator ?? []).map((q, i) => (
               <li key={i}>{q}</li>
             ))}
           </ul>
@@ -307,7 +307,7 @@ function BidItemRow({ item, t }: { item: PtoEBidItem; t: Translator }) {
 function BidTotalRow({ draft }: { draft: PtoEOutput }) {
   // Prefer the model-emitted total when present; otherwise sum what's
   // there. Older drafts that don't have prices return 0, which we hide.
-  const grand = draft.estimatedBidTotalCents ?? sumPtoEBidTotalCents(draft.bidItems);
+  const grand = draft.estimatedBidTotalCents ?? sumPtoEBidTotalCents(draft.bidItems ?? []);
   if (grand <= 0) return null;
   return (
     <div className="mt-3 flex items-baseline justify-between border-t border-gray-200 pt-3">
