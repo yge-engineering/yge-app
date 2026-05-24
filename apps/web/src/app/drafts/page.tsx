@@ -113,7 +113,10 @@ export default async function DraftsPage() {
 
       {fetchError && (
         <Alert tone="danger" className="mt-6" title={t('drafts.fetchError.title')}>
-          {fetchError}. Make sure the API server is running on port 4000.
+          {fetchError}.{' '}
+          {apiBaseUrl().includes('localhost')
+            ? 'Make sure the API server is running on port 4000.'
+            : "The API isn't responding right now — it may be restarting after a deploy, or the service is spinning up from idle. Hit Refresh in a moment. If this keeps happening, ping Ryan to check the Render dashboard."}
         </Alert>
       )}
 
