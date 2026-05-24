@@ -212,6 +212,7 @@ const NAV_SPEC: NavGroupSpec[] = [
       { key: 'nav.coiChase', href: '/coi-chase', requires: 'financials:edit' },
       { key: 'nav.arCollections', href: '/ar-collections', requires: 'financials:view' },
       { key: 'nav.upcomingBids', href: '/upcoming-bids' },
+      { key: 'nav.jobStartupChecklist', href: '/job-startup-checklist' },
       { key: 'nav.lienCalendar', href: '/lien-calendar', requires: 'financials:view' },
     ],
   },
