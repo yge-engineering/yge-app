@@ -22,6 +22,7 @@ import {
   DashboardViewPrefSetter,
 } from '../../../components/dashboard-view-pref';
 import { MorningBriefingTile } from '../../../components/morning-briefing-tile';
+import { UpcomingBidsTile } from '../../../components/upcoming-bids-tile';
 
 export default function DashboardLitePage() {
   return (
@@ -47,6 +48,8 @@ export default function DashboardLitePage() {
         </div>
 
         <div className="space-y-4">
+          <UpcomingBidsTile />
+
           <div className="grid gap-4 lg:grid-cols-2">
             <ArAgingTile />
             <CprDueTile />
