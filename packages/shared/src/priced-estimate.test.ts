@@ -164,4 +164,55 @@ describe('blankPricedItemsFromDraft', () => {
     expect(out[0]!.notes).toBe('Priced per CalTrans 2024 average');
     expect(out[0]!.pageReference).toBe('p. 12');
   });
+
+  // Plans-to-Estimate@1.1.0 — AI-priced takeoffs carry through into the
+  // working estimate so the human estimator opens it with prices already
+  // populated instead of a blank column.
+  it('seeds unitPriceCents from estimatedUnitPriceCents when the AI priced the item', () => {
+    const draftItems = [
+      {
+        itemNumber: '1',
+        description: 'Class 2 AB',
+        unit: 'TON',
+        quantity: 1200,
+        confidence: 'MEDIUM' as const,
+        estimatedUnitPriceCents: 4250,
+        estimatedLineTotalCents: 1200 * 4250,
+        priceSourceConfidence: 'MEDIUM' as const,
+        priceSourceNote: 'Caltrans 2024-2026 D2 avg + 20% O&P',
+      },
+      {
+        // No AI price — still comes in as null so the estimator fills it.
+        itemNumber: '2',
+        description: 'Unforeseen T&M',
+        unit: 'LS',
+        quantity: 1,
+        confidence: 'LOW' as const,
+      },
+    ];
+    const out = blankPricedItemsFromDraft(draftItems);
+    expect(out[0]!.unitPriceCents).toBe(4250);
+    expect(out[1]!.unitPriceCents).toBeNull();
+  });
+
+  it('keeps the AI price-source metadata on each priced line', () => {
+    const draftItems = [
+      {
+        itemNumber: '1',
+        description: 'Drain rock',
+        unit: 'CY',
+        quantity: 80,
+        confidence: 'HIGH' as const,
+        estimatedUnitPriceCents: 9500,
+        priceSourceConfidence: 'HIGH' as const,
+        priceSourceNote: 'YGE 2024 won bid #14',
+      },
+    ];
+    const out = blankPricedItemsFromDraft(draftItems);
+    // The AI's rationale + source-confidence ride along on the PricedBidItem
+    // so the editor can show the human what the AI thought.
+    expect(out[0]!.priceSourceConfidence).toBe('HIGH');
+    expect(out[0]!.priceSourceNote).toBe('YGE 2024 won bid #14');
+    expect(out[0]!.estimatedUnitPriceCents).toBe(9500);
+  });
 });

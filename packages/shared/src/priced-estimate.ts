@@ -365,9 +365,22 @@ export function computeEstimateTotals(est: PricedEstimate): PricedEstimateTotals
   };
 }
 
-/** Build a fresh PricedEstimate from a saved draft's bid items. */
+/** Build PricedBidItems from a saved draft's bid items.
+ *
+ *  Carries over the AI's `estimatedUnitPriceCents` (Plans-to-Estimate@1.1.0)
+ *  as the starting `unitPriceCents` so the human estimator opens the
+ *  working estimate already populated with the AI's market-priced takeoff
+ *  rather than a blank column. Items that were never priced by the AI
+ *  (T&M, force-account, older drafts) come in as `unitPriceCents: null`
+ *  exactly as before — the estimator fills those in.
+ *
+ *  Name kept for source compatibility; the items are no longer "blank"
+ *  when the draft has AI prices. */
 export function blankPricedItemsFromDraft(items: PtoEBidItem[]): PricedBidItem[] {
-  return items.map((it) => ({ ...it, unitPriceCents: null }));
+  return items.map((it) => ({
+    ...it,
+    unitPriceCents: it.estimatedUnitPriceCents ?? null,
+  }));
 }
 
 // ---- Crew buildup math --------------------------------------------------
