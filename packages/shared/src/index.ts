@@ -9,6 +9,7 @@ export * from './imported-estimate';
 export * from './cost-variance';
 export * from './bid-coach';
 export * from './bid-postponement-detect';
+export * from './bid-doc-classify';
 export * from './bid-tab';
 export * from './bid-tab-link';
 export * from './competitor-from-tabs';
