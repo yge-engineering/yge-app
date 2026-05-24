@@ -125,6 +125,7 @@ export * from './sub-scorecard';
 export * from './meal-break-summary';
 export * from './photo-evidence';
 export * from './material-reorder';
+export * from './material-yield';
 export * from './cpr-gap-detector';
 export * from './lien-waiver-chase';
 export * from './heat-illness-audit';
