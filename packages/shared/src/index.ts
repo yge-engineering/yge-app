@@ -17,6 +17,7 @@ export * from './legal-hold';
 export * from './master-profile';
 export * from './pdf-form-filler';
 export * from './otp-challenge';
+export * from './owner-agency';
 export * from './pdf-form-mapping';
 export * from './records-retention';
 export * from './records-retention-purge';
