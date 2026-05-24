@@ -9,6 +9,7 @@
 import Link from 'next/link';
 
 import { AppShell, PageHeader, Alert } from '../../components';
+import { ArCollectionsCsvButtons } from '../../components/ar-collections-csv-buttons';
 import {
   rankArCollections,
   formatUSD,
@@ -153,7 +154,24 @@ export default async function ArCollectionsPage() {
         )}
 
         {rankedWithInvoice.length > 0 && (
-          <div className="mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+          <div className="mt-4 flex justify-end">
+            <ArCollectionsCsvButtons
+              rows={rankedWithInvoice.map(({ invoice, rec, age }) => ({
+                invoiceId: invoice.id,
+                invoiceNumber: invoice.invoiceNumber,
+                customerName: invoice.customerName,
+                amountOutstandingCents: invoice.totalCents - invoice.paidCents,
+                ageDays: age,
+                action: rec.action,
+                actionLabel: ACTION_LABEL[rec.action],
+                reason: rec.reason,
+              }))}
+            />
+          </div>
+        )}
+
+        {rankedWithInvoice.length > 0 && (
+          <div className="mt-2 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
             <table className="w-full text-left text-sm">
               <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
                 <tr>
