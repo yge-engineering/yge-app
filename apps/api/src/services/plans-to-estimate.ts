@@ -189,9 +189,13 @@ export async function runPlansToEstimate(
   // passes. When we bump the SDK these casts can come out.
   const createParams: any = {
     model,
-    // Bump max_tokens when the AI is reading drawings — takeoff math +
-    // per-item derivation notes generates more output than text-only.
-    max_tokens: hasPdf ? 8192 : 4096,
+    // Vision-takeoff output is heavy on prose: per-line takeoff math
+    // in notes, scheduleNote derivation walkthrough, ownerFurnished-
+    // Items quotes, per-assumption risk tags. v1.5.0 was hitting the
+    // 8K cap on real plan sets and returning partial submit_draft_
+    // estimate input (bidItems undefined). 24K gives plenty of
+    // headroom — Sonnet 4.5 supports 64K output total.
+    max_tokens: hasPdf ? 24_576 : 4096,
     system: SYSTEM_PROMPT,
     tools: [SUBMIT_TOOL],
     tool_choice: { type: 'tool', name: SUBMIT_TOOL.name },
@@ -199,19 +203,38 @@ export async function runPlansToEstimate(
   };
   const response: any = await client.messages.create(createParams);
 
+  const stopReason: string | undefined = response.stop_reason;
   const toolUse = response.content.find(
     (b: { type: string }) => b.type === 'tool_use',
   ) as { type: 'tool_use'; input: unknown } | undefined;
   if (!toolUse) {
     throw new PlansToEstimateError(
-      'Model did not call submit_draft_estimate. Stop reason: ' + response.stop_reason,
+      `Model did not call submit_draft_estimate. Stop reason: ${stopReason ?? 'unknown'}.${
+        stopReason === 'max_tokens'
+          ? ' The AI ran out of output budget before producing any structured response — bump max_tokens or shrink the prompt.'
+          : ''
+      }`,
     );
   }
 
   const parsed = PtoEOutputSchema.safeParse(toolUse.input);
   if (!parsed.success) {
+    // Truncation: max_tokens stop + missing required fields = the
+    // model started filling the tool call but ran out of budget
+    // mid-JSON. Surface a clear, actionable error instead of dumping
+    // raw Zod issue lists on the estimator.
+    if (stopReason === 'max_tokens') {
+      throw new PlansToEstimateError(
+        'AI response was cut off mid-takeoff — the plan set has more bid items than fit in one response. Try (1) running it again in case Anthropic returns a faster path, (2) splitting the plan set into the bid schedule + spec sheets and dropping them separately, or (3) using the multi-pass page which chunks the work.',
+        toolUse.input,
+      );
+    }
+    const issuesShort = parsed.error.issues
+      .slice(0, 3)
+      .map((i) => `${i.path.join('.') || '(root)'}: ${i.message}`)
+      .join('; ');
     throw new PlansToEstimateError(
-      `submit_draft_estimate output failed validation: ${parsed.error.message}`,
+      `submit_draft_estimate output failed validation. Stop reason: ${stopReason ?? 'unknown'}. First issues: ${issuesShort}.`,
       toolUse.input,
     );
   }
