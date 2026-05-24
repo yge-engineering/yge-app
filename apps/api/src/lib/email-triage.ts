@@ -6,6 +6,7 @@ import {
   PROMPT_VERSION,
   SYSTEM_PROMPT,
 } from './prompts/email-triage-v1';
+import { detectBidPostponement } from '@yge/shared';
 
 const CategorySchema = z.enum([
   'BID_INVITATION',
@@ -25,11 +26,27 @@ export type EmailTriageCategory = z.infer<typeof CategorySchema>;
 
 const ConfidenceSchema = z.enum(['HIGH', 'MEDIUM', 'LOW']);
 
+const PostponementSchema = z.object({
+  /** 0–1 heuristic score from bid-postponement-detect. */
+  confidence: z.number().min(0).max(1),
+  /** Parsed new bid date (yyyy-mm-dd) when one was found. */
+  newDate: z.string().optional(),
+  /** First matched phrase ("bid opening postponed" / "due date moved"). */
+  reasonText: z.string().optional(),
+});
+export type EmailTriagePostponement = z.infer<typeof PostponementSchema>;
+
 const ItemSchema = z.object({
   messageId: z.string().min(1).max(200),
   category: CategorySchema,
   confidence: ConfidenceSchema,
   nextAction: z.string().max(200),
+  /** Bid-postponement heuristic result. Only present when the
+   *  detector crossed its action threshold for this message — gives
+   *  the UI a "Bid date changed — review" chip and the new date when
+   *  parsed. Independent of category so a mislabeled-as-INTERNAL
+   *  email about a moved bid date still surfaces. */
+  bidPostponement: PostponementSchema.optional(),
 });
 
 const OutputSchema = z.object({
@@ -114,7 +131,37 @@ export async function triageEmails(
     });
     return null;
   }
-  return { items: result.data.items, promptVersion: PROMPT_VERSION };
+  const items = mergeBidPostponements(result.data.items, messages);
+  return { items, promptVersion: PROMPT_VERSION };
+}
+
+/** Run the bid-postponement heuristic over each inbound message and
+ *  attach the result to the matching triage item. Independent of the
+ *  AI's category — if the heuristic fires we want the chip visible
+ *  even when the model mislabeled the email as INTERNAL or OTHER.
+ *  Cheap pure-regex call; runs in the same tick. */
+function mergeBidPostponements(
+  items: EmailTriageItem[],
+  messages: EmailTriageMessage[],
+): EmailTriageItem[] {
+  const byId = new Map(messages.map((m) => [m.id, m]));
+  return items.map((it) => {
+    const src = byId.get(it.messageId);
+    if (!src) return it;
+    const r = detectBidPostponement({
+      subject: src.subject,
+      body: src.bodyPreview,
+    });
+    if (!r.detected) return it;
+    return {
+      ...it,
+      bidPostponement: {
+        confidence: r.confidence,
+        ...(r.newDate ? { newDate: r.newDate } : {}),
+        ...(r.reasonText ? { reasonText: r.reasonText } : {}),
+      },
+    };
+  });
 }
 
 // Diagnostic variant — returns raw AI text alongside parsed result.
@@ -196,5 +243,6 @@ export async function triageEmailsWithRaw(
       error: `Schema validation failed: ${result.error.issues.map((i) => i.message).join('; ')}`,
     };
   }
-  return { items: result.data.items, rawHead, promptVersion: PROMPT_VERSION };
+  const items = mergeBidPostponements(result.data.items, messages);
+  return { items, rawHead, promptVersion: PROMPT_VERSION };
 }
