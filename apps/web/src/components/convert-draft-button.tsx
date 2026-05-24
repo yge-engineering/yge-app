@@ -8,15 +8,22 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import type { PtoEBidItem } from '@yge/shared';
+import { formatUSD, sumPtoEBidTotalCents } from '@yge/shared';
 import { useTranslator } from '../lib/use-translator';
 
 interface Props {
   draftId: string;
   /** Public-facing API URL — passed in from the server component. */
   apiBaseUrl: string;
+  /** Optional preview of what gets carried over. When provided, a small
+   *  caption above the button tells the user how many items are priced
+   *  and what the starting bid total will be. Pass undefined to suppress
+   *  the preview (older callers stay unchanged). */
+  preview?: { bidItems: PtoEBidItem[] };
 }
 
-export function ConvertDraftButton({ draftId, apiBaseUrl }: Props) {
+export function ConvertDraftButton({ draftId, apiBaseUrl, preview }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,8 +50,30 @@ export function ConvertDraftButton({ draftId, apiBaseUrl }: Props) {
     }
   }
 
+  // Compute the one-line preview from the draft items if the caller
+  // supplied them. Done here (not in render) to keep the JSX terse.
+  const previewLine = (() => {
+    if (!preview) return null;
+    const items = preview.bidItems;
+    const total = items.length;
+    if (total === 0) return null;
+    const pricedCount = items.filter(
+      (i) => i.estimatedUnitPriceCents != null,
+    ).length;
+    if (pricedCount === 0) return t('convertDraft.previewUnpriced');
+    const grand = sumPtoEBidTotalCents(items);
+    return t('convertDraft.previewPriced', {
+      priced: String(pricedCount),
+      total: String(total),
+      amount: formatUSD(grand, { compact: true }),
+    });
+  })();
+
   return (
-    <div>
+    <div className="text-right">
+      {previewLine && (
+        <p className="mb-1 text-xs text-gray-600">{previewLine}</p>
+      )}
       <button
         onClick={handleClick}
         disabled={loading}

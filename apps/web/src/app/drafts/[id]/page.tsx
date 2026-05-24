@@ -84,7 +84,11 @@ export default async function DraftDetailPage({ params }: { params: { id: string
           <p className="text-xs uppercase tracking-wide text-gray-500">
             {t('draftPg.savedAt', { when: formatWhen(saved.createdAt) })}
           </p>
-          <ConvertDraftButton draftId={saved.id} apiBaseUrl={publicApiBaseUrl()} />
+          <ConvertDraftButton
+            draftId={saved.id}
+            apiBaseUrl={publicApiBaseUrl()}
+            preview={{ bidItems: saved.draft.bidItems }}
+          />
         </div>
         <DraftView
           draft={saved.draft}
