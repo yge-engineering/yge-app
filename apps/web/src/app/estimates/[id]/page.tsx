@@ -235,6 +235,13 @@ export default async function EstimateDetailPage({
   
         <div className="mb-4 flex flex-wrap gap-2 text-xs print:hidden">
           <Link
+            href={`/estimates/${data.estimate.id}/bid-day`}
+            className="rounded border-2 border-yge-blue-500 bg-yge-blue-50 px-3 py-1 font-semibold text-yge-blue-700 hover:bg-yge-blue-100"
+            title="Bid-day cockpit — countdown, readiness checklist, bid security, and packet print links on one screen."
+          >
+            🎯 Bid day
+          </Link>
+          <Link
             href={`/estimates/${data.estimate.id}/coach`}
             className="rounded border border-amber-500 bg-amber-50 px-3 py-1 font-medium text-amber-800 hover:bg-amber-100"
           >
