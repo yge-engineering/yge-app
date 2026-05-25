@@ -20,6 +20,7 @@ import type { Job, PtoEOutput } from '@yge/shared';
 import { ApiError, getJson, postJson } from '@/lib/api';
 import { DraftView } from '@/components/draft-view';
 import { OwnerAgencyComplianceCard } from '@/components/owner-agency-compliance-card';
+import { ConvertDraftButton } from '@/components/convert-draft-button';
 import { classifyOwnerAgency } from '@yge/shared';
 import { useTranslator } from '@/lib/use-translator';
 
@@ -405,15 +406,24 @@ export default function PlansToEstimatePage() {
           {result && (
             <>
               {result.savedId && (
-                <p className="mb-3 text-xs text-gray-500">
-                  {t('pte.savedToHistory')}
-                  <Link
-                    href={`/drafts/${result.savedId}`}
-                    className="text-yge-blue-500 hover:underline"
-                  >
-                    {t('pte.openDraftLink')}
-                  </Link>
-                </p>
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-xs text-gray-500">
+                    {t('pte.savedToHistory')}
+                    <Link
+                      href={`/drafts/${result.savedId}`}
+                      className="text-yge-blue-500 hover:underline"
+                    >
+                      {t('pte.openDraftLink')}
+                    </Link>
+                  </p>
+                  {/* Direct path to the editable estimate so the user
+                      doesn't have to bounce through /drafts/{id}. */}
+                  <ConvertDraftButton
+                    draftId={result.savedId}
+                    apiBaseUrl={process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'}
+                    preview={{ bidItems: result.draft.bidItems }}
+                  />
+                </div>
               )}
               <DraftView
                 draft={result.draft}
