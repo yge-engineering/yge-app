@@ -56,6 +56,7 @@ import { ExternalPortalTile } from '../../components/external-portal-tile';
 import { currentUserCan } from '../../lib/permissions';
 import { CopyMoneyButton } from '../../components/copy-money-button';
 import { PinnedIndicator } from '../../components/pinned-indicator';
+import { LivePacificClock } from '../../components/live-pacific-clock';
 import { relativeTime } from '../../lib/relative-time';
 import { ygeHour, ygeToday } from '../../lib/yge-time';
 import {
@@ -535,20 +536,7 @@ async function DashboardPageInner() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <span
-            className="text-[10px] text-gray-500"
-            title={renderedAt.toLocaleString('en-US', {
-              weekday: 'long',
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-              hour: 'numeric',
-              minute: '2-digit',
-              second: '2-digit',
-            })}
-          >
-            As of {renderedAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-          </span>
+          <LivePacificClock initialIso={renderedAt.toISOString()} />
           <DashboardRefreshButton />
           <Link href="/all-modules" className="rounded border border-yge-blue-500 px-3 py-1 text-sm font-medium text-yge-blue-500 hover:bg-yge-blue-50">
             {t('dashboard.allModules')} &rarr;
