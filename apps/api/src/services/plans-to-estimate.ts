@@ -8,6 +8,7 @@
 import { anthropic, DEFAULT_MODEL } from '../lib/anthropic';
 import { SYSTEM_PROMPT, buildUserMessage, PROMPT_VERSION } from '../lib/prompts/plans-to-estimate-v1';
 import { PtoEOutputSchema, sumPtoEBidTotalCents, type PtoEOutput } from '@yge/shared';
+import { loadYgeRateBookForPrompt } from '../lib/yge-rate-book';
 
 export interface RunPlansToEstimateInput {
   /** Plain-text source of the project — paste of an RFP, OCR output of a
@@ -159,14 +160,23 @@ export async function runPlansToEstimate(
   const client = input.client ?? anthropic;
   const model = input.model ?? DEFAULT_MODEL;
 
+  // Load the company's master rate book — when populated, the AI gets
+  // YGE's actual labor / equipment / material numbers prepended to its
+  // user message so unit prices anchor to YGE actuals instead of the
+  // generic NorCal averages baked into the system prompt. No-op when
+  // the rate tables are empty.
+  const rateBook = await loadYgeRateBookForPrompt();
+
   // When we have the original PDF, ALWAYS prefer the vision path. The
   // AI needs to see the drawings to do real takeoff math — text alone
   // strips the scale bar, the plan-view shapes, the cross-sections,
   // and the utility runs. The user pastes-text path stays available
   // for RFPs that arrived as Word docs / emails.
-  const userMessage = hasPdf
+  const baseMessage = hasPdf
     ? buildUserMessage(undefined, input.sessionNotes, { hasPdf: true })
     : buildUserMessage(input.documentText, input.sessionNotes);
+  const userMessage =
+    rateBook.text.length > 0 ? `${rateBook.text}\n\n${baseMessage}` : baseMessage;
 
   const content: unknown[] = [];
   if (hasPdf) {

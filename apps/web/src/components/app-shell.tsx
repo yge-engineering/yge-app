@@ -203,6 +203,7 @@ const NAV_SPEC: NavGroupSpec[] = [
       { key: 'nav.bondCapacity', href: '/bond-capacity', requires: 'financials:view' },
       { key: 'nav.fixedAssets', href: '/fixed-assets', requires: 'financials:view' },
       { key: 'nav.materialAlerts', href: '/material-alerts', requires: 'financials:view' },
+      { key: 'nav.rateImport', href: '/rates/import', requires: 'financials:edit' },
       { key: 'nav.subcontractBuilder', href: '/subcontract-builder' },
       { key: 'nav.purchaseOrders', href: '/purchase-orders' },
       { key: 'nav.stopPaymentNotice', href: '/stop-payment-notice', requires: 'financials:edit' },
