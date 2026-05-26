@@ -9,10 +9,16 @@
 // failure mode), this banner catches it before the estimator
 // converts the draft into a priced bid.
 
-import { checkSubstationCivilScope, type PtoEOutput } from '@yge/shared';
+import {
+  checkSubstationCivilScope,
+  type SubstationCheckInput,
+} from '@yge/shared';
 
 interface Props {
-  draft: PtoEOutput;
+  /** Either a Plans-to-Estimate draft or a priced estimate.
+   *  Bundle 2568 widened the helper signature so the same banner
+   *  fires on both /drafts/[id] and the bid-day cockpit. */
+  draft: SubstationCheckInput;
 }
 
 export function SubstationScopeBanner({ draft }: Props) {

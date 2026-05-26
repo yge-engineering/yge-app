@@ -19,7 +19,16 @@
 // False negatives (missing scope item that the guard didn't flag)
 // are the failure mode this is meant to prevent.
 
-import type { PtoEOutput } from './plans-to-estimate-output';
+/** Minimum draft/estimate shape the scope guard needs. Both
+ *  PtoEOutput (raw AI draft) and PricedEstimate (post-conversion)
+ *  satisfy it structurally so the same check fires on both
+ *  /drafts/[id] and the bid-day cockpit. */
+export interface SubstationCheckInput {
+  projectName: string;
+  ownerAgency?: string;
+  bidItems: ReadonlyArray<{ description: string }>;
+  assumptions?: ReadonlyArray<string>;
+}
 
 export interface SubstationScopeItem {
   /** Stable id, e.g. "transformer-foundation". */
@@ -173,11 +182,12 @@ function detectSubstation(text: string): {
   return { hit: matched.length > 0, matched };
 }
 
-/** Check a Plans-to-Estimate draft for missing substation-civil scope.
- *  Returns isSubstationJob:false (with empty missingItems) when the
- *  draft doesn't look like a substation job at all. */
+/** Check a Plans-to-Estimate draft (or priced estimate) for missing
+ *  substation-civil scope. Returns isSubstationJob:false (with empty
+ *  missingItems) when the draft doesn't look like a substation job
+ *  at all. */
 export function checkSubstationCivilScope(
-  draft: PtoEOutput,
+  draft: SubstationCheckInput,
 ): SubstationScopeCheck {
   // Pool of text the detection scans — every field that might
   // contain the trigger keywords.
