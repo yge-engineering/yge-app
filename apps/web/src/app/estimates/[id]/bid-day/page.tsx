@@ -28,6 +28,7 @@ import {
   type PricedEstimateTotals,
 } from '@yge/shared';
 import { AppShell, PageHeader } from '../../../../components';
+import { PrintPacketButton } from '@/components/print-packet-button';
 
 function apiBaseUrl(): string {
   return (
@@ -72,9 +73,7 @@ export default async function BidDayPage({
           >
             ← Back to estimate editor
           </Link>
-          <span className="text-xs text-gray-500">
-            Print each artifact below — Ctrl+P inside each opens the dialog.
-          </span>
+          <PrintPacketButton estimateId={estimate.id} />
         </div>
 
         <PageHeader

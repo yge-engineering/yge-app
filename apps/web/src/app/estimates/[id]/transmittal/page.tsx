@@ -18,6 +18,7 @@ import {
   type PricedEstimateTotals,
 } from '@yge/shared';
 import { PrintButton } from '@/components/print-button';
+import { AutoPrint } from '@/components/auto-print';
 import { Letterhead } from '@/components/letterhead';
 import { getTranslator } from '../../../../lib/locale';
 
@@ -135,6 +136,8 @@ export default async function TransmittalPage({
           </div>
         </div>
       </div>
+
+      <AutoPrint />
 
       <main className="mx-auto max-w-4xl bg-white px-12 py-10 text-gray-900">
         {/* ------- Letterhead ------- */}

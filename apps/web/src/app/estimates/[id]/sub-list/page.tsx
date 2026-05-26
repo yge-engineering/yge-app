@@ -18,6 +18,7 @@ import {
   type SubBid,
 } from '@yge/shared';
 import { PrintButton } from '@/components/print-button';
+import { AutoPrint } from '@/components/auto-print';
 import { Letterhead } from '@/components/letterhead';
 
 function apiBaseUrl(): string {
@@ -67,6 +68,7 @@ export default async function SubListPage({
 
   return (
     <AppShell>
+    <AutoPrint />
     <main className="mx-auto max-w-3xl p-8 text-black">
       <div className="mb-6 flex items-center justify-between print:hidden">
         <Link

@@ -28,6 +28,7 @@ import {
   type SubBid,
 } from '@yge/shared';
 import { PrintButton } from '@/components/print-button';
+import { AutoPrint } from '@/components/auto-print';
 
 function apiBaseUrl(): string {
   return (
@@ -131,6 +132,8 @@ export default async function PrintBidPage({
           </div>
         </div>
       </div>
+
+      <AutoPrint />
 
       <main className="mx-auto max-w-4xl bg-white px-10 py-8 text-gray-900">
         {/* ------- Letterhead ------- */}
