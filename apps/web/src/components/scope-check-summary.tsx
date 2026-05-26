@@ -9,6 +9,7 @@
 // missing items, amber/red badge.
 
 import {
+  checkBridgeScope,
   checkDrainageScope,
   checkFuelReductionScope,
   checkGradingScope,
@@ -36,6 +37,7 @@ export function ScopeCheckSummary({ draft }: Props) {
     summarize('drainage', 'Drainage / storm', checkDrainageScope(draft), 'isDrainageJob'),
     summarize('fuel-reduction', 'Fuel reduction', checkFuelReductionScope(draft), 'isFuelReductionJob'),
     summarize('grading', 'Site grading', checkGradingScope(draft), 'isGradingJob'),
+    summarize('bridge', 'Bridge', checkBridgeScope(draft), 'isBridgeJob'),
   ];
 
   const firingGuards = guards.filter((g) => g.fired);
@@ -45,10 +47,10 @@ export function ScopeCheckSummary({ draft }: Props) {
   if (firingGuards.length === 0) {
     return (
       <section className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs text-gray-600">
-        No archetype scope check applies to this draft. The five guards
-        (substation, road, drainage, fuel reduction, grading) didn&apos;t
-        recognize the project type or keywords — review the bid items
-        against the plan set manually.
+        No archetype scope check applies to this draft. The six guards
+        (substation, road, drainage, fuel reduction, grading, bridge)
+        didn&apos;t recognize the project type or keywords — review the bid
+        items against the plan set manually.
       </section>
     );
   }
@@ -90,7 +92,13 @@ export function ScopeCheckSummary({ draft }: Props) {
 }
 
 function summarize<
-  K extends 'isSubstationJob' | 'isRoadJob' | 'isDrainageJob' | 'isFuelReductionJob' | 'isGradingJob',
+  K extends
+    | 'isSubstationJob'
+    | 'isRoadJob'
+    | 'isDrainageJob'
+    | 'isFuelReductionJob'
+    | 'isGradingJob'
+    | 'isBridgeJob',
 >(
   key: string,
   label: string,

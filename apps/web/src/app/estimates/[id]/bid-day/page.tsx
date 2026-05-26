@@ -35,6 +35,7 @@ import { RoadReconScopeBanner } from '@/components/road-recon-scope-banner';
 import { DrainageScopeBanner } from '@/components/drainage-scope-banner';
 import { FuelReductionScopeBanner } from '@/components/fuel-reduction-scope-banner';
 import { GradingScopeBanner } from '@/components/grading-scope-banner';
+import { BridgeScopeBanner } from '@/components/bridge-scope-banner';
 import { ScopeCheckSummary } from '@/components/scope-check-summary';
 
 function apiBaseUrl(): string {
@@ -97,6 +98,7 @@ export default async function BidDayPage({
           <DrainageScopeBanner draft={estimate} />
           <FuelReductionScopeBanner draft={estimate} />
           <GradingScopeBanner draft={estimate} />
+          <BridgeScopeBanner draft={estimate} />
         </div>
 
         <BidDayComparableCallout estimate={estimate} />
