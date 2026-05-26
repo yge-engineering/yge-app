@@ -29,6 +29,7 @@ import {
 } from '@yge/shared';
 import { AppShell, PageHeader } from '../../../../components';
 import { PrintPacketButton } from '@/components/print-packet-button';
+import { BidDayComparableCallout } from '@/components/bid-day-comparable-callout';
 
 function apiBaseUrl(): string {
   return (
@@ -82,6 +83,8 @@ export default async function BidDayPage({
         />
 
         <CountdownBanner countdown={countdown} bidDueDate={estimate.bidDueDate} />
+
+        <BidDayComparableCallout estimate={estimate} />
 
         <ReadinessBanner checklist={checklist} />
 
