@@ -1,7 +1,24 @@
 // Unit tests for the Plans-to-Estimate service.
 // Uses an injected fake Anthropic client so no network calls happen.
+//
+// vi.mock for the rate-book loader is required because the service
+// reaches for the YGE master rate book on every call. The real
+// loader hits Prisma, which won't initialize without DATABASE_URL
+// in the test env. The mock returns an empty rate book so the
+// user-message assembly path still runs (and comparables still
+// splice in).
 
 import { describe, it, expect, vi } from 'vitest';
+
+vi.mock('../lib/yge-rate-book', () => ({
+  loadYgeRateBookForPrompt: vi
+    .fn()
+    .mockResolvedValue({
+      text: '',
+      counts: { laborRates: 0, equipmentRates: 0, equipmentRental: 0, materials: 0 },
+    }),
+}));
+
 import { runPlansToEstimate, PlansToEstimateError } from './plans-to-estimate';
 
 function fakeClient(toolInput: unknown, opts: { stopReason?: string } = {}) {
@@ -80,9 +97,13 @@ describe('runPlansToEstimate', () => {
       client: client as never,
     });
 
-    const userMsg = client.messages.create.mock.calls[0][0].messages[0].content;
-    expect(userMsg).toContain('ESTIMATOR NOTES');
-    expect(userMsg).toContain('Mandatory site walk Tuesday');
+    // content is an array of blocks (vision-takeoff added type:'document'
+    // alongside type:'text'); pull the text block for the assertions.
+    const callArg = client.messages.create.mock.calls[0][0];
+    const blocks: Array<{ type: string; text?: string }> = callArg.messages[0].content;
+    const textBlock = blocks.find((b) => b.type === 'text');
+    expect(textBlock?.text).toContain('ESTIMATOR NOTES');
+    expect(textBlock?.text).toContain('Mandatory site walk Tuesday');
   });
 
   it('throws when documentText is empty', async () => {
