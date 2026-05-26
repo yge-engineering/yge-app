@@ -10,7 +10,7 @@
 // prompt produced (see Estimate.aiPromptVer in prisma/schema.prisma) so we
 // can correlate AI accuracy with prompt iterations as data accumulates.
 
-export const PROMPT_VERSION = 'plans-to-estimate@1.6.0';
+export const PROMPT_VERSION = 'plans-to-estimate@1.7.0';
 
 export const SYSTEM_PROMPT = [
   'You are an expert heavy civil construction estimator drafting a preliminary bid',

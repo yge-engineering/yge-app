@@ -9,6 +9,7 @@ import { anthropic, DEFAULT_MODEL } from '../lib/anthropic';
 import { SYSTEM_PROMPT, buildUserMessage, PROMPT_VERSION } from '../lib/prompts/plans-to-estimate-v1';
 import { PtoEOutputSchema, sumPtoEBidTotalCents, type PtoEOutput } from '@yge/shared';
 import { loadYgeRateBookForPrompt } from '../lib/yge-rate-book';
+import { loadComparablesForPrompt } from '../lib/comparables-for-prompt';
 
 export interface RunPlansToEstimateInput {
   /** Plain-text source of the project — paste of an RFP, OCR output of a
@@ -167,6 +168,15 @@ export async function runPlansToEstimate(
   // the rate tables are empty.
   const rateBook = await loadYgeRateBookForPrompt();
 
+  // Past-job comparables (bundle 2560). Pulls in cautionary tales
+  // like Powerline/Allbaugh — the SMUD substation the v1 takeoff
+  // missed by 4× — so the AI has explicit, named reality checks
+  // before drafting. Keyword-matched against the document text so
+  // it only fires on draft types where it's actually relevant.
+  const comparablesText = loadComparablesForPrompt({
+    documentText: input.documentText,
+  });
+
   // When we have the original PDF, ALWAYS prefer the vision path. The
   // AI needs to see the drawings to do real takeoff math — text alone
   // strips the scale bar, the plan-view shapes, the cross-sections,
@@ -175,8 +185,13 @@ export async function runPlansToEstimate(
   const baseMessage = hasPdf
     ? buildUserMessage(undefined, input.sessionNotes, { hasPdf: true })
     : buildUserMessage(input.documentText, input.sessionNotes);
-  const userMessage =
-    rateBook.text.length > 0 ? `${rateBook.text}\n\n${baseMessage}` : baseMessage;
+  const userMessage = [
+    rateBook.text.length > 0 ? rateBook.text : null,
+    comparablesText.length > 0 ? comparablesText : null,
+    baseMessage,
+  ]
+    .filter((s): s is string => s !== null)
+    .join('\n\n');
 
   const content: unknown[] = [];
   if (hasPdf) {
