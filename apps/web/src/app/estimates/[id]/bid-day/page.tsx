@@ -37,6 +37,7 @@ import { FuelReductionScopeBanner } from '@/components/fuel-reduction-scope-bann
 import { GradingScopeBanner } from '@/components/grading-scope-banner';
 import { BridgeScopeBanner } from '@/components/bridge-scope-banner';
 import { ScopeCheckSummary } from '@/components/scope-check-summary';
+import { BidTotalsCopyCard } from '@/components/bid-totals-copy-card';
 
 function apiBaseUrl(): string {
   return (
@@ -111,6 +112,7 @@ export default async function BidDayPage({
           </div>
           <div className="space-y-4">
             <BidSecurityCard estimate={estimate} totals={totals} />
+            <BidTotalsCopyCard estimate={estimate} totals={totals} />
             <EnvelopePreviewCard envelopeItems={envelope.items.slice(0, 6)} />
           </div>
         </div>
