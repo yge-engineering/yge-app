@@ -673,6 +673,27 @@ export default async function EstimatesPage() {
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex flex-wrap justify-end gap-1">
+                      {/* Cockpit jump for bids due in ≤7 days. Mirrors the
+                       *  one on /upcoming-bids and the dashboard tile —
+                       *  Ryan should always be able to reach the cockpit
+                       *  with one click on any imminent bid. */}
+                      {(() => {
+                        if (!e.bidDueDate) return null;
+                        const days = Math.ceil(
+                          (new Date(e.bidDueDate).getTime() - Date.now()) /
+                            (1000 * 60 * 60 * 24),
+                        );
+                        if (days < 0 || days > 7) return null;
+                        return (
+                          <Link
+                            href={`/estimates/${e.id}/bid-day`}
+                            className="rounded bg-yge-blue-500 px-3 py-1 text-xs font-semibold text-white hover:bg-yge-blue-700"
+                            title="Open the bid-day cockpit"
+                          >
+                            🎯 Cockpit
+                          </Link>
+                        );
+                      })()}
                       <Link href={`/estimates/${e.id}`} className="rounded border border-yge-blue-500 px-3 py-1 text-xs font-medium text-yge-blue-500 hover:bg-yge-blue-50">
                         {t('estimates.action.open')}
                       </Link>
