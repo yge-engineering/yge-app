@@ -11,6 +11,7 @@
 // No DB access; pure render of the static lists.
 
 import { AppShell, PageHeader } from '../../components';
+import { PrintButton } from '@/components/print-button';
 import {
   checkBridgeScope,
   checkDrainageScope,
@@ -95,7 +96,20 @@ const ARCHETYPES = [
 export default function ScopeChecksPage() {
   return (
     <AppShell>
-      <main className="mx-auto max-w-4xl p-6 sm:p-8">
+      <main className="mx-auto max-w-4xl p-6 sm:p-8 print:max-w-none print:p-0">
+        <style>{`
+          @page { margin: 0.6in 0.75in; }
+          @media print {
+            .no-print { display: none !important; }
+            body { background: white !important; }
+            details { display: none; }
+          }
+        `}</style>
+
+        <div className="no-print mb-4 flex items-center justify-end">
+          <PrintButton />
+        </div>
+
         <PageHeader
           title="Scope check reference"
           subtitle="The 6 archetype guards that run on every draft + priced estimate. When a banner flags an item missing, look here to see what counts and what to look for."
