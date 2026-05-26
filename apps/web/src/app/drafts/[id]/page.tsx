@@ -16,6 +16,7 @@ import { OwnerAgencyComplianceCard } from '@/components/owner-agency-compliance-
 import { ComparableJobsPanel } from '@/components/comparable-jobs-panel';
 import { SubstationScopeBanner } from '@/components/substation-scope-banner';
 import { RoadReconScopeBanner } from '@/components/road-recon-scope-banner';
+import { DrainageScopeBanner } from '@/components/drainage-scope-banner';
 import { getTranslator } from '../../../lib/locale';
 
 interface SavedDraft {
@@ -127,6 +128,7 @@ export default async function DraftDetailPage({ params }: { params: { id: string
       <div className="mb-6 space-y-3">
         <SubstationScopeBanner draft={saved.draft} />
         <RoadReconScopeBanner draft={saved.draft} />
+        <DrainageScopeBanner draft={saved.draft} />
       </div>
 
       <div className="mb-6">
