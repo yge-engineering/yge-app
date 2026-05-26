@@ -14,6 +14,7 @@ import { ConvertDraftButton } from '@/components/convert-draft-button';
 import { DeleteDraftButton } from '@/components/delete-draft-button';
 import { OwnerAgencyComplianceCard } from '@/components/owner-agency-compliance-card';
 import { ComparableJobsPanel } from '@/components/comparable-jobs-panel';
+import { SubstationScopeBanner } from '@/components/substation-scope-banner';
 import { getTranslator } from '../../../lib/locale';
 
 interface SavedDraft {
@@ -120,6 +121,10 @@ export default async function DraftDetailPage({ params }: { params: { id: string
           ownerLabel={saved.draft.ownerAgency}
           projectType={saved.draft.projectType}
         />
+      </div>
+
+      <div className="mb-6">
+        <SubstationScopeBanner draft={saved.draft} />
       </div>
 
       <div className="mb-6">
