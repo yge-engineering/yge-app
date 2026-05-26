@@ -33,6 +33,7 @@ import { BidDayComparableCallout } from '@/components/bid-day-comparable-callout
 import { SubstationScopeBanner } from '@/components/substation-scope-banner';
 import { RoadReconScopeBanner } from '@/components/road-recon-scope-banner';
 import { DrainageScopeBanner } from '@/components/drainage-scope-banner';
+import { FuelReductionScopeBanner } from '@/components/fuel-reduction-scope-banner';
 
 function apiBaseUrl(): string {
   return (
@@ -91,6 +92,7 @@ export default async function BidDayPage({
           <SubstationScopeBanner draft={estimate} />
           <RoadReconScopeBanner draft={estimate} />
           <DrainageScopeBanner draft={estimate} />
+          <FuelReductionScopeBanner draft={estimate} />
         </div>
 
         <BidDayComparableCallout estimate={estimate} />

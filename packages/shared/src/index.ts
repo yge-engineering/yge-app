@@ -355,6 +355,7 @@ export * from './historical-comparables';
 export * from './substation-scope-guard';
 export * from './road-recon-scope-guard';
 export * from './drainage-scope-guard';
+export * from './fuel-reduction-scope-guard';
 export * from './job-toolbox-summary';
 export * from './customer-revenue-by-month';
 export * from './vendor-onhold-list';
