@@ -105,7 +105,8 @@ export default function ScopeChecksPage() {
           {ARCHETYPES.map((arc) => (
             <section
               key={arc.key}
-              className={`rounded-lg border p-4 ${
+              id={arc.key}
+              className={`scroll-mt-4 rounded-lg border p-4 ${
                 arc.tone === 'red'
                   ? 'border-red-300 bg-red-50'
                   : 'border-amber-300 bg-amber-50'

@@ -1,6 +1,7 @@
 // GradingScopeBanner — mirror for greenfield grading / mass
 // earthwork / pad prep drafts. Amber tone.
 
+import Link from 'next/link';
 import { checkGradingScope, type GradingCheckInput } from '@yge/shared';
 
 interface Props {
@@ -50,6 +51,15 @@ export function GradingScopeBanner({ draft }: Props) {
           </ul>
         </details>
       )}
+
+      <div className="mt-3 text-right">
+        <Link
+          href="/scope-checks#grading"
+          className="text-xs text-amber-700 underline hover:text-amber-900"
+        >
+          View scope-check reference →
+        </Link>
+      </div>
     </section>
   );
 }

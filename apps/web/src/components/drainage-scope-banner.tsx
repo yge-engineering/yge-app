@@ -1,6 +1,7 @@
 // DrainageScopeBanner — mirror of road-recon banner for drainage
 // / culvert / storm jobs. Amber tone (same as road).
 
+import Link from 'next/link';
 import { checkDrainageScope, type DrainageCheckInput } from '@yge/shared';
 
 interface Props {
@@ -50,6 +51,15 @@ export function DrainageScopeBanner({ draft }: Props) {
           </ul>
         </details>
       )}
+
+      <div className="mt-3 text-right">
+        <Link
+          href="/scope-checks#drainage"
+          className="text-xs text-amber-700 underline hover:text-amber-900"
+        >
+          View scope-check reference →
+        </Link>
+      </div>
     </section>
   );
 }

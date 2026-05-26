@@ -1,6 +1,7 @@
 // BridgeScopeBanner — sixth and final archetype banner. Amber
 // like road/drainage/fuel/grading.
 
+import Link from 'next/link';
 import { checkBridgeScope, type BridgeCheckInput } from '@yge/shared';
 
 interface Props {
@@ -50,6 +51,15 @@ export function BridgeScopeBanner({ draft }: Props) {
           </ul>
         </details>
       )}
+
+      <div className="mt-3 text-right">
+        <Link
+          href="/scope-checks#bridge"
+          className="text-xs text-amber-700 underline hover:text-amber-900"
+        >
+          View scope-check reference →
+        </Link>
+      </div>
     </section>
   );
 }

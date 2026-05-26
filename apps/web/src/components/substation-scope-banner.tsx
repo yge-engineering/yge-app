@@ -9,6 +9,7 @@
 // failure mode), this banner catches it before the estimator
 // converts the draft into a priced bid.
 
+import Link from 'next/link';
 import {
   checkSubstationCivilScope,
   type SubstationCheckInput,
@@ -66,6 +67,15 @@ export function SubstationScopeBanner({ draft }: Props) {
           </ul>
         </details>
       )}
+
+      <div className="mt-3 text-right">
+        <Link
+          href="/scope-checks#substation"
+          className="text-xs text-red-700 underline hover:text-red-900"
+        >
+          View scope-check reference →
+        </Link>
+      </div>
     </section>
   );
 }

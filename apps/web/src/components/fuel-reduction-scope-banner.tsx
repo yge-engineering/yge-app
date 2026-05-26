@@ -1,6 +1,7 @@
 // FuelReductionScopeBanner — mirror of road/drainage banners for
 // CAL FIRE / vegetation management drafts. Amber tone.
 
+import Link from 'next/link';
 import {
   checkFuelReductionScope,
   type FuelReductionCheckInput,
@@ -53,6 +54,15 @@ export function FuelReductionScopeBanner({ draft }: Props) {
           </ul>
         </details>
       )}
+
+      <div className="mt-3 text-right">
+        <Link
+          href="/scope-checks#fuel-reduction"
+          className="text-xs text-amber-700 underline hover:text-amber-900"
+        >
+          View scope-check reference →
+        </Link>
+      </div>
     </section>
   );
 }

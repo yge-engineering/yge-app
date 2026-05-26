@@ -7,6 +7,7 @@
 // traffic control, striping, SWPPP, etc.). Renders nothing for
 // non-road drafts or complete road drafts.
 
+import Link from 'next/link';
 import {
   checkRoadReconScope,
   type RoadReconCheckInput,
@@ -64,6 +65,15 @@ export function RoadReconScopeBanner({ draft }: Props) {
           </ul>
         </details>
       )}
+
+      <div className="mt-3 text-right">
+        <Link
+          href="/scope-checks#road-recon"
+          className="text-xs text-amber-700 underline hover:text-amber-900"
+        >
+          View scope-check reference →
+        </Link>
+      </div>
     </section>
   );
 }
