@@ -20,6 +20,7 @@ import type { PtoEBidItem } from './plans-to-estimate-output';
 import { SubBidSchema } from './sub-bid';
 import { BidSecuritySchema } from './bid-security';
 import { AddendumSchema } from './addendum';
+import { normalizeUnit } from './bid-unit-normalizer';
 
 /** Crew-buildup line — labor, equipment, or material — that, when
  *  multiplied out across a bid item's quantity, justifies the unit
@@ -374,11 +375,18 @@ export function computeEstimateTotals(est: PricedEstimate): PricedEstimateTotals
  *  (T&M, force-account, older drafts) come in as `unitPriceCents: null`
  *  exactly as before — the estimator fills those in.
  *
+ *  Also normalizes the unit string to canonical short form (bundle 2582)
+ *  so downstream rate-book matching, exports, and comparables scoring
+ *  all see "TON" instead of "Tons", "LF" instead of "Lin Ft", etc.
+ *  The original unit text the AI produced is dropped — the canonical
+ *  form is what the bid form will want anyway.
+ *
  *  Name kept for source compatibility; the items are no longer "blank"
  *  when the draft has AI prices. */
 export function blankPricedItemsFromDraft(items: PtoEBidItem[]): PricedBidItem[] {
   return items.map((it) => ({
     ...it,
+    unit: normalizeUnit(it.unit),
     unitPriceCents: it.estimatedUnitPriceCents ?? null,
   }));
 }
