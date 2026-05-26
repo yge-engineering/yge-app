@@ -181,6 +181,19 @@ export default async function UpcomingBidsPage() {
                             ? 'tomorrow'
                             : `${row.daysUntilDue} days`}
                       </div>
+                      {/* Bids that are imminent (≤2 days) get a
+                       *  prominent jump straight to the bid-day
+                       *  cockpit. Ryan's morning routine: open
+                       *  /upcoming-bids, click 🎯 on whatever's
+                       *  due today, work from the cockpit. */}
+                      {row.daysUntilDue <= 2 && (
+                        <Link
+                          href={`/estimates/${row.id}/bid-day`}
+                          className="mt-1 inline-block rounded bg-yge-blue-500 px-2 py-0.5 text-[11px] font-semibold text-white hover:bg-yge-blue-700"
+                        >
+                          🎯 Open cockpit
+                        </Link>
+                      )}
                     </div>
                   </li>
                 ))}
