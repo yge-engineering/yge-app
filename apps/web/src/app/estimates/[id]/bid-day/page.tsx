@@ -31,6 +31,7 @@ import { AppShell, PageHeader } from '../../../../components';
 import { PrintPacketButton } from '@/components/print-packet-button';
 import { BidDayComparableCallout } from '@/components/bid-day-comparable-callout';
 import { SubstationScopeBanner } from '@/components/substation-scope-banner';
+import { RoadReconScopeBanner } from '@/components/road-recon-scope-banner';
 
 function apiBaseUrl(): string {
   return (
@@ -85,8 +86,9 @@ export default async function BidDayPage({
 
         <CountdownBanner countdown={countdown} bidDueDate={estimate.bidDueDate} />
 
-        <div className="mt-4">
+        <div className="mt-4 space-y-3">
           <SubstationScopeBanner draft={estimate} />
+          <RoadReconScopeBanner draft={estimate} />
         </div>
 
         <BidDayComparableCallout estimate={estimate} />
