@@ -59,7 +59,12 @@ export function ComparableJobsPanel({ draft }: Props) {
       </header>
 
       {matches.length === 0 ? (
-        <EmptyState seedCount={YGE_JOB_HISTORY_SEED.length} />
+        <EmptyState
+          seedCount={YGE_JOB_HISTORY_SEED.length}
+          extractedKeywords={scopeKeywords}
+          projectType={draft.projectType}
+          county={draft.locationCounty ?? null}
+        />
       ) : (
         <ul className="divide-y divide-gray-200">
           {matches.map((m) => (
@@ -71,13 +76,42 @@ export function ComparableJobsPanel({ draft }: Props) {
   );
 }
 
-function EmptyState({ seedCount }: { seedCount: number }) {
+function EmptyState({
+  seedCount,
+  extractedKeywords,
+  projectType,
+  county,
+}: {
+  seedCount: number;
+  extractedKeywords: string[];
+  projectType: PtoEOutput['projectType'];
+  county: string | null;
+}) {
   return (
-    <div className="rounded border border-dashed border-gray-300 bg-gray-50 p-3 text-xs text-gray-600">
-      No past YGE jobs match this draft closely enough yet.{' '}
-      {seedCount === 0
-        ? 'The comparables library is empty — populate it from /drafts admin or via DB seed.'
-        : `${seedCount} past job${seedCount === 1 ? '' : 's'} on file, but none scored high enough to surface here. Add more comparables as bids complete.`}
+    <div className="space-y-3 rounded border border-dashed border-gray-300 bg-gray-50 p-3 text-xs text-gray-700">
+      <p>
+        No past YGE jobs match this draft closely enough yet.{' '}
+        {seedCount === 0
+          ? 'The comparables library is empty — populate it from /drafts admin or via DB seed.'
+          : `${seedCount} past job${seedCount === 1 ? '' : 's'} on file, but none scored ≥40 against this draft.`}
+      </p>
+      <details>
+        <summary className="cursor-pointer text-gray-600 hover:text-gray-900">
+          What the matcher tried
+        </summary>
+        <dl className="mt-2 grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1 text-[11px]">
+          <dt className="font-semibold text-gray-600">Project type</dt>
+          <dd className="text-gray-800">{projectType}</dd>
+          <dt className="font-semibold text-gray-600">County</dt>
+          <dd className="text-gray-800">{county ?? '— (not extracted from draft)'}</dd>
+          <dt className="font-semibold text-gray-600">Scope keywords</dt>
+          <dd className="text-gray-800">
+            {extractedKeywords.length === 0
+              ? '— (dictionary did not match any bid-item descriptions)'
+              : extractedKeywords.join(', ')}
+          </dd>
+        </dl>
+      </details>
     </div>
   );
 }
