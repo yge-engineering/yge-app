@@ -108,14 +108,28 @@ async function UpcomingBidsTileInner() {
                 <span className="ml-2 text-xs text-gray-500">· {row.ownerAgency}</span>
               )}
             </div>
-            <span className="text-xs tabular-nums text-gray-600">
-              {row.bidDueDate} ·{' '}
-              {row.daysUntilDue === 0
-                ? 'today'
-                : row.daysUntilDue === 1
-                  ? 'tomorrow'
-                  : `${row.daysUntilDue}d`}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs tabular-nums text-gray-600">
+                {row.bidDueDate} ·{' '}
+                {row.daysUntilDue === 0
+                  ? 'today'
+                  : row.daysUntilDue === 1
+                    ? 'tomorrow'
+                    : `${row.daysUntilDue}d`}
+              </span>
+              {/* Mirrors the upcoming-bids page: ≤2 days → cockpit
+               *  jump button. The dashboard tile is the first
+               *  thing Ryan sees in the morning. */}
+              {row.daysUntilDue <= 2 && (
+                <Link
+                  href={`/estimates/${row.id}/bid-day`}
+                  className="rounded bg-yge-blue-500 px-2 py-0.5 text-[11px] font-semibold text-white hover:bg-yge-blue-700"
+                  title="Open the bid-day cockpit"
+                >
+                  🎯
+                </Link>
+              )}
+            </div>
           </li>
         ))}
       </ul>
