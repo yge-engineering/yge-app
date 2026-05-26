@@ -18,6 +18,7 @@ import { SubstationScopeBanner } from '@/components/substation-scope-banner';
 import { RoadReconScopeBanner } from '@/components/road-recon-scope-banner';
 import { DrainageScopeBanner } from '@/components/drainage-scope-banner';
 import { FuelReductionScopeBanner } from '@/components/fuel-reduction-scope-banner';
+import { GradingScopeBanner } from '@/components/grading-scope-banner';
 import { getTranslator } from '../../../lib/locale';
 
 interface SavedDraft {
@@ -131,6 +132,7 @@ export default async function DraftDetailPage({ params }: { params: { id: string
         <RoadReconScopeBanner draft={saved.draft} />
         <DrainageScopeBanner draft={saved.draft} />
         <FuelReductionScopeBanner draft={saved.draft} />
+        <GradingScopeBanner draft={saved.draft} />
       </div>
 
       <div className="mb-6">
