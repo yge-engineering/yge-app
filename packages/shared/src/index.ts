@@ -353,6 +353,7 @@ export * from './ar-invoice-line-kind-mix';
 export * from './job-by-project-type';
 export * from './historical-comparables';
 export * from './substation-scope-guard';
+export * from './road-recon-scope-guard';
 export * from './job-toolbox-summary';
 export * from './customer-revenue-by-month';
 export * from './vendor-onhold-list';
