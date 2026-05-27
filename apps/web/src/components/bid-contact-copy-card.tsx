@@ -84,6 +84,16 @@ export function BidContactCopyCard() {
           label={c.vicePresident.email}
           clipboard={c.vicePresident.email}
         />
+        <CopyableValue
+          caption="President phone"
+          label={c.president.phone}
+          clipboard={c.president.phone}
+        />
+        <CopyableValue
+          caption="President email"
+          label={c.president.email}
+          clipboard={c.president.email}
+        />
       </div>
     </section>
   );
