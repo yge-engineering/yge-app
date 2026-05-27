@@ -30,6 +30,10 @@ export interface CompanyInfo {
     zip: string;
   };
   cslbLicense: string;
+  /** CSLB license classifications — 'A' general engineering, 'C-12'
+   *  earthwork, etc. Many bid forms ask. Default to empty array
+   *  for tenants that haven't filled it in yet. */
+  cslbClassifications: string[];
   dirNumber: string;
   dotNumber: string;
   /** NAICS codes the company is registered under. */
@@ -58,6 +62,7 @@ export const YGE_COMPANY_INFO: CompanyInfo = {
     zip: '96022',
   },
   cslbLicense: '1145219',
+  cslbClassifications: ['A'],
   dirNumber: '2000018967',
   dotNumber: '4528204',
   naicsCodes: ['115310'],

@@ -35,7 +35,7 @@ extensionRouter.get('/profile-snapshot', (_req, res) => {
     federalEin: undefined,  // not on static YGE_COMPANY_INFO
 
     cslbLicense: c.cslbLicense,
-    cslbClassifications: '',  // not on static YGE_COMPANY_INFO
+    cslbClassifications: c.cslbClassifications.join(', '),
     dirNumber: c.dirNumber,
     dotNumber: c.dotNumber,
 
