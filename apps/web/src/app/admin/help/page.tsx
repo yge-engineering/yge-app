@@ -60,6 +60,56 @@ const TOPICS: Topic[] = [
       </>
     ),
   },
+  {
+    heading: 'What is the "Profile expiries" warning panel?',
+    body: (
+      <>
+        It surfaces every CSLB / DIR / insurance record on the{' '}
+        <Link href="/master-profile" className="text-yge-blue-700 hover:underline">master profile</Link>
+        {' '}that is either expired or due within 60 days. Red ≤30 days
+        (or already expired), amber 31–60 days. Rendered on{' '}
+        <Link href="/master-profile" className="text-yge-blue-700 hover:underline">/master-profile</Link>,{' '}
+        <Link href="/dashboard/lite" className="text-yge-blue-700 hover:underline">/dashboard/lite</Link>,{' '}
+        <Link href="/go-live" className="text-yge-blue-700 hover:underline">/go-live</Link>,{' '}
+        on every bid-day cockpit, and on every saved draft. The panel
+        self-hides when nothing is expiring.
+      </>
+    ),
+  },
+  {
+    heading: 'Where is the diagnostic-triangle?',
+    body: (
+      <>
+        Three pages, all cross-linked:{' '}
+        <Link href="/api-status" className="text-yge-blue-700 hover:underline">/api-status</Link>
+        {' '}(infrastructure probes),{' '}
+        <Link href="/admin/version" className="text-yge-blue-700 hover:underline">/admin/version</Link>
+        {' '}(web + API build SHA + AI prompt version),{' '}
+        <Link href="/go-live" className="text-yge-blue-700 hover:underline">/go-live</Link>
+        {' '}(tenant data readiness). When something looks weird, start at
+        any of the three and click through to the others.
+      </>
+    ),
+  },
+  {
+    heading: 'How does the YGE browser extension find values to fill?',
+    body: (
+      <>
+        The MV3 extension at{' '}
+        <code className="rounded bg-gray-100 px-1 py-0.5 text-xs font-mono">extensions/yge-form-filler/</code>
+        {' '}runs <code className="rounded bg-gray-100 px-1 py-0.5 text-xs font-mono">classifyField()</code>
+        {' '}on every form input it sees, matching the field's
+        name/id/aria-label/label-text against a pattern dictionary
+        in <code className="rounded bg-gray-100 px-1 py-0.5 text-xs font-mono">field-patterns.js</code>.
+        Pattern hits map to a profilePath. The path is resolved against
+        the cached snapshot from <code className="rounded bg-gray-100 px-1 py-0.5 text-xs font-mono">/api/extension/profile-snapshot</code>
+        {' '}via <code className="rounded bg-gray-100 px-1 py-0.5 text-xs font-mono">PROFILE_PATH_TO_SNAPSHOT_KEY</code>
+        {' '}in the shared package. The popup shows{' '}
+        <code className="rounded bg-gray-100 px-1 py-0.5 text-xs font-mono">N fillable from master profile</code>
+        {' '}— that's how many fields would write on Fill.
+      </>
+    ),
+  },
 ];
 
 export default function AdminHelpPage() {
