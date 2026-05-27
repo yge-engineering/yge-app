@@ -49,6 +49,10 @@ const DEFAULT_API_URL = 'https://api.youngge.com';
     if (profileLink) profileLink.href = `${appBase}/master-profile`;
     const formsLink = document.getElementById('forms-link');
     if (formsLink) formsLink.href = `${appBase}/pdf-forms`;
+    // Debug deep-link straight at the API so the user can eyeball
+    // exactly what the extension is fetching.
+    const snapshotLink = document.getElementById('snapshot-link');
+    if (snapshotLink) snapshotLink.href = `${url}/api/extension/profile-snapshot`;
     return url;
   }
 
