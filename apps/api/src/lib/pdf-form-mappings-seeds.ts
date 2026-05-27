@@ -891,6 +891,81 @@ const TEHAMA_COUNTY_BIDDER_AFFIDAVIT: SeedMapping = {
   ],
 };
 
+// ---- County bidder affidavit generator --------------------------------
+//
+// The 7 NorCal counties YGE works in all use a near-identical
+// bidder affidavit (contractor identity + CSLB + DIR +
+// debarment + bid bond + signature). Hand-crafting each was
+// boilerplate noise — this generator keeps them DRY. Add a new
+// county by appending one entry to COUNTIES below.
+
+interface CountyMeta {
+  /** Slug used for ids + filenames (no spaces). */
+  slug: string;
+  /** Display name as it should appear in the UI ("Shasta County"). */
+  display: string;
+  /** Agency homepage URL for the office that issues the form. */
+  agencyUrl: string;
+}
+
+function makeCountyBidderAffidavit(c: CountyMeta): SeedMapping {
+  return {
+    id: `pdf-form-${c.slug}-county-bidder-affidavit`,
+    displayName: `${c.display} Bidder Affidavit`,
+    agency: 'COUNTY',
+    formCode: `${c.slug.toUpperCase()}-BID-AFFIDAVIT`,
+    pdfReference: `pdf-forms/county/${c.slug}-bidder-affidavit.pdf`,
+    agencyUrl: c.agencyUrl,
+    notes:
+      `${c.display} variant of the standard NorCal county bidder affidavit. ` +
+      `Contractor identity + CSLB + DIR + debarment + bid bond enclosed + ` +
+      `signature. Notarization required for bids over the formal-advertising threshold.`,
+    fields: [
+      f({ id: `pdf-fld-${c.slug}-bidder-name`, pdfFieldName: 'BidderName', label: 'Bidder name (legal)', kind: 'TEXT', required: true,
+          source: { kind: 'profile-path', path: 'legalName' } }),
+      f({ id: `pdf-fld-${c.slug}-cslb`, pdfFieldName: 'CslbLicense', label: 'CSLB license #', kind: 'TEXT', required: true,
+          source: { kind: 'profile-path', path: 'cslbLicense' } }),
+      f({ id: `pdf-fld-${c.slug}-cslb-classes`, pdfFieldName: 'CslbClassifications', label: 'CSLB classifications', kind: 'TEXT',
+          source: { kind: 'profile-path', path: 'cslbClassifications' } }),
+      f({ id: `pdf-fld-${c.slug}-dir`, pdfFieldName: 'DirRegistration', label: 'DIR registration #', kind: 'TEXT', required: true,
+          source: { kind: 'profile-path', path: 'dirNumber' } }),
+      f({ id: `pdf-fld-${c.slug}-address`, pdfFieldName: 'BidderAddress', label: 'Bidder address', kind: 'TEXT', required: true,
+          source: { kind: 'computed', name: 'profile.address.oneLine' } }),
+      f({ id: `pdf-fld-${c.slug}-phone`, pdfFieldName: 'Phone', label: 'Phone', kind: 'TEXT', required: true,
+          source: { kind: 'profile-path', path: 'primaryPhone' } }),
+      f({ id: `pdf-fld-${c.slug}-email`, pdfFieldName: 'Email', label: 'Email', kind: 'TEXT', required: true,
+          source: { kind: 'profile-path', path: 'primaryEmail' } }),
+      f({ id: `pdf-fld-${c.slug}-project`, pdfFieldName: 'ProjectName', label: 'Project name', kind: 'TEXT', required: true,
+          source: { kind: 'prompt', label: 'Project name', sensitive: false } }),
+      f({ id: `pdf-fld-${c.slug}-project-num`, pdfFieldName: 'ProjectNumber', label: 'County project #', kind: 'TEXT',
+          source: { kind: 'prompt', label: 'County project # (per bid notice)', sensitive: false } }),
+      f({ id: `pdf-fld-${c.slug}-not-debarred`, pdfFieldName: 'NotDebarred', label: 'Not debarred or suspended', kind: 'CHECKBOX', required: true,
+          source: { kind: 'literal', value: 'true' }, truthyValue: 'Yes' }),
+      f({ id: `pdf-fld-${c.slug}-bid-bond-on-file`, pdfFieldName: 'BidBondOnFile', label: 'Bid bond / cashier\'s check enclosed', kind: 'CHECKBOX', required: true,
+          source: { kind: 'literal', value: 'true' }, truthyValue: 'Yes' }),
+      f({ id: `pdf-fld-${c.slug}-signature`, pdfFieldName: 'Signature', label: 'Authorized signer', kind: 'SIGNATURE', required: true,
+          source: { kind: 'computed', name: 'profile.officers.vp.signature' } }),
+      f({ id: `pdf-fld-${c.slug}-title`, pdfFieldName: 'SignerTitle', label: 'Title', kind: 'TEXT', required: true,
+          source: { kind: 'literal', value: 'Vice President' } }),
+      f({ id: `pdf-fld-${c.slug}-date`, pdfFieldName: 'Date', label: 'Date', kind: 'DATE', required: true,
+          source: { kind: 'computed', name: 'date.today.us' } }),
+    ],
+  };
+}
+
+const NORCAL_COUNTIES: CountyMeta[] = [
+  { slug: 'glenn', display: 'Glenn County',
+    agencyUrl: 'https://www.countyofglenn.net/dept/public-works' },
+  { slug: 'lassen', display: 'Lassen County',
+    agencyUrl: 'https://www.lassencounty.org/dept/public-works' },
+  { slug: 'siskiyou', display: 'Siskiyou County',
+    agencyUrl: 'https://www.co.siskiyou.ca.us/publicworks' },
+  { slug: 'modoc', display: 'Modoc County',
+    agencyUrl: 'https://www.co.modoc.ca.us/departments/public-works' },
+  { slug: 'butte', display: 'Butte County',
+    agencyUrl: 'https://www.buttecounty.net/publicworks' },
+];
+
 const SEEDS: SeedMapping[] = [
   IRS_W9,
   DIR_DAS_140,
@@ -915,6 +990,7 @@ const SEEDS: SeedMapping[] = [
   FHWA_1273,
   SHASTA_COUNTY_BIDDER_AFFIDAVIT,
   TEHAMA_COUNTY_BIDDER_AFFIDAVIT,
+  ...NORCAL_COUNTIES.map(makeCountyBidderAffidavit),
 ];
 
 /**
