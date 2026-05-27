@@ -28,6 +28,7 @@ import {
   type PricedEstimateTotals,
 } from '@yge/shared';
 import { AppShell, PageHeader } from '../../../../components';
+import { MasterProfileExpiriesTile } from '../../../../components/master-profile-expiries-tile';
 import { PrintPacketButton } from '@/components/print-packet-button';
 import { BidDayComparableCallout } from '@/components/bid-day-comparable-callout';
 import { SubstationScopeBanner } from '@/components/substation-scope-banner';
@@ -90,6 +91,11 @@ export default async function BidDayPage({
           title="Bid day"
           subtitle={`${estimate.projectName}${estimate.ownerAgency ? ` · ${estimate.ownerAgency}` : ''} · bid total ${formatUSD(totals.bidTotalCents, { compact: true })}`}
         />
+
+        {/* Expired CSLB / DIR / insurance blocks bid submission no
+         *  matter how perfect the estimate is — surface that as
+         *  the very first thing on bid day, ahead of the countdown. */}
+        <MasterProfileExpiriesTile />
 
         <CountdownBanner countdown={countdown} bidDueDate={estimate.bidDueDate} />
 
