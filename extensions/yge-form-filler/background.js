@@ -35,8 +35,6 @@ chrome.runtime.onInstalled.addListener(async () => {
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  // Stub responder. The content script + popup can poke here
-  // with { type: "ping" } today and get a sanity-check response.
   if (message && message.type === 'ping') {
     sendResponse({
       pong: true,
@@ -45,5 +43,52 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     });
     return true;
   }
+
+  // Profile snapshot fetcher. Content script calls this on
+  // page load. Cached in chrome.storage.local for 15 minutes so
+  // back-to-back agency-form pages don't re-hit the API.
+  if (message && message.type === 'fetch-profile-snapshot') {
+    fetchProfileSnapshotCached()
+      .then((snapshot) => sendResponse({ ok: true, snapshot }))
+      .catch((err) =>
+        sendResponse({
+          ok: false,
+          error: err instanceof Error ? err.message : 'unknown',
+        }),
+      );
+    return true;  // signal async response
+  }
   return false;
 });
+
+const SNAPSHOT_CACHE_KEY = 'yge.profileSnapshot';
+const SNAPSHOT_CACHED_AT_KEY = 'yge.profileSnapshot.cachedAt';
+const SNAPSHOT_MAX_AGE_MS = 15 * 60 * 1000;
+
+async function fetchProfileSnapshotCached() {
+  const cache = await chrome.storage.local.get([
+    SNAPSHOT_CACHE_KEY,
+    SNAPSHOT_CACHED_AT_KEY,
+    STORAGE_KEYS.apiBaseUrl,
+  ]);
+  const cachedAt = cache[SNAPSHOT_CACHED_AT_KEY];
+  const cached = cache[SNAPSHOT_CACHE_KEY];
+  if (
+    cached &&
+    typeof cachedAt === 'number' &&
+    Date.now() - cachedAt < SNAPSHOT_MAX_AGE_MS
+  ) {
+    return cached;
+  }
+  const apiBase = cache[STORAGE_KEYS.apiBaseUrl] ?? DEFAULT_API_BASE_URL;
+  const res = await fetch(`${apiBase}/api/extension/profile-snapshot`, {
+    credentials: 'omit',
+  });
+  if (!res.ok) throw new Error(`Snapshot fetch returned ${res.status}`);
+  const snapshot = await res.json();
+  await chrome.storage.local.set({
+    [SNAPSHOT_CACHE_KEY]: snapshot,
+    [SNAPSHOT_CACHED_AT_KEY]: Date.now(),
+  });
+  return snapshot;
+}
