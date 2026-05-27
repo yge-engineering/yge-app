@@ -50,6 +50,17 @@ export const FIELD_PATTERNS = [
     ],
   },
   {
+    profilePath: 'cslbClassifications',
+    patterns: [
+      'cslb classification',
+      'license classification',
+      'contractor classification',
+      'class designation',
+      'cslb class',
+      'license class',
+    ],
+  },
+  {
     profilePath: 'dirNumber',
     patterns: [
       'dir number',

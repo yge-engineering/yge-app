@@ -226,6 +226,7 @@
         const map = {
           legalName: 'legalName',
           cslbLicense: 'cslbLicense',
+          cslbClassifications: 'cslbClassifications',
           dirNumber: 'dirNumber',
           dotNumber: 'dotNumber',
           federalEin: 'federalEin',

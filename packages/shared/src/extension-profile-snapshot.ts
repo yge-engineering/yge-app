@@ -88,6 +88,7 @@ export const PROFILE_PATH_TO_SNAPSHOT_KEY: Record<
 > = {
   legalName: 'legalName',
   cslbLicense: 'cslbLicense',
+  cslbClassifications: 'cslbClassifications',
   dirNumber: 'dirNumber',
   dotNumber: 'dotNumber',
   federalEin: 'federalEin',
