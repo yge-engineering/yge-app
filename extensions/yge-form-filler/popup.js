@@ -89,6 +89,34 @@ const DEFAULT_API_URL = 'https://api.youngge.com';
   // round-trip.
   refreshApiVersion();
 
+  // Surface "X / Y fields populated" from the cached snapshot so
+  // Ryan can see at a glance whether the master profile data is
+  // complete from the extension's point of view. Mirrors the
+  // ExtensionSnapshotStatusTile that lives on /master-profile et al.
+  async function refreshSnapshotStatus() {
+    const el = document.getElementById('snapshot-status');
+    if (!el) return;
+    const cache = await chrome.storage.local.get('yge.profileSnapshot');
+    const snapshot = cache['yge.profileSnapshot'];
+    if (!snapshot || typeof snapshot !== 'object') {
+      el.textContent = '';
+      return;
+    }
+    const NON_FILL_FIELDS = new Set(['schemaVersion', 'generatedAt']);
+    const entries = Object.entries(snapshot).filter(
+      ([k]) => !NON_FILL_FIELDS.has(k),
+    );
+    const populated = entries.filter(
+      ([, v]) => typeof v === 'string' && v.length > 0,
+    ).length;
+    const total = entries.length;
+    const empty = total - populated;
+    el.textContent = `snapshot ${populated}/${total} populated`;
+    if (empty === 0) el.style.color = '#065f46';
+    else if (empty <= 3) el.style.color = '#6b7280';
+    else el.style.color = '#d97706';
+  }
+
   async function refreshSnapshotAge() {
     const ageEl = document.getElementById('snapshot-age');
     if (!ageEl) return;
@@ -124,6 +152,7 @@ const DEFAULT_API_URL = 'https://api.youngge.com';
   }
 
   await refreshSnapshotAge();
+  await refreshSnapshotStatus();
 
   document
     .getElementById('refresh-snapshot-btn')
@@ -166,6 +195,7 @@ const DEFAULT_API_URL = 'https://api.youngge.com';
         }
       }
       await refreshSnapshotAge();
+      await refreshSnapshotStatus();
     });
 
   configToggle?.addEventListener('click', () => {
