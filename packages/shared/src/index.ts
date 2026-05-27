@@ -364,6 +364,7 @@ export * from './company-insurance';
 export * from './tenant-readiness';
 export * from './master-profile-adapter';
 export * from './extension-profile-snapshot';
+export * from './required-bid-forms';
 export * from './job-toolbox-summary';
 export * from './customer-revenue-by-month';
 export * from './vendor-onhold-list';
