@@ -98,7 +98,16 @@ async function ExtensionSnapshotStatusTileInner(): Promise<React.ReactElement | 
             to populate.
           </p>
           <p className="mt-1 opacity-80">
-            Empty: {emptyFields.map(labelFor).join(', ')}
+            Empty: {(() => {
+              // Long lists get capped at 8 to keep the tile from
+              // ballooning on a fresh tenant; remainder counted.
+              const labeled = emptyFields.map(labelFor);
+              if (labeled.length <= 8) return labeled.join(', ');
+              return (
+                labeled.slice(0, 8).join(', ') +
+                ` … +${labeled.length - 8} more`
+              );
+            })()}
           </p>
         </>
       )}
