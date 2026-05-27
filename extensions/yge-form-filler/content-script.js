@@ -47,7 +47,7 @@
   function scanFormFields() {
     const out = [];
     const inputs = document.querySelectorAll(
-      'input[type="text"], input[type="email"], input[type="tel"], input[type="number"], input:not([type]), textarea, select',
+      'input[type="text"], input[type="email"], input[type="tel"], input[type="number"], input[type="checkbox"], input[type="radio"], input:not([type]), textarea, select',
     );
     inputs.forEach((el) => {
       if (el.disabled || el.readOnly) return;
@@ -87,6 +87,20 @@
     if (typeof value !== 'string' || value.length === 0) return false;
     if (el.value && el.value.trim().length > 0) return false;
     const prevValue = el.value;
+
+    if (el.type === 'checkbox' || el.type === 'radio') {
+      // For checkboxes / radios, only fill when the snapshot
+      // value looks affirmative ('true', 'yes', '1', '✓'). Never
+      // un-check something the user (or page default) had set.
+      const wanted = value.toLowerCase().trim();
+      const truthy = wanted === 'true' || wanted === 'yes' || wanted === '1' || wanted === 'on';
+      if (!truthy) return false;
+      if (el.checked) return false;  // already on, leave alone
+      el.checked = true;
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+      return { ok: true, prev: false };  // prev was false → undo unchecks
+    }
 
     if (el.tagName === 'SELECT') {
       // For <select>, only set when one of the option values or
@@ -158,7 +172,13 @@
     let undone = 0;
     for (const entry of journal) {
       if (entry.el && entry.el.isConnected) {
-        entry.el.value = entry.prev ?? '';
+        // Restore by type — checkboxes / radios get .checked
+        // back, everything else gets .value.
+        if (entry.el.type === 'checkbox' || entry.el.type === 'radio') {
+          entry.el.checked = entry.prev === true;
+        } else {
+          entry.el.value = typeof entry.prev === 'string' ? entry.prev : '';
+        }
         entry.el.dispatchEvent(new Event('input', { bubbles: true }));
         entry.el.dispatchEvent(new Event('change', { bubbles: true }));
         undone += 1;
