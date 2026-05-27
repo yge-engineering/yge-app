@@ -1,12 +1,22 @@
 // Company bonding profile.
 //
-// Brook tracks this today on a spreadsheet — surety carrier,
-// aggregate capacity, single-project capacity, current bonded
-// work-on-hand, renewal date. Promoting it to a typed shape
-// here so the master business profile page can render it, the
-// ACORD-25 / bond-application forms can pull from it, and the
-// upcoming-bid page can flag bids that would push WOH past
-// capacity.
+// NOTE on overlap with master-profile.ts: this module's
+// BondingProfile shape was added in bundle 2590; later I noticed
+// `MasterProfileBondingSchema` in `./master-profile.ts` already
+// covers the edit/persist shape (surety, agg/single capacity,
+// agent contact, notes). The two are intentionally separate now:
+//
+//   - master-profile.ts owns the BIG editable shape (DB-backed,
+//     form-filler path resolution, surety address, agentEmail,
+//     agentPhone, classifications, etc.)
+//   - this module owns the SMALL read-only shape used by the
+//     view-only /settings/company page + the capacity math
+//     helpers (bondingCapacityState, bondingFeasibilityForBid)
+//
+// When the DB-backed MasterProfile row is the source of truth,
+// a small adapter will read from it and produce a BondingProfile
+// for these helpers to consume. The helpers stay value-add even
+// after the edit form ships.
 //
 // All monetary amounts are Int cents per the project convention.
 

@@ -1,16 +1,28 @@
 // Company insurance profile.
 //
-// What goes on every ACORD-25 certificate of insurance YGE
-// produces. Office tracks this on a spreadsheet today; promoting
-// it to a typed shape so:
-//   - the master business profile page can render it
-//   - the ACORD-25 form filler can pull current values
-//   - the /coi-chase reminders can use the expiry math
+// NOTE on overlap with master-profile.ts: this module's
+// InsuranceProfile shape was added in bundle 2591; later I
+// noticed `MasterProfileInsurancePolicySchema` in
+// `./master-profile.ts` already covers the per-policy edit shape
+// as an array (with 9 kinds: GL, Auto, WC, Excess Umbrella,
+// Pollution, Professional, Equipment Floater, Builders Risk,
+// Other). The two are intentionally separate now:
 //
-// Coverage types tracked: General Liability, Auto, Workers Comp,
-// Umbrella. Limits in cents per project convention. Each policy
-// gets a renewal date; helper functions surface "renews soon" /
-// "expired" status for the dashboard COI tile.
+//   - master-profile.ts owns the BIG editable shape (DB-backed,
+//     form-filler path resolution, broker fields per policy,
+//     unbounded policy kinds)
+//   - this module owns the SMALL read-only shape used by the
+//     view-only /settings/company page + the expiry math
+//     helpers (policyExpiryState, worstPolicySeverity,
+//     combinedEachOccurrenceCents)
+//
+// When the DB-backed MasterProfile row is the source of truth,
+// a small adapter will read from it and produce an
+// InsuranceProfile for these helpers to consume.
+//
+// Coverage types tracked here: General Liability, Auto, Workers
+// Comp, Umbrella — the four every ACORD 25 cert lists. Limits
+// in cents per project convention.
 
 import { z } from 'zod';
 
