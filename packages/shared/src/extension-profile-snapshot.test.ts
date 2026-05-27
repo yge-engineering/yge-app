@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 
 import {
+  EXTENSION_SNAPSHOT_FIELD_LABELS,
   ExtensionProfileSnapshotSchema,
   PROFILE_PATH_TO_SNAPSHOT_KEY,
   lookupSnapshotValue,
@@ -99,5 +100,34 @@ describe('PROFILE_PATH_TO_SNAPSHOT_KEY', () => {
 
   it('covers the 17 core field-pattern paths', () => {
     expect(Object.keys(PROFILE_PATH_TO_SNAPSHOT_KEY).length).toBeGreaterThanOrEqual(15);
+  });
+});
+
+describe('EXTENSION_SNAPSHOT_FIELD_LABELS', () => {
+  it('every label is a non-empty string', () => {
+    for (const [key, label] of Object.entries(EXTENSION_SNAPSHOT_FIELD_LABELS)) {
+      expect(typeof label).toBe('string');
+      expect(label.length).toBeGreaterThan(0);
+      void key;
+    }
+  });
+
+  it('every label is unique (no copy-paste duplicates)', () => {
+    const labels = Object.values(EXTENSION_SNAPSHOT_FIELD_LABELS);
+    const set = new Set(labels);
+    expect(set.size).toBe(labels.length);
+  });
+
+  it('every snapshot key has a label (Record<keyof T> guarantee)', () => {
+    // The Record<keyof ExtensionProfileSnapshot, string> type
+    // already enforces this at compile time; this test catches a
+    // future refactor that might use a looser type.
+    for (const key of Object.keys(sample)) {
+      expect(
+        EXTENSION_SNAPSHOT_FIELD_LABELS[
+          key as keyof typeof EXTENSION_SNAPSHOT_FIELD_LABELS
+        ],
+      ).toBeTruthy();
+    }
   });
 });
