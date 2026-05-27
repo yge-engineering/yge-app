@@ -23,15 +23,49 @@ const DEFAULT_API_URL = 'https://api.youngge.com';
   const fillBtn = document.getElementById('fill-btn');
   const statusEl = document.getElementById('status');
 
+  function appHostFromApi(url) {
+    // api.youngge.com → app.youngge.com; localhost:4000 → localhost:3000
+    try {
+      const u = new URL(url);
+      if (u.hostname === 'localhost' || u.hostname === '127.0.0.1') {
+        return `${u.protocol}//${u.hostname}:3000`;
+      }
+      if (u.hostname.startsWith('api.')) {
+        return `${u.protocol}//${u.hostname.replace(/^api\./, 'app.')}`;
+      }
+      return url;
+    } catch {
+      return 'https://app.youngge.com';
+    }
+  }
+
   async function refreshApiUrl() {
     const stored = await chrome.storage.local.get(API_KEY);
     const url = stored[API_KEY] ?? DEFAULT_API_URL;
     if (apiUrlEl) apiUrlEl.textContent = url;
     if (apiUrlInput) apiUrlInput.value = url;
+    const appBase = appHostFromApi(url);
+    const profileLink = document.getElementById('profile-link');
+    if (profileLink) profileLink.href = `${appBase}/master-profile`;
+    const formsLink = document.getElementById('forms-link');
+    if (formsLink) formsLink.href = `${appBase}/pdf-forms`;
     return url;
   }
 
   await refreshApiUrl();
+
+  document
+    .getElementById('refresh-snapshot-btn')
+    ?.addEventListener('click', async () => {
+      await chrome.storage.local.remove([
+        'yge.profileSnapshot',
+        'yge.profileSnapshot.cachedAt',
+      ]);
+      if (statusEl) {
+        statusEl.className = 'status ok';
+        statusEl.textContent = '✓ Snapshot cache cleared. Next fill re-fetches.';
+      }
+    });
 
   configToggle?.addEventListener('click', () => {
     configPanel?.classList.toggle('open');

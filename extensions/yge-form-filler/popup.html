@@ -154,14 +154,29 @@
     >
       Undo last fill
     </button>
+    <button
+      id="refresh-snapshot-btn"
+      style="
+        margin-top: 8px;
+        width: 100%;
+        padding: 6px;
+        background: transparent;
+        color: #6b7280;
+        border: 0;
+        font-size: 11px;
+        cursor: pointer;
+      "
+    >
+      Refresh snapshot
+    </button>
     <div class="status" id="status"></div>
 
     <p style="font-size: 11px; color: #6b7280; margin-top: 16px">
-      Pairs with the
-      <a href="https://app.youngge.com/pdf-forms" target="_blank"
-        >/pdf-forms</a
-      >
-      mapping library inside the YGE app. Snapshot cached 15 minutes.
+      Filled values come from the
+      <a href="#" id="profile-link" target="_blank">master profile</a>.
+      To change a value (CSLB renewed, address moved, new VP), edit
+      there and click "Refresh snapshot" in this popup.
+      <a href="#" id="forms-link" target="_blank">PDF form library →</a>
     </p>
     <script src="popup.js"></script>
   </body>
