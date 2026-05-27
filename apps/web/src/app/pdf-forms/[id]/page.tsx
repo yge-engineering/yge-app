@@ -26,6 +26,7 @@ import {
   StatusPill,
 } from '../../../components';
 import { PdfFormPromptForm } from '@/components/pdf-form-prompt-form';
+import { MarkPdfFormReviewedButton } from '@/components/mark-pdf-form-reviewed';
 import {
   buildFillReport,
   type MasterProfile,
@@ -105,6 +106,10 @@ export default async function PdfFormFillPage({
         {!mapping.reviewed && (
           <Alert tone="warn" className="mt-4" title={t('pdfFormPg.draftTitle')}>
             {t('pdfFormPg.draftBody')}
+            <MarkPdfFormReviewedButton
+              mappingId={mapping.id}
+              apiBaseUrl={publicApiBaseUrl()}
+            />
           </Alert>
         )}
 
