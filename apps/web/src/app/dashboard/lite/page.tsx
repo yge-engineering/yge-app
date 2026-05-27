@@ -26,6 +26,7 @@ import { UpcomingBidsTile } from '../../../components/upcoming-bids-tile';
 import { ArCollectionsTile } from '../../../components/ar-collections-tile';
 import { RecentDraftsTile } from '../../../components/recent-drafts-tile';
 import { LostBidsTile } from '../../../components/lost-bids-tile';
+import { ComparablesSeedStatusTile } from '../../../components/comparables-seed-status-tile';
 
 export default function DashboardLitePage() {
   return (
@@ -54,6 +55,7 @@ export default function DashboardLitePage() {
           <UpcomingBidsTile />
           <RecentDraftsTile />
           <LostBidsTile />
+          <ComparablesSeedStatusTile />
           <ArCollectionsTile />
 
           <div className="grid gap-4 lg:grid-cols-2">
