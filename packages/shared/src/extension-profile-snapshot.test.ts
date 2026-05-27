@@ -30,9 +30,11 @@ const sample: ExtensionProfileSnapshot = {
   primaryEmail: 'ryoung@youngge.com',
   websiteUrl: 'https://www.youngge.com',
   presidentName: 'Brook L. Young',
+  presidentTitle: 'President',
   presidentPhone: '707-499-7065',
   presidentEmail: 'brookyoung@youngge.com',
   vpName: 'Ryan D. Young',
+  vpTitle: 'Vice President',
   vpPhone: '707-599-9921',
   vpEmail: 'ryoung@youngge.com',
 };

@@ -243,9 +243,11 @@
           primaryPhone: 'primaryPhone',
           primaryEmail: 'primaryEmail',
           'officers.president.name': 'presidentName',
+          'officers.president.title': 'presidentTitle',
           'officers.president.phone': 'presidentPhone',
           'officers.president.email': 'presidentEmail',
           'officers.vp.name': 'vpName',
+          'officers.vp.title': 'vpTitle',
           'officers.vp.phone': 'vpPhone',
           'officers.vp.email': 'vpEmail',
         };

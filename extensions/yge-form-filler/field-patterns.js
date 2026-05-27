@@ -182,6 +182,18 @@ export const FIELD_PATTERNS = [
     ],
   },
   {
+    profilePath: 'officers.vp.title',
+    patterns: [
+      'signer title',
+      'authorized signer title',
+      'title of authorized signer',
+      'title of signer',
+      'officer title',
+      'title (officer)',
+      'title of officer',
+    ],
+  },
+  {
     profilePath: 'naicsCodes',
     patterns: [
       'naics',

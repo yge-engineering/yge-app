@@ -66,9 +66,13 @@ export const ExtensionProfileSnapshotSchema = z.object({
 
   // ---- Officers ----
   presidentName: z.string(),
+  /** Officer title — e.g. "President", "CEO". Many agency bid
+   *  forms have a "Title of Authorized Signer" field. */
+  presidentTitle: z.string().optional(),
   presidentPhone: z.string(),
   presidentEmail: z.string(),
   vpName: z.string(),
+  vpTitle: z.string().optional(),
   vpPhone: z.string(),
   vpEmail: z.string(),
 });
@@ -105,9 +109,11 @@ export const PROFILE_PATH_TO_SNAPSHOT_KEY: Record<
   primaryPhone: 'primaryPhone',
   primaryEmail: 'primaryEmail',
   'officers.president.name': 'presidentName',
+  'officers.president.title': 'presidentTitle',
   'officers.president.phone': 'presidentPhone',
   'officers.president.email': 'presidentEmail',
   'officers.vp.name': 'vpName',
+  'officers.vp.title': 'vpTitle',
   'officers.vp.phone': 'vpPhone',
   'officers.vp.email': 'vpEmail',
 };

@@ -58,9 +58,11 @@ extensionRouter.get('/profile-snapshot', (_req, res) => {
     websiteUrl: c.websiteUrl,
 
     presidentName: c.president.name,
+    presidentTitle: c.president.title,
     presidentPhone: c.president.phone,
     presidentEmail: c.president.email,
     vpName: c.vicePresident.name,
+    vpTitle: c.vicePresident.title,
     vpPhone: c.vicePresident.phone,
     vpEmail: c.vicePresident.email,
   };
