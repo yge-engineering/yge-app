@@ -153,9 +153,12 @@ export default async function GoLivePage() {
                   <div className="mt-2">
                     <Link
                       href={c.fixHref}
+                      target="_blank"
+                      rel="noreferrer"
                       className="text-xs font-semibold text-yge-blue-500 hover:underline"
+                      title="Opens in a new tab so the readiness page stays open while you fix"
                     >
-                      Fix this →
+                      Fix this in a new tab →
                     </Link>
                   </div>
                 )}
