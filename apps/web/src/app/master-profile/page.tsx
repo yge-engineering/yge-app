@@ -12,6 +12,7 @@ import {
   AuditBinderPanel,
   PageHeader,
 } from '../../components';
+import { PrintButton } from '../../components/print-button';
 import { getTranslator } from '../../lib/locale';
 import { requirePermission } from '../../lib/permissions';
 import { MasterProfileEditor } from '@/components/master-profile-editor';
@@ -55,9 +56,15 @@ export default async function MasterProfilePage() {
           <Link href="/dashboard" className="text-sm text-yge-blue-500 hover:underline">
             &larr; Dashboard
           </Link>
-          <Link href="/pdf-forms" className="text-sm text-yge-blue-500 hover:underline">
-            PDF form library →
-          </Link>
+          <div className="flex items-center gap-3">
+            <PrintButton label="Print profile" />
+            <Link
+              href="/pdf-forms"
+              className="text-sm text-yge-blue-500 hover:underline"
+            >
+              PDF form library →
+            </Link>
+          </div>
         </div>
 
         <PageHeader
