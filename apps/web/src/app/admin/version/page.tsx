@@ -11,6 +11,7 @@
 // vendor and needs to confirm which build is live. Pairs with
 // the extension popup display (bundle 2637).
 
+import Link from 'next/link';
 import { AppShell, PageHeader } from '../../../components';
 import { requirePermission } from '../../../lib/permissions';
 
@@ -147,6 +148,17 @@ export default async function VersionPage() {
           give Vercel + the API host a minute and refresh. When prompt version
           changes, AI estimates run against the new prompt; record the
           version on every saved Estimate row.
+        </p>
+        <p className="mt-2 text-xs text-gray-500">
+          See also:{' '}
+          <Link href="/api-status" className="text-yge-blue-500 hover:underline">
+            /api-status
+          </Link>
+          {' '}(infrastructure probes) ·{' '}
+          <Link href="/go-live" className="text-yge-blue-500 hover:underline">
+            /go-live
+          </Link>
+          {' '}(tenant data readiness).
         </p>
       </main>
     </AppShell>
