@@ -28,6 +28,7 @@ import {
   type PricedEstimateTotals,
 } from '@yge/shared';
 import { AppShell, PageHeader } from '../../../../components';
+import { ExtensionSnapshotStatusTile } from '../../../../components/extension-snapshot-status-tile';
 import { MasterProfileExpiriesTile } from '../../../../components/master-profile-expiries-tile';
 import { PrintPacketButton } from '@/components/print-packet-button';
 import { BidDayComparableCallout } from '@/components/bid-day-comparable-callout';
@@ -96,6 +97,11 @@ export default async function BidDayPage({
          *  matter how perfect the estimate is — surface that as
          *  the very first thing on bid day, ahead of the countdown. */}
         <MasterProfileExpiriesTile />
+
+        {/* Heads-up that the extension won't fill empty snapshot
+         *  fields when the operator goes to fill the bid envelope
+         *  forms on the agency website. */}
+        <ExtensionSnapshotStatusTile />
 
         <CountdownBanner countdown={countdown} bidDueDate={estimate.bidDueDate} />
 
