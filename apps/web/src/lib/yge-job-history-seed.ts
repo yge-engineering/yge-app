@@ -201,9 +201,11 @@ export const YGE_JOB_HISTORY_SEED: ReadonlyArray<HistoricalJob> = [
 const SCOPE_KEYWORD_DICTIONARY = [
   'asphalt',
   'paving',
+  'tack-coat',
   'concrete',
   'curb',
   'sidewalk',
+  'ada-ramp',
   'pad',
   'foundation',
   'transformer-foundation',
@@ -215,6 +217,8 @@ const SCOPE_KEYWORD_DICTIONARY = [
   'storm',
   'culvert',
   'manhole',
+  'headwall',
+  'energy-dissipator',
   'rcb',
   'rcp',
   'hdpe',
@@ -229,6 +233,9 @@ const SCOPE_KEYWORD_DICTIONARY = [
   'import',
   'grading',
   'clearing',
+  'topsoil',
+  'compaction',
+  'subgrade',
   'demolition',
   'striping',
   'signage',
@@ -248,6 +255,10 @@ const SCOPE_KEYWORD_DICTIONARY = [
   'pier',
   'deck',
   'culvert-extension',
+  'falsework',
+  'mastication',
+  'burn-pile',
+  'fuel-break',
 ] as const;
 
 export function extractScopeKeywordsFromText(text: string): string[] {
