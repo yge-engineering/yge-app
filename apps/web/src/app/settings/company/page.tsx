@@ -10,6 +10,8 @@
 // any place YGE has to recite the same set of facts. Printable
 // so it can sit on the office wall or in a vendor folder.
 
+import Link from 'next/link';
+
 import { AppShell, PageHeader } from '../../../components';
 import { PrintButton } from '@/components/print-button';
 import {
@@ -46,9 +48,18 @@ export default function CompanyProfilePage() {
         </div>
 
         <PageHeader
-          title="Master business profile"
-          subtitle="Single source of truth for licenses, officers, and federal codes. Read by every print artifact (bid summary, cover letter, CPR header, AP letterhead). Editable form coming in a future bundle."
+          title="Master business profile (read-only summary)"
+          subtitle="Static company-info view. For the editable DB-backed profile (officers, insurance policies, bonding capacity), use /master-profile."
         />
+
+        <div className="no-print mb-4 mt-2 flex flex-wrap gap-2">
+          <Link
+            href="/master-profile"
+            className="rounded bg-yge-blue-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-yge-blue-700"
+          >
+            Open editable master profile →
+          </Link>
+        </div>
 
         <div className="mt-6 space-y-4">
           <Section title="Legal entity">
