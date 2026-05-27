@@ -294,6 +294,7 @@ const NAV_SPEC: NavGroupSpec[] = [
     links: [
       { key: 'nav.allModules', href: '/all-modules' },
       { key: 'nav.masterProfile', href: '/master-profile', requires: 'masterProfile:view' },
+      { key: 'nav.extension', href: '/extension' },
       { key: 'nav.audit', href: '/audit', requires: 'audit:view' },
       { key: 'nav.portalUsers', href: '/admin/portal-users', requires: 'portalUsers:manage' },
       { key: 'nav.printViews', href: '/print' },
