@@ -13,6 +13,7 @@
 import Link from 'next/link';
 
 import { AppShell, PageHeader } from '../../components';
+import { MasterProfileExpiriesTile } from '../../components/master-profile-expiries-tile';
 import {
   YGE_BONDING_PROFILE,
   YGE_INSURANCE_PROFILE,
@@ -108,6 +109,12 @@ export default async function GoLivePage() {
           title="Go-live readiness"
           subtitle="Tenant data checklist for the app.youngge.com cutover. Different from /api-status (infrastructure health) — these checks are about whether YGE's specific data is populated enough to run a real bid."
         />
+
+        {/* Live expiry warnings from the master profile API.
+         *  Separate from the static-seed bonding/insurance check
+         *  below because an expired record still passes 'do we
+         *  have one on file' but blocks real-bid use. */}
+        <MasterProfileExpiriesTile />
 
         <section className={`mt-4 rounded-lg border p-4 ${overall.cls}`}>
           <div className="flex flex-wrap items-baseline justify-between gap-3">
