@@ -54,6 +54,27 @@ const DEFAULT_API_URL = 'https://api.youngge.com';
 
   await refreshApiUrl();
 
+  async function refreshSnapshotAge() {
+    const ageEl = document.getElementById('snapshot-age');
+    if (!ageEl) return;
+    const cache = await chrome.storage.local.get('yge.profileSnapshot.cachedAt');
+    const cachedAt = cache['yge.profileSnapshot.cachedAt'];
+    if (typeof cachedAt !== 'number') {
+      ageEl.textContent = 'no snapshot cached yet';
+      return;
+    }
+    const ms = Date.now() - cachedAt;
+    const secs = Math.floor(ms / 1000);
+    if (secs < 60) {
+      ageEl.textContent = `snapshot ${secs}s old`;
+    } else {
+      const mins = Math.floor(secs / 60);
+      ageEl.textContent = `snapshot ${mins}m old`;
+    }
+  }
+
+  await refreshSnapshotAge();
+
   document
     .getElementById('refresh-snapshot-btn')
     ?.addEventListener('click', async () => {
@@ -65,6 +86,7 @@ const DEFAULT_API_URL = 'https://api.youngge.com';
         statusEl.className = 'status ok';
         statusEl.textContent = '✓ Snapshot cache cleared. Next fill re-fetches.';
       }
+      await refreshSnapshotAge();
     });
 
   configToggle?.addEventListener('click', () => {
