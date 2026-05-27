@@ -162,6 +162,32 @@ export default function ComparablesAuditPage() {
                 </tr>
               ))}
             </tbody>
+            <tfoot className="bg-gray-50 text-xs text-gray-700">
+              <tr>
+                <td
+                  colSpan={4}
+                  className="px-3 py-2 text-right font-semibold uppercase tracking-wide"
+                >
+                  Totals ({rows.length} job{rows.length === 1 ? '' : 's'})
+                </td>
+                <td className="px-3 py-2 text-right font-mono">
+                  {formatUSD(
+                    rows.reduce((sum, r) => sum + r.job.bidTotalCents, 0),
+                    { compact: true },
+                  )}
+                </td>
+                <td className="px-3 py-2 text-right font-mono">
+                  {formatUSD(
+                    rows.reduce(
+                      (sum, r) => sum + (r.job.actualCostCents ?? 0),
+                      0,
+                    ),
+                    { compact: true },
+                  )}
+                </td>
+                <td colSpan={3} />
+              </tr>
+            </tfoot>
           </table>
         </section>
 
