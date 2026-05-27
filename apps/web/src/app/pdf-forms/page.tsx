@@ -61,9 +61,14 @@ export default async function PdfFormsPage({
     <AppShell>
       <main className="mx-auto max-w-6xl p-8">
         <div className="mb-6 flex items-center justify-between">
-          <Link href="/master-profile" className="text-sm text-yge-blue-500 hover:underline">
-            &larr; Master profile
-          </Link>
+          <div className="flex items-center gap-3 text-sm">
+            <Link href="/master-profile" className="text-yge-blue-500 hover:underline">
+              &larr; Master profile
+            </Link>
+            <Link href="/extension" className="text-yge-blue-500 hover:underline">
+              Browser extension →
+            </Link>
+          </div>
           <div className="flex items-center gap-3 text-xs text-gray-500 print:hidden">
             <span>
               {mappings.length} form{mappings.length === 1 ? '' : 's'} loaded
