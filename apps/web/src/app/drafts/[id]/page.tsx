@@ -14,6 +14,7 @@ import { ConvertDraftButton } from '@/components/convert-draft-button';
 import { DeleteDraftButton } from '@/components/delete-draft-button';
 import { OwnerAgencyComplianceCard } from '@/components/owner-agency-compliance-card';
 import { ComparableJobsPanel } from '@/components/comparable-jobs-panel';
+import { MasterProfileExpiriesTile } from '@/components/master-profile-expiries-tile';
 import { PrintButton } from '@/components/print-button';
 import { SubstationScopeBanner } from '@/components/substation-scope-banner';
 import { RoadReconScopeBanner } from '@/components/road-recon-scope-banner';
@@ -102,6 +103,11 @@ export default async function DraftDetailPage({ params }: { params: { id: string
           <PrintButton />
         </div>
       </div>
+
+      {/* Surface expired CSLB / DIR / insurance early in the draft
+       *  review, not only at bid-day. The tile self-hides when
+       *  everything's current. */}
+      <MasterProfileExpiriesTile />
 
       <div className="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <div className="mb-4 flex items-center justify-between gap-3">
