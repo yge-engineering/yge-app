@@ -585,6 +585,79 @@ const ACORD_855: SeedMapping = {
   ],
 };
 
+// ---- CA Non-Collusion Affidavit (PCC §7106) ---------------------------
+//
+// Required on every public-works bid in California. Caltrans + most
+// counties use a near-identical one-page form. This mapping is the
+// generic version; agency-specific variants can clone it later.
+
+const CA_NON_COLLUSION_AFFIDAVIT: SeedMapping = {
+  id: 'pdf-form-ca-non-collusion-affidavit',
+  displayName: 'CA Non-Collusion Affidavit (PCC §7106)',
+  agency: 'CA_DGS',
+  formCode: 'NCA-7106',
+  pdfReference: 'pdf-forms/ca/non-collusion-affidavit.pdf',
+  notes:
+    'Required on every public-works bid per PCC §7106. Sworn statement that the bidder did not collude with other bidders, kept the bid confidential, paid no fees to suppress competition. Notarization is usually required by the agency — leave the notary block blank for the in-person sign.',
+  fields: [
+    f({ id: 'pdf-fld-nca-state-of', pdfFieldName: 'StateOf', label: 'State of', kind: 'TEXT', required: true,
+        source: { kind: 'literal', value: 'California' } }),
+    f({ id: 'pdf-fld-nca-county-of', pdfFieldName: 'CountyOf', label: 'County of', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'address.county' } }),
+    f({ id: 'pdf-fld-nca-affiant-name', pdfFieldName: 'AffiantName', label: 'Affiant (signer) name', kind: 'TEXT', required: true,
+        source: { kind: 'computed', name: 'profile.officers.vp.signature' } }),
+    f({ id: 'pdf-fld-nca-affiant-title', pdfFieldName: 'AffiantTitle', label: 'Affiant title', kind: 'TEXT', required: true,
+        source: { kind: 'literal', value: 'Vice President' } }),
+    f({ id: 'pdf-fld-nca-bidder-name', pdfFieldName: 'BidderName', label: 'Bidder name (legal)', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'legalName' } }),
+    f({ id: 'pdf-fld-nca-bidder-address', pdfFieldName: 'BidderAddress', label: 'Bidder address', kind: 'TEXT', required: true,
+        source: { kind: 'computed', name: 'profile.address.oneLine' } }),
+    f({ id: 'pdf-fld-nca-project-name', pdfFieldName: 'ProjectName', label: 'Project name', kind: 'TEXT', required: true,
+        source: { kind: 'prompt', label: 'Project name', sensitive: false } }),
+    f({ id: 'pdf-fld-nca-project-number', pdfFieldName: 'ProjectNumber', label: 'Project / contract #', kind: 'TEXT',
+        source: { kind: 'prompt', label: 'Project / contract #', sensitive: false } }),
+    f({ id: 'pdf-fld-nca-signature', pdfFieldName: 'Signature', label: 'Signature', kind: 'SIGNATURE', required: true,
+        source: { kind: 'computed', name: 'profile.officers.vp.signature' } }),
+    f({ id: 'pdf-fld-nca-date', pdfFieldName: 'Date', label: 'Date', kind: 'DATE', required: true,
+        source: { kind: 'computed', name: 'date.today.us' } }),
+  ],
+};
+
+// ---- Iran Contracting Act Certification (PCC §2204) -------------------
+//
+// Required on any CA public-agency bid > $1,000,000 (or any contract
+// with a state agency for goods or services from companies doing
+// business with the Iranian energy sector). YGE is not on the §2203
+// exclusion list, so the certification is just a checkbox + signature.
+
+const CA_IRAN_CONTRACTING_ACT: SeedMapping = {
+  id: 'pdf-form-ca-iran-contracting-act',
+  displayName: 'CA Iran Contracting Act Certification (PCC §2204)',
+  agency: 'CA_DGS',
+  formCode: 'ICA-2204',
+  pdfReference: 'pdf-forms/ca/iran-contracting-act.pdf',
+  notes:
+    'Required on any CA public-works bid > $1M. YGE certifies it is NOT identified on the DGS §2203 exclusion list of companies doing business in the Iranian energy sector. Bidder checks one of two boxes (not on list / on list with exemption); fills name + license + signature.',
+  fields: [
+    f({ id: 'pdf-fld-ica-bidder-name', pdfFieldName: 'BidderName', label: 'Bidder legal name', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'legalName' } }),
+    f({ id: 'pdf-fld-ica-cslb', pdfFieldName: 'CslbLicense', label: 'CSLB license #', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'cslbLicense' } }),
+    f({ id: 'pdf-fld-ica-address', pdfFieldName: 'BidderAddress', label: 'Bidder address', kind: 'TEXT', required: true,
+        source: { kind: 'computed', name: 'profile.address.oneLine' } }),
+    f({ id: 'pdf-fld-ica-not-on-list', pdfFieldName: 'NotOnExclusionList', label: 'Not on DGS §2203 exclusion list', kind: 'CHECKBOX', required: true,
+        source: { kind: 'literal', value: 'true' }, truthyValue: 'Yes' }),
+    f({ id: 'pdf-fld-ica-project', pdfFieldName: 'ProjectName', label: 'Project name', kind: 'TEXT', required: true,
+        source: { kind: 'prompt', label: 'Project name', sensitive: false } }),
+    f({ id: 'pdf-fld-ica-signature', pdfFieldName: 'Signature', label: 'Authorized signer', kind: 'SIGNATURE', required: true,
+        source: { kind: 'computed', name: 'profile.officers.vp.signature' } }),
+    f({ id: 'pdf-fld-ica-title', pdfFieldName: 'SignerTitle', label: 'Title', kind: 'TEXT', required: true,
+        source: { kind: 'literal', value: 'Vice President' } }),
+    f({ id: 'pdf-fld-ica-date', pdfFieldName: 'Date', label: 'Date', kind: 'DATE', required: true,
+        source: { kind: 'computed', name: 'date.today.us' } }),
+  ],
+};
+
 const SEEDS: SeedMapping[] = [
   IRS_W9,
   DIR_DAS_140,
@@ -601,6 +674,8 @@ const SEEDS: SeedMapping[] = [
   USCIS_I9,
   EDD_DE4,
   ACORD_855,
+  CA_NON_COLLUSION_AFFIDAVIT,
+  CA_IRAN_CONTRACTING_ACT,
 ];
 
 /**
