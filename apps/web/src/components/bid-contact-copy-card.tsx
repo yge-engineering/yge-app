@@ -38,6 +38,13 @@ export function BidContactCopyCard() {
           label={c.cslbLicense}
           clipboard={c.cslbLicense}
         />
+        {c.cslbClassifications.length > 0 && (
+          <CopyableValue
+            caption="CSLB classifications"
+            label={c.cslbClassifications.join(', ')}
+            clipboard={c.cslbClassifications.join(', ')}
+          />
+        )}
         <CopyableValue
           caption="DIR registration"
           label={c.dirNumber}
@@ -48,6 +55,20 @@ export function BidContactCopyCard() {
           label={c.dotNumber}
           clipboard={c.dotNumber}
         />
+        {c.naicsCodes.length > 0 && (
+          <CopyableValue
+            caption="NAICS codes"
+            label={c.naicsCodes.join(', ')}
+            clipboard={c.naicsCodes.join(', ')}
+          />
+        )}
+        {c.pscCodes.length > 0 && (
+          <CopyableValue
+            caption="PSC codes"
+            label={c.pscCodes.join(', ')}
+            clipboard={c.pscCodes.join(', ')}
+          />
+        )}
         <CopyableValue
           caption="Address (one line)"
           label={addressOneLine}
