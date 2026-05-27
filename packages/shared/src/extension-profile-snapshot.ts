@@ -122,6 +122,50 @@ export const PROFILE_PATH_TO_SNAPSHOT_KEY: Record<
   'officers.vp.email': 'vpEmail',
 };
 
+/** Human-readable labels for snapshot field names. Showing
+ *  "Federal EIN" beats "federalEin" when listing fields to the
+ *  user. The web ExtensionSnapshotStatusTile uses this; the
+ *  popup mirrors only the count, not the labels.
+ *
+ *  Keep in sync with the schema — when adding a new field above,
+ *  add a label here too. Falls back to the raw key for unknown
+ *  fields so a missing entry is gracefully degraded. */
+export const EXTENSION_SNAPSHOT_FIELD_LABELS: Record<
+  keyof ExtensionProfileSnapshot,
+  string
+> = {
+  schemaVersion: 'Schema version',
+  generatedAt: 'Generated at',
+  legalName: 'Legal name',
+  shortName: 'Short name / DBA',
+  federalEin: 'Federal EIN',
+  cslbLicense: 'CSLB license',
+  cslbClassifications: 'CSLB classifications',
+  dirNumber: 'DIR registration',
+  dotNumber: 'USDOT',
+  naicsCodes: 'NAICS codes',
+  pscCodes: 'PSC codes',
+  caMcpNumber: 'CA MCP number',
+  caEntityNumber: 'CA SOS entity number',
+  websiteUrl: 'Website URL',
+  addressOneLine: 'Address (one line)',
+  addressStreet: 'Address street',
+  addressCity: 'Address city',
+  addressState: 'Address state',
+  addressZip: 'Address ZIP',
+  addressCounty: 'Address county',
+  primaryPhone: 'Primary phone',
+  primaryEmail: 'Primary email',
+  presidentName: 'President name',
+  presidentTitle: 'President title',
+  presidentPhone: 'President phone',
+  presidentEmail: 'President email',
+  vpName: 'VP name',
+  vpTitle: 'VP title',
+  vpPhone: 'VP phone',
+  vpEmail: 'VP email',
+};
+
 /** Resolve a profile path (from field-patterns.js) to the
  *  snapshot value. Returns undefined when the path isn't mapped
  *  or the snapshot field is empty. */
