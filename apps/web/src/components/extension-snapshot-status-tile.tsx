@@ -83,6 +83,7 @@ async function ExtensionSnapshotStatusTileInner(): Promise<React.ReactElement | 
           rel="noopener noreferrer"
           className="font-mono underline-offset-2 hover:underline"
           title="View raw snapshot JSON"
+          aria-label={`${populated} of ${total} snapshot fields populated — open raw JSON in new tab`}
         >
           {populated} / {total} fields populated
         </a>
