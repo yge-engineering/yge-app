@@ -194,6 +194,25 @@ export const FIELD_PATTERNS = [
     ],
   },
   {
+    profilePath: 'officers.vp.phone',
+    patterns: [
+      'signer phone',
+      'authorized signer phone',
+      'officer phone',
+      'representative phone',
+      'signer telephone',
+    ],
+  },
+  {
+    profilePath: 'officers.vp.email',
+    patterns: [
+      'signer email',
+      'authorized signer email',
+      'officer email',
+      'representative email',
+    ],
+  },
+  {
     profilePath: 'naicsCodes',
     patterns: [
       'naics',
