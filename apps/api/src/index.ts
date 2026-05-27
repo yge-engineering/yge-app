@@ -128,6 +128,15 @@ app.use(
       if (/^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin)) {
         return cb(null, true);
       }
+      // Browser extension origins. Chrome extensions live at
+      // chrome-extension://<id>; Firefox uses moz-extension://;
+      // Safari Web Extensions use safari-web-extension://. We allow
+      // all three schemes — the auth bridge gates access to data,
+      // not CORS. (The YGE form filler extension from bundle 2600
+      // is the intended consumer.)
+      if (/^chrome-extension:\/\//i.test(origin)) return cb(null, true);
+      if (/^moz-extension:\/\//i.test(origin)) return cb(null, true);
+      if (/^safari-web-extension:\/\//i.test(origin)) return cb(null, true);
       return cb(new Error(`Not allowed by CORS: ${origin}`));
     },
     credentials: true,
