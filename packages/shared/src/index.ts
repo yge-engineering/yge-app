@@ -362,6 +362,7 @@ export * from './bid-unit-normalizer';
 export * from './company-bonding';
 export * from './company-insurance';
 export * from './tenant-readiness';
+export * from './master-profile-adapter';
 export * from './job-toolbox-summary';
 export * from './customer-revenue-by-month';
 export * from './vendor-onhold-list';
