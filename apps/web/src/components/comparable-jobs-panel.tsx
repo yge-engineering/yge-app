@@ -11,6 +11,8 @@
 // Data source today: a hand-curated seed (YGE_JOB_HISTORY_SEED).
 // Eventually swaps for a DB-backed query.
 
+import Link from 'next/link';
+
 import {
   bidVsActualVariance,
   bidVsLowVariance,
@@ -72,6 +74,15 @@ export function ComparableJobsPanel({ draft }: Props) {
           ))}
         </ul>
       )}
+
+      <div className="mt-3 text-right">
+        <Link
+          href="/comparables"
+          className="text-xs text-yge-blue-500 hover:underline"
+        >
+          See all {YGE_JOB_HISTORY_SEED.length} comparables →
+        </Link>
+      </div>
     </section>
   );
 }

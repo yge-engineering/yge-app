@@ -14,6 +14,8 @@ import { isNextInternalError } from '../lib/next-control-flow';
 // past jobs are in the seed. The tile prods Ryan to keep
 // adding them.
 
+import Link from 'next/link';
+
 import { YGE_JOB_HISTORY_SEED } from '../lib/yge-job-history-seed';
 
 const MIN_SEED_FOR_USEFUL_COMPARABLES = 3;
@@ -49,6 +51,14 @@ export function ComparablesSeedStatusTile(): React.ReactElement | null {
           actual cost, outcome, lessons learned. Each new entry feeds
           both the UI panel and the AI prompt's reality-check context.
         </p>
+        <div className="mt-3">
+          <Link
+            href="/comparables"
+            className="text-xs font-semibold text-amber-900 underline hover:text-amber-700"
+          >
+            See seed audit table →
+          </Link>
+        </div>
       </section>
     );
   } catch (err) {
