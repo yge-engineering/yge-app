@@ -130,6 +130,8 @@ export default async function ApiStatusPage() {
         </div>
 
         <p className="mt-6 text-center text-xs text-gray-400">
+          Checked at <span className="font-mono">{new Date().toISOString()}</span>
+          {' · '}
           {t('apiStatus.footerPrefix')}<Link href="/api-status" className="text-blue-700 hover:underline">{t('apiStatus.rerun')}</Link>.
         </p>
       </main>
