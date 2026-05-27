@@ -1,22 +1,81 @@
 // YGE Form Filler — popup script.
 //
-// On open: read API URL from storage + ask the active tab's
-// content script for its YGE_LAST_SCAN summary. Enable the
-// "Fill matched fields" button when fillableCount > 0.
+// On open: read API URL from storage + active-tab's page-scan
+// summary (window.YGE_LAST_SCAN stashed by the content script).
+// Enable the "Fill matched fields" button when fillableCount > 0.
 //
-// Click: send 'fill-now' to the content script. Show the
-// result (N fields filled, M skipped) in the status area.
+// Click: send 'fill-now' to the content script. Show the result.
+//
+// "edit" link opens an inline panel to override the API URL.
+// Useful when pointing at a staging API or localhost.
+
+const API_KEY = 'yge.apiBaseUrl';
+const DEFAULT_API_URL = 'https://api.youngge.com';
 
 (async function () {
   const apiUrlEl = document.getElementById('api-url');
+  const apiUrlInput = document.getElementById('api-url-input');
+  const apiUrlSave = document.getElementById('api-url-save');
+  const apiUrlReset = document.getElementById('api-url-reset');
+  const configToggle = document.getElementById('config-toggle');
+  const configPanel = document.getElementById('config-panel');
   const fieldSummaryEl = document.getElementById('field-summary');
   const fillBtn = document.getElementById('fill-btn');
   const statusEl = document.getElementById('status');
 
-  const stored = await chrome.storage.local.get('yge.apiBaseUrl');
-  if (apiUrlEl) {
-    apiUrlEl.textContent = stored['yge.apiBaseUrl'] ?? 'not configured';
+  async function refreshApiUrl() {
+    const stored = await chrome.storage.local.get(API_KEY);
+    const url = stored[API_KEY] ?? DEFAULT_API_URL;
+    if (apiUrlEl) apiUrlEl.textContent = url;
+    if (apiUrlInput) apiUrlInput.value = url;
+    return url;
   }
+
+  await refreshApiUrl();
+
+  configToggle?.addEventListener('click', () => {
+    configPanel?.classList.toggle('open');
+  });
+
+  apiUrlSave?.addEventListener('click', async () => {
+    const next = (apiUrlInput?.value ?? '').trim();
+    if (next.length === 0) return;
+    try {
+      // Sanity-validate URL.
+      new URL(next);
+    } catch {
+      if (statusEl) {
+        statusEl.className = 'status err';
+        statusEl.textContent = 'Invalid URL';
+      }
+      return;
+    }
+    await chrome.storage.local.set({ [API_KEY]: next });
+    // Invalidate the cached profile snapshot so the next fill
+    // call re-fetches against the new API.
+    await chrome.storage.local.remove([
+      'yge.profileSnapshot',
+      'yge.profileSnapshot.cachedAt',
+    ]);
+    if (statusEl) {
+      statusEl.className = 'status ok';
+      statusEl.textContent = '✓ Saved. Snapshot cache cleared.';
+    }
+    await refreshApiUrl();
+  });
+
+  apiUrlReset?.addEventListener('click', async () => {
+    await chrome.storage.local.set({ [API_KEY]: DEFAULT_API_URL });
+    await chrome.storage.local.remove([
+      'yge.profileSnapshot',
+      'yge.profileSnapshot.cachedAt',
+    ]);
+    if (statusEl) {
+      statusEl.className = 'status ok';
+      statusEl.textContent = '✓ Reset to default.';
+    }
+    await refreshApiUrl();
+  });
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab || tab.id == null) {

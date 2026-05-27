@@ -8,7 +8,7 @@
         font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
         margin: 0;
         padding: 16px;
-        width: 320px;
+        width: 340px;
         font-size: 13px;
         color: #1f2937;
       }
@@ -24,27 +24,17 @@
         margin: 8px 0;
         line-height: 1.45;
       }
-      .pill {
-        display: inline-block;
-        background: #fef3c7;
-        color: #92400e;
-        font-size: 10px;
-        font-weight: 700;
-        text-transform: uppercase;
-        padding: 2px 6px;
-        border-radius: 4px;
-        letter-spacing: 0.05em;
-      }
       a {
         color: #1d4ed8;
       }
       .info {
-        margin-top: 12px;
+        margin-top: 6px;
         padding: 8px;
         background: #f3f4f6;
         border-radius: 6px;
         font-family: ui-monospace, SFMono-Regular, monospace;
         font-size: 11px;
+        white-space: pre-wrap;
       }
       button.primary {
         width: 100%;
@@ -72,16 +62,82 @@
       .status.err {
         color: #991b1b;
       }
+      .row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 8px;
+        margin-top: 8px;
+      }
+      .row > .label {
+        font-size: 11px;
+        font-weight: 600;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+      }
+      .row > .toggle-link {
+        font-size: 11px;
+        color: #1d4ed8;
+        cursor: pointer;
+        text-decoration: underline;
+        background: none;
+        border: 0;
+        padding: 0;
+      }
+      .config {
+        display: none;
+        margin-top: 8px;
+      }
+      .config.open {
+        display: block;
+      }
+      .config input {
+        width: 100%;
+        padding: 6px 8px;
+        border: 1px solid #d1d5db;
+        border-radius: 4px;
+        font-size: 12px;
+        font-family: ui-monospace, SFMono-Regular, monospace;
+        box-sizing: border-box;
+      }
+      .config button {
+        margin-top: 6px;
+        padding: 6px 10px;
+        background: #1d4ed8;
+        color: white;
+        border: 0;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+      }
     </style>
   </head>
   <body>
     <h1>YGE Form Filler</h1>
-    <p>Configured API:</p>
+
+    <div class="row">
+      <span class="label">Configured API</span>
+      <button class="toggle-link" id="config-toggle">edit</button>
+    </div>
     <div class="info" id="api-url">loading…</div>
-    <p>This page:</p>
+    <div class="config" id="config-panel">
+      <input type="text" id="api-url-input" placeholder="https://api.youngge.com" />
+      <button id="api-url-save">Save</button>
+      <button id="api-url-reset" style="background: #6b7280; margin-left: 6px">
+        Reset
+      </button>
+    </div>
+
+    <div class="row">
+      <span class="label">This page</span>
+    </div>
     <div class="info" id="field-summary">scanning…</div>
+
     <button class="primary" id="fill-btn" disabled>Fill matched fields</button>
     <div class="status" id="status"></div>
+
     <p style="font-size: 11px; color: #6b7280; margin-top: 16px">
       Pairs with the
       <a href="https://app.youngge.com/pdf-forms" target="_blank"
