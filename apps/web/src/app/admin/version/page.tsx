@@ -38,11 +38,28 @@ async function fetchApiVersion(): Promise<ApiVersion | null> {
   }
 }
 
+function short(sha: string): string {
+  return sha.length >= 7 ? sha.slice(0, 7) : sha;
+}
+
 export default async function VersionPage() {
   const apiVersion = await fetchApiVersion();
   const webSha = process.env.BUILD_SHA ?? process.env.NEXT_PUBLIC_BUILD_SHA ?? 'unknown';
   const webTimestamp =
     process.env.BUILD_TIMESTAMP ?? process.env.NEXT_PUBLIC_BUILD_TIMESTAMP ?? 'unknown';
+
+  // Only flag a mismatch when BOTH sides actually report a SHA —
+  // 'unknown' on either side just means the env wasn't wired up at
+  // build/start, not a real cutover. Comparing 'unknown' to 'unknown'
+  // would spuriously read as "match" too, so we gate on both being
+  // known.
+  const apiSha = apiVersion?.buildSha;
+  const bothShasKnown =
+    webSha !== 'unknown' &&
+    apiSha !== undefined &&
+    apiSha !== null &&
+    apiSha !== 'unknown';
+  const shaMismatch = bothShasKnown && webSha !== apiSha;
 
   return (
     <AppShell>
@@ -51,6 +68,21 @@ export default async function VersionPage() {
           title="Build + version info"
           subtitle="Use when you need to confirm which deploy is live. Web side is server-rendered; API side is live-fetched on every page load."
         />
+
+        {shaMismatch && (
+          <section className="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-amber-900">
+            <h2 className="text-sm font-bold uppercase tracking-wide">
+              Build SHAs do not match
+            </h2>
+            <p className="mt-1 text-sm">
+              Web is on <code className="font-mono">{short(webSha)}</code> but
+              API is on <code className="font-mono">{short(apiSha ?? '')}</code>.
+              The deploy is mid-cutover — give Vercel + the API host a minute
+              and refresh. If this persists, the API host did not pick up the
+              latest push.
+            </p>
+          </section>
+        )}
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
           <section className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
