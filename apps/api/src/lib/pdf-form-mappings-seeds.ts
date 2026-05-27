@@ -759,6 +759,44 @@ const CALRECYCLE_RECYCLED_CONTENT: SeedMapping = {
   ],
 };
 
+// ---- FHWA-1273 (Federal-Aid Required Contract Provisions) --------------
+
+const FHWA_1273: SeedMapping = {
+  id: 'pdf-form-fhwa-1273',
+  displayName: 'FHWA-1273 — Federal-Aid Required Contract Provisions',
+  agency: 'US_DOL',  // technically FHWA / USDOT but US_DOL is closest enum
+  formCode: 'FHWA-1273',
+  versionDate: '2024-05-01',
+  pdfReference: 'pdf-forms/federal/fhwa-1273.pdf',
+  agencyUrl: 'https://www.fhwa.dot.gov/programadmin/contracts/1273.cfm',
+  notes:
+    'Required attachment on every federally-funded highway contract — includes equal opportunity, Davis-Bacon wage compliance, contract work hours, false statements provisions. YGE acknowledges by signature; pre-fills contractor identity + signature block, the rest of the body is the agency-supplied boilerplate.',
+  fields: [
+    f({ id: 'pdf-fld-fhwa-contractor', pdfFieldName: 'ContractorName', label: 'Contractor name', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'legalName' } }),
+    f({ id: 'pdf-fld-fhwa-address', pdfFieldName: 'ContractorAddress', label: 'Contractor address', kind: 'TEXT', required: true,
+        source: { kind: 'computed', name: 'profile.address.oneLine' } }),
+    f({ id: 'pdf-fld-fhwa-cslb', pdfFieldName: 'CslbLicense', label: 'CSLB license #', kind: 'TEXT',
+        source: { kind: 'profile-path', path: 'cslbLicense' } }),
+    f({ id: 'pdf-fld-fhwa-dot', pdfFieldName: 'UsdotNumber', label: 'USDOT #', kind: 'TEXT',
+        source: { kind: 'profile-path', path: 'dotNumber' } }),
+    f({ id: 'pdf-fld-fhwa-project-name', pdfFieldName: 'ProjectName', label: 'Project name', kind: 'TEXT', required: true,
+        source: { kind: 'prompt', label: 'Project name', sensitive: false } }),
+    f({ id: 'pdf-fld-fhwa-fed-project-num', pdfFieldName: 'FederalProjectNumber', label: 'Federal-aid project #', kind: 'TEXT', required: true,
+        source: { kind: 'prompt', label: 'Federal-aid project # (per agency notice)', sensitive: false } }),
+    f({ id: 'pdf-fld-fhwa-state-project-num', pdfFieldName: 'StateProjectNumber', label: 'State project #', kind: 'TEXT',
+        source: { kind: 'prompt', label: 'State project # (Caltrans EA number, etc.)', sensitive: false } }),
+    f({ id: 'pdf-fld-fhwa-ack', pdfFieldName: 'AcknowledgeProvisions', label: 'Acknowledge required provisions', kind: 'CHECKBOX', required: true,
+        source: { kind: 'literal', value: 'true' }, truthyValue: 'Yes' }),
+    f({ id: 'pdf-fld-fhwa-signature', pdfFieldName: 'Signature', label: 'Authorized signer', kind: 'SIGNATURE', required: true,
+        source: { kind: 'computed', name: 'profile.officers.vp.signature' } }),
+    f({ id: 'pdf-fld-fhwa-title', pdfFieldName: 'SignerTitle', label: 'Title', kind: 'TEXT', required: true,
+        source: { kind: 'literal', value: 'Vice President' } }),
+    f({ id: 'pdf-fld-fhwa-date', pdfFieldName: 'Date', label: 'Date', kind: 'DATE', required: true,
+        source: { kind: 'computed', name: 'date.today.us' } }),
+  ],
+};
+
 const SEEDS: SeedMapping[] = [
   IRS_W9,
   DIR_DAS_140,
@@ -780,6 +818,7 @@ const SEEDS: SeedMapping[] = [
   CA_DRUG_FREE_WORKPLACE,
   CA_WORKERS_COMP_AFFIDAVIT,
   CALRECYCLE_RECYCLED_CONTENT,
+  FHWA_1273,
 ];
 
 /**
