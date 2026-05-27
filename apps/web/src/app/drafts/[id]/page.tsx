@@ -14,6 +14,7 @@ import { ConvertDraftButton } from '@/components/convert-draft-button';
 import { DeleteDraftButton } from '@/components/delete-draft-button';
 import { OwnerAgencyComplianceCard } from '@/components/owner-agency-compliance-card';
 import { ComparableJobsPanel } from '@/components/comparable-jobs-panel';
+import { PrintButton } from '@/components/print-button';
 import { SubstationScopeBanner } from '@/components/substation-scope-banner';
 import { RoadReconScopeBanner } from '@/components/road-recon-scope-banner';
 import { DrainageScopeBanner } from '@/components/drainage-scope-banner';
@@ -77,17 +78,29 @@ export default async function DraftDetailPage({ params }: { params: { id: string
 
   return (
     <AppShell>
-    <main className="mx-auto max-w-4xl p-8">
-      <div className="mb-6 flex items-center justify-between">
+    <style>{`
+      @page { margin: 0.6in 0.75in; }
+      @media print {
+        .no-print { display: none !important; }
+        body { background: white !important; }
+        details { display: none; }
+        details[open] > div { display: block; }
+      }
+    `}</style>
+    <main className="mx-auto max-w-4xl p-8 print:max-w-none print:p-0">
+      <div className="mb-6 flex items-center justify-between no-print">
         <Link href="/drafts" className="text-sm text-yge-blue-500 hover:underline">
           {t('draftPg.back')}
         </Link>
-        <Link
-          href="/plans-to-estimate"
-          className="text-sm text-yge-blue-500 hover:underline"
-        >
-          {t('draftPg.newDraft')}
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/plans-to-estimate"
+            className="text-sm text-yge-blue-500 hover:underline"
+          >
+            {t('draftPg.newDraft')}
+          </Link>
+          <PrintButton />
+        </div>
       </div>
 
       <div className="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
