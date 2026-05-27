@@ -180,6 +180,10 @@ export default async function GoLivePage() {
           <Link href="/api-status" className="text-yge-blue-500 hover:underline">
             /api-status
           </Link>
+          . For build SHA + AI prompt version see{' '}
+          <Link href="/admin/version" className="text-yge-blue-500 hover:underline">
+            /admin/version
+          </Link>
           .
         </p>
       </main>
