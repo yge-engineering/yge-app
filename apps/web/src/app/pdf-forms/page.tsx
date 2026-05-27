@@ -80,6 +80,48 @@ export default async function PdfFormsPage({
           <Tile label={t('pdfForms.tile.drafts')} value={String(rollup.draftCount)} tone="warn" />
         </section>
 
+        {/* Filter chips. When draftCount > 0 the "Show review queue"
+         *  chip jumps to ?reviewed=false so Ryan or the office can
+         *  burn down the unreviewed list one form at a time without
+         *  scrolling past the already-reviewed ones. */}
+        {rollup.total > 0 && (
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+            <span className="text-gray-500">Filter:</span>
+            <Link
+              href="/pdf-forms"
+              className={`rounded border px-2 py-1 font-medium ${
+                !searchParams.reviewed
+                  ? 'border-yge-blue-500 bg-yge-blue-500 text-white'
+                  : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              All ({rollup.total})
+            </Link>
+            <Link
+              href="/pdf-forms?reviewed=true"
+              className={`rounded border px-2 py-1 font-medium ${
+                searchParams.reviewed === 'true'
+                  ? 'border-green-500 bg-green-500 text-white'
+                  : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              ✓ Reviewed ({rollup.reviewedCount})
+            </Link>
+            <Link
+              href="/pdf-forms?reviewed=false"
+              className={`rounded border px-2 py-1 font-medium ${
+                searchParams.reviewed === 'false'
+                  ? 'border-amber-500 bg-amber-500 text-white'
+                  : rollup.draftCount > 0
+                    ? 'border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100'
+                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              ⚠ Review queue ({rollup.draftCount})
+            </Link>
+          </div>
+        )}
+
         {mappings.length === 0 ? (
           <Alert tone="info" className="mt-6">
             {t('pdfForms.empty')}
