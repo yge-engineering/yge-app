@@ -27,6 +27,7 @@ import {
 } from '../../../components';
 import { PdfFormPromptForm } from '@/components/pdf-form-prompt-form';
 import { MarkPdfFormReviewedButton } from '@/components/mark-pdf-form-reviewed';
+import { PrintButton } from '../../../components/print-button';
 import {
   buildFillReport,
   type MasterProfile,
@@ -93,9 +94,15 @@ export default async function PdfFormFillPage({
           <Link href="/pdf-forms" className="text-sm text-yge-blue-500 hover:underline">
             {t('pdfFormPg.back')}
           </Link>
-          <Link href="/master-profile" className="text-xs text-yge-blue-500 hover:underline">
-            {t('pdfFormPg.masterProfileLink')}
-          </Link>
+          <div className="flex items-center gap-3">
+            <PrintButton label="Print field checklist" />
+            <Link
+              href="/master-profile"
+              className="text-xs text-yge-blue-500 hover:underline"
+            >
+              {t('pdfFormPg.masterProfileLink')}
+            </Link>
+          </div>
         </div>
 
         <PageHeader
