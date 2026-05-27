@@ -87,6 +87,7 @@ export const PROFILE_PATH_TO_SNAPSHOT_KEY: Record<
   keyof ExtensionProfileSnapshot
 > = {
   legalName: 'legalName',
+  shortName: 'shortName',
   cslbLicense: 'cslbLicense',
   cslbClassifications: 'cslbClassifications',
   dirNumber: 'dirNumber',

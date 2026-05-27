@@ -61,6 +61,18 @@ export const FIELD_PATTERNS = [
     ],
   },
   {
+    profilePath: 'shortName',
+    patterns: [
+      'short name',
+      'dba',
+      'd/b/a',
+      'doing business as',
+      'trade name',
+      'abbreviated name',
+      'company short',
+    ],
+  },
+  {
     profilePath: 'dirNumber',
     patterns: [
       'dir number',

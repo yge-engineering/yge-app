@@ -225,6 +225,7 @@
         // patterns without updating the lookup map.
         const map = {
           legalName: 'legalName',
+          shortName: 'shortName',
           cslbLicense: 'cslbLicense',
           cslbClassifications: 'cslbClassifications',
           dirNumber: 'dirNumber',
