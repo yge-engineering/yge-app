@@ -658,6 +658,70 @@ const CA_IRAN_CONTRACTING_ACT: SeedMapping = {
   ],
 };
 
+// ---- CA Drug-Free Workplace Certification (Gov Code §8350-8357) ------
+
+const CA_DRUG_FREE_WORKPLACE: SeedMapping = {
+  id: 'pdf-form-ca-drug-free-workplace',
+  displayName: 'CA Drug-Free Workplace Certification (Gov Code §8350)',
+  agency: 'CA_DGS',
+  formCode: 'DFW-8350',
+  pdfReference: 'pdf-forms/ca/drug-free-workplace.pdf',
+  notes:
+    'Required on every CA agency contract or grant per Gov Code §8350-8357. YGE certifies it maintains a drug-free workplace per the statute: published policy, employee notice, awareness program, post-conviction reporting. Single signature, no notarization.',
+  fields: [
+    f({ id: 'pdf-fld-dfw-contractor-name', pdfFieldName: 'ContractorName', label: 'Contractor name', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'legalName' } }),
+    f({ id: 'pdf-fld-dfw-address', pdfFieldName: 'ContractorAddress', label: 'Contractor address', kind: 'TEXT', required: true,
+        source: { kind: 'computed', name: 'profile.address.oneLine' } }),
+    f({ id: 'pdf-fld-dfw-project-name', pdfFieldName: 'ProjectName', label: 'Project / contract name', kind: 'TEXT', required: true,
+        source: { kind: 'prompt', label: 'Project / contract name', sensitive: false } }),
+    f({ id: 'pdf-fld-dfw-cert-published', pdfFieldName: 'PublishedStatement', label: 'Published statement notifying employees', kind: 'CHECKBOX', required: true,
+        source: { kind: 'literal', value: 'true' }, truthyValue: 'Yes' }),
+    f({ id: 'pdf-fld-dfw-cert-program', pdfFieldName: 'AwarenessProgram', label: 'Established drug-free awareness program', kind: 'CHECKBOX', required: true,
+        source: { kind: 'literal', value: 'true' }, truthyValue: 'Yes' }),
+    f({ id: 'pdf-fld-dfw-cert-notify', pdfFieldName: 'EmployeeNoticeProcess', label: 'Employee notice / post-conviction reporting', kind: 'CHECKBOX', required: true,
+        source: { kind: 'literal', value: 'true' }, truthyValue: 'Yes' }),
+    f({ id: 'pdf-fld-dfw-signature', pdfFieldName: 'Signature', label: 'Authorized signer', kind: 'SIGNATURE', required: true,
+        source: { kind: 'computed', name: 'profile.officers.vp.signature' } }),
+    f({ id: 'pdf-fld-dfw-title', pdfFieldName: 'SignerTitle', label: 'Title', kind: 'TEXT', required: true,
+        source: { kind: 'literal', value: 'Vice President' } }),
+    f({ id: 'pdf-fld-dfw-date', pdfFieldName: 'Date', label: 'Date', kind: 'DATE', required: true,
+        source: { kind: 'computed', name: 'date.today.us' } }),
+  ],
+};
+
+// ---- CA Workers Comp Certification (Labor Code §1861) -----------------
+
+const CA_WORKERS_COMP_AFFIDAVIT: SeedMapping = {
+  id: 'pdf-form-ca-workers-comp-affidavit',
+  displayName: 'CA Workers Comp Certification (Labor Code §1861)',
+  agency: 'CA_DGS',
+  formCode: 'WC-1861',
+  pdfReference: 'pdf-forms/ca/workers-comp-1861.pdf',
+  notes:
+    'Required on every CA public-works contract per Labor Code §3700 + §1861. YGE certifies it carries workers comp covering all employees on the work. Pulls the WC carrier + policy from the master profile.',
+  fields: [
+    f({ id: 'pdf-fld-wc-contractor-name', pdfFieldName: 'ContractorName', label: 'Contractor name', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'legalName' } }),
+    f({ id: 'pdf-fld-wc-cslb', pdfFieldName: 'CslbLicense', label: 'CSLB license #', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'cslbLicense' } }),
+    f({ id: 'pdf-fld-wc-carrier', pdfFieldName: 'WcCarrierName', label: 'WC carrier', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'insurance.WORKERS_COMP.carrierName' } }),
+    f({ id: 'pdf-fld-wc-policy', pdfFieldName: 'WcPolicyNumber', label: 'WC policy #', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'insurance.WORKERS_COMP.policyNumber' } }),
+    f({ id: 'pdf-fld-wc-expiry', pdfFieldName: 'WcExpiry', label: 'WC policy expiry', kind: 'DATE', required: true,
+        source: { kind: 'profile-path', path: 'insurance.WORKERS_COMP.expiresOn' } }),
+    f({ id: 'pdf-fld-wc-project', pdfFieldName: 'ProjectName', label: 'Project name', kind: 'TEXT', required: true,
+        source: { kind: 'prompt', label: 'Project name', sensitive: false } }),
+    f({ id: 'pdf-fld-wc-signature', pdfFieldName: 'Signature', label: 'Authorized signer', kind: 'SIGNATURE', required: true,
+        source: { kind: 'computed', name: 'profile.officers.vp.signature' } }),
+    f({ id: 'pdf-fld-wc-title', pdfFieldName: 'SignerTitle', label: 'Title', kind: 'TEXT', required: true,
+        source: { kind: 'literal', value: 'Vice President' } }),
+    f({ id: 'pdf-fld-wc-date', pdfFieldName: 'Date', label: 'Date', kind: 'DATE', required: true,
+        source: { kind: 'computed', name: 'date.today.us' } }),
+  ],
+};
+
 const SEEDS: SeedMapping[] = [
   IRS_W9,
   DIR_DAS_140,
@@ -676,6 +740,8 @@ const SEEDS: SeedMapping[] = [
   ACORD_855,
   CA_NON_COLLUSION_AFFIDAVIT,
   CA_IRAN_CONTRACTING_ACT,
+  CA_DRUG_FREE_WORKPLACE,
+  CA_WORKERS_COMP_AFFIDAVIT,
 ];
 
 /**
