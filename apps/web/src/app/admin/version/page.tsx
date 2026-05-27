@@ -111,6 +111,7 @@ export default async function VersionPage() {
             </header>
             {apiVersion ? (
               <dl className="space-y-1 text-sm">
+                <Row label="Base URL" value={apiBaseUrl()} mono />
                 <Row label="Build SHA" value={apiVersion.buildSha ?? 'unknown'} mono />
                 <Row
                   label="Build timestamp"
