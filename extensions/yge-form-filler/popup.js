@@ -87,16 +87,31 @@ const DEFAULT_API_URL = 'https://api.youngge.com';
     const cachedAt = cache['yge.profileSnapshot.cachedAt'];
     if (typeof cachedAt !== 'number') {
       ageEl.textContent = 'no snapshot cached yet';
+      ageEl.style.color = '#9ca3af';
       return;
     }
     const ms = Date.now() - cachedAt;
     const secs = Math.floor(ms / 1000);
-    if (secs < 60) {
-      ageEl.textContent = `snapshot ${secs}s old`;
-    } else {
-      const mins = Math.floor(secs / 60);
-      ageEl.textContent = `snapshot ${mins}m old`;
-    }
+    const mins = Math.floor(secs / 60);
+    const hours = Math.floor(mins / 60);
+    const days = Math.floor(hours / 24);
+
+    // Human-readable age label. Lazy-fetch model (15-min TTL only
+    // applies on next form-page visit), so age can grow large
+    // between sessions — show days/hours/minutes appropriately.
+    let label;
+    if (secs < 60) label = `snapshot ${secs}s old`;
+    else if (mins < 60) label = `snapshot ${mins}m old`;
+    else if (hours < 24) label = `snapshot ${hours}h old`;
+    else label = `snapshot ${days}d old`;
+    ageEl.textContent = label;
+
+    // Color hint — master profile rarely changes so we are
+    // permissive: under a day is gray, a day to a week is amber,
+    // a week+ is red and the user should explicitly refresh.
+    if (days >= 7) ageEl.style.color = '#dc2626';
+    else if (hours >= 24) ageEl.style.color = '#d97706';
+    else ageEl.style.color = '#9ca3af';
   }
 
   await refreshSnapshotAge();
