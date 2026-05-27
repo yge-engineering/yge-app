@@ -722,6 +722,43 @@ const CA_WORKERS_COMP_AFFIDAVIT: SeedMapping = {
   ],
 };
 
+// ---- CalRecycle Recycled Content Certification (PCC §12200) ----------
+
+const CALRECYCLE_RECYCLED_CONTENT: SeedMapping = {
+  id: 'pdf-form-calrecycle-recycled-content',
+  displayName: 'CalRecycle Recycled-Content Certification (PCC §12200)',
+  agency: 'CA_DGS',
+  formCode: 'CIWMB-74',
+  pdfReference: 'pdf-forms/ca/calrecycle-recycled-content.pdf',
+  agencyUrl: 'https://calrecycle.ca.gov/buyrecycled/sabrcprogram/',
+  notes:
+    'CA Public Contract Code §12200-12217 requires every state contract or purchase order to certify the recycled content of paper / plastic / glass / lubricants supplied. YGE typically certifies "no SABRC-eligible materials supplied" on civil-construction bids; the form still has to be on file.',
+  fields: [
+    f({ id: 'pdf-fld-rcc-contractor-name', pdfFieldName: 'ContractorName', label: 'Contractor name', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'legalName' } }),
+    f({ id: 'pdf-fld-rcc-address', pdfFieldName: 'Address', label: 'Address', kind: 'TEXT', required: true,
+        source: { kind: 'computed', name: 'profile.address.oneLine' } }),
+    f({ id: 'pdf-fld-rcc-phone', pdfFieldName: 'Phone', label: 'Phone', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'primaryPhone' } }),
+    f({ id: 'pdf-fld-rcc-cslb', pdfFieldName: 'CslbLicense', label: 'CSLB license #', kind: 'TEXT',
+        source: { kind: 'profile-path', path: 'cslbLicense' } }),
+    f({ id: 'pdf-fld-rcc-contract-num', pdfFieldName: 'ContractNumber', label: 'Contract / project #', kind: 'TEXT', required: true,
+        source: { kind: 'prompt', label: 'Contract / project #', sensitive: false } }),
+    f({ id: 'pdf-fld-rcc-product-type', pdfFieldName: 'ProductType', label: 'Product type', kind: 'TEXT', required: true,
+        source: { kind: 'prompt', label: 'Product type (or "no SABRC-eligible materials supplied")', sensitive: false, hint: 'Civil construction bids typically list nothing here.' } }),
+    f({ id: 'pdf-fld-rcc-postconsumer-pct', pdfFieldName: 'PostConsumerPct', label: 'Post-consumer recycled content %', kind: 'TEXT',
+        source: { kind: 'prompt', label: 'Post-consumer recycled content %', sensitive: false } }),
+    f({ id: 'pdf-fld-rcc-secondary-pct', pdfFieldName: 'SecondaryRecycledPct', label: 'Secondary recycled %', kind: 'TEXT',
+        source: { kind: 'prompt', label: 'Secondary recycled content %', sensitive: false } }),
+    f({ id: 'pdf-fld-rcc-signature', pdfFieldName: 'Signature', label: 'Authorized signer', kind: 'SIGNATURE', required: true,
+        source: { kind: 'computed', name: 'profile.officers.vp.signature' } }),
+    f({ id: 'pdf-fld-rcc-title', pdfFieldName: 'SignerTitle', label: 'Title', kind: 'TEXT', required: true,
+        source: { kind: 'literal', value: 'Vice President' } }),
+    f({ id: 'pdf-fld-rcc-date', pdfFieldName: 'Date', label: 'Date', kind: 'DATE', required: true,
+        source: { kind: 'computed', name: 'date.today.us' } }),
+  ],
+};
+
 const SEEDS: SeedMapping[] = [
   IRS_W9,
   DIR_DAS_140,
@@ -742,6 +779,7 @@ const SEEDS: SeedMapping[] = [
   CA_IRAN_CONTRACTING_ACT,
   CA_DRUG_FREE_WORKPLACE,
   CA_WORKERS_COMP_AFFIDAVIT,
+  CALRECYCLE_RECYCLED_CONTENT,
 ];
 
 /**
