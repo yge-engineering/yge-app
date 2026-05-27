@@ -13,6 +13,7 @@
 
 import Link from 'next/link';
 import { AppShell, PageHeader } from '../../../components';
+import { PrintButton } from '../../../components/print-button';
 import { requirePermission } from '../../../lib/permissions';
 
 function apiBaseUrl(): string {
@@ -67,6 +68,9 @@ export default async function VersionPage() {
   return (
     <AppShell>
       <main className="mx-auto max-w-3xl p-6 sm:p-8">
+        <div className="mb-2 flex justify-end print:hidden">
+          <PrintButton label="Print version info" />
+        </div>
         <PageHeader
           title="Build + version info"
           subtitle="Use when you need to confirm which deploy is live. Web side is server-rendered; API side is live-fetched on every page load."
