@@ -78,6 +78,20 @@ export const SCOPE_KEYWORD_DICTIONARY = [
   'mastication',
   'burn-pile',
   'fuel-break',
+  // Bundle 2687: seed-aligned terms. The YGE_JOB_HISTORY_SEED
+  // templates use these phrasings; without them in the
+  // dictionary the matcher couldn't extract them from draft
+  // text, so drafts that mentioned 'grubbing' or 'overlay'
+  // missed an obvious match against the road/grading templates.
+  'access-road',
+  'backfill',
+  'dust-control',
+  'grubbing',
+  'mass-excavation',
+  'overlay',
+  'reseeding',
+  'slash-treatment',
+  'surveying',
 ] as const;
 
 export type ScopeKeyword = (typeof SCOPE_KEYWORD_DICTIONARY)[number];
