@@ -76,14 +76,21 @@
     }));
   }
 
+  // Last-fill journal — stores the original (empty) value for
+  // every field we wrote on the current page. Lets the popup
+  // offer an "Undo last fill" affordance until the user
+  // navigates away.
+  window.YGE_LAST_FILL = window.YGE_LAST_FILL ?? [];
+
   function writeValue(el, value) {
     // Skip empty values + fields the user already filled.
     if (typeof value !== 'string' || value.length === 0) return false;
     if (el.value && el.value.trim().length > 0) return false;
+    const prevValue = el.value;
     el.value = value;
     el.dispatchEvent(new Event('input', { bubbles: true }));
     el.dispatchEvent(new Event('change', { bubbles: true }));
-    return true;
+    return { ok: true, prev: prevValue };
   }
 
   function fillAll(classified, snapshot) {
@@ -91,16 +98,40 @@
     if (typeof lookup !== 'function') return { filled: 0, skipped: 0 };
     let filled = 0;
     let skipped = 0;
+    const journal = [];
     for (const item of classified) {
       if (!item.profilePath) {
         skipped += 1;
         continue;
       }
       const value = lookup(snapshot, item.profilePath);
-      if (writeValue(item.el, value)) filled += 1;
-      else skipped += 1;
+      const result = writeValue(item.el, value);
+      if (result && result.ok) {
+        filled += 1;
+        journal.push({ el: item.el, prev: result.prev });
+      } else {
+        skipped += 1;
+      }
     }
+    // Append to existing journal so multiple fill clicks
+    // accumulate; undo reverses the whole accumulated set.
+    window.YGE_LAST_FILL = window.YGE_LAST_FILL.concat(journal);
     return { filled, skipped };
+  }
+
+  function undoLastFill() {
+    const journal = window.YGE_LAST_FILL ?? [];
+    let undone = 0;
+    for (const entry of journal) {
+      if (entry.el && entry.el.isConnected) {
+        entry.el.value = entry.prev ?? '';
+        entry.el.dispatchEvent(new Event('input', { bubbles: true }));
+        entry.el.dispatchEvent(new Event('change', { bubbles: true }));
+        undone += 1;
+      }
+    }
+    window.YGE_LAST_FILL = [];
+    return { undone };
   }
 
   // ---- Bootstrap ----------------------------------------------------------
@@ -192,8 +223,13 @@
         'fillable.',
       );
 
-      // Listen for the popup's fill-now message.
+      // Listen for popup messages: fill-now / undo-last-fill.
       chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+        if (msg && msg.type === 'undo-last-fill') {
+          const result = undoLastFill();
+          sendResponse({ ok: true, ...result });
+          return false;
+        }
         if (msg && msg.type === 'fill-now') {
           chrome.runtime
             .sendMessage({ type: 'fetch-profile-snapshot' })

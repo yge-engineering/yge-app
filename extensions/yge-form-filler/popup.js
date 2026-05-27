@@ -106,6 +106,8 @@ const DEFAULT_API_URL = 'https://api.youngge.com';
     fieldSummaryEl.textContent =
       `${scan.fieldCount} form element(s)\n${scan.fillableCount} fillable from master profile`;
   }
+  const undoBtn = document.getElementById('undo-btn');
+
   if (fillBtn && scan.fillableCount > 0) {
     fillBtn.disabled = false;
     fillBtn.addEventListener('click', async () => {
@@ -117,6 +119,9 @@ const DEFAULT_API_URL = 'https://api.youngge.com';
           if (statusEl) {
             statusEl.className = 'status ok';
             statusEl.textContent = `✓ Filled ${reply.filled} field(s), skipped ${reply.skipped}.`;
+          }
+          if (undoBtn && reply.filled > 0) {
+            undoBtn.style.display = 'block';
           }
         } else {
           if (statusEl) {
@@ -132,6 +137,44 @@ const DEFAULT_API_URL = 'https://api.youngge.com';
             'Failed: ' + (err instanceof Error ? err.message : 'unknown');
         }
         fillBtn.disabled = false;
+      }
+    });
+  }
+
+  // Show undo button if there's already a fill journal from a
+  // previous popup open (filled in another popup session,
+  // page wasn't navigated).
+  if (undoBtn) {
+    try {
+      const journal = await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: () => (window.YGE_LAST_FILL ?? []).length,
+      });
+      if ((journal?.[0]?.result ?? 0) > 0) {
+        undoBtn.style.display = 'block';
+      }
+    } catch {}
+    undoBtn.addEventListener('click', async () => {
+      undoBtn.disabled = true;
+      try {
+        const reply = await chrome.tabs.sendMessage(tab.id, {
+          type: 'undo-last-fill',
+        });
+        if (reply && reply.ok) {
+          if (statusEl) {
+            statusEl.className = 'status ok';
+            statusEl.textContent = `✓ Reverted ${reply.undone} field(s).`;
+          }
+          undoBtn.style.display = 'none';
+          if (fillBtn) fillBtn.disabled = false;
+        }
+      } catch (err) {
+        if (statusEl) {
+          statusEl.className = 'status err';
+          statusEl.textContent =
+            'Undo failed: ' + (err instanceof Error ? err.message : 'unknown');
+        }
+        undoBtn.disabled = false;
       }
     });
   }
