@@ -110,6 +110,24 @@ const TOPICS: Topic[] = [
       </>
     ),
   },
+  {
+    heading: 'What is the "Extension snapshot" tile?',
+    body: (
+      <>
+        Counts populated vs empty fields in the snapshot the
+        extension auto-fills from. Renders on{' '}
+        <Link href="/master-profile" className="text-yge-blue-700 hover:underline">/master-profile</Link>,{' '}
+        <Link href="/dashboard/lite" className="text-yge-blue-700 hover:underline">/dashboard/lite</Link>,{' '}
+        <Link href="/go-live" className="text-yge-blue-700 hover:underline">/go-live</Link>,
+        on every saved draft, and on every bid-day cockpit.
+        Tone: green = all populated · gray = 1-3 empty · amber =
+        4+ empty. When amber, the tile lists which fields are
+        empty — edit{' '}
+        <code className="rounded bg-gray-100 px-1 py-0.5 text-xs font-mono">packages/shared/src/company.ts</code>
+        {' '}or the live master profile to fill them.
+      </>
+    ),
+  },
 ];
 
 export default function AdminHelpPage() {
