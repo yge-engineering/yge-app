@@ -113,6 +113,58 @@ export const YGE_JOB_HISTORY_SEED: ReadonlyArray<HistoricalJob> = [
       'TEMPLATE — replace bid/actual with real numbers and flip outcome to "won". Drainage jobs almost always need pipe bedding (Class 2 AB) called out as a separate pay line. Energy dissipator riprap downstream of the culvert outlet is the most-missed item.',
     bidAt: '2024-09-15',
   },
+
+  {
+    id: 'template-fuel-reduction',
+    projectName: 'TEMPLATE — replace with a real CAL FIRE / fuel-reduction job',
+    ownerAgency: 'CAL FIRE',
+    projectType: 'FIRE_FUEL_REDUCTION',
+    scopeKeywords: [
+      'mastication',
+      'slash-treatment',
+      'burn-piles',
+      'fuel-break',
+      'reseeding',
+      'erosion-control',
+      'biological-monitor',
+      'access-road',
+    ],
+    countyName: 'shasta',
+    bidTotalCents: 480_000_00,
+    actualCostCents: 545_000_00,  // came in 13.5% over (slash treatment underbid)
+    outcome: 'unknown',
+    awardSpread: null,
+    notesForFuture:
+      'TEMPLATE — replace bid/actual with real numbers and flip outcome to "won". CAL FIRE fuel-reduction work — per-acre prices look round but slash treatment + burn pile permit fees + biological monitor add up. 20-day burn mop-up is real money. WUI projects need green-waste haul instead of on-site burning.',
+    bidAt: '2024-04-20',
+  },
+
+  {
+    id: 'template-mass-grading',
+    projectName: 'TEMPLATE — replace with a real grading / pad-prep job',
+    ownerAgency: 'City of Redding',
+    projectType: 'GRADING',
+    scopeKeywords: [
+      'clearing',
+      'grubbing',
+      'topsoil',
+      'mass-excavation',
+      'import-fill',
+      'compaction',
+      'subgrade',
+      'dust-control',
+      'demolition',
+      'surveying',
+    ],
+    countyName: 'shasta',
+    bidTotalCents: 1_100_000_00,
+    actualCostCents: 1_080_000_00,  // came in 1.8% under
+    outcome: 'unknown',
+    awardSpread: null,
+    notesForFuture:
+      'TEMPLATE — replace bid/actual with real numbers and flip outcome to "won". City pad-prep jobs. Dust control (AQMD water truck) is a daily line that adds up on long grading schedules. Subgrade prep (scarify + recompact + moisture-condition) is often a separate pay item from the mass excavation lines.',
+    bidAt: '2024-07-10',
+  },
 ];
 
 // Helper for the panel: pull lowercased scope keywords out of a
