@@ -87,6 +87,40 @@
     if (typeof value !== 'string' || value.length === 0) return false;
     if (el.value && el.value.trim().length > 0) return false;
     const prevValue = el.value;
+
+    if (el.tagName === 'SELECT') {
+      // For <select>, only set when one of the option values or
+      // labels matches the snapshot value (case-insensitive). If
+      // nothing matches, skip — never want to leave a select on
+      // a value that doesn't correspond to a real option.
+      const wanted = value.toLowerCase();
+      let matchedOption = null;
+      for (const opt of el.options) {
+        const optValue = (opt.value ?? '').toLowerCase();
+        const optText = (opt.textContent ?? '').toLowerCase().trim();
+        if (optValue === wanted || optText === wanted) {
+          matchedOption = opt;
+          break;
+        }
+      }
+      if (!matchedOption) {
+        // Try a softer match: state codes ("CA") often render as
+        // "California" in option text and vice versa.
+        for (const opt of el.options) {
+          const optText = (opt.textContent ?? '').toLowerCase().trim();
+          if (optText.startsWith(wanted) || wanted.startsWith(optText)) {
+            matchedOption = opt;
+            break;
+          }
+        }
+      }
+      if (!matchedOption) return false;
+      el.value = matchedOption.value;
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+      return { ok: true, prev: prevValue };
+    }
+
     el.value = value;
     el.dispatchEvent(new Event('input', { bubbles: true }));
     el.dispatchEvent(new Event('change', { bubbles: true }));
