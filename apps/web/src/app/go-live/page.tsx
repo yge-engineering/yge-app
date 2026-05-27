@@ -13,6 +13,7 @@
 import Link from 'next/link';
 
 import { AppShell, PageHeader } from '../../components';
+import { ExtensionSnapshotStatusTile } from '../../components/extension-snapshot-status-tile';
 import { MasterProfileExpiriesTile } from '../../components/master-profile-expiries-tile';
 import {
   YGE_BONDING_PROFILE,
@@ -115,6 +116,10 @@ export default async function GoLivePage() {
          *  below because an expired record still passes 'do we
          *  have one on file' but blocks real-bid use. */}
         <MasterProfileExpiriesTile />
+
+        {/* Counts populated snapshot fields. A near-empty snapshot
+         *  means the extension auto-fill won't help on bid forms. */}
+        <ExtensionSnapshotStatusTile />
 
         <section className={`mt-4 rounded-lg border p-4 ${overall.cls}`}>
           <div className="flex flex-wrap items-baseline justify-between gap-3">
