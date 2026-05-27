@@ -15,6 +15,7 @@ import Link from 'next/link';
 import { AppShell, PageHeader } from '../../components';
 import { ExtensionSnapshotStatusTile } from '../../components/extension-snapshot-status-tile';
 import { MasterProfileExpiriesTile } from '../../components/master-profile-expiries-tile';
+import { PrintButton } from '../../components/print-button';
 import {
   YGE_BONDING_PROFILE,
   YGE_INSURANCE_PROFILE,
@@ -106,6 +107,9 @@ export default async function GoLivePage() {
   return (
     <AppShell>
       <main className="mx-auto max-w-3xl p-6 sm:p-8">
+        <div className="mb-2 flex justify-end print:hidden">
+          <PrintButton label="Print readiness" />
+        </div>
         <PageHeader
           title="Go-live readiness"
           subtitle="Tenant data checklist for the app.youngge.com cutover. Different from /api-status (infrastructure health) — these checks are about whether YGE's specific data is populated enough to run a real bid."
