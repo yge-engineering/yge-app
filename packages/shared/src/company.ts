@@ -28,6 +28,10 @@ export interface CompanyInfo {
     city: string;
     state: string;
     zip: string;
+    /** California county where the contractor's HQ is located —
+     *  some bid forms ask for "Contractor's County of Residence"
+     *  separately from the city/zip. */
+    county?: string;
   };
   cslbLicense: string;
   /** CSLB license classifications — 'A' general engineering, 'C-12'
@@ -60,6 +64,7 @@ export const YGE_COMPANY_INFO: CompanyInfo = {
     city: 'Cottonwood',
     state: 'CA',
     zip: '96022',
+    county: 'Shasta',
   },
   cslbLicense: '1145219',
   cslbClassifications: ['A'],

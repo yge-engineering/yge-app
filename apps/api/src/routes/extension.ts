@@ -52,6 +52,7 @@ extensionRouter.get('/profile-snapshot', (_req, res) => {
     addressCity: c.address.city,
     addressState: c.address.state,
     addressZip: c.address.zip,
+    addressCounty: c.address.county,
 
     primaryPhone: c.vicePresident.phone,
     primaryEmail: c.vicePresident.email,

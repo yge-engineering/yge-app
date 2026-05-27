@@ -58,6 +58,9 @@ export const ExtensionProfileSnapshotSchema = z.object({
   addressCity: z.string(),
   addressState: z.string(),
   addressZip: z.string(),
+  /** California county where HQ is located. Some bid forms ask
+   *  for "Contractor's county of residence" separately. */
+  addressCounty: z.string().optional(),
 
   // ---- Contact ----
   primaryPhone: z.string(),
@@ -106,6 +109,7 @@ export const PROFILE_PATH_TO_SNAPSHOT_KEY: Record<
   'address.city': 'addressCity',
   'address.state': 'addressState',
   'address.zip': 'addressZip',
+  'address.county': 'addressCounty',
   primaryPhone: 'primaryPhone',
   primaryEmail: 'primaryEmail',
   'officers.president.name': 'presidentName',

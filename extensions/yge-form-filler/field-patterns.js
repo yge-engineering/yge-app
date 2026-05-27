@@ -138,6 +138,18 @@ export const FIELD_PATTERNS = [
     patterns: ['zip', 'zip code', 'postal code', 'zipcode', 'zip+4'],
   },
   {
+    profilePath: 'address.county',
+    patterns: [
+      'business county',
+      'contractor county',
+      'company county',
+      'principal county',
+      'county of residence',
+      'county of business',
+      'home county',
+    ],
+  },
+  {
     profilePath: 'primaryPhone',
     patterns: [
       'phone',

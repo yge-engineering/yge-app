@@ -26,6 +26,7 @@ const sample: ExtensionProfileSnapshot = {
   addressCity: 'Cottonwood',
   addressState: 'CA',
   addressZip: '96022',
+  addressCounty: 'Shasta',
   primaryPhone: '707-599-9921',
   primaryEmail: 'ryoung@youngge.com',
   websiteUrl: 'https://www.youngge.com',

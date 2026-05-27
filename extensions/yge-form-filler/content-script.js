@@ -240,6 +240,7 @@
           'address.city': 'addressCity',
           'address.state': 'addressState',
           'address.zip': 'addressZip',
+          'address.county': 'addressCounty',
           primaryPhone: 'primaryPhone',
           primaryEmail: 'primaryEmail',
           'officers.president.name': 'presidentName',
