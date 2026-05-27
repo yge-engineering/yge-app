@@ -36,6 +36,10 @@ export interface CompanyInfo {
   naicsCodes: string[];
   /** PSC (Federal Product Service Codes) for federal opportunities. */
   pscCodes: string[];
+  /** Public-facing website. Filled into bid forms that ask for
+   *  vendor URL (federal SAM forms, many county RFP cover sheets).
+   *  Optional because pre-go-live tenants may not have a site yet. */
+  websiteUrl?: string;
   president: CompanyContact;
   vicePresident: CompanyContact;
   /** Default validity window for outgoing bids, in days. CA agencies
@@ -58,6 +62,7 @@ export const YGE_COMPANY_INFO: CompanyInfo = {
   dotNumber: '4528204',
   naicsCodes: ['115310'],
   pscCodes: ['F003', 'F004'],
+  websiteUrl: 'https://youngge.com',
   president: {
     name: 'Brook L. Young',
     title: 'President',

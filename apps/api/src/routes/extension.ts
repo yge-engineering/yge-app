@@ -55,7 +55,7 @@ extensionRouter.get('/profile-snapshot', (_req, res) => {
 
     primaryPhone: c.vicePresident.phone,
     primaryEmail: c.vicePresident.email,
-    websiteUrl: undefined,
+    websiteUrl: c.websiteUrl,
 
     presidentName: c.president.name,
     presidentPhone: c.president.phone,
