@@ -71,6 +71,13 @@ export default async function ApiStatusPage() {
   const upCount = results.filter((r) => r.ok).length;
   const allUp = upCount === results.length;
   const noneUp = upCount === 0;
+  // Slowest probe time is more useful than total — probes run in
+  // parallel via Promise.all, so the page latency ≈ max(probe ms),
+  // not sum. Surfacing this catches "one slow probe" gracefully.
+  const slowestMs = results.reduce(
+    (max, r) => (r.ms > max ? r.ms : max),
+    0,
+  );
   const t = getTranslator();
 
   return (
@@ -131,6 +138,8 @@ export default async function ApiStatusPage() {
 
         <p className="mt-6 text-center text-xs text-gray-400">
           Checked at <span className="font-mono">{new Date().toISOString()}</span>
+          {' · slowest probe '}
+          <span className="font-mono">{slowestMs}ms</span>
           {' · '}
           {t('apiStatus.footerPrefix')}<Link href="/api-status" className="text-blue-700 hover:underline">{t('apiStatus.rerun')}</Link>
           {' · '}
