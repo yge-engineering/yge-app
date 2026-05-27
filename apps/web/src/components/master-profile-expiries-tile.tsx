@@ -1,8 +1,7 @@
 import * as React from 'react';
 import Link from 'next/link';
-import type { MasterProfile } from '@yge/shared';
+import { type MasterProfile, collectExpiringItems } from '@yge/shared';
 import { isNextInternalError } from '../lib/next-control-flow';
-import { collectExpiringItems } from '../lib/master-profile-expiry';
 
 // Master-profile expiries tile.
 //

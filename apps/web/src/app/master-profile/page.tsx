@@ -19,11 +19,11 @@ import { MasterProfileEditor } from '@/components/master-profile-editor';
 import { MasterProfileOfficersEditor } from '@/components/master-profile-officers-editor';
 import { MasterProfileInsuranceEditor } from '@/components/master-profile-insurance-editor';
 import { MasterProfileBondingEditor } from '@/components/master-profile-bonding-editor';
-import type { MasterProfile } from '@yge/shared';
 import {
+  type MasterProfile,
   collectExpiringItems,
   type ExpiringItem,
-} from '../../lib/master-profile-expiry';
+} from '@yge/shared';
 
 function apiBaseUrl(): string {
   return (
