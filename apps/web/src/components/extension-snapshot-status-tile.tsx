@@ -66,9 +66,15 @@ async function ExtensionSnapshotStatusTileInner(): Promise<React.ReactElement | 
         <h2 className="text-xs font-semibold uppercase tracking-wide">
           Extension snapshot
         </h2>
-        <span className="font-mono">
+        <a
+          href={`${apiBaseUrl()}/api/extension/profile-snapshot`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-mono underline-offset-2 hover:underline"
+          title="View raw snapshot JSON"
+        >
           {populated} / {total} fields populated
-        </span>
+        </a>
       </header>
       {empty > 0 && (
         <>
