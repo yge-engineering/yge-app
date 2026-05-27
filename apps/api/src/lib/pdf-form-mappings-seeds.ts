@@ -797,6 +797,53 @@ const FHWA_1273: SeedMapping = {
   ],
 };
 
+// ---- Shasta County Bidder Affidavit ------------------------------------
+//
+// Generic Shasta County public-works bidder affidavit — covers
+// contractor identity, license, bond + insurance acknowledgments,
+// debarment status. YGE's home county; expect to file this often.
+
+const SHASTA_COUNTY_BIDDER_AFFIDAVIT: SeedMapping = {
+  id: 'pdf-form-shasta-county-bidder-affidavit',
+  displayName: 'Shasta County Bidder Affidavit',
+  agency: 'COUNTY',
+  formCode: 'SHASTA-BID-AFFIDAVIT',
+  pdfReference: 'pdf-forms/county/shasta-bidder-affidavit.pdf',
+  agencyUrl: 'https://www.shastacounty.gov/public-works/page/bids-proposals',
+  notes:
+    'Required on every Shasta County public-works bid. Covers contractor identity + CSLB + DIR + debarment status declaration. YGE\'s home county; expect to file this often. Signature in front of a notary required for bids over the formal-advertising threshold.',
+  fields: [
+    f({ id: 'pdf-fld-shastacnty-bidder-name', pdfFieldName: 'BidderName', label: 'Bidder name (legal)', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'legalName' } }),
+    f({ id: 'pdf-fld-shastacnty-cslb', pdfFieldName: 'CslbLicense', label: 'CSLB license #', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'cslbLicense' } }),
+    f({ id: 'pdf-fld-shastacnty-cslb-classes', pdfFieldName: 'CslbClassifications', label: 'CSLB classifications', kind: 'TEXT',
+        source: { kind: 'profile-path', path: 'cslbClassifications' } }),
+    f({ id: 'pdf-fld-shastacnty-dir', pdfFieldName: 'DirRegistration', label: 'DIR registration #', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'dirNumber' } }),
+    f({ id: 'pdf-fld-shastacnty-address', pdfFieldName: 'BidderAddress', label: 'Bidder address', kind: 'TEXT', required: true,
+        source: { kind: 'computed', name: 'profile.address.oneLine' } }),
+    f({ id: 'pdf-fld-shastacnty-phone', pdfFieldName: 'Phone', label: 'Phone', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'primaryPhone' } }),
+    f({ id: 'pdf-fld-shastacnty-email', pdfFieldName: 'Email', label: 'Email', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'primaryEmail' } }),
+    f({ id: 'pdf-fld-shastacnty-project', pdfFieldName: 'ProjectName', label: 'Project name', kind: 'TEXT', required: true,
+        source: { kind: 'prompt', label: 'Project name', sensitive: false } }),
+    f({ id: 'pdf-fld-shastacnty-project-num', pdfFieldName: 'ProjectNumber', label: 'County project #', kind: 'TEXT',
+        source: { kind: 'prompt', label: 'County project # (per bid notice)', sensitive: false } }),
+    f({ id: 'pdf-fld-shastacnty-not-debarred', pdfFieldName: 'NotDebarred', label: 'Not debarred or suspended', kind: 'CHECKBOX', required: true,
+        source: { kind: 'literal', value: 'true' }, truthyValue: 'Yes' }),
+    f({ id: 'pdf-fld-shastacnty-bid-bond-on-file', pdfFieldName: 'BidBondOnFile', label: 'Bid bond / cashier\'s check enclosed', kind: 'CHECKBOX', required: true,
+        source: { kind: 'literal', value: 'true' }, truthyValue: 'Yes' }),
+    f({ id: 'pdf-fld-shastacnty-signature', pdfFieldName: 'Signature', label: 'Authorized signer', kind: 'SIGNATURE', required: true,
+        source: { kind: 'computed', name: 'profile.officers.vp.signature' } }),
+    f({ id: 'pdf-fld-shastacnty-title', pdfFieldName: 'SignerTitle', label: 'Title', kind: 'TEXT', required: true,
+        source: { kind: 'literal', value: 'Vice President' } }),
+    f({ id: 'pdf-fld-shastacnty-date', pdfFieldName: 'Date', label: 'Date', kind: 'DATE', required: true,
+        source: { kind: 'computed', name: 'date.today.us' } }),
+  ],
+};
+
 const SEEDS: SeedMapping[] = [
   IRS_W9,
   DIR_DAS_140,
@@ -819,6 +866,7 @@ const SEEDS: SeedMapping[] = [
   CA_WORKERS_COMP_AFFIDAVIT,
   CALRECYCLE_RECYCLED_CONTENT,
   FHWA_1273,
+  SHASTA_COUNTY_BIDDER_AFFIDAVIT,
 ];
 
 /**
