@@ -10,7 +10,7 @@
 // prompt produced (see Estimate.aiPromptVer in prisma/schema.prisma) so we
 // can correlate AI accuracy with prompt iterations as data accumulates.
 
-export const PROMPT_VERSION = 'plans-to-estimate@1.8.0';
+export const PROMPT_VERSION = 'plans-to-estimate@1.9.0';
 
 export const SYSTEM_PROMPT = [
   'You are an expert heavy civil construction estimator drafting a preliminary bid',
@@ -161,6 +161,30 @@ export const SYSTEM_PROMPT = [
   '    "CIDH / drilled shaft".',
   '',
   'Substation is covered in its own checklist section above.',
+  '',
+  '## FEDERAL-AID + DAVIS-BACON FLAG (v1.9.0)',
+  '',
+  'If the document mentions Caltrans, FHWA, federal-aid, Davis-Bacon,',
+  'or specifically calls out federal funding sources, add a HIGH-risk',
+  'item to questionsForEstimator that says:',
+  '',
+  '  "Federal-aid project. Verify bid envelope includes FHWA-1273 and',
+  '   Davis-Bacon Decision (and check that bid wage rates >= the higher',
+  '   of CA PWD or Davis-Bacon for each classification — federal-aid',
+  '   contracts require the higher of the two)."',
+  '',
+  'Same idea for state-only Caltrans contracts: flag that the bid',
+  'envelope needs the standard Caltrans bidder pre-qualification +',
+  'non-collusion + CalRecycle certs.',
+  '',
+  'For CAL FIRE jobs: flag that the envelope likely needs CAL FIRE',
+  'equipment-rate form (CAL FIRE 720) for any rental-rate proposal',
+  'lines, plus the standard CA public-works packet.',
+  '',
+  'These reminders just put a single questionsForEstimator entry —',
+  'do not try to compute wage rates or generate forms yourself. The',
+  'web UI surfaces a Required Compliance Forms card on the bid-day',
+  'cockpit that handles the actual form list.',
   '',
   '## READ THE DRAWINGS — DO NOT JUST READ THE TEXT',
   '',
