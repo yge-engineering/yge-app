@@ -218,12 +218,22 @@
         snapshot,
         profilePath,
       ) {
+        // Mirror of PROFILE_PATH_TO_SNAPSHOT_KEY in
+        // packages/shared/src/extension-profile-snapshot.ts. Keep
+        // in sync when adding new field-patterns; bundle 2663
+        // re-aligned this after bundle 2656 added classifier
+        // patterns without updating the lookup map.
         const map = {
           legalName: 'legalName',
           cslbLicense: 'cslbLicense',
           dirNumber: 'dirNumber',
           dotNumber: 'dotNumber',
           federalEin: 'federalEin',
+          naicsCodes: 'naicsCodes',
+          pscCodes: 'pscCodes',
+          caMcpNumber: 'caMcpNumber',
+          caEntityNumber: 'caEntityNumber',
+          websiteUrl: 'websiteUrl',
           'address.street': 'addressStreet',
           'address.city': 'addressCity',
           'address.state': 'addressState',

@@ -42,6 +42,11 @@ extensionRouter.get('/profile-snapshot', (_req, res) => {
     naicsCodes: c.naicsCodes.join(', '),
     pscCodes: c.pscCodes.join(', '),
 
+    // CA-specific identifiers — not on the static YGE_COMPANY_INFO
+    // export yet. Will fill from DB master-profile when that ships.
+    caMcpNumber: undefined,
+    caEntityNumber: undefined,
+
     addressOneLine: formatCompanyAddressOneLine(c),
     addressStreet: c.address.street,
     addressCity: c.address.city,

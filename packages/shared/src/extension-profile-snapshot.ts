@@ -46,6 +46,12 @@ export const ExtensionProfileSnapshotSchema = z.object({
   naicsCodes: z.string(),  // joined "115310"
   pscCodes: z.string(),    // joined "F003, F004"
 
+  // ---- California-specific identifiers ----
+  /** CA Motor Carrier Permit number — fills heavy-haul forms. */
+  caMcpNumber: z.string().optional(),
+  /** CA Secretary of State entity number — fills CA bidder forms. */
+  caEntityNumber: z.string().optional(),
+
   // ---- Address ----
   addressOneLine: z.string(),
   addressStreet: z.string(),
@@ -85,6 +91,11 @@ export const PROFILE_PATH_TO_SNAPSHOT_KEY: Record<
   dirNumber: 'dirNumber',
   dotNumber: 'dotNumber',
   federalEin: 'federalEin',
+  naicsCodes: 'naicsCodes',
+  pscCodes: 'pscCodes',
+  caMcpNumber: 'caMcpNumber',
+  caEntityNumber: 'caEntityNumber',
+  websiteUrl: 'websiteUrl',
   'address.street': 'addressStreet',
   'address.city': 'addressCity',
   'address.state': 'addressState',
