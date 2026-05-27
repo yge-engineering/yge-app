@@ -37,6 +37,44 @@ async function fetchSnapshot(): Promise<ExtensionProfileSnapshot | null> {
 // we exclude them from the denominator.
 const NON_FILL_FIELDS = new Set(['schemaVersion', 'generatedAt']);
 
+// Human-readable labels for snapshot field names. Showing
+// "Federal EIN" beats "federalEin" when listing empties to the
+// user. Falls back to the raw key for unknown fields.
+const FIELD_LABELS: Record<string, string> = {
+  legalName: 'Legal name',
+  shortName: 'Short name / DBA',
+  federalEin: 'Federal EIN',
+  cslbLicense: 'CSLB license',
+  cslbClassifications: 'CSLB classifications',
+  dirNumber: 'DIR registration',
+  dotNumber: 'USDOT',
+  naicsCodes: 'NAICS codes',
+  pscCodes: 'PSC codes',
+  caMcpNumber: 'CA MCP number',
+  caEntityNumber: 'CA SOS entity number',
+  websiteUrl: 'Website URL',
+  addressOneLine: 'Address (one line)',
+  addressStreet: 'Address street',
+  addressCity: 'Address city',
+  addressState: 'Address state',
+  addressZip: 'Address ZIP',
+  addressCounty: 'Address county',
+  primaryPhone: 'Primary phone',
+  primaryEmail: 'Primary email',
+  presidentName: 'President name',
+  presidentTitle: 'President title',
+  presidentPhone: 'President phone',
+  presidentEmail: 'President email',
+  vpName: 'VP name',
+  vpTitle: 'VP title',
+  vpPhone: 'VP phone',
+  vpEmail: 'VP email',
+};
+
+function labelFor(field: string): string {
+  return FIELD_LABELS[field] ?? field;
+}
+
 async function ExtensionSnapshotStatusTileInner(): Promise<React.ReactElement | null> {
   const snapshot = await fetchSnapshot();
   if (!snapshot) return null;
@@ -86,8 +124,8 @@ async function ExtensionSnapshotStatusTileInner(): Promise<React.ReactElement | 
             </code>{' '}
             to populate.
           </p>
-          <p className="mt-1 font-mono opacity-80">
-            Empty: {emptyFields.join(', ')}
+          <p className="mt-1 opacity-80">
+            Empty: {emptyFields.map(labelFor).join(', ')}
           </p>
         </>
       )}
