@@ -158,6 +158,55 @@ export const FIELD_PATTERNS = [
       'name (printed)',
     ],
   },
+  {
+    profilePath: 'naicsCodes',
+    patterns: [
+      'naics',
+      'naics code',
+      'naics number',
+      'naics classification',
+      'primary naics',
+    ],
+  },
+  {
+    profilePath: 'pscCodes',
+    patterns: [
+      'psc code',
+      'product service code',
+      'product or service code',
+    ],
+  },
+  {
+    profilePath: 'websiteUrl',
+    patterns: [
+      'website',
+      'web site',
+      'website url',
+      'website address',
+      'web address',
+      'company website',
+      'firm website',
+    ],
+  },
+  {
+    profilePath: 'caMcpNumber',
+    patterns: [
+      'ca mcp',
+      'mcp number',
+      'motor carrier permit',
+      'mcp #',
+    ],
+  },
+  {
+    profilePath: 'caEntityNumber',
+    patterns: [
+      'ca sos',
+      'sos entity',
+      'secretary of state entity',
+      'ca entity',
+      'sos number',
+    ],
+  },
 ];
 
 /** Given the assorted text labels for a field, return the
