@@ -27,6 +27,7 @@ import { ArCollectionsTile } from '../../../components/ar-collections-tile';
 import { RecentDraftsTile } from '../../../components/recent-drafts-tile';
 import { LostBidsTile } from '../../../components/lost-bids-tile';
 import { ComparablesSeedStatusTile } from '../../../components/comparables-seed-status-tile';
+import { ExtensionSnapshotStatusTile } from '../../../components/extension-snapshot-status-tile';
 import { MasterProfileExpiriesTile } from '../../../components/master-profile-expiries-tile';
 import { PdfFormsReviewTile } from '../../../components/pdf-forms-review-tile';
 
@@ -55,6 +56,7 @@ export default function DashboardLitePage() {
 
         <div className="space-y-4">
           <MasterProfileExpiriesTile />
+          <ExtensionSnapshotStatusTile />
           <UpcomingBidsTile />
           <RecentDraftsTile />
           <LostBidsTile />
