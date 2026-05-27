@@ -46,12 +46,62 @@ pdfFormMappingsRouter.get('/', async (req, res, next) => {
 });
 
 pdfFormMappingsRouter.get('/:id', async (req, res, next) => {
+  // /export.csv is treated as a special "id" that returns a CSV
+  // catalog of the full mapping library — useful for sharing the
+  // form list with Brook, the office, or an outside auditor.
+  if (req.params.id === 'export.csv') {
+    try {
+      const mappings = await listPdfFormMappings({});
+      mappings.sort((a, b) => a.displayName.localeCompare(b.displayName));
+      const lines: string[] = [
+        'mappingId,displayName,agency,formCode,versionDate,reviewed,fieldCount,autoFillCount,promptCount,sensitivePromptCount',
+      ];
+      for (const m of mappings) {
+        const auto = m.fields.filter(
+          (f) => f.source.kind === 'profile-path' ||
+            f.source.kind === 'literal' ||
+            f.source.kind === 'computed',
+        ).length;
+        const prompt = m.fields.filter((f) => f.source.kind === 'prompt').length;
+        const sens = m.fields.filter(
+          (f) => f.source.kind === 'prompt' && f.source.sensitive,
+        ).length;
+        const cols = [
+          m.id,
+          csvEscape(m.displayName),
+          m.agency,
+          m.formCode ?? '',
+          m.versionDate ?? '',
+          m.reviewed ? 'true' : 'false',
+          String(m.fields.length),
+          String(auto),
+          String(prompt),
+          String(sens),
+        ];
+        lines.push(cols.join(','));
+      }
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="pdf-form-library-${new Date().toISOString().slice(0, 10)}.csv"`,
+      );
+      return res.send(lines.join('\n') + '\n');
+    } catch (err) {
+      return next(err);
+    }
+  }
+
   try {
     const mapping = await getPdfFormMapping(req.params.id);
     if (!mapping) return res.status(404).json({ error: 'Form mapping not found' });
     return res.json({ mapping });
   } catch (err) { next(err); }
 });
+
+function csvEscape(s: string): string {
+  if (!/[",\n]/.test(s)) return s;
+  return `"${s.replace(/"/g, '""')}"`;
+}
 
 const CreateSchema = PdfFormMappingSchema.omit({ id: true, createdAt: true, updatedAt: true });
 

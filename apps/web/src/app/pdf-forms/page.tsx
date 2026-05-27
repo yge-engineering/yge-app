@@ -64,9 +64,17 @@ export default async function PdfFormsPage({
           <Link href="/master-profile" className="text-sm text-yge-blue-500 hover:underline">
             &larr; Master profile
           </Link>
-          <span className="text-xs text-gray-500">
-            {mappings.length} form{mappings.length === 1 ? '' : 's'} loaded
-          </span>
+          <div className="flex items-center gap-3 text-xs text-gray-500">
+            <span>
+              {mappings.length} form{mappings.length === 1 ? '' : 's'} loaded
+            </span>
+            <a
+              href={`${apiBaseUrl()}/api/pdf-form-mappings/export.csv`}
+              className="rounded border border-gray-300 px-2 py-1 font-medium text-gray-700 hover:bg-gray-50"
+            >
+              Export catalog as CSV
+            </a>
+          </div>
         </div>
 
         <PageHeader
