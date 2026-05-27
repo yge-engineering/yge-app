@@ -90,12 +90,20 @@ export default function ComparablesAuditPage() {
             . Replace a TEMPLATE entry in place, or append a new entry
             following the same schema. Then ship a bundle.
           </p>
-          <a
-            href="/comparables/export.csv"
-            className="rounded border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
-          >
-            Export CSV
-          </a>
+          <div className="flex items-center gap-2">
+            <a
+              href="/comparables/export.csv"
+              className="rounded border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+            >
+              Export CSV
+            </a>
+            <a
+              href="/comparables/export.json"
+              className="rounded border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+            >
+              Export JSON
+            </a>
+          </div>
         </div>
 
         <section className="mt-6 overflow-hidden rounded-md border border-gray-200 bg-white shadow-sm">
