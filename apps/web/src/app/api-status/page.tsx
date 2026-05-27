@@ -7,6 +7,7 @@
 import Link from 'next/link';
 
 import { Alert, AppShell, DataTable, PageHeader, StatusPill } from '../../components';
+import { PrintButton } from '../../components/print-button';
 import { getTranslator } from '../../lib/locale';
 import { requirePermission } from '../../lib/permissions';
 
@@ -85,6 +86,9 @@ export default async function ApiStatusPage() {
   return (
     <AppShell>
       <main className="mx-auto max-w-3xl">
+        <div className="mb-2 flex justify-end print:hidden">
+          <PrintButton label="Print probe status" />
+        </div>
         <PageHeader
           title={t('apiStatus.title')}
           subtitle={
