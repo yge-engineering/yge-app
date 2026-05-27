@@ -124,13 +124,25 @@ function ComparableRow({
   const { job, similarityScore, reasons } = match;
   const actualV = bidVsActualVariance(job);
   const lowV = bidVsLowVariance(job);
+  // Template entries start with id "template-*" or projectName
+  // "TEMPLATE — ...". Flag visually so estimators know the
+  // numbers are synthetic — once replaced with real data, the
+  // badge disappears.
+  const isTemplate =
+    job.id.startsWith('template-') ||
+    job.projectName.startsWith('TEMPLATE');
 
   return (
-    <li className="py-3">
+    <li className={`py-3 ${isTemplate ? 'opacity-75' : ''}`}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <div>
           <div className="text-sm font-semibold text-gray-900">
             {job.projectName}
+            {isTemplate && (
+              <span className="ml-2 rounded bg-amber-200 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-900">
+                Template
+              </span>
+            )}
           </div>
           <div className="text-xs text-gray-500">
             {job.ownerAgency ? `${job.ownerAgency} · ` : ''}
