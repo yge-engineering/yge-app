@@ -52,6 +52,7 @@ export default async function CashForecastPage({
 }: {
   searchParams: { startCash?: string; payroll?: string };
 }) {
+  requirePermission('financials:view');
   const [arInvoices, apInvoices] = await Promise.all([fetchAr(), fetchAp()]);
   const startingBalanceCents = dollarsToCents(Number(searchParams.startCash ?? '0') || 0);
   const weeklyPayrollCents = dollarsToCents(Number(searchParams.payroll ?? '0') || 0);

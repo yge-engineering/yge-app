@@ -47,6 +47,7 @@ const STATUS_TONE: Record<LegalHoldStatus, 'success' | 'warn' | 'danger' | 'mute
 };
 
 export default async function LegalHoldsPage() {
+  requirePermission('audit:view');
   const holds = await fetchHolds();
   const rollup = computeLegalHoldRollup(holds);
   const t = getTranslator();

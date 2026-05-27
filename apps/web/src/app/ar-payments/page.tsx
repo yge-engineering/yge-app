@@ -53,6 +53,7 @@ export default async function ArPaymentsPage({
 }: {
   searchParams: { arInvoiceId?: string; jobId?: string };
 }) {
+  requirePermission('financials:view');
   const payments = await fetchPayments(searchParams);
   const rollup = computeArPaymentRollup(payments);
 

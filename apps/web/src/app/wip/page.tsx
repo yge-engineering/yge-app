@@ -107,6 +107,7 @@ export default async function WipPage({
 }: {
   searchParams: { [key: string]: string | undefined };
 }) {
+  requirePermission('financials:view');
   const [jobs, arInvoices, arPayments, apInvoices, changeOrders] = await Promise.all([
     fetchJobs(),
     fetchArInvoices(),

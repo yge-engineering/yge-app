@@ -53,6 +53,7 @@ export default async function PayrollSummaryPage({
 }: {
   searchParams: { year?: string; county?: string; taxRate?: string };
 }) {
+  requirePermission('financials:view');
   const year = /^\d{4}$/.test(searchParams.year ?? '')
     ? Number(searchParams.year)
     : new Date().getFullYear();

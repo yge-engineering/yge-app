@@ -73,6 +73,7 @@ export default async function JournalEntriesPage({
 }: {
   searchParams: { status?: string };
 }) {
+  requirePermission('financials:view');
   const [entries, all] = await Promise.all([fetchEntries(searchParams), fetchAll()]);
   const rollup = computeJournalEntryRollup(all);
 

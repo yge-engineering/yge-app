@@ -56,6 +56,7 @@ export default async function SignaturesPage({
 }: {
   searchParams: SearchParams;
 }) {
+  requirePermission('audit:view');
   const qs = new URLSearchParams();
   for (const [k, v] of Object.entries(searchParams)) {
     if (v) qs.set(k, v);

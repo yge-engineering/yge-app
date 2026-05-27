@@ -58,6 +58,7 @@ export default async function ApPaymentsPage({
 }: {
   searchParams: { method?: string; apInvoiceId?: string };
 }) {
+  requirePermission('financials:view');
   const [payments, all] = await Promise.all([fetchPayments(searchParams), fetchAll()]);
   const rollup = computeApPaymentRollup(all);
 

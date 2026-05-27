@@ -67,6 +67,7 @@ export default async function IncomeStatementPage({
 }: {
   searchParams: { start?: string; end?: string; compare?: string };
 }) {
+  requirePermission('financials:view');
   const def = defaultPeriod();
   const periodStart = /^\d{4}-\d{2}-\d{2}$/.test(searchParams.start ?? '')
     ? (searchParams.start as string)

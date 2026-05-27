@@ -45,6 +45,7 @@ export default async function PromptPayPage({
 }: {
   searchParams: { asOf?: string };
 }) {
+  requirePermission('financials:view');
   const asOf =
     searchParams.asOf?.match(/^\d{4}-\d{2}-\d{2}$/)?.[0] ??
     new Date().toISOString().slice(0, 10);

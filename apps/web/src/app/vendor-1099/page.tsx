@@ -55,6 +55,7 @@ export default async function Vendor1099Page({
 }: {
   searchParams: { year?: string };
 }) {
+  requirePermission('financials:view');
   const year = /^\d{4}$/.test(searchParams.year ?? '')
     ? Number(searchParams.year)
     : new Date().getFullYear();

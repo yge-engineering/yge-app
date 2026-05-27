@@ -82,6 +82,7 @@ const AUTHORITY_TONE: Record<
 };
 
 export default async function RecordsRetentionPage() {
+  requirePermission('audit:view');
   const stats = computeRetentionStats();
   const purgeReport = await fetchPurgeReport();
   const purgeBatches = await fetchPurgeBatches();

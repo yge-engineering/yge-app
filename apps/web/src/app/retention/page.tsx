@@ -57,6 +57,7 @@ export default async function RetentionPage({
 }: {
   searchParams: { [key: string]: string | undefined };
 }) {
+  requirePermission('financials:view');
   const [invoices, payments] = await Promise.all([fetchInvoices(), fetchPayments()]);
 
   // Group invoices + payments by job.

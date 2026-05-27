@@ -53,6 +53,7 @@ export default async function DirRatesPage({
 }: {
   searchParams: { classification?: string; county?: string };
 }) {
+  requirePermission('estimates:edit');
   const rates = await fetchRates(searchParams);
   const rollup = computeDirRateRollup(rates);
   const today = new Date().toISOString().slice(0, 10);

@@ -74,6 +74,7 @@ export default async function CoaPage({
 }: {
   searchParams: { type?: string };
 }) {
+  requirePermission('financials:view');
   const [accounts, all] = await Promise.all([fetchAccounts(searchParams), fetchAll()]);
   const rollup = computeCoaRollup(all);
   const empty = all.length === 0;

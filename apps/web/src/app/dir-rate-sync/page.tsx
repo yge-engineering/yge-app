@@ -76,6 +76,7 @@ function fmtCents(cents: number): string {
 }
 
 export default async function DirRateSyncPage() {
+  requirePermission('estimates:edit');
   const [proposals, runs] = await Promise.all([fetchProposals(), fetchRuns()]);
 
   const pending = proposals.filter((p) => p.status === 'PENDING');
