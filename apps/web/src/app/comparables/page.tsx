@@ -81,14 +81,22 @@ export default function ComparablesAuditPage() {
           />
         </section>
 
-        <p className="mt-4 text-xs text-gray-600">
-          To add a real comparable: edit{' '}
-          <code className="rounded bg-gray-100 px-1 py-0.5 font-mono">
-            apps/web/src/lib/yge-job-history-seed.ts
-          </code>
-          . Replace a TEMPLATE entry in place, or append a new entry
-          following the same schema. Then ship a bundle.
-        </p>
+        <div className="mt-4 flex flex-wrap items-baseline justify-between gap-2">
+          <p className="text-xs text-gray-600">
+            To add a real comparable: edit{' '}
+            <code className="rounded bg-gray-100 px-1 py-0.5 font-mono">
+              apps/web/src/lib/yge-job-history-seed.ts
+            </code>
+            . Replace a TEMPLATE entry in place, or append a new entry
+            following the same schema. Then ship a bundle.
+          </p>
+          <a
+            href="/comparables/export.csv"
+            className="rounded border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Export CSV
+          </a>
+        </div>
 
         <section className="mt-6 overflow-hidden rounded-md border border-gray-200 bg-white shadow-sm">
           <table className="w-full text-sm">
