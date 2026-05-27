@@ -122,6 +122,42 @@ export default async function PdfFormsPage({
           </div>
         )}
 
+        {/* Agency-type filter pills. Shows one chip per agency
+         *  enum value that has at least one form seeded. Builds
+         *  the URL preserving any existing reviewed= filter. */}
+        {rollup.byAgency.length > 0 && (
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+            <span className="text-gray-500">Agency:</span>
+            {[{ agency: 'ALL' as const, count: rollup.total }, ...rollup.byAgency].map(
+              (entry) => {
+                const isAll = entry.agency === 'ALL';
+                const isActive = isAll
+                  ? !searchParams.agency
+                  : searchParams.agency === entry.agency;
+                const params = new URLSearchParams();
+                if (!isAll) params.set('agency', String(entry.agency));
+                if (searchParams.reviewed) params.set('reviewed', searchParams.reviewed);
+                const href = params.toString()
+                  ? `/pdf-forms?${params.toString()}`
+                  : '/pdf-forms';
+                return (
+                  <Link
+                    key={String(entry.agency)}
+                    href={href}
+                    className={`rounded border px-2 py-1 font-medium ${
+                      isActive
+                        ? 'border-yge-blue-500 bg-yge-blue-500 text-white'
+                        : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    {isAll ? 'All agencies' : String(entry.agency).replace(/_/g, ' ')} ({entry.count})
+                  </Link>
+                );
+              },
+            )}
+          </div>
+        )}
+
         {mappings.length === 0 ? (
           <Alert tone="info" className="mt-6">
             {t('pdfForms.empty')}
