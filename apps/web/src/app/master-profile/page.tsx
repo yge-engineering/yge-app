@@ -83,7 +83,13 @@ export default async function MasterProfilePage() {
         ) : (
           <>
             <p className="mt-2 text-xs text-gray-500">
-              Last updated: <span className="font-mono">{profile.updatedAt}</span>
+              Last updated:{' '}
+              <span className="font-mono" title={profile.updatedAt}>
+                {/* Trim ISO 2026-05-27T12:34:56.789Z → 2026-05-27 12:34
+                 *  for readability; the full timestamp is in the
+                 *  hover title for precision. */}
+                {profile.updatedAt.replace('T', ' ').slice(0, 16)}
+              </span>
             </p>
             <Section title={t('master.profile.identity')}>
               <Row label="Legal name" value={profile.legalName} />
