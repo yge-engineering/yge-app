@@ -40,6 +40,7 @@ import { GradingScopeBanner } from '@/components/grading-scope-banner';
 import { BridgeScopeBanner } from '@/components/bridge-scope-banner';
 import { ScopeCheckSummary } from '@/components/scope-check-summary';
 import { BidTotalsCopyCard } from '@/components/bid-totals-copy-card';
+import { BidContactCopyCard } from '@/components/bid-contact-copy-card';
 import { RequiredBidFormsCard } from '@/components/required-bid-forms-card';
 
 function apiBaseUrl(): string {
@@ -126,6 +127,7 @@ export default async function BidDayPage({
           <div className="space-y-4">
             <BidSecurityCard estimate={estimate} totals={totals} />
             <BidTotalsCopyCard estimate={estimate} totals={totals} />
+            <BidContactCopyCard />
             <RequiredBidFormsCard estimate={estimate} totals={totals} />
             <EnvelopePreviewCard envelopeItems={envelope.items.slice(0, 6)} />
           </div>
