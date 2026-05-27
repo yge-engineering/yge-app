@@ -165,6 +165,33 @@ export const YGE_JOB_HISTORY_SEED: ReadonlyArray<HistoricalJob> = [
       'TEMPLATE — replace bid/actual with real numbers and flip outcome to "won". City pad-prep jobs. Dust control (AQMD water truck) is a daily line that adds up on long grading schedules. Subgrade prep (scarify + recompact + moisture-condition) is often a separate pay item from the mass excavation lines.',
     bidAt: '2024-07-10',
   },
+
+  {
+    id: 'template-bridge-replacement',
+    projectName: 'TEMPLATE — replace with a real bridge / abutment job',
+    ownerAgency: 'Glenn County',
+    projectType: 'BRIDGE',
+    scopeKeywords: [
+      'bridge',
+      'abutment',
+      'pier',
+      'deck',
+      'foundation',
+      'concrete',
+      'riprap',
+      'demolition',
+      'falsework',
+      'pile',
+    ],
+    countyName: 'glenn',
+    bidTotalCents: 2_400_000_00,
+    actualCostCents: 2_580_000_00,  // came in 7.5% over (water diversion underbid)
+    outcome: 'unknown',
+    awardSpread: null,
+    notesForFuture:
+      'TEMPLATE — replace bid/actual with real numbers and flip outcome to "won". County bridge replacements over creeks need temporary water diversion + falsework + careful demolition of the old structure (watch fish-window restrictions). Pile-driving access roads add days. Riprap downstream of the new abutments is a separate pay line — easy to miss.',
+    bidAt: '2024-05-12',
+  },
 ];
 
 // Helper for the panel: pull lowercased scope keywords out of a
