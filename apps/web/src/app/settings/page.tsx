@@ -52,7 +52,10 @@ export default function SettingsPage() {
         { label: 'CSLB', value: '1145219' },
         { label: 'DIR', value: '2000018967' },
       ],
-      actions: [{ label: t('settings.action.editBrand'), href: '/brand' }],
+      actions: [
+        { label: 'Master business profile', href: '/settings/company' },
+        { label: t('settings.action.editBrand'), href: '/brand' },
+      ],
     },
     {
       title: t('settings.section.notifications'),
