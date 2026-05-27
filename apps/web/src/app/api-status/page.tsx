@@ -8,6 +8,7 @@ import Link from 'next/link';
 
 import { Alert, AppShell, DataTable, PageHeader, StatusPill } from '../../components';
 import { getTranslator } from '../../lib/locale';
+import { requirePermission } from '../../lib/permissions';
 
 interface ProbeResult {
   name: string;
@@ -67,6 +68,7 @@ async function probe(p: { name: string; url: string; key: string }): Promise<Pro
 }
 
 export default async function ApiStatusPage() {
+  requirePermission('audit:view');
   const results = await Promise.all(PROBES.map(probe));
   const upCount = results.filter((r) => r.ok).length;
   const allUp = upCount === results.length;

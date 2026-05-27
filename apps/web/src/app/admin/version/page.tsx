@@ -12,6 +12,7 @@
 // the extension popup display (bundle 2637).
 
 import { AppShell, PageHeader } from '../../../components';
+import { requirePermission } from '../../../lib/permissions';
 
 function apiBaseUrl(): string {
   return (
@@ -43,6 +44,7 @@ function short(sha: string): string {
 }
 
 export default async function VersionPage() {
+  requirePermission('audit:view');
   const apiVersion = await fetchApiVersion();
   const webSha = process.env.BUILD_SHA ?? process.env.NEXT_PUBLIC_BUILD_SHA ?? 'unknown';
   const webTimestamp =
