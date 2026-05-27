@@ -844,6 +844,53 @@ const SHASTA_COUNTY_BIDDER_AFFIDAVIT: SeedMapping = {
   ],
 };
 
+// ---- Tehama County Bidder Affidavit -----------------------------------
+//
+// Same pattern as Shasta. Tehama is the immediate neighbor to
+// Shasta + YGE bids regularly here. Same fields, different
+// formCode + agencyUrl + pdfReference.
+
+const TEHAMA_COUNTY_BIDDER_AFFIDAVIT: SeedMapping = {
+  id: 'pdf-form-tehama-county-bidder-affidavit',
+  displayName: 'Tehama County Bidder Affidavit',
+  agency: 'COUNTY',
+  formCode: 'TEHAMA-BID-AFFIDAVIT',
+  pdfReference: 'pdf-forms/county/tehama-bidder-affidavit.pdf',
+  agencyUrl: 'https://www.co.tehama.ca.us/department-pages/public-works',
+  notes:
+    'Tehama County variant of the same bidder identity + CSLB/DIR + debarment + bid bond enclosed pattern. Tehama is YGE\'s adjacent county; expect frequent filings.',
+  fields: [
+    f({ id: 'pdf-fld-tehamacnty-bidder-name', pdfFieldName: 'BidderName', label: 'Bidder name (legal)', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'legalName' } }),
+    f({ id: 'pdf-fld-tehamacnty-cslb', pdfFieldName: 'CslbLicense', label: 'CSLB license #', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'cslbLicense' } }),
+    f({ id: 'pdf-fld-tehamacnty-cslb-classes', pdfFieldName: 'CslbClassifications', label: 'CSLB classifications', kind: 'TEXT',
+        source: { kind: 'profile-path', path: 'cslbClassifications' } }),
+    f({ id: 'pdf-fld-tehamacnty-dir', pdfFieldName: 'DirRegistration', label: 'DIR registration #', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'dirNumber' } }),
+    f({ id: 'pdf-fld-tehamacnty-address', pdfFieldName: 'BidderAddress', label: 'Bidder address', kind: 'TEXT', required: true,
+        source: { kind: 'computed', name: 'profile.address.oneLine' } }),
+    f({ id: 'pdf-fld-tehamacnty-phone', pdfFieldName: 'Phone', label: 'Phone', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'primaryPhone' } }),
+    f({ id: 'pdf-fld-tehamacnty-email', pdfFieldName: 'Email', label: 'Email', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'primaryEmail' } }),
+    f({ id: 'pdf-fld-tehamacnty-project', pdfFieldName: 'ProjectName', label: 'Project name', kind: 'TEXT', required: true,
+        source: { kind: 'prompt', label: 'Project name', sensitive: false } }),
+    f({ id: 'pdf-fld-tehamacnty-project-num', pdfFieldName: 'ProjectNumber', label: 'County project #', kind: 'TEXT',
+        source: { kind: 'prompt', label: 'County project # (per bid notice)', sensitive: false } }),
+    f({ id: 'pdf-fld-tehamacnty-not-debarred', pdfFieldName: 'NotDebarred', label: 'Not debarred or suspended', kind: 'CHECKBOX', required: true,
+        source: { kind: 'literal', value: 'true' }, truthyValue: 'Yes' }),
+    f({ id: 'pdf-fld-tehamacnty-bid-bond-on-file', pdfFieldName: 'BidBondOnFile', label: 'Bid bond / cashier\'s check enclosed', kind: 'CHECKBOX', required: true,
+        source: { kind: 'literal', value: 'true' }, truthyValue: 'Yes' }),
+    f({ id: 'pdf-fld-tehamacnty-signature', pdfFieldName: 'Signature', label: 'Authorized signer', kind: 'SIGNATURE', required: true,
+        source: { kind: 'computed', name: 'profile.officers.vp.signature' } }),
+    f({ id: 'pdf-fld-tehamacnty-title', pdfFieldName: 'SignerTitle', label: 'Title', kind: 'TEXT', required: true,
+        source: { kind: 'literal', value: 'Vice President' } }),
+    f({ id: 'pdf-fld-tehamacnty-date', pdfFieldName: 'Date', label: 'Date', kind: 'DATE', required: true,
+        source: { kind: 'computed', name: 'date.today.us' } }),
+  ],
+};
+
 const SEEDS: SeedMapping[] = [
   IRS_W9,
   DIR_DAS_140,
@@ -867,6 +914,7 @@ const SEEDS: SeedMapping[] = [
   CALRECYCLE_RECYCLED_CONTENT,
   FHWA_1273,
   SHASTA_COUNTY_BIDDER_AFFIDAVIT,
+  TEHAMA_COUNTY_BIDDER_AFFIDAVIT,
 ];
 
 /**
