@@ -55,8 +55,10 @@ const DEFAULT_API_URL = 'https://api.youngge.com';
   await refreshApiUrl();
 
   // Fetch /api/version to show which deploy we're hitting +
-  // which AI prompt version is active. Best-effort; silent on
-  // failure (the API might be offline, on a stale deploy, etc.)
+  // which AI prompt version is active. The text + color flips
+  // to red on any failure (HTTP non-OK or network error) so
+  // Ryan notices when the popup is pointing at a dead API
+  // (wrong URL configured, host down, CORS regression).
   async function refreshApiVersion() {
     const versionEl = document.getElementById('api-version');
     if (!versionEl) return;
@@ -65,14 +67,17 @@ const DEFAULT_API_URL = 'https://api.youngge.com';
       const base = stored[API_KEY] ?? DEFAULT_API_URL;
       const res = await fetch(`${base}/api/version`);
       if (!res.ok) {
-        versionEl.textContent = `API ${res.status}`;
+        versionEl.textContent = `API ${res.status} — check URL`;
+        versionEl.style.color = '#dc2626';
         return;
       }
       const json = await res.json();
       const sha = (json.buildSha ?? 'unknown').slice(0, 7);
       versionEl.textContent = `build ${sha} · prompt ${json.promptVersion ?? '?'}`;
+      versionEl.style.color = '#6b7280';
     } catch {
       versionEl.textContent = 'API unreachable';
+      versionEl.style.color = '#dc2626';
     }
   }
 
