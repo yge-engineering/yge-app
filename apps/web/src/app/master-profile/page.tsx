@@ -38,10 +38,55 @@ async function fetchProfile(): Promise<MasterProfile | null> {
   } catch { return null; }
 }
 
+interface ExpiringItem {
+  label: string;
+  expiresOn: string;
+  daysRemaining: number;
+  tone: 'expired' | 'critical' | 'warn';
+}
+
+// Compute days between today and YYYY-MM-DD. Returns negative if
+// expiresOn is already past. Server-rendered so "today" = the
+// request time at the host, not the user's browser clock — close
+// enough for cert-expiry triage.
+function daysUntil(expiresOn: string): number {
+  const target = new Date(`${expiresOn}T00:00:00Z`).getTime();
+  const today = new Date(
+    `${new Date().toISOString().slice(0, 10)}T00:00:00Z`,
+  ).getTime();
+  return Math.round((target - today) / (1000 * 60 * 60 * 24));
+}
+
+function classifyExpiry(daysRemaining: number): ExpiringItem['tone'] | null {
+  if (daysRemaining < 0) return 'expired';
+  if (daysRemaining <= 30) return 'critical';
+  if (daysRemaining <= 60) return 'warn';
+  return null;
+}
+
+function collectExpiringItems(profile: MasterProfile): ExpiringItem[] {
+  const items: ExpiringItem[] = [];
+  const addIf = (label: string, expiresOn: string | null | undefined) => {
+    if (!expiresOn) return;
+    const daysRemaining = daysUntil(expiresOn);
+    const tone = classifyExpiry(daysRemaining);
+    if (tone) items.push({ label, expiresOn, daysRemaining, tone });
+  };
+  addIf('CSLB license', profile.cslbExpiresOn);
+  addIf('DIR registration', profile.dirExpiresOn);
+  for (const p of profile.insurance) {
+    addIf(`Insurance — ${p.kind} (${p.carrierName})`, p.expiresOn);
+  }
+  // Sort by daysRemaining ascending — most urgent first.
+  items.sort((a, b) => a.daysRemaining - b.daysRemaining);
+  return items;
+}
+
 export default async function MasterProfilePage() {
   requirePermission('masterProfile:view');
   const profile = await fetchProfile();
   const t = getTranslator();
+  const expiringItems = profile ? collectExpiringItems(profile) : [];
 
   return (
     <AppShell>
@@ -59,6 +104,10 @@ export default async function MasterProfilePage() {
           title={t('master.profile.title')}
           subtitle={t('master.profile.subtitle')}
         />
+
+        {expiringItems.length > 0 && (
+          <ExpiryWarningPanel items={expiringItems} />
+        )}
 
         {!profile ? (
           <Alert tone="danger" className="mt-6" title={t('master.profile.fetchError.title')}>
@@ -231,5 +280,47 @@ function Row({ label, value }: { label: string; value: string }) {
       <dt className="text-gray-500">{label}</dt>
       <dd className="col-span-2 text-gray-900">{value}</dd>
     </div>
+  );
+}
+
+function ExpiryWarningPanel({ items }: { items: ExpiringItem[] }) {
+  // Worst-case tone drives the banner border color.
+  const worst = items.some((i) => i.tone === 'expired' || i.tone === 'critical')
+    ? 'critical'
+    : 'warn';
+  const wrapperCls =
+    worst === 'critical'
+      ? 'border-red-300 bg-red-50 text-red-900'
+      : 'border-amber-300 bg-amber-50 text-amber-900';
+  return (
+    <section className={`mt-4 rounded-md border p-4 ${wrapperCls}`}>
+      <h2 className="text-sm font-bold uppercase tracking-wide">
+        Expiring soon — renew before bid day
+      </h2>
+      <p className="mt-1 text-xs">
+        Bid forms and the PDF library reference these records; expired ones
+        block agency submission.
+      </p>
+      <ul className="mt-2 space-y-1 text-sm">
+        {items.map((item) => {
+          const itemCls =
+            item.tone === 'expired'
+              ? 'text-red-800 font-semibold'
+              : item.tone === 'critical'
+                ? 'text-red-700'
+                : 'text-amber-800';
+          const ageLabel =
+            item.tone === 'expired'
+              ? `EXPIRED ${Math.abs(item.daysRemaining)}d ago`
+              : `in ${item.daysRemaining}d`;
+          return (
+            <li key={`${item.label}-${item.expiresOn}`} className={itemCls}>
+              <span className="font-medium">{item.label}</span> —{' '}
+              {item.expiresOn} ({ageLabel})
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }
