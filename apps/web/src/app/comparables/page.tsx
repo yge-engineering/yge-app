@@ -15,6 +15,7 @@ import {
   AppShell,
   PageHeader,
 } from '../../components';
+import { PrintButton } from '../../components/print-button';
 import {
   bidVsActualVariance,
   formatUSD,
@@ -60,6 +61,9 @@ export default function ComparablesAuditPage() {
   return (
     <AppShell>
       <main className="mx-auto max-w-6xl p-6 sm:p-8">
+        <div className="mb-2 flex justify-end print:hidden">
+          <PrintButton label="Print comparables" />
+        </div>
         <PageHeader
           title="Comparables audit"
           subtitle="Static seed today (apps/web/src/lib/yge-job-history-seed.ts). Used by the comparables panel on /drafts/[id] + the bid-day cockpit + the AI prompt reality check."
