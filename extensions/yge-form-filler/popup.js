@@ -54,6 +54,32 @@ const DEFAULT_API_URL = 'https://api.youngge.com';
 
   await refreshApiUrl();
 
+  // Fetch /api/version to show which deploy we're hitting +
+  // which AI prompt version is active. Best-effort; silent on
+  // failure (the API might be offline, on a stale deploy, etc.)
+  async function refreshApiVersion() {
+    const versionEl = document.getElementById('api-version');
+    if (!versionEl) return;
+    try {
+      const stored = await chrome.storage.local.get(API_KEY);
+      const base = stored[API_KEY] ?? DEFAULT_API_URL;
+      const res = await fetch(`${base}/api/version`);
+      if (!res.ok) {
+        versionEl.textContent = `API ${res.status}`;
+        return;
+      }
+      const json = await res.json();
+      const sha = (json.buildSha ?? 'unknown').slice(0, 7);
+      versionEl.textContent = `build ${sha} · prompt ${json.promptVersion ?? '?'}`;
+    } catch {
+      versionEl.textContent = 'API unreachable';
+    }
+  }
+
+  // Fire-and-forget — don't block popup render on the version
+  // round-trip.
+  refreshApiVersion();
+
   async function refreshSnapshotAge() {
     const ageEl = document.getElementById('snapshot-age');
     if (!ageEl) return;
