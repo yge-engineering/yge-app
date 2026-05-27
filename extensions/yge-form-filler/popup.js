@@ -124,13 +124,42 @@ const DEFAULT_API_URL = 'https://api.youngge.com';
   document
     .getElementById('refresh-snapshot-btn')
     ?.addEventListener('click', async () => {
+      // Clear cache first so the background fetch goes to the
+      // network instead of returning the old cached snapshot.
       await chrome.storage.local.remove([
         'yge.profileSnapshot',
         'yge.profileSnapshot.cachedAt',
       ]);
       if (statusEl) {
         statusEl.className = 'status ok';
-        statusEl.textContent = '✓ Snapshot cache cleared. Next fill re-fetches.';
+        statusEl.textContent = 'Refreshing…';
+      }
+      // Proactively re-fetch instead of waiting for the next
+      // form-page visit. Background handles the API URL +
+      // updates the cache.
+      try {
+        const reply = await chrome.runtime.sendMessage({
+          type: 'fetch-profile-snapshot',
+        });
+        if (reply && reply.ok) {
+          if (statusEl) {
+            statusEl.className = 'status ok';
+            statusEl.textContent = '✓ Snapshot refreshed from API.';
+          }
+        } else {
+          if (statusEl) {
+            statusEl.className = 'status err';
+            statusEl.textContent =
+              'Refresh failed: ' + (reply?.error ?? 'no response');
+          }
+        }
+      } catch (err) {
+        if (statusEl) {
+          statusEl.className = 'status err';
+          statusEl.textContent =
+            'Refresh failed: ' +
+            (err instanceof Error ? err.message : 'unknown');
+        }
       }
       await refreshSnapshotAge();
     });
