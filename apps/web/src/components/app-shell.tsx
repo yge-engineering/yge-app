@@ -243,6 +243,7 @@ const NAV_SPEC: NavGroupSpec[] = [
       { key: 'nav.adminDataHealth', href: '/admin/data-health', requires: 'audit:view' },
       { key: 'nav.goLive', href: '/go-live', requires: 'audit:view' },
       { key: 'nav.adminVersion', href: '/admin/version', requires: 'audit:view' },
+      { key: 'nav.apiStatus', href: '/api-status', requires: 'audit:view' },
       { key: 'nav.excelImport', href: '/admin/excel-import', requires: 'audit:view' },
       { key: 'nav.portalOwnerPreview', href: '/portal/owner', requires: 'portal:owner' },
       { key: 'nav.portalSubPreview', href: '/portal/sub', requires: 'portal:sub' },
