@@ -21,6 +21,14 @@
 
 import type { HistoricalJob } from '@yge/shared';
 
+// Scope-keyword dictionary + extractor used to live here. Bundle
+// 2684 promoted them to packages/shared/src/scope-keyword-
+// dictionary.ts so the API can use the same extraction when
+// injecting comparables into the AI prompt, and so the extractor
+// can have tests. Re-exported below so existing imports from
+// '../lib/yge-job-history-seed' keep working.
+export { extractScopeKeywordsFromText } from '@yge/shared';
+
 export const YGE_JOB_HISTORY_SEED: ReadonlyArray<HistoricalJob> = [
   {
     id: 'seed-powerline-allbaugh',
@@ -194,83 +202,8 @@ export const YGE_JOB_HISTORY_SEED: ReadonlyArray<HistoricalJob> = [
   },
 ];
 
-// Helper for the panel: pull lowercased scope keywords out of a
-// draft's bid-item descriptions. Tiny dictionary, on purpose —
-// we want hits to be specific enough to be meaningful, not vague
-// noun-matches.
-const SCOPE_KEYWORD_DICTIONARY = [
-  'asphalt',
-  'paving',
-  'tack-coat',
-  'concrete',
-  'curb',
-  'sidewalk',
-  'ada-ramp',
-  'pad',
-  'foundation',
-  'transformer-foundation',
-  'conduit',
-  'duct-bank',
-  'trench',
-  'pipe',
-  'sewer',
-  'storm',
-  'culvert',
-  'manhole',
-  'headwall',
-  'energy-dissipator',
-  'rcb',
-  'rcp',
-  'hdpe',
-  'pvc',
-  'aggregate',
-  'rock',
-  'base',
-  'riprap',
-  'fill',
-  'cut',
-  'export',
-  'import',
-  'grading',
-  'clearing',
-  'topsoil',
-  'compaction',
-  'subgrade',
-  'demolition',
-  'striping',
-  'signage',
-  'guardrail',
-  'fence',
-  'gate',
-  'erosion',
-  'swppp',
-  'control-house',
-  'cmu-wall',
-  'masonry',
-  'ground-grid',
-  'oil-containment',
-  'substation',
-  'bridge',
-  'abutment',
-  'pier',
-  'deck',
-  'culvert-extension',
-  'falsework',
-  'mastication',
-  'burn-pile',
-  'fuel-break',
-] as const;
-
-export function extractScopeKeywordsFromText(text: string): string[] {
-  const lower = text.toLowerCase();
-  const found = new Set<string>();
-  for (const k of SCOPE_KEYWORD_DICTIONARY) {
-    // Dictionary entries with hyphens (e.g. "duct-bank") match
-    // when either the hyphenated OR space-separated form appears.
-    const spaceForm = k.replace(/-/g, ' ');
-    if (lower.includes(k) || lower.includes(spaceForm)) {
-      found.add(k);
-    }
-  }
-  return [...found];
-}
+// extractScopeKeywordsFromText + SCOPE_KEYWORD_DICTIONARY moved
+// to packages/shared/src/scope-keyword-dictionary.ts in bundle
+// 2684. Re-exported above from the top-of-file import so any
+// existing consumer that imports from '../lib/yge-job-history-seed'
+// keeps working.
