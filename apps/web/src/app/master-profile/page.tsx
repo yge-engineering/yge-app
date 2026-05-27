@@ -13,6 +13,7 @@ import {
   PageHeader,
 } from '../../components';
 import { PrintButton } from '../../components/print-button';
+import { ExtensionSnapshotStatusTile } from '../../components/extension-snapshot-status-tile';
 import { getTranslator } from '../../lib/locale';
 import { requirePermission } from '../../lib/permissions';
 import { MasterProfileEditor } from '@/components/master-profile-editor';
@@ -75,6 +76,8 @@ export default async function MasterProfilePage() {
         {expiringItems.length > 0 && (
           <ExpiryWarningPanel items={expiringItems} />
         )}
+
+        <ExtensionSnapshotStatusTile />
 
         {!profile ? (
           <Alert tone="danger" className="mt-6" title={t('master.profile.fetchError.title')}>
