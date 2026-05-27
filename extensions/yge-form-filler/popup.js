@@ -1,11 +1,9 @@
 // YGE Form Filler — popup script.
 //
 // Read the configured API base URL from storage + the latest
-// page-scan field count from background. Renders both into the
-// pre-existing #api-url and #field-count divs in popup.html.
-//
-// No interactions yet — the popup is read-only until the
-// auto-fill flow ships.
+// page-scan from the content script (via chrome.scripting on
+// the active tab). Renders both into the pre-existing #api-url
+// and #field-count divs in popup.html.
 
 (async function () {
   const stored = await chrome.storage.local.get('yge.apiBaseUrl');
@@ -14,20 +12,28 @@
     apiUrlEl.textContent = stored['yge.apiBaseUrl'] ?? 'not configured';
   }
 
-  // Ask the active tab's content script (if any) for its last
-  // scan count. Falls back to "—" when the tab doesn't have a
-  // content script (off-domain).
   const fieldCountEl = document.getElementById('field-count');
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tab && tab.id != null) {
+      // Inject a tiny script that just reads the totals our
+      // content script computed; falls back to a raw input
+      // count when the content script hasn't run (off-domain).
       const result = await chrome.scripting.executeScript({
         target: { tabId: tab.id },
-        func: () => document.querySelectorAll('input, textarea, select').length,
+        func: () => {
+          const inputs = document.querySelectorAll(
+            'input, textarea, select',
+          ).length;
+          // Content script stashes its last scan summary on
+          // window.YGE_LAST_SCAN when wiring this up in a follow-up.
+          // For now just report raw count.
+          return { inputs };
+        },
       });
-      const count = result?.[0]?.result ?? 0;
+      const inputs = result?.[0]?.result?.inputs ?? 0;
       if (fieldCountEl) {
-        fieldCountEl.textContent = `${count} form element(s)`;
+        fieldCountEl.textContent = `${inputs} form element(s) on this page`;
       }
     }
   } catch (err) {

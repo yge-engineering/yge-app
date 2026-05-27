@@ -1,0 +1,126 @@
+// YGE Form Filler — known agency-form field patterns.
+//
+// Maps a likely-input element to the YGE master-profile field
+// it should be filled from. Matching is loose: we scan the
+// field's name, id, aria-label, and the nearest <label> text
+// for any of the patterns. First match wins.
+//
+// Today this module is read by the content script to report
+// what it COULD fill if auto-fill were on. The actual fill
+// flow lands in a follow-up bundle.
+
+// Each entry: a profile-path key + an array of substring or
+// regex patterns. Patterns are case-insensitive; substrings
+// match anywhere in the haystack.
+export const FIELD_PATTERNS = [
+  {
+    profilePath: 'legalName',
+    patterns: [
+      'company name',
+      'company_name',
+      'companyname',
+      'firm name',
+      'contractor name',
+      'legal name',
+      'business name',
+      'bidder name',
+    ],
+  },
+  {
+    profilePath: 'cslbLicense',
+    patterns: [
+      'cslb',
+      'license number',
+      'license_no',
+      'licenseno',
+      'cslb license',
+      'contractor license',
+    ],
+  },
+  {
+    profilePath: 'dirNumber',
+    patterns: [
+      'dir number',
+      'dir_no',
+      'dir registration',
+      'public works registration',
+      'pwcr',
+    ],
+  },
+  {
+    profilePath: 'dotNumber',
+    patterns: [
+      'dot number',
+      'usdot',
+      'us_dot',
+      'mc number',
+      'motor carrier',
+    ],
+  },
+  {
+    profilePath: 'federalEin',
+    patterns: [
+      'ein',
+      'fein',
+      'federal id',
+      'federal_id',
+      'tax id',
+      'employer identification',
+    ],
+  },
+  {
+    profilePath: 'address.street',
+    patterns: [
+      'street address',
+      'address line 1',
+      'address1',
+      'street1',
+      'mailing street',
+    ],
+  },
+  {
+    profilePath: 'address.city',
+    patterns: ['city', 'city name'],
+  },
+  {
+    profilePath: 'address.state',
+    patterns: ['state', 'state abbr', 'state code', 'st '],
+  },
+  {
+    profilePath: 'address.zip',
+    patterns: ['zip', 'zip code', 'postal code', 'zipcode'],
+  },
+  {
+    profilePath: 'primaryPhone',
+    patterns: ['phone', 'phone number', 'telephone', 'office phone'],
+  },
+  {
+    profilePath: 'primaryEmail',
+    patterns: ['email', 'email address', 'e-mail'],
+  },
+  {
+    profilePath: 'officers.president.name',
+    patterns: ['president name', 'president'],
+  },
+  {
+    profilePath: 'officers.vp.name',
+    patterns: ['vice president', 'vp name', 'authorized signer'],
+  },
+];
+
+/** Given the assorted text labels for a field, return the
+ *  profile-path that should fill it — or null when no pattern
+ *  matches. */
+export function classifyField({ name, id, ariaLabel, labelText }) {
+  const haystack = [name, id, ariaLabel, labelText]
+    .filter((s) => typeof s === 'string' && s.length > 0)
+    .join(' | ')
+    .toLowerCase();
+  if (haystack.length === 0) return null;
+  for (const entry of FIELD_PATTERNS) {
+    for (const p of entry.patterns) {
+      if (haystack.includes(p)) return entry.profilePath;
+    }
+  }
+  return null;
+}
