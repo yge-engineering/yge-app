@@ -128,6 +128,27 @@ const TOPICS: Topic[] = [
       </>
     ),
   },
+  {
+    heading: 'Where does YGE_COMPANY_INFO live and when do I update it?',
+    body: (
+      <>
+        Edit{' '}
+        <code className="rounded bg-gray-100 px-1 py-0.5 text-xs font-mono">
+          packages/shared/src/company.ts
+        </code>
+        {' '}for the static seed used by the extension snapshot,
+        cover letters, transmittals, and printable bid summaries.
+        Update it when: CSLB / DIR / DOT number renews, address
+        changes, an officer's contact info changes, NAICS / PSC
+        codes change, or YGE picks up a new CSLB classification.
+        Each save needs a deploy — the snapshot endpoint reads
+        the constant at server start so values update on the next
+        build. The live editable copy will live at{' '}
+        <Link href="/master-profile" className="text-yge-blue-700 hover:underline">/master-profile</Link>{' '}
+        once the DB-backed profile ships.
+      </>
+    ),
+  },
 ];
 
 export default function AdminHelpPage() {
