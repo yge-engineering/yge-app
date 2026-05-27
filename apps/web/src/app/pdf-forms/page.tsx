@@ -13,6 +13,7 @@ import {
   PageHeader,
   StatusPill,
 } from '../../components';
+import { PrintButton } from '../../components/print-button';
 import { getTranslator } from '../../lib/locale';
 import {
   computeFillability,
@@ -63,7 +64,7 @@ export default async function PdfFormsPage({
           <Link href="/master-profile" className="text-sm text-yge-blue-500 hover:underline">
             &larr; Master profile
           </Link>
-          <div className="flex items-center gap-3 text-xs text-gray-500">
+          <div className="flex items-center gap-3 text-xs text-gray-500 print:hidden">
             <span>
               {mappings.length} form{mappings.length === 1 ? '' : 's'} loaded
             </span>
@@ -73,6 +74,7 @@ export default async function PdfFormsPage({
             >
               Export catalog as CSV
             </a>
+            <PrintButton label="Print catalog" />
           </div>
         </div>
 
