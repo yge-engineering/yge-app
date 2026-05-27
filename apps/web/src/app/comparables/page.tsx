@@ -22,16 +22,40 @@ import {
 
 import { YGE_JOB_HISTORY_SEED } from '../../lib/yge-job-history-seed';
 
+// Six PtoEProjectType values; coverage tile shows how many are
+// represented in the seed. Keep this list in sync with
+// packages/shared/src/plans-to-estimate-output.ts.
+const ALL_PROJECT_TYPES = [
+  'ROAD_RECONSTRUCTION',
+  'DRAINAGE',
+  'BRIDGE',
+  'GRADING',
+  'FIRE_FUEL_REDUCTION',
+  'OTHER',
+] as const;
+
 export default function ComparablesAuditPage() {
   const rows = YGE_JOB_HISTORY_SEED.map((j) => ({
     job: j,
     isTemplate:
       j.id.startsWith('template-') || j.projectName.startsWith('TEMPLATE'),
     variance: bidVsActualVariance(j),
-  }));
+  }))
+    // Most-recent jobs first — that's what an estimator scanning
+    // the audit table typically wants. Stable for entries with
+    // missing/equal bidAt (slice() above clones, sort() is stable
+    // in modern V8).
+    .slice()
+    .sort((a, b) => (b.job.bidAt ?? '').localeCompare(a.job.bidAt ?? ''));
 
   const realCount = rows.filter((r) => !r.isTemplate).length;
   const templateCount = rows.filter((r) => r.isTemplate).length;
+
+  const coveredTypes = new Set(rows.map((r) => r.job.projectType));
+  const missingTypes = ALL_PROJECT_TYPES.filter((t) => !coveredTypes.has(t));
+  const coverageValue = `${coveredTypes.size} / ${ALL_PROJECT_TYPES.length}`;
+  const coverageTone: 'ok' | 'warn' =
+    coveredTypes.size === ALL_PROJECT_TYPES.length ? 'ok' : 'warn';
 
   return (
     <AppShell>
@@ -41,10 +65,20 @@ export default function ComparablesAuditPage() {
           subtitle="Static seed today (apps/web/src/lib/yge-job-history-seed.ts). Used by the comparables panel on /drafts/[id] + the bid-day cockpit + the AI prompt reality check."
         />
 
-        <section className="mt-4 grid gap-3 sm:grid-cols-3">
+        <section className="mt-4 grid gap-3 sm:grid-cols-4">
           <Tile label="Total" value={String(rows.length)} />
           <Tile label="Real" value={String(realCount)} tone="ok" />
           <Tile label="Templates" value={String(templateCount)} tone="warn" />
+          <Tile
+            label="Archetypes"
+            value={coverageValue}
+            tone={coverageTone}
+            footnote={
+              missingTypes.length === 0
+                ? 'all 6 covered'
+                : `missing: ${missingTypes.join(', ')}`
+            }
+          />
         </section>
 
         <p className="mt-4 text-xs text-gray-600">
@@ -143,10 +177,12 @@ function Tile({
   label,
   value,
   tone,
+  footnote,
 }: {
   label: string;
   value: string;
   tone?: 'ok' | 'warn';
+  footnote?: string;
 }) {
   const cls =
     tone === 'ok'
@@ -160,6 +196,9 @@ function Tile({
         {label}
       </div>
       <div className="mt-1 text-2xl font-bold tabular-nums">{value}</div>
+      {footnote && (
+        <div className="mt-1 text-[10px] opacity-70">{footnote}</div>
+      )}
     </div>
   );
 }
