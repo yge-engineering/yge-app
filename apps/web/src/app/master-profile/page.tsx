@@ -60,6 +60,12 @@ export default async function MasterProfilePage() {
           <div className="flex items-center gap-3">
             <PrintButton label="Print profile" />
             <Link
+              href="/extension"
+              className="text-sm text-yge-blue-500 hover:underline"
+            >
+              Browser extension →
+            </Link>
+            <Link
               href="/pdf-forms"
               className="text-sm text-yge-blue-500 hover:underline"
             >
