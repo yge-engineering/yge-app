@@ -82,6 +82,9 @@ export default async function MasterProfilePage() {
           </Alert>
         ) : (
           <>
+            <p className="mt-2 text-xs text-gray-500">
+              Last updated: <span className="font-mono">{profile.updatedAt}</span>
+            </p>
             <Section title={t('master.profile.identity')}>
               <Row label="Legal name" value={profile.legalName} />
               <Row label="Short name" value={profile.shortName} />
