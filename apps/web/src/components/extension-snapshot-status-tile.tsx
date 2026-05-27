@@ -47,8 +47,11 @@ async function ExtensionSnapshotStatusTileInner(): Promise<React.ReactElement | 
   const populated = entries.filter(
     ([, v]) => typeof v === 'string' && v.length > 0,
   ).length;
+  const emptyFields = entries
+    .filter(([, v]) => typeof v !== 'string' || v.length === 0)
+    .map(([k]) => k);
   const total = entries.length;
-  const empty = total - populated;
+  const empty = emptyFields.length;
 
   const tone =
     empty === 0
@@ -68,14 +71,19 @@ async function ExtensionSnapshotStatusTileInner(): Promise<React.ReactElement | 
         </span>
       </header>
       {empty > 0 && (
-        <p className="mt-1">
-          {empty} field{empty === 1 ? '' : 's'} still empty — agency forms
-          asking for those will land unmatched. Edit{' '}
-          <code className="rounded bg-white px-1 py-0.5 font-mono">
-            packages/shared/src/company.ts
-          </code>{' '}
-          to populate.
-        </p>
+        <>
+          <p className="mt-1">
+            {empty} field{empty === 1 ? '' : 's'} still empty — agency forms
+            asking for those will land unmatched. Edit{' '}
+            <code className="rounded bg-white px-1 py-0.5 font-mono">
+              packages/shared/src/company.ts
+            </code>{' '}
+            to populate.
+          </p>
+          <p className="mt-1 font-mono opacity-80">
+            Empty: {emptyFields.join(', ')}
+          </p>
+        </>
       )}
     </section>
   );
