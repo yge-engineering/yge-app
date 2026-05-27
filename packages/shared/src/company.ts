@@ -77,3 +77,23 @@ export function formatCompanyAddressOneLine(c: CompanyInfo = YGE_COMPANY_INFO): 
   const a = c.address;
   return `${a.street}, ${a.city}, ${a.state} ${a.zip}`;
 }
+
+// ---- Bonding + Insurance seeds ----
+//
+// Default values for the bonding + insurance profiles, exported
+// for the master business profile page and any form filler that
+// needs the live numbers. Until the editable DB-backed profile
+// ships, these stay `null` so the UI surfaces a clear "not
+// configured" prompt instead of misleading placeholder
+// numbers.
+//
+// To populate now: edit this file with Brook's real surety +
+// carrier data and ship a bundle. To populate later: do it
+// through the future /settings/company edit form once the
+// Prisma model lands.
+
+import type { BondingProfile } from './company-bonding';
+import type { InsuranceProfile } from './company-insurance';
+
+export const YGE_BONDING_PROFILE: BondingProfile | null = null;
+export const YGE_INSURANCE_PROFILE: InsuranceProfile | null = null;

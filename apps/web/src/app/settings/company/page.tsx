@@ -13,11 +13,21 @@
 import { AppShell, PageHeader } from '../../../components';
 import { PrintButton } from '@/components/print-button';
 import {
+  YGE_BONDING_PROFILE,
   YGE_COMPANY_INFO,
+  YGE_INSURANCE_PROFILE,
+  bondingCapacityState,
   formatCompanyAddressOneLine,
+  formatUSD,
+  policyExpiryState,
+  type BondingProfile,
+  type InsuranceProfile,
+  type InsurancePolicy,
 } from '@yge/shared';
 
 const profile = YGE_COMPANY_INFO;
+const bonding = YGE_BONDING_PROFILE;
+const insurance = YGE_INSURANCE_PROFILE;
 
 export default function CompanyProfilePage() {
   return (
@@ -71,20 +81,12 @@ export default function CompanyProfilePage() {
             />
           </Section>
 
-          <Section title="Bonding (placeholder — needs DB)">
-            <p className="px-3 py-2 text-sm italic text-gray-600">
-              Surety, aggregate capacity, single-project capacity, current
-              bonded work-on-hand, and renewal date will live here once the
-              profile is editable. For now Brook tracks these on /bond-capacity.
-            </p>
+          <Section title="Bonding">
+            <BondingBlock profile={bonding} />
           </Section>
 
-          <Section title="Insurance (placeholder — needs DB)">
-            <p className="px-3 py-2 text-sm italic text-gray-600">
-              GL, auto, workers comp, umbrella — carriers, policy numbers,
-              limits, expiry dates. Currently maintained outside the app;
-              uploaded COIs land in <code>uploads/</code>.
-            </p>
+          <Section title="Insurance">
+            <InsuranceBlock profile={insurance} />
           </Section>
 
           <Section title="Employee profile v1 (placeholder — needs DB)">
@@ -143,6 +145,125 @@ function OfficerRow({
       <div className="text-xs text-gray-700">
         {contact.phone} · <a href={`mailto:${contact.email}`} className="text-yge-blue-500 hover:underline">{contact.email}</a>
       </div>
+    </div>
+  );
+}
+
+function NotConfigured({ what }: { what: string }) {
+  return (
+    <p className="px-3 py-2 text-sm italic text-gray-600">
+      {what} not configured. Edit{' '}
+      <code className="rounded bg-gray-100 px-1 py-0.5 text-xs">
+        packages/shared/src/company.ts
+      </code>{' '}
+      to populate (until the DB-backed edit form ships).
+    </p>
+  );
+}
+
+function BondingBlock({ profile }: { profile: BondingProfile | null }) {
+  if (!profile) return <NotConfigured what="Bonding profile" />;
+  const state = bondingCapacityState(profile, new Date());
+  return (
+    <>
+      <Row label="Surety carrier" value={profile.suretyName} />
+      {profile.agentName && <Row label="Agent" value={profile.agentName} />}
+      {profile.agentContact && (
+        <Row label="Agent contact" value={profile.agentContact} />
+      )}
+      <Row
+        label="Aggregate capacity"
+        value={formatUSD(profile.aggregateCapacityCents)}
+      />
+      <Row
+        label="Single-project capacity"
+        value={formatUSD(profile.singleProjectCapacityCents)}
+      />
+      <Row
+        label="Current bonded WOH"
+        value={`${formatUSD(profile.currentBondedWorkOnHandCents)} (${state.utilizationPercent}% used)`}
+      />
+      <Row
+        label="Remaining capacity"
+        value={formatUSD(state.remainingAggregateCapacityCents)}
+      />
+      <Row
+        label="Renews"
+        value={`${profile.renewalDate} (${state.daysUntilRenewal} days)`}
+      />
+      {profile.amBestRating && (
+        <Row label="A.M. Best rating" value={profile.amBestRating} />
+      )}
+      {profile.treasuryListed !== undefined && (
+        <Row
+          label="Treasury listed"
+          value={profile.treasuryListed ? 'Yes' : 'No'}
+        />
+      )}
+    </>
+  );
+}
+
+function InsuranceBlock({ profile }: { profile: InsuranceProfile | null }) {
+  if (!profile) return <NotConfigured what="Insurance profile" />;
+  return (
+    <>
+      <PolicyRow label="General Liability" policy={profile.generalLiability} />
+      <PolicyRow label="Commercial Auto" policy={profile.commercialAuto} />
+      <PolicyRow label="Workers Comp" policy={profile.workersComp} />
+      {profile.umbrella && (
+        <PolicyRow label="Umbrella" policy={profile.umbrella} />
+      )}
+      {profile.brokerName && <Row label="Broker" value={profile.brokerName} />}
+      {profile.brokerContact && (
+        <Row label="Broker contact" value={profile.brokerContact} />
+      )}
+    </>
+  );
+}
+
+const SEVERITY_BADGE: Record<
+  ReturnType<typeof policyExpiryState>['severity'],
+  { label: string; cls: string }
+> = {
+  ok: { label: 'OK', cls: 'bg-green-100 text-green-800' },
+  soon: { label: 'Renew soon', cls: 'bg-yellow-100 text-yellow-900' },
+  critical: { label: 'Renew now', cls: 'bg-orange-100 text-orange-900' },
+  expired: { label: 'Expired', cls: 'bg-red-100 text-red-900' },
+};
+
+function PolicyRow({ label, policy }: { label: string; policy: InsurancePolicy }) {
+  const state = policyExpiryState(policy, new Date());
+  const badge = SEVERITY_BADGE[state.severity];
+  const limits: string[] = [];
+  if (policy.eachOccurrenceLimitCents != null) {
+    limits.push(`each occ ${formatUSD(policy.eachOccurrenceLimitCents)}`);
+  }
+  if (policy.aggregateLimitCents != null) {
+    limits.push(`aggregate ${formatUSD(policy.aggregateLimitCents)}`);
+  }
+  return (
+    <div className="px-4 py-2 text-sm">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <div className="font-semibold text-gray-900">{label}</div>
+        <span
+          className={`whitespace-nowrap rounded px-2 py-0.5 text-[10px] font-semibold uppercase ${badge.cls}`}
+        >
+          {badge.label}
+        </span>
+      </div>
+      <div className="mt-0.5 text-xs text-gray-700">
+        {policy.carrier} · #{policy.policyNumber}
+      </div>
+      <div className="text-xs text-gray-700">
+        Expires {policy.expiryDate} ({state.daysUntilExpiry}d)
+        {limits.length > 0 && ` · ${limits.join(', ')}`}
+      </div>
+      {policy.brokerNote && (
+        <div className="mt-1 text-[11px] italic text-gray-600">
+          {policy.brokerNote}
+        </div>
+      )}
     </div>
   );
 }
