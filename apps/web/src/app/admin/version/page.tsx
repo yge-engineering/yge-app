@@ -106,10 +106,20 @@ export default async function VersionPage() {
               <h2 className="text-sm font-bold uppercase tracking-wide text-gray-700">
                 API (Express)
               </h2>
-              {!apiVersion && (
+              {!apiVersion ? (
                 <span className="rounded bg-red-100 px-2 py-0.5 text-[10px] font-bold uppercase text-red-800">
                   unreachable
                 </span>
+              ) : (
+                <a
+                  href={`${apiBaseUrl()}/api/version`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[10px] font-semibold uppercase tracking-wide text-yge-blue-500 hover:underline"
+                  title="View raw JSON"
+                >
+                  view raw →
+                </a>
               )}
             </header>
             {apiVersion ? (
