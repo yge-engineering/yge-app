@@ -1,4 +1,3 @@
-// 1796: admin index already has all 9 cards.
 // /admin — quick-jump index of admin tools.
 
 import Link from 'next/link';
@@ -17,6 +16,7 @@ const CARDS: Card[] = [
   { href: '/admin/audit-log', title: 'Audit log', blurb: 'Every mutation, who & when.' },
   { href: '/admin/portal-users', title: 'Portal users', blurb: 'Invite + role manage.' },
   { href: '/admin/gusto', title: 'Gusto', blurb: 'Payroll sync.' },
+  { href: '/admin/version', title: 'Version info', blurb: 'Web + API build SHA and AI prompt version.' },
 ];
 
 export default function AdminLandingPage() {
