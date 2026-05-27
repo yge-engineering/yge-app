@@ -132,7 +132,16 @@ export default async function ApiStatusPage() {
         <p className="mt-6 text-center text-xs text-gray-400">
           Checked at <span className="font-mono">{new Date().toISOString()}</span>
           {' · '}
-          {t('apiStatus.footerPrefix')}<Link href="/api-status" className="text-blue-700 hover:underline">{t('apiStatus.rerun')}</Link>.
+          {t('apiStatus.footerPrefix')}<Link href="/api-status" className="text-blue-700 hover:underline">{t('apiStatus.rerun')}</Link>
+          {' · '}
+          <Link href="/admin/version" className="text-blue-700 hover:underline">
+            build info
+          </Link>
+          {' · '}
+          <Link href="/go-live" className="text-blue-700 hover:underline">
+            tenant readiness
+          </Link>
+          .
         </p>
       </main>
     </AppShell>
