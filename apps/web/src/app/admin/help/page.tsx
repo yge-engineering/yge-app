@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { AppShell, PageHeader } from '../../../components';
+import { PrintButton } from '../../../components/print-button';
 import { requirePermission } from '../../../lib/permissions';
 
 interface Topic { heading: string; body: React.ReactNode }
@@ -156,10 +157,16 @@ export default function AdminHelpPage() {
   return (
     <AppShell>
       <main className="mx-auto max-w-3xl">
+        <div className="mb-2 flex justify-end print:hidden">
+          <PrintButton label="Print help" />
+        </div>
         <PageHeader title="Admin help" subtitle="Common admin questions, in plain English." />
         <div className="space-y-3">
           {TOPICS.map((t, i) => (
-            <details key={i} className="rounded border border-gray-200 bg-white p-3 shadow-sm">
+            <details
+              key={i}
+              className="rounded border border-gray-200 bg-white p-3 shadow-sm"
+            >
               <summary className="cursor-pointer font-semibold text-gray-900">{t.heading}</summary>
               <div className="mt-2 text-sm text-gray-700">{t.body}</div>
             </details>

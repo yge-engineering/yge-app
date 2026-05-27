@@ -6,11 +6,15 @@
 import Link from 'next/link';
 
 import { AppShell, PageHeader } from '../../components';
+import { PrintButton } from '../../components/print-button';
 
 export default function ExtensionPage() {
   return (
     <AppShell>
       <main className="mx-auto max-w-3xl p-6 sm:p-8">
+        <div className="mb-2 flex justify-end print:hidden">
+          <PrintButton label="Print install guide" />
+        </div>
         <PageHeader
           title="YGE Form Filler extension"
           subtitle="The browser extension that auto-fills agency bid forms from the master profile."
