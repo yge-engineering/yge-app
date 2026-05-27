@@ -2,6 +2,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import type { MasterProfile } from '@yge/shared';
 import { isNextInternalError } from '../lib/next-control-flow';
+import { collectExpiringItems } from '../lib/master-profile-expiry';
 
 // Master-profile expiries tile.
 //
@@ -13,50 +14,14 @@ import { isNextInternalError } from '../lib/next-control-flow';
 // Self-hiding: returns null when no records are within 60 days of
 // expiry, so the dashboard isn't cluttered when everything's
 // current.
+//
+// Threshold + collection logic lives in apps/web/src/lib/
+// master-profile-expiry.ts, shared with the /master-profile page.
 
 function apiBaseUrl(): string {
   return (
     process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'
   );
-}
-
-interface ExpiringItem {
-  label: string;
-  expiresOn: string;
-  daysRemaining: number;
-  tone: 'expired' | 'critical' | 'warn';
-}
-
-function daysUntil(expiresOn: string): number {
-  const target = new Date(`${expiresOn}T00:00:00Z`).getTime();
-  const today = new Date(
-    `${new Date().toISOString().slice(0, 10)}T00:00:00Z`,
-  ).getTime();
-  return Math.round((target - today) / (1000 * 60 * 60 * 24));
-}
-
-function classifyExpiry(daysRemaining: number): ExpiringItem['tone'] | null {
-  if (daysRemaining < 0) return 'expired';
-  if (daysRemaining <= 30) return 'critical';
-  if (daysRemaining <= 60) return 'warn';
-  return null;
-}
-
-function collectExpiringItems(profile: MasterProfile): ExpiringItem[] {
-  const items: ExpiringItem[] = [];
-  const addIf = (label: string, expiresOn: string | null | undefined) => {
-    if (!expiresOn) return;
-    const daysRemaining = daysUntil(expiresOn);
-    const tone = classifyExpiry(daysRemaining);
-    if (tone) items.push({ label, expiresOn, daysRemaining, tone });
-  };
-  addIf('CSLB license', profile.cslbExpiresOn);
-  addIf('DIR registration', profile.dirExpiresOn);
-  for (const p of profile.insurance) {
-    addIf(`Insurance — ${p.kind} (${p.carrierName})`, p.expiresOn);
-  }
-  items.sort((a, b) => a.daysRemaining - b.daysRemaining);
-  return items;
 }
 
 async function fetchProfile(): Promise<MasterProfile | null> {

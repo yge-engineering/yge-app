@@ -19,6 +19,10 @@ import { MasterProfileOfficersEditor } from '@/components/master-profile-officer
 import { MasterProfileInsuranceEditor } from '@/components/master-profile-insurance-editor';
 import { MasterProfileBondingEditor } from '@/components/master-profile-bonding-editor';
 import type { MasterProfile } from '@yge/shared';
+import {
+  collectExpiringItems,
+  type ExpiringItem,
+} from '../../lib/master-profile-expiry';
 
 function apiBaseUrl(): string {
   return (
@@ -36,50 +40,6 @@ async function fetchProfile(): Promise<MasterProfile | null> {
     if (!res.ok) return null;
     return ((await res.json()) as { profile: MasterProfile }).profile;
   } catch { return null; }
-}
-
-interface ExpiringItem {
-  label: string;
-  expiresOn: string;
-  daysRemaining: number;
-  tone: 'expired' | 'critical' | 'warn';
-}
-
-// Compute days between today and YYYY-MM-DD. Returns negative if
-// expiresOn is already past. Server-rendered so "today" = the
-// request time at the host, not the user's browser clock — close
-// enough for cert-expiry triage.
-function daysUntil(expiresOn: string): number {
-  const target = new Date(`${expiresOn}T00:00:00Z`).getTime();
-  const today = new Date(
-    `${new Date().toISOString().slice(0, 10)}T00:00:00Z`,
-  ).getTime();
-  return Math.round((target - today) / (1000 * 60 * 60 * 24));
-}
-
-function classifyExpiry(daysRemaining: number): ExpiringItem['tone'] | null {
-  if (daysRemaining < 0) return 'expired';
-  if (daysRemaining <= 30) return 'critical';
-  if (daysRemaining <= 60) return 'warn';
-  return null;
-}
-
-function collectExpiringItems(profile: MasterProfile): ExpiringItem[] {
-  const items: ExpiringItem[] = [];
-  const addIf = (label: string, expiresOn: string | null | undefined) => {
-    if (!expiresOn) return;
-    const daysRemaining = daysUntil(expiresOn);
-    const tone = classifyExpiry(daysRemaining);
-    if (tone) items.push({ label, expiresOn, daysRemaining, tone });
-  };
-  addIf('CSLB license', profile.cslbExpiresOn);
-  addIf('DIR registration', profile.dirExpiresOn);
-  for (const p of profile.insurance) {
-    addIf(`Insurance — ${p.kind} (${p.carrierName})`, p.expiresOn);
-  }
-  // Sort by daysRemaining ascending — most urgent first.
-  items.sort((a, b) => a.daysRemaining - b.daysRemaining);
-  return items;
 }
 
 export default async function MasterProfilePage() {
