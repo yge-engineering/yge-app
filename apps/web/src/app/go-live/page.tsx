@@ -21,6 +21,7 @@ import {
   YGE_BONDING_PROFILE,
   YGE_INSURANCE_PROFILE,
   runTenantReadiness,
+  type MasterProfile,
   type TenantReadinessInputs,
   type TenantReadinessStatus,
 } from '@yge/shared';
@@ -44,6 +45,21 @@ async function fetchCount(path: string): Promise<number> {
     return 0;
   } catch {
     return 0;
+  }
+}
+
+// Fetch the DB-backed master profile. The /api/master-profile
+// endpoint seeds on first read from YGE_COMPANY_INFO, so this
+// always returns *something* in production — the question
+// readiness cares about is "has the user edited it?" (see
+// derivation below), not "does the row exist?"
+async function fetchMasterProfile(): Promise<MasterProfile | null> {
+  try {
+    const res = await fetch(`${apiBaseUrl()}/api/master-profile`, { cache: 'no-store' });
+    if (!res.ok) return null;
+    return ((await res.json()) as { profile: MasterProfile }).profile;
+  } catch {
+    return null;
   }
 }
 
@@ -94,10 +110,29 @@ export default async function GoLivePage() {
     // leave as 0
   }
 
+  // Live read of the master profile. The store seeds from
+  // YGE_COMPANY_INFO on first call, so the row always exists once
+  // the API is up; what readiness cares about is whether someone
+  // (Brook / Ryan / office) has saved an edit — that signal lives
+  // in `updatedAt !== createdAt`. Bonding + insurance live on the
+  // same profile row; we still fall back to the static seed booleans
+  // when the API is unreachable so the page doesn't go fully red on
+  // a transient outage.
+  const profile = await fetchMasterProfile();
+  const hasMasterProfile = profile
+    ? profile.updatedAt !== profile.createdAt
+    : false;
+  const hasBondingProfile = profile
+    ? Boolean(profile.bonding && profile.bonding.suretyName.trim().length > 0)
+    : YGE_BONDING_PROFILE !== null;
+  const hasInsuranceProfile = profile
+    ? profile.insurance.length > 0
+    : YGE_INSURANCE_PROFILE !== null;
+
   const inputs: TenantReadinessInputs = {
-    hasMasterProfile: false,  // until the DB-backed edit form ships
-    hasBondingProfile: YGE_BONDING_PROFILE !== null,
-    hasInsuranceProfile: YGE_INSURANCE_PROFILE !== null,
+    hasMasterProfile,
+    hasBondingProfile,
+    hasInsuranceProfile,
     laborRateCount,
     equipmentRateCount,
     materialCount,
