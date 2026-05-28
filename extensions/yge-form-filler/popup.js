@@ -12,6 +12,30 @@
 const API_KEY = 'yge.apiBaseUrl';
 const DEFAULT_API_URL = 'https://api.youngge.com';
 
+// Render an ISO timestamp as a short human-relative phrase like
+// "5m ago" / "3h ago" / "2d ago". Used to show API deploy age
+// next to the build SHA so Ryan can verify the popup is hitting
+// a freshly-deployed API without doing ISO timestamp math.
+//
+// Returns null for unparseable / missing / 'unknown' input so
+// the caller can decide whether to render anything at all.
+function deployAge(iso) {
+  if (!iso || iso === 'unknown') return null;
+  const then = Date.parse(iso);
+  if (Number.isNaN(then)) return null;
+  const diffMs = Date.now() - then;
+  if (diffMs < 0) return 'just now';
+  if (diffMs < 60_000) return 'just now';
+  const mins = Math.floor(diffMs / 60_000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days}d ago`;
+  const weeks = Math.floor(days / 7);
+  return `${weeks}w ago`;
+}
+
 (async function () {
   const apiUrlEl = document.getElementById('api-url');
   const apiUrlInput = document.getElementById('api-url-input');
@@ -77,7 +101,9 @@ const DEFAULT_API_URL = 'https://api.youngge.com';
       }
       const json = await res.json();
       const sha = (json.buildSha ?? 'unknown').slice(0, 7);
-      versionEl.textContent = `build ${sha} · prompt ${json.promptVersion ?? '?'}`;
+      const age = deployAge(json.buildTimestamp);
+      const ageSuffix = age ? ` (${age})` : '';
+      versionEl.textContent = `build ${sha}${ageSuffix} · prompt ${json.promptVersion ?? '?'}`;
       versionEl.style.color = '#6b7280';
     } catch {
       versionEl.textContent = 'API unreachable';
