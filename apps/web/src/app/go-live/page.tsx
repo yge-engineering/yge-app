@@ -16,6 +16,7 @@ import { AppShell, PageHeader } from '../../components';
 import { ExtensionSnapshotStatusTile } from '../../components/extension-snapshot-status-tile';
 import { MasterProfileExpiriesTile } from '../../components/master-profile-expiries-tile';
 import { PrintButton } from '../../components/print-button';
+import { requirePermission } from '../../lib/permissions';
 import {
   YGE_BONDING_PROFILE,
   YGE_INSURANCE_PROFILE,
@@ -53,6 +54,12 @@ const STATUS_STYLE: Record<TenantReadinessStatus, { label: string; cls: string }
 };
 
 export default async function GoLivePage() {
+  // Gate behind audit:view (same as /admin/version + /api-status).
+  // The page shows tenant counts (customers, rates, drafts) that
+  // shouldn't leak to portal users or foremen — readiness status
+  // is Ryan/Brook/office territory.
+  requirePermission('audit:view');
+
   // Fetch what we can from the API. Missing endpoints fall back
   // to 0 so the check fires "missing" instead of crashing.
   const [estimates, drafts, customers] = await Promise.all([
@@ -194,6 +201,14 @@ export default async function GoLivePage() {
             /admin/version
           </Link>
           .
+        </p>
+
+        {/* Server-side render timestamp so the printed page shows
+         *  exactly when the snapshot was taken. The counts above
+         *  are no-cache so refreshing always re-fetches; this line
+         *  just makes the freshness explicit. */}
+        <p className="mt-2 text-[10px] text-gray-500">
+          Checked at: {new Date().toISOString()}
         </p>
       </main>
     </AppShell>
