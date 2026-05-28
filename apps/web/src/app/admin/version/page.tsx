@@ -45,6 +45,31 @@ function short(sha: string): string {
   return sha.length >= 7 ? sha.slice(0, 7) : sha;
 }
 
+// Render an ISO timestamp as a human-relative phrase ("4 min
+// ago", "2 hr ago", "3 days ago"). Lets Ryan eyeball deploy
+// freshness without parsing an ISO string in his head — when
+// he just pushed a fix, seeing "Deploy age: 5 min ago" beats
+// reading "2026-05-27T22:23:00.000Z" and computing the diff.
+//
+// Returns 'unknown' for unparseable input so the Row stays
+// aligned with the 'Build timestamp' row above it.
+function deployAge(iso: string): string {
+  if (!iso || iso === 'unknown') return 'unknown';
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return 'unknown';
+  const diffMs = Date.now() - then;
+  if (diffMs < 0) return 'just now';
+  if (diffMs < 60_000) return 'just now';
+  const mins = Math.floor(diffMs / 60_000);
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs} hr ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days} day${days === 1 ? '' : 's'} ago`;
+  const weeks = Math.floor(days / 7);
+  return `${weeks} week${weeks === 1 ? '' : 's'} ago`;
+}
+
 export default async function VersionPage() {
   requirePermission('audit:view');
   const apiVersion = await fetchApiVersion();
@@ -114,6 +139,7 @@ export default async function VersionPage() {
             <dl className="space-y-1 text-sm">
               <Row label="Build SHA" value={webSha} mono />
               <Row label="Build timestamp" value={webTimestamp} mono />
+              <Row label="Deploy age" value={deployAge(webTimestamp)} />
               <Row label="Page rendered at" value={new Date().toISOString()} mono />
             </dl>
           </section>
@@ -147,6 +173,10 @@ export default async function VersionPage() {
                   label="Build timestamp"
                   value={apiVersion.buildTimestamp ?? 'unknown'}
                   mono
+                />
+                <Row
+                  label="Deploy age"
+                  value={deployAge(apiVersion.buildTimestamp ?? 'unknown')}
                 />
                 <Row
                   label="Prompt version"
