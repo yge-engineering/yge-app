@@ -58,8 +58,15 @@ export default async function MasterProfilePage() {
           <Link href="/dashboard" className="text-sm text-yge-blue-500 hover:underline">
             &larr; Dashboard
           </Link>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 print:hidden">
             <PrintButton label="Print profile" />
+            <a
+              href={`${publicApiBaseUrl()}/api/master-profile/export.json`}
+              className="rounded border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+              title="Download a JSON backup of the full master profile"
+            >
+              Download JSON
+            </a>
             <Link
               href="/extension"
               className="text-sm text-yge-blue-500 hover:underline"
