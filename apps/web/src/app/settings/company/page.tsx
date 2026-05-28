@@ -100,20 +100,33 @@ export default function CompanyProfilePage() {
             <InsuranceBlock profile={insurance} />
           </Section>
 
-          <Section title="Employee profile v1 (placeholder — needs DB)">
+          <Section title="Employee roster">
             <p className="px-3 py-2 text-sm italic text-gray-600">
-              Field crew + office roster with certs, classifications, DOB,
-              hire date, emergency contacts. Foundation for the time-card
-              system + CPR generator + employee self-service portal.
+              Field crew + office roster lives at{' '}
+              <Link href="/crew" className="text-yge-blue-500 hover:underline">
+                /crew
+              </Link>{' '}
+              (current list, hire dates, classifications) and{' '}
+              <Link href="/dot-pool" className="text-yge-blue-500 hover:underline">
+                /dot-pool
+              </Link>{' '}
+              (driver pool for FMCSA Part 382). Time-card +
+              certification surfaces hang off the per-employee detail
+              page from there.
             </p>
           </Section>
         </div>
 
-        <p className="no-print mt-8 rounded border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
-          <strong>Editing:</strong> these fields are hard-coded in{' '}
-          <code>packages/shared/src/company.ts</code> for now. To change a
-          value, edit the file and ship a bundle. The next phase introduces
-          a Prisma-backed profile + an edit form here.
+        <p className="no-print mt-8 rounded border border-emerald-300 bg-emerald-50 p-3 text-xs text-emerald-900">
+          <strong>Editing:</strong> the values above are the static
+          seed read from <code>packages/shared/src/company.ts</code>.
+          The DB-backed editable copy with bonding, insurance,
+          officers, banking, and an audit trail lives at{' '}
+          <Link href="/master-profile" className="text-yge-blue-700 hover:underline">
+            /master-profile
+          </Link>
+          . Saving an edit there flips the /go-live readiness row
+          from amber to green.
         </p>
       </main>
     </AppShell>
@@ -163,11 +176,13 @@ function OfficerRow({
 function NotConfigured({ what }: { what: string }) {
   return (
     <p className="px-3 py-2 text-sm italic text-gray-600">
-      {what} not configured. Edit{' '}
-      <code className="rounded bg-gray-100 px-1 py-0.5 text-xs">
-        packages/shared/src/company.ts
-      </code>{' '}
-      to populate (until the DB-backed edit form ships).
+      {what} not configured in the static company-info seed. The
+      DB-backed editable copy at{' '}
+      <Link href="/master-profile" className="text-yge-blue-500 hover:underline">
+        /master-profile
+      </Link>{' '}
+      is the real source of truth — saving an edit there is the
+      right way to populate it.
     </p>
   );
 }
