@@ -362,6 +362,7 @@ export * from './bid-unit-normalizer';
 export * from './company-bonding';
 export * from './company-insurance';
 export * from './tenant-readiness';
+export * from './competitor-detail';
 export * from './master-profile-adapter';
 export * from './master-profile-completeness';
 export * from './master-profile-expiry';
