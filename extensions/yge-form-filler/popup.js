@@ -77,6 +77,11 @@ function deployAge(iso) {
     // exactly what the extension is fetching.
     const snapshotLink = document.getElementById('snapshot-link');
     if (snapshotLink) snapshotLink.href = `${url}/api/extension/profile-snapshot`;
+    // Build + version diagnostic page. Pairs with the build SHA +
+    // deploy age inline above — popup gives the quick answer, the
+    // /admin/version page gives the full Web+API breakdown.
+    const versionLink = document.getElementById('version-link');
+    if (versionLink) versionLink.href = `${appBase}/admin/version`;
     return url;
   }
 
