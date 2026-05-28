@@ -48,9 +48,22 @@ function short(sha: string): string {
 export default async function VersionPage() {
   requirePermission('audit:view');
   const apiVersion = await fetchApiVersion();
-  const webSha = process.env.BUILD_SHA ?? process.env.NEXT_PUBLIC_BUILD_SHA ?? 'unknown';
+  // Vercel auto-exposes VERCEL_GIT_COMMIT_SHA on every build; the
+  // BUILD_SHA env var was never set in the project dashboard so
+  // /admin/version showed 'unknown'. Falling back to the Vercel
+  // builtin makes the column populate without extra config.
+  const webSha =
+    process.env.BUILD_SHA ??
+    process.env.NEXT_PUBLIC_BUILD_SHA ??
+    process.env.VERCEL_GIT_COMMIT_SHA ??
+    'unknown';
+  // Vercel doesn't expose commit time directly — only commit SHA.
+  // Leave timestamp as 'unknown' unless BUILD_TIMESTAMP is set in
+  // the Vercel project's env vars (e.g. to $VERCEL_GIT_COMMIT_AUTHOR_DATE).
   const webTimestamp =
-    process.env.BUILD_TIMESTAMP ?? process.env.NEXT_PUBLIC_BUILD_TIMESTAMP ?? 'unknown';
+    process.env.BUILD_TIMESTAMP ??
+    process.env.NEXT_PUBLIC_BUILD_TIMESTAMP ??
+    'unknown';
 
   // Only flag a mismatch when BOTH sides actually report a SHA —
   // 'unknown' on either side just means the env wasn't wired up at
