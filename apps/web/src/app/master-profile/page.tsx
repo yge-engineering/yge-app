@@ -14,6 +14,7 @@ import {
 } from '../../components';
 import { PrintButton } from '../../components/print-button';
 import { ExtensionSnapshotStatusTile } from '../../components/extension-snapshot-status-tile';
+import { MasterProfileCompletenessCard } from '../../components/master-profile-completeness-card';
 import { getTranslator } from '../../lib/locale';
 import { requirePermission } from '../../lib/permissions';
 import { MasterProfileEditor } from '@/components/master-profile-editor';
@@ -82,6 +83,8 @@ export default async function MasterProfilePage() {
         {expiringItems.length > 0 && (
           <ExpiryWarningPanel items={expiringItems} />
         )}
+
+        {profile && <MasterProfileCompletenessCard profile={profile} />}
 
         <ExtensionSnapshotStatusTile />
 

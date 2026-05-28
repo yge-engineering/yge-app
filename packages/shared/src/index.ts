@@ -363,6 +363,7 @@ export * from './company-bonding';
 export * from './company-insurance';
 export * from './tenant-readiness';
 export * from './master-profile-adapter';
+export * from './master-profile-completeness';
 export * from './master-profile-expiry';
 export * from './scope-keyword-dictionary';
 export * from './extension-profile-snapshot';
