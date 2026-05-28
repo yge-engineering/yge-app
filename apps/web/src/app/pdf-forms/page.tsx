@@ -242,10 +242,11 @@ export default async function PdfFormsPage({
         )}
 
         <p className="mt-8 text-xs text-gray-500">
-          The PDF byte rewriting (loading the AcroForm tree, writing values,
-          flattening, embedding signatures) lands in the next bundle on top
-          of pdf-lib. The library shape + the per-form preview API are in
-          place today.
+          Click any row to preview the per-form fill plan; the &quot;Fill and
+          download&quot; button on the per-form page runs the pdf-lib AcroForm
+          rewriter and streams the flattened bytes back. Field mapping +
+          prompt-answer collection happen on the per-form page; this catalog
+          is just the index.
         </p>
       </main>
     </AppShell>
