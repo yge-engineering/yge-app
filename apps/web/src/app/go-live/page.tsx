@@ -84,12 +84,17 @@ export default async function GoLivePage() {
     fetchCount('/api/customers'),
   ]);
 
-  // Rate counts + PDF form review counts come from endpoints
-  // that may or may not exist — treat absence as 0.
+  // Rate counts come from the canonical labor/equipment/material
+  // routers. Earlier copy here used /api/rates/* which has never
+  // been a real route — the readiness check sat at 0/0/0 because
+  // every fetch 404'd. Fixed to read the actual endpoints; the
+  // fetchCount helper sniffs the first array in the response so
+  // it picks up `laborRates`, `equipmentRates`, `materials`
+  // without needing per-endpoint key configuration.
   const [laborRateCount, equipmentRateCount, materialCount] = await Promise.all([
-    fetchCount('/api/rates/labor'),
-    fetchCount('/api/rates/equipment'),
-    fetchCount('/api/rates/material'),
+    fetchCount('/api/labor-rates'),
+    fetchCount('/api/equipment-rates'),
+    fetchCount('/api/materials'),
   ]);
 
   // PDF form reviewed/total: best-effort via /api/pdf-forms which
