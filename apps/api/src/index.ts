@@ -27,6 +27,7 @@ import { pricedEstimatesReviewRouter } from './routes/priced-estimates-review';
 import { employeesRouter } from './routes/employees';
 import { toolsRouter } from './routes/tools';
 import { dailyReportsRouter } from './routes/daily-reports';
+import { dailyReportsNarrativeRouter } from './routes/daily-reports-narrative';
 import { importedDailyReportsRouter } from './routes/imported-daily-reports';
 import { importedDailyReportsImportRouter } from './routes/imported-daily-reports-import';
 import { equipmentRouter } from './routes/equipment';
@@ -175,6 +176,11 @@ app.use('/api/priced-estimates', pricedEstimatesRouter);
 app.use('/api/employees', employeesRouter);
 app.use('/api/tools', toolsRouter);
 app.use('/api/daily-reports', dailyReportsRouter);
+// POST /api/daily-reports/narrative — AI bullet-to-paragraph
+// expander for foremen who only have time to type bullets. Was
+// dormant alongside the bid-reviewer; the NarrativeExpandButton
+// component already POSTs to this URL.
+app.use('/api/daily-reports', dailyReportsNarrativeRouter);
 app.use('/api/imported-daily-reports', importedDailyReportsRouter);
 app.use('/api/imported-daily-reports/import', importedDailyReportsImportRouter);
 app.use('/api/equipment', equipmentRouter);
