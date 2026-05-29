@@ -28,6 +28,7 @@ import { RecentDraftsTile } from '../../../components/recent-drafts-tile';
 import { LostBidsTile } from '../../../components/lost-bids-tile';
 import { ComparablesSeedStatusTile } from '../../../components/comparables-seed-status-tile';
 import { ExtensionSnapshotStatusTile } from '../../../components/extension-snapshot-status-tile';
+import { MasterProfileCompletenessTile } from '../../../components/master-profile-completeness-tile';
 import { MasterProfileExpiriesTile } from '../../../components/master-profile-expiries-tile';
 import { PdfFormsReviewTile } from '../../../components/pdf-forms-review-tile';
 
@@ -56,6 +57,7 @@ export default function DashboardLitePage() {
 
         <div className="space-y-4">
           <MasterProfileExpiriesTile />
+          <MasterProfileCompletenessTile />
           <ExtensionSnapshotStatusTile />
           <UpcomingBidsTile />
           <RecentDraftsTile />
