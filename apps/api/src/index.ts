@@ -68,6 +68,9 @@ import { bankRecsRouter } from './routes/bank-recs';
 import { bankRecsApplyMatchesRouter } from './routes/bank-recs-apply-matches';
 import { bankRecsImportOfxRouter } from './routes/bank-recs-import-ofx';
 import { bankRecsMatchRouter } from './routes/bank-recs-match';
+import { bidTabsExtractRouter } from './routes/bid-tabs-extract';
+import { photosUploadRouter } from './routes/photos-upload';
+import { pricedEstimatesImportRouter } from './routes/priced-estimates-import';
 import { equipmentPartClassifyRouter } from './routes/equipment-part-classify';
 import { customersRouter } from './routes/customers';
 import { mileageRouter } from './routes/mileage';
@@ -228,6 +231,13 @@ app.use('/api/bank-recs', bankRecsRouter);
 app.use('/api/bank-recs', bankRecsMatchRouter);
 app.use('/api/bank-recs', bankRecsApplyMatchesRouter);
 app.use('/api/bank-recs', bankRecsImportOfxRouter);
+// Three more dormant mounts: bid-tab extraction (POST /extract),
+// photo uploads (POST /upload), and priced-estimate CSV import
+// (POST /import-csv). Each has a live web component pointing at
+// the URL that's been 404-ing without these mounts.
+app.use('/api/bid-tabs', bidTabsExtractRouter);
+app.use('/api/photos', photosUploadRouter);
+app.use('/api/priced-estimates', pricedEstimatesImportRouter);
 app.use('/api/bank-anomaly', bankAnomalyRouter);
 app.use('/api/equipment-part', equipmentPartClassifyRouter);
 app.use('/api/backups', backupsRouter);
