@@ -65,6 +65,9 @@ import { apPaymentsRouter } from './routes/ap-payments';
 import { backupsRouter } from './routes/backups';
 import { bankAnomalyRouter } from './routes/bank-anomaly';
 import { bankRecsRouter } from './routes/bank-recs';
+import { bankRecsApplyMatchesRouter } from './routes/bank-recs-apply-matches';
+import { bankRecsImportOfxRouter } from './routes/bank-recs-import-ofx';
+import { bankRecsMatchRouter } from './routes/bank-recs-match';
 import { equipmentPartClassifyRouter } from './routes/equipment-part-classify';
 import { customersRouter } from './routes/customers';
 import { mileageRouter } from './routes/mileage';
@@ -216,6 +219,15 @@ app.use('/api/coa', coaRouter);
 app.use('/api/journal-entries', journalEntriesRouter);
 app.use('/api/ap-payments', apPaymentsRouter);
 app.use('/api/bank-recs', bankRecsRouter);
+// Three siblings that handle per-rec match suggestions + apply +
+// OFX import. They've been dormant — bank-rec-match-panel.tsx
+// component has been POST-ing to /api/bank-recs/:id/match,
+// /apply-matches, and /import-ofx for months, each call 404-ing.
+// Mounting them now turns bank reconciliation into a working
+// flow.
+app.use('/api/bank-recs', bankRecsMatchRouter);
+app.use('/api/bank-recs', bankRecsApplyMatchesRouter);
+app.use('/api/bank-recs', bankRecsImportOfxRouter);
 app.use('/api/bank-anomaly', bankAnomalyRouter);
 app.use('/api/equipment-part', equipmentPartClassifyRouter);
 app.use('/api/backups', backupsRouter);
