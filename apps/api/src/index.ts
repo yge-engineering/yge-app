@@ -23,6 +23,7 @@ import { jobsStatsRouter } from './routes/jobs-stats';
 import { estimatesRouter } from './routes/estimates';
 import { plansToEstimateRouter } from './routes/plans-to-estimate';
 import { pricedEstimatesRouter } from './routes/priced-estimates';
+import { pricedEstimatesReviewRouter } from './routes/priced-estimates-review';
 import { employeesRouter } from './routes/employees';
 import { toolsRouter } from './routes/tools';
 import { dailyReportsRouter } from './routes/daily-reports';
@@ -244,6 +245,12 @@ app.use('/api/priced-estimates', explainLineRouter);
 app.use('/api/sub-bids', subBidExtractRouter);
 app.use('/api/takeoff', takeoffExtractRouter);
 app.use('/api/priced-estimates', crossCheckAddendaRouter);
+// POST /api/priced-estimates/:id/review — AI bid-readiness review.
+// The reviewer + Zod-validated response shape have lived in
+// apps/api/src/lib/bid-reviewer.ts since bundle 1758-ish; this mount
+// is the final wire-up so the web /estimates/[id]/ai-review page can
+// drive it.
+app.use('/api/priced-estimates', pricedEstimatesReviewRouter);
 app.use('/api/admin', adminErrorsRouter);
 app.use('/api/admin', adminBackfillRouter);
 app.use('/api/admin', adminHealthRouter);

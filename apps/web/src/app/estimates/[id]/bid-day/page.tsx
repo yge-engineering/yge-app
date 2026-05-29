@@ -87,7 +87,15 @@ export default async function BidDayPage({
           >
             ← Back to estimate editor
           </Link>
-          <PrintPacketButton estimateId={estimate.id} />
+          <div className="flex items-center gap-3">
+            <Link
+              href={`/estimates/${estimate.id}/ai-review`}
+              className="rounded border border-yge-blue-500 px-2 py-1 text-xs font-semibold text-yge-blue-500 hover:bg-yge-blue-50"
+            >
+              AI bid review →
+            </Link>
+            <PrintPacketButton estimateId={estimate.id} />
+          </div>
         </div>
 
         <PageHeader
