@@ -14,6 +14,7 @@ import Link from 'next/link';
 
 import { AppShell, PageHeader } from '../../components';
 import { ExtensionSnapshotStatusTile } from '../../components/extension-snapshot-status-tile';
+import { MasterProfileCompletenessTile } from '../../components/master-profile-completeness-tile';
 import { MasterProfileExpiriesTile } from '../../components/master-profile-expiries-tile';
 import { PrintButton } from '../../components/print-button';
 import { requirePermission } from '../../lib/permissions';
@@ -171,6 +172,11 @@ export default async function GoLivePage() {
         {/* Counts populated snapshot fields. A near-empty snapshot
          *  means the extension auto-fill won't help on bid forms. */}
         <ExtensionSnapshotStatusTile />
+
+        {/* Master profile completion percent + which section to fill
+         *  next. Sibling to the readiness row below; this is the
+         *  "what should Brook click on first?" answer. */}
+        <MasterProfileCompletenessTile />
 
         <section className={`mt-4 rounded-lg border p-4 ${overall.cls}`}>
           <div className="flex flex-wrap items-baseline justify-between gap-3">
