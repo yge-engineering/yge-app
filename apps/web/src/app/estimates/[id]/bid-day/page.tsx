@@ -29,6 +29,7 @@ import {
 } from '@yge/shared';
 import { AppShell, PageHeader } from '../../../../components';
 import { ExtensionSnapshotStatusTile } from '../../../../components/extension-snapshot-status-tile';
+import { MasterProfileCompletenessTile } from '../../../../components/master-profile-completeness-tile';
 import { MasterProfileExpiriesTile } from '../../../../components/master-profile-expiries-tile';
 import { PrintPacketButton } from '@/components/print-packet-button';
 import { BidDayComparableCallout } from '@/components/bid-day-comparable-callout';
@@ -103,6 +104,11 @@ export default async function BidDayPage({
          *  fields when the operator goes to fill the bid envelope
          *  forms on the agency website. */}
         <ExtensionSnapshotStatusTile />
+
+        {/* If the master profile dropped below 100% since the last
+         *  bid (new field added, expired record cleared), surface
+         *  it so Ryan can patch it before sealing the envelope. */}
+        <MasterProfileCompletenessTile />
 
         <CountdownBanner countdown={countdown} bidDueDate={estimate.bidDueDate} />
 
