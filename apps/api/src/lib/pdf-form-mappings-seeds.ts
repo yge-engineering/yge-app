@@ -797,6 +797,46 @@ const FHWA_1273: SeedMapping = {
   ],
 };
 
+// ---- Caltrans CEM-1102 disqualifications affidavit -----------------------
+
+const CALTRANS_DISQUALIFICATIONS: SeedMapping = {
+  id: 'pdf-form-caltrans-cem-1102',
+  displayName: 'Caltrans Past Contract Disqualifications (CEM-1102)',
+  agency: 'CALTRANS',
+  formCode: 'CEM-1102',
+  versionDate: '2024-01-01',
+  pdfReference: 'pdf-forms/caltrans/cem-1102.pdf',
+  agencyUrl: 'https://dot.ca.gov/programs/construction/forms',
+  notes:
+    'Bidder declares whether they have been disqualified, suspended, or debarred from any public-works contract in the prior 5 years (PCC §6109 + §10162). Required on every Caltrans bid. Default declaration is "no" — operator confirms inline. Yes triggers a prompt for the agency + date detail.',
+  fields: [
+    f({ id: 'pdf-fld-caltrans-1102-contractor', pdfFieldName: 'ContractorName', label: 'Contractor name', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'legalName' } }),
+    f({ id: 'pdf-fld-caltrans-1102-cslb', pdfFieldName: 'License', label: 'CSLB license #', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'cslbLicense' } }),
+    f({ id: 'pdf-fld-caltrans-1102-dir', pdfFieldName: 'DIR', label: 'DIR registration #', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'dirNumber' } }),
+    f({ id: 'pdf-fld-caltrans-1102-address', pdfFieldName: 'BidderAddress', label: 'Bidder address', kind: 'TEXT', required: true,
+        source: { kind: 'computed', name: 'profile.address.oneLine' } }),
+    f({ id: 'pdf-fld-caltrans-1102-phone', pdfFieldName: 'Phone', label: 'Phone', kind: 'TEXT', required: true,
+        source: { kind: 'profile-path', path: 'primaryPhone' } }),
+    f({ id: 'pdf-fld-caltrans-1102-project', pdfFieldName: 'ProjectName', label: 'Project name', kind: 'TEXT', required: true,
+        source: { kind: 'prompt', label: 'Project name (per bid notice)', sensitive: false } }),
+    f({ id: 'pdf-fld-caltrans-1102-ea', pdfFieldName: 'EaNumber', label: 'Caltrans EA number', kind: 'TEXT',
+        source: { kind: 'prompt', label: 'Caltrans EA # (Expense Authorization)', sensitive: false } }),
+    f({ id: 'pdf-fld-caltrans-1102-not-disqualified', pdfFieldName: 'NotDisqualified', label: 'Not disqualified / suspended / debarred (last 5 yrs)', kind: 'CHECKBOX', required: true,
+        source: { kind: 'literal', value: 'true' }, truthyValue: 'Yes' }),
+    f({ id: 'pdf-fld-caltrans-1102-detail', pdfFieldName: 'DisqualificationDetail', label: 'If yes — agency, date, reason', kind: 'TEXT',
+        source: { kind: 'prompt', label: 'Detail (agency, date, reason) — leave blank if no disqualifications', sensitive: false } }),
+    f({ id: 'pdf-fld-caltrans-1102-signature', pdfFieldName: 'Signature', label: 'Authorized signer', kind: 'SIGNATURE', required: true,
+        source: { kind: 'computed', name: 'profile.officers.vp.signature' } }),
+    f({ id: 'pdf-fld-caltrans-1102-title', pdfFieldName: 'SignerTitle', label: 'Title', kind: 'TEXT', required: true,
+        source: { kind: 'literal', value: 'Vice President' } }),
+    f({ id: 'pdf-fld-caltrans-1102-date', pdfFieldName: 'Date', label: 'Date', kind: 'DATE', required: true,
+        source: { kind: 'computed', name: 'date.today.us' } }),
+  ],
+};
+
 // ---- Shasta + Tehama county bidder affidavits (now via the generator) ----
 //
 // Bundles 2621/2622 hand-crafted these. Bundle 2623 promoted the
@@ -906,6 +946,7 @@ const SEEDS: SeedMapping[] = [
   CA_WORKERS_COMP_AFFIDAVIT,
   CALRECYCLE_RECYCLED_CONTENT,
   FHWA_1273,
+  CALTRANS_DISQUALIFICATIONS,
   ...NORCAL_COUNTIES.map(makeCountyBidderAffidavit),
 ];
 
