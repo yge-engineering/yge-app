@@ -59,6 +59,11 @@ interface FormState {
   dirRegistration: string;
   onHold: boolean;
   onHoldReason: string;
+  /** Sub Portal: opt this vendor into the external portal so a sub
+   *  user can log in and see their POs / lien waivers / payment
+   *  status. */
+  isPortalEnabled: boolean;
+  portalEmail: string;
   notes: string;
 }
 
@@ -87,6 +92,8 @@ function defaults(v?: Vendor): FormState {
     dirRegistration: v?.dirRegistration ?? '',
     onHold: v?.onHold ?? false,
     onHoldReason: v?.onHoldReason ?? '',
+    isPortalEnabled: v?.isPortalEnabled ?? false,
+    portalEmail: v?.portalEmail ?? '',
     notes: v?.notes ?? '',
   };
 }
@@ -146,6 +153,8 @@ export function VendorEditor({
       dirRegistration: trim(form.dirRegistration),
       onHold: form.onHold,
       onHoldReason: trim(form.onHoldReason),
+      isPortalEnabled: form.isPortalEnabled,
+      portalEmail: trim(form.portalEmail),
       notes: trim(form.notes),
     };
 
@@ -380,6 +389,25 @@ export function VendorEditor({
             className={inputCls}
             value={form.onHoldReason}
             onChange={(e) => setField('onHoldReason', e.target.value)}
+          />
+        </Field>
+      </Section>
+
+      <Section title="Sub portal access">
+        <Field label="Portal enabled">
+          <Checkbox
+            checked={form.isPortalEnabled}
+            onChange={(b) => setField('isPortalEnabled', b)}
+            label="This sub can log in to /portal/sub"
+          />
+        </Field>
+        <Field label="Portal email">
+          <input
+            className={inputCls}
+            type="email"
+            placeholder={form.email || 'falls back to primary contact email'}
+            value={form.portalEmail}
+            onChange={(e) => setField('portalEmail', e.target.value)}
           />
         </Field>
       </Section>
