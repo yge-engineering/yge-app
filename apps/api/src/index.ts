@@ -24,6 +24,7 @@ import { estimatesRouter } from './routes/estimates';
 import { plansToEstimateRouter } from './routes/plans-to-estimate';
 import { pricedEstimatesRouter } from './routes/priced-estimates';
 import { pricedEstimatesReviewRouter } from './routes/priced-estimates-review';
+import { pricedEstimatesScopeAbstractRouter } from './routes/priced-estimates-scope-abstract';
 import { employeesRouter } from './routes/employees';
 import { toolsRouter } from './routes/tools';
 import { dailyReportsRouter } from './routes/daily-reports';
@@ -279,6 +280,9 @@ app.use('/api/priced-estimates', crossCheckAddendaRouter);
 // is the final wire-up so the web /estimates/[id]/ai-review page can
 // drive it.
 app.use('/api/priced-estimates', pricedEstimatesReviewRouter);
+// POST /api/priced-estimates/:id/scope-abstract — AI scope abstract
+// for the bid transmittal cover letter. New in bundle 2739.
+app.use('/api/priced-estimates', pricedEstimatesScopeAbstractRouter);
 app.use('/api/admin', adminErrorsRouter);
 app.use('/api/admin', adminBackfillRouter);
 app.use('/api/admin', adminHealthRouter);

@@ -17,9 +17,14 @@ import {
   type PricedEstimate,
   type PricedEstimateTotals,
 } from '@yge/shared';
+import { BidScopeAbstractButton } from '@/components/bid-scope-abstract-button';
 import { PrintButton } from '@/components/print-button';
 import { AutoPrint } from '@/components/auto-print';
 import { Letterhead } from '@/components/letterhead';
+
+function publicApiBaseUrl(): string {
+  return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+}
 import { getTranslator } from '../../../../lib/locale';
 
 // Whom to print as the signer at the bottom of the cover letter.
@@ -217,6 +222,11 @@ export default async function TransmittalPage({
             </p>
           </div>
         </section>
+
+        <BidScopeAbstractButton
+          estimateId={estimate.id}
+          apiBaseUrl={publicApiBaseUrl()}
+        />
       </main>
     </>
   );
