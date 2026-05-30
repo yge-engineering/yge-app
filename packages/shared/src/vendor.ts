@@ -90,6 +90,17 @@ export const VendorSchema = z.object({
   onHold: z.boolean().default(false),
   onHoldReason: z.string().max(500).optional(),
 
+  /** True iff this vendor has been invited / enabled to log in to
+   *  the external Sub Portal. Office toggles per-vendor on the
+   *  vendor detail page; toggle off to revoke access. Defaults to
+   *  false so legacy vendors aren't accidentally portal-eligible. */
+  isPortalEnabled: z.boolean().default(false),
+  /** Email used for the magic-link sign-in. Falls back to `email`
+   *  (primary contact) when not set, but most subs have a shared
+   *  accounting inbox that differs from the PM contact — keep them
+   *  separate. */
+  portalEmail: z.string().email().max(254).optional(),
+
   notes: z.string().max(10_000).optional(),
 });
 export type Vendor = z.infer<typeof VendorSchema>;
@@ -104,6 +115,7 @@ export const VendorCreateSchema = VendorSchema.omit({
   is1099Reportable: z.boolean().optional(),
   coiOnFile: z.boolean().optional(),
   onHold: z.boolean().optional(),
+  isPortalEnabled: z.boolean().optional(),
 });
 export type VendorCreate = z.infer<typeof VendorCreateSchema>;
 
@@ -140,6 +152,36 @@ export function vendorCoiCurrent(
   const due = new Date(v.coiExpiresOn + 'T23:59:59');
   if (Number.isNaN(due.getTime())) return true;
   return due.getTime() > now.getTime();
+}
+
+/**
+ * Effective email used for the Sub Portal magic-link invite. Falls
+ * back to the primary contact email when `portalEmail` is unset.
+ * Returns undefined when neither is configured — caller decides
+ * whether to surface that as "missing email" or skip the invite.
+ */
+export function vendorPortalEmail(
+  v: Pick<Vendor, 'portalEmail' | 'email'>,
+): string | undefined {
+  if (v.portalEmail && v.portalEmail.trim().length > 0) return v.portalEmail;
+  if (v.email && v.email.trim().length > 0) return v.email;
+  return undefined;
+}
+
+/**
+ * Whether a vendor is ready to be invited to the Sub Portal:
+ *   - isPortalEnabled flag is on
+ *   - an effective portal email resolves (portalEmail OR email)
+ *
+ * A vendor with `isPortalEnabled=true` but no email lookup
+ * succeeds is NOT ready — the office needs to capture a real
+ * accounting email first.
+ */
+export function vendorIsPortalReady(
+  v: Pick<Vendor, 'isPortalEnabled' | 'portalEmail' | 'email'>,
+): boolean {
+  if (!v.isPortalEnabled) return false;
+  return vendorPortalEmail(v) !== undefined;
 }
 
 /** True iff vendor's W-9 is still in date (re-collected within last

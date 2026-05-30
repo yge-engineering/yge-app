@@ -40,6 +40,7 @@ export async function createVendor(
     is1099Reportable: input.is1099Reportable ?? false,
     coiOnFile: input.coiOnFile ?? false,
     onHold: input.onHold ?? false,
+    isPortalEnabled: input.isPortalEnabled ?? false,
     ...input,
   };
   VendorSchema.parse(v);
