@@ -46,6 +46,7 @@ extensionRouter.get('/profile-snapshot', (_req, res) => {
     // export yet. Will fill from DB master-profile when that ships.
     caMcpNumber: undefined,
     caEntityNumber: undefined,
+    caEmployerAccountNumber: undefined,
 
     addressOneLine: formatCompanyAddressOneLine(c),
     addressStreet: c.address.street,
@@ -55,6 +56,7 @@ extensionRouter.get('/profile-snapshot', (_req, res) => {
     addressCounty: c.address.county,
 
     primaryPhone: c.vicePresident.phone,
+    primaryFax: undefined,
     primaryEmail: c.vicePresident.email,
     websiteUrl: c.websiteUrl,
 

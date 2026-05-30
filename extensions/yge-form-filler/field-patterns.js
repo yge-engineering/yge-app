@@ -273,6 +273,61 @@ export const FIELD_PATTERNS = [
       'sos number',
     ],
   },
+  // President-side officer fields. Common on bonding-related
+  // packets (surety wants both officers on file) and corporate-
+  // resolution attachments.
+  {
+    profilePath: 'officers.president.title',
+    patterns: [
+      'president title',
+      'title of president',
+      'principal title',
+    ],
+  },
+  {
+    profilePath: 'officers.president.phone',
+    patterns: [
+      'president phone',
+      'principal phone',
+      'president telephone',
+      'principal telephone',
+    ],
+  },
+  {
+    profilePath: 'officers.president.email',
+    patterns: [
+      'president email',
+      'principal email',
+      'president e-mail',
+    ],
+  },
+  // CA Employer Account Number (SUI / ETT / SDI) — required on
+  // EDD payroll forms + many CA agency questionnaires that ask
+  // for the state employer ID.
+  {
+    profilePath: 'caEmployerAccountNumber',
+    patterns: [
+      'ca employer account',
+      'ca employer account number',
+      'edd account',
+      'edd account number',
+      'sui account',
+      'state employer account',
+      'employer account #',
+    ],
+  },
+  // Primary fax — still required on a surprising number of
+  // legacy paper-to-PDF county forms.
+  {
+    profilePath: 'primaryFax',
+    patterns: [
+      'fax',
+      'fax number',
+      'fax #',
+      'company fax',
+      'business fax',
+    ],
+  },
 ];
 
 /** Given the assorted text labels for a field, return the

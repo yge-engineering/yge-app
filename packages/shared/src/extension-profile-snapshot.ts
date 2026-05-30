@@ -51,6 +51,9 @@ export const ExtensionProfileSnapshotSchema = z.object({
   caMcpNumber: z.string().optional(),
   /** CA Secretary of State entity number — fills CA bidder forms. */
   caEntityNumber: z.string().optional(),
+  /** CA Employer Account Number (SUI / ETT / SDI). Required on
+   *  EDD payroll forms + many CA agency employer questionnaires. */
+  caEmployerAccountNumber: z.string().optional(),
 
   // ---- Address ----
   addressOneLine: z.string(),
@@ -64,6 +67,9 @@ export const ExtensionProfileSnapshotSchema = z.object({
 
   // ---- Contact ----
   primaryPhone: z.string(),
+  /** Primary fax — still appears on a surprising number of
+   *  legacy paper-to-PDF county forms. */
+  primaryFax: z.string().optional(),
   primaryEmail: z.string(),
   websiteUrl: z.string().optional(),
 
@@ -104,7 +110,9 @@ export const PROFILE_PATH_TO_SNAPSHOT_KEY: Record<
   pscCodes: 'pscCodes',
   caMcpNumber: 'caMcpNumber',
   caEntityNumber: 'caEntityNumber',
+  caEmployerAccountNumber: 'caEmployerAccountNumber',
   websiteUrl: 'websiteUrl',
+  primaryFax: 'primaryFax',
   'address.street': 'addressStreet',
   'address.city': 'addressCity',
   'address.state': 'addressState',
@@ -147,7 +155,9 @@ export const EXTENSION_SNAPSHOT_FIELD_LABELS: Record<
   pscCodes: 'PSC codes',
   caMcpNumber: 'CA MCP number',
   caEntityNumber: 'CA SOS entity number',
+  caEmployerAccountNumber: 'CA employer account #',
   websiteUrl: 'Website URL',
+  primaryFax: 'Primary fax',
   addressOneLine: 'Address (one line)',
   addressStreet: 'Address street',
   addressCity: 'Address city',
